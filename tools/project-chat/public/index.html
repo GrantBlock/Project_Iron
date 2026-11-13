@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project Chat</title>
+<link rel="icon" href="/favicon.png">
+<style>
+  :root {
+    --navy: #0b2a5b; --navy-2: #12397a; --blue: #1a6fd1; --line: #e3e5e8;
+    --text: #1f2328; --muted: #6b7280; --bubble-me: #f1f2f3; --bg: #eef1f5;
+    --pass: #1f8a4c; --fail: #c62828; --warn: #b26a00; --info: #4682b4;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: var(--text); }
+  body { display: flex; align-items: center; justify-content: center; padding: 16px; }
+
+  .widget { width: 440px; max-width: 100%; height: min(820px, calc(100vh - 32px)); background: #fff; border-radius: 6px;
+            box-shadow: 0 10px 40px rgba(10,30,60,.18); display: flex; flex-direction: column; overflow: hidden; position: relative; }
+  .widget.min { height: 64px; }
+  /* Desktop app window: fill the window */
+  body.app { padding: 0; background: #fff; }
+  body.app .widget { width: 100%; height: 100vh; border-radius: 0; box-shadow: none; }
+  body.app #minBtn, body.app #closeBtn { display: none; }
+
+  /* Header */
+  header { background-color: var(--navy); color: #fff; padding: 0 14px; height: 64px; display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+           background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='64'%3E%3Cpath d='M0 40 Q30 20 60 40 T120 40' fill='none' stroke='%23ffffff' stroke-opacity='.07' stroke-width='10'/%3E%3Cpath d='M0 12 Q30 -8 60 12 T120 12' fill='none' stroke='%23ffffff' stroke-opacity='.05' stroke-width='10'/%3E%3C/svg%3E"); }
+  .pill { background: rgba(255,255,255,.18); border: 0; color: #fff; font-size: 14px; padding: 6px 14px; border-radius: 16px; cursor: pointer; }
+  .pill:hover { background: rgba(255,255,255,.28); }
+  .title { flex: 1; text-align: center; line-height: 1.15; overflow: hidden; }
+  .title .t1 { font-size: 19px; }
+  .title .t2 { font-size: 12px; opacity: .75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .icon-btn { background: none; border: 0; color: #fff; cursor: pointer; padding: 4px; display: grid; place-items: center; }
+  .icon-btn svg { width: 22px; height: 22px; }
+
+  /* Messages */
+  #log { flex: 1; overflow-y: auto; padding: 14px 12px 8px; background: #fff; }
+  .row { display: flex; gap: 10px; margin: 0 0 14px; align-items: flex-start; }
+  .row.me { justify-content: flex-end; }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: #fff; flex-shrink: 0;
+            display: grid; place-items: center; font-weight: 700; font-size: 14px; color: var(--navy); }
+  .avatar.report { color: #fff; background: var(--navy-2); border-color: var(--navy-2); }
+  .bubble { border: 1px solid var(--line); border-radius: 4px; padding: 12px 14px; font-size: 14.5px; line-height: 1.45; max-width: 82%;
+            background: #fff; word-wrap: break-word; overflow-wrap: anywhere; }
+  .row.me .bubble { background: var(--bubble-me); border-color: var(--bubble-me); }
+  .bubble b.name { font-weight: 600; }
+  .bubble p { margin: 4px 0; } .bubble ul { margin: 4px 0; padding-left: 18px; }
+  .bubble code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; font-size: 12.5px; }
+  .bubble pre { background: #f3f4f6; padding: 8px; border-radius: 4px; overflow-x: auto; font-size: 12px; }
+  .bubble h4 { margin: 8px 0 4px; font-size: 14px; }
+  .time { font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .day { text-align: center; font-size: 11.5px; color: var(--muted); margin: 6px 0 14px; }
+
+  /* Report card */
+  .report-head { display: flex; align-items: center; gap: 8px; margin: 2px 0 6px; flex-wrap: wrap; }
+  .chip { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #fff; padding: 2px 8px; border-radius: 10px; background: var(--info); }
+  .chip.pass, .chip.passed, .chip.success { background: var(--pass); }
+  .chip.fail, .chip.failed, .chip.error { background: var(--fail); }
+  .chip.partial, .chip.warn, .chip.warning { background: var(--warn); }
+  .report-title { font-weight: 600; }
+  .stats { display: flex; gap: 12px; font-size: 12.5px; color: var(--muted); margin: 4px 0; flex-wrap: wrap; }
+  .toggle { background: none; border: 0; color: var(--blue); padding: 0; cursor: pointer; font-size: 13px; margin-top: 6px; }
+  .full { display: none; border-top: 1px solid var(--line); margin-top: 8px; padding-top: 6px; }
+  .full.open { display: block; }
+  .typing { font-size: 13px; color: var(--muted); padding: 0 14px 6px; height: 20px; }
+
+  /* Composer */
+  .composer { border-top: 1px solid var(--line); display: flex; align-items: flex-end; gap: 10px; padding: 12px 12px 14px 14px; flex-shrink: 0; }
+  textarea { flex: 1; border: 0; outline: none; resize: none; font: inherit; font-size: 16px; color: var(--text); max-height: 120px; padding: 8px 0; }
+  textarea::placeholder { color: #7a7f87; }
+  .send { width: 48px; height: 48px; border-radius: 50%; border: 0; background: var(--blue); cursor: pointer; display: grid; place-items: center; flex-shrink: 0; }
+  .send:disabled { opacity: .5; cursor: default; }
+  .send svg { width: 24px; height: 24px; }
+
+  /* Menu panel */
+  .panel { position: absolute; top: 64px; left: 0; right: 0; bottom: 0; background: #fff; transform: translateX(-100%); transition: transform .2s ease; display: flex; flex-direction: column; z-index: 5; }
+  .panel.open { transform: translateX(0); }
+  .panel .tabs { display: flex; border-bottom: 1px solid var(--line); }
+  .panel .tabs button { flex: 1; background: none; border: 0; padding: 12px; font-size: 14px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; }
+  .panel .tabs button.active { color: var(--navy); border-color: var(--navy); font-weight: 600; }
+  .panel .body { flex: 1; overflow-y: auto; padding: 12px 14px; }
+  .team { font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 12px 0 6px; }
+  .proj { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 6px; margin-bottom: 8px; cursor: pointer; }
+  .proj:hover { background: #f7f8fa; }
+  .proj.current { border-color: var(--navy); box-shadow: inset 3px 0 0 var(--navy); }
+  .proj .meta { flex: 1; min-width: 0; }
+  .proj .n { font-weight: 600; font-size: 14px; }
+  .proj .a { font-size: 12.5px; color: var(--muted); }
+  .badge { background: var(--fail); color: #fff; font-size: 11px; border-radius: 10px; padding: 1px 7px; }
+  form.add { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 12px; display: grid; gap: 8px; }
+  form.add input { border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; font: inherit; font-size: 14px; }
+  form.add button, .btn { background: var(--navy); color: #fff; border: 0; border-radius: 4px; padding: 9px; font-size: 14px; cursor: pointer; }
+  .rep-item { padding: 10px 0; border-bottom: 1px solid var(--line); cursor: pointer; font-size: 14px; }
+  .rep-item .d { font-size: 12px; color: var(--muted); }
+  .kv { font-size: 13px; margin: 6px 0; }
+  .kv code { background: #f3f4f6; padding: 2px 5px; border-radius: 3px; word-break: break-all; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .empty { color: var(--muted); font-size: 14px; text-align: center; margin-top: 40px; }
+  .flash { animation: flash 1.4s ease; } @keyframes flash { 0% { background: #fff6d6; } 100% { background: #fff; } }
+</style>
+</head>
+<body>
+<div class="widget" id="widget">
+  <header>
+    <button class="pill" id="menuBtn">Menu</button>
+    <div class="title"><div class="t1">Live Chat</div><div class="t2" id="sub">Loading…</div></div>
+    <button class="icon-btn" id="minBtn" title="Minimize"><svg viewBox="0 0 24 24"><path d="M5 18h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
+    <button class="icon-btn" id="closeBtn" title="Close menu / clear view"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
+  </header>
+
+  <div id="log"></div>
+  <div class="typing" id="typing"></div>
+  <div class="composer">
+    <textarea id="input" rows="1" placeholder="Type reply"></textarea>
+    <button class="send" id="sendBtn" title="Send"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"><path d="M21 3L3 10.5l7 2.5 2.5 7L21 3z"/><path d="M10 13l11-10"/></svg></button>
+  </div>
+
+  <div class="panel" id="panel">
+    <div class="tabs">
+      <button data-tab="projects" class="active">Projects</button>
+      <button data-tab="reports">Reports</button>
+      <button data-tab="connect">Connect</button>
+    </div>
+    <div class="body" id="panelBody"></div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+if (new URLSearchParams(location.search).has('app')) document.body.classList.add('app');
+const state = { projects: [], current: null, messages: [], unread: {}, info: null, tab: 'projects' };
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, { headers: { 'content-type': 'application/json' }, ...opts });
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.status);
+  return r.json();
+}
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function md(src) {
+  const blocks = [];
+  let s = esc(src).replace(/```[\w-]*\n?([\s\S]*?)```/g, (_, c) => { blocks.push('<pre>' + c + '</pre>'); return '\u0000' + (blocks.length - 1) + '\u0000'; });
+  s = s.replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+  const out = []; let list = false;
+  for (const line of s.split('\n')) {
+    const li = line.match(/^\s*[-*]\s+(.*)/), h = line.match(/^#{1,6}\s+(.*)/);
+    if (li) { if (!list) { out.push('<ul>'); list = true; } out.push('<li>' + li[1] + '</li>'); continue; }
+    if (list) { out.push('</ul>'); list = false; }
+    if (h) out.push('<h4>' + h[1] + '</h4>'); else if (line.trim()) out.push('<p>' + line + '</p>');
+  }
+  if (list) out.push('</ul>');
+  return out.join('').replace(/\u0000(\d+)\u0000/g, (_, i) => blocks[i]);
+}
+const initials = n => String(n || '?').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+const fmtTime = ts => new Date(ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+const fmtDay = ts => new Date(ts).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+
+function renderMessage(m) {
+  const row = document.createElement('div');
+  row.className = 'row' + (m.role === 'user' ? ' me' : '');
+  row.id = 'm-' + m.id;
+  if (m.role === 'user') {
+    row.innerHTML = `<div class="bubble">${md(m.text)}<div class="time">${fmtTime(m.ts)}</div></div>`;
+    return row;
+  }
+  let inner;
+  if (m.role === 'report') {
+    const r = m.report, st = r.stats || {};
+    const stats = Object.keys(st).length ? `<div class="stats">${Object.entries(st).map(([k, v]) => `<span><b>${esc(v)}</b> ${esc(k)}</span>`).join('')}</div>` : '';
+    inner = `<b class="name">${esc(m.author)}:</b> Nightly report for ${esc(r.runDate)}
+      <div class="report-head"><span class="chip ${esc(r.status)}">${esc(r.status)}</span><span class="report-title">${esc(r.title)}</span></div>
+      ${stats}${r.summary ? md(r.summary) : ''}
+      ${r.body || r.link ? `<button class="toggle">View full report</button><div class="full">${md(r.body)}${r.link ? `<p><a href="${esc(r.link)}" target="_blank" rel="noopener">Open link</a></p>` : ''}</div>` : ''}`;
+  } else {
+    inner = `<b class="name">${esc(m.author)}:</b> ${md(m.text).replace(/^<p>/, '').replace(/<\/p>/, '')}`;
+  }
+  row.innerHTML = `<div class="avatar ${m.role === 'report' ? 'report' : ''}">${esc(initials(m.author))}</div><div class="bubble">${inner}<div class="time">${fmtTime(m.ts)}</div></div>`;
+  const t = row.querySelector('.toggle');
+  if (t) t.onclick = () => { const f = row.querySelector('.full'); f.classList.toggle('open'); t.textContent = f.classList.contains('open') ? 'Hide full report' : 'View full report'; };
+  return row;
+}
+
+function renderLog() {
+  const log = $('#log'); log.innerHTML = '';
+  if (!state.messages.length) { log.innerHTML = '<div class="empty">No messages yet.</div>'; return; }
+  let lastDay = '';
+  for (const m of state.messages) {
+    const d = fmtDay(m.ts);
+    if (d !== lastDay) { log.insertAdjacentHTML('beforeend', `<div class="day">${d}</div>`); lastDay = d; }
+    log.appendChild(renderMessage(m));
+  }
+  log.scrollTop = log.scrollHeight;
+}
+function appendMessage(m) {
+  const log = $('#log');
+  if (log.querySelector('.empty')) log.innerHTML = '';
+  const prev = state.messages[state.messages.length - 2];
+  if (!prev || fmtDay(prev.ts) !== fmtDay(m.ts)) log.insertAdjacentHTML('beforeend', `<div class="day">${fmtDay(m.ts)}</div>`);
+  log.appendChild(renderMessage(m));
+  log.scrollTop = log.scrollHeight;
+}
+
+function project() { return state.projects.find(p => p.id === state.current); }
+function setHeader() {
+  const p = project();
+  $('#sub').textContent = p ? `${p.agent} · ${p.name}` : 'No project selected';
+  const total = Object.values(state.unread).reduce((a, b) => a + b, 0);
+  $('#menuBtn').textContent = total ? `Menu (${total})` : 'Menu';
+}
+
+async function loadProjects() {
+  state.projects = await api('/api/projects');
+  if (!state.projects.find(p => p.id === state.current)) state.current = store.get('project') && state.projects.find(p => p.id === store.get('project')) ? store.get('project') : (state.projects[0] || {}).id;
+}
+async function selectProject(id) {
+  state.current = id; store.set('project', id); state.unread[id] = 0;
+  state.messages = await api(`/api/projects/${encodeURIComponent(id)}/messages`);
+  setHeader(); renderLog(); closePanel();
+}
+
+// ---- Menu panel ----
+function openPanel(tab) { if (tab) state.tab = tab; renderPanel(); $('#panel').classList.add('open'); }
+function closePanel() { $('#panel').classList.remove('open'); }
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { state.tab = b.dataset.tab; renderPanel(); });
+
+function renderPanel() {
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === state.tab));
+  const body = $('#panelBody');
+  if (state.tab === 'projects') {
+    const teams = {};
+    for (const p of state.projects) (teams[p.team] ||= []).push(p);
+    body.innerHTML = Object.entries(teams).map(([team, list]) => `<div class="team">${esc(team)}</div>` + list.map(p => `
+      <div class="proj ${p.id === state.current ? 'current' : ''}" data-id="${esc(p.id)}">
+        <div class="avatar">${esc(initials(p.agent))}</div>
+        <div class="meta"><div class="n">${esc(p.name)}</div><div class="a">${esc(p.agent)}${p.description ? ' · ' + esc(p.description) : ''}</div></div>
+        ${state.unread[p.id] ? `<span class="badge">${state.unread[p.id]}</span>` : ''}
+      </div>`).join('')).join('') + `
+      <form class="add" id="addForm">
+        <div class="muted">Add a project</div>
+        <input name="team" placeholder="Team (e.g. designengineering.ai Development Team)" required>
+        <input name="name" placeholder="Project name" required>
+        <input name="agent" placeholder="Agent name" required>
+        <input name="description" placeholder="Description (optional)">
+        <button>Add project</button>
+      </form>`;
+    body.querySelectorAll('.proj').forEach(el => el.onclick = () => selectProject(el.dataset.id));
+    $('#addForm').onsubmit = async e => {
+      e.preventDefault();
+      const f = Object.fromEntries(new FormData(e.target));
+      const p = await api('/api/projects', { method: 'POST', body: JSON.stringify(f) });
+      await loadProjects(); selectProject(p.id);
+    };
+  } else if (state.tab === 'reports') {
+    const reps = state.messages.filter(m => m.role === 'report').reverse();
+    body.innerHTML = reps.length ? reps.map(m => `
+      <div class="rep-item" data-id="${m.id}"><span class="chip ${esc(m.report.status)}">${esc(m.report.status)}</span> ${esc(m.report.title)}
+      <div class="d">${esc(m.report.runDate)} · ${esc(m.author)}</div></div>`).join('') : '<div class="empty">No reports yet for this project.</div>';
+    body.querySelectorAll('.rep-item').forEach(el => el.onclick = () => {
+      closePanel();
+      const row = document.getElementById('m-' + el.dataset.id);
+      if (row) { row.scrollIntoView({ block: 'center' }); row.querySelector('.bubble').classList.add('flash'); setTimeout(() => row.querySelector('.bubble').classList.remove('flash'), 1500); }
+    });
+  } else {
+    const i = state.info || { lan: [], port: '' }, p = project();
+    body.innerHTML = `
+      <div class="team">Open from other computers</div>
+      ${i.lan.map(ip => `<div class="kv"><code>http://${ip}:${i.port}</code></div>`).join('') || '<div class="muted">No network address found.</div>'}
+      <div class="team">AI replies</div>
+      <div class="kv">${i.aiEnabled ? 'On · ' + esc(i.model) : 'Off — add <code>anthropicApiKey</code> to config.json and restart.'}</div>
+      <div class="team">Agent report endpoint</div>
+      <div class="kv"><code>POST http://${i.lan[0] || 'localhost'}:${i.port}/api/reports</code></div>
+      <div class="kv">Header: <code>Authorization: Bearer &lt;reportToken from config.json&gt;</code></div>
+      <div class="kv">Project id for this chat: <code>${esc(p ? p.id : '')}</code></div>
+      <div class="muted">See scripts/send-report.ps1 for a ready-made sender.</div>`;
+  }
+}
+
+// ---- Send chat ----
+async function send() {
+  const input = $('#input'), text = input.value.trim();
+  if (!text || !state.current) return;
+  input.value = ''; autosize(); $('#sendBtn').disabled = true;
+  try { await api(`/api/projects/${encodeURIComponent(state.current)}/chat`, { method: 'POST', body: JSON.stringify({ text }) }); }
+  catch (e) { alert('Send failed: ' + e.message); }
+  finally { $('#sendBtn').disabled = false; input.focus(); }
+}
+function autosize() { const t = $('#input'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 120) + 'px'; }
+$('#input').addEventListener('input', autosize);
+$('#input').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+$('#sendBtn').onclick = send;
+$('#menuBtn').onclick = () => $('#panel').classList.contains('open') ? closePanel() : openPanel();
+$('#closeBtn').onclick = () => { closePanel(); $('#widget').classList.remove('min'); };
+$('#minBtn').onclick = () => $('#widget').classList.toggle('min');
+
+// ---- Live updates ----
+let typingTimer;
+function connectEvents() {
+  const es = new EventSource('/api/events');
+  es.onmessage = async e => {
+    const evt = JSON.parse(e.data);
+    if (evt.type === 'message') {
+      const m = evt.message;
+      if (m.projectId === state.current) {
+        if (!state.messages.some(x => x.id === m.id)) { state.messages.push(m); appendMessage(m); }
+        if (m.role === 'assistant') $('#typing').textContent = '';
+      } else { state.unread[m.projectId] = (state.unread[m.projectId] || 0) + 1; setHeader(); }
+      if (m.role === 'report' && document.hidden && 'Notification' in window && Notification.permission === 'granted')
+        new Notification(`${m.author}: ${m.report.status.toUpperCase()}`, { body: m.report.title });
+    } else if (evt.type === 'typing' && evt.projectId === state.current) {
+      $('#typing').textContent = `${evt.author} is typing…`;
+      clearTimeout(typingTimer); typingTimer = setTimeout(() => $('#typing').textContent = '', 60000);
+    } else if (evt.type === 'projects') { await loadProjects(); if ($('#panel').classList.contains('open')) renderPanel(); }
+  };
+}
+
+(async () => {
+  state.info = await api('/api/info').catch(() => null);
+  await loadProjects();
+  if (state.current) await selectProject(state.current); else { setHeader(); renderLog(); }
+  connectEvents();
+  if ('Notification' in window && Notification.permission === 'default') document.body.addEventListener('click', () => Notification.requestPermission(), { once: true });
+})();
+</script>
+</body>
+</html>
