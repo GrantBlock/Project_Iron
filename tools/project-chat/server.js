@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
+const { spawn, spawnSync } = require('child_process');
 
 const ROOT = __dirname;
 // HOME holds config.json and data/ — set by the desktop app to a writable folder
@@ -24,7 +25,6 @@ function loadConfig() {
       host: '0.0.0.0',
       reportToken: crypto.randomBytes(18).toString('hex'),
       accessPassword: '',
-      anthropicApiKey: '',
       model: 'claude-sonnet-5-5',
       ownerName: 'Grant'
     };
@@ -32,11 +32,22 @@ function loadConfig() {
     console.log('Created config.json with a new report token.');
   }
   const cfg = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
-  cfg.anthropicApiKey = process.env.ANTHROPIC_API_KEY || cfg.anthropicApiKey || '';
   cfg.port = Number(process.env.PORT || cfg.port || 3500);
   return cfg;
 }
 const cfg = loadConfig();
+
+// AI replies run through the local `claude` CLI (Claude Code), authenticated with
+// your Claude subscription, instead of a metered Anthropic API key.
+function checkClaudeCli() {
+  try {
+    const r = spawnSync('claude', ['--version'], { timeout: 5000 });
+    return r.status === 0;
+  } catch {
+    return false;
+  }
+}
+const claudeAvailable = checkClaudeCli();
 
 // ---------- storage ----------
 function seedDb() {
@@ -96,11 +107,38 @@ function broadcast(evt) {
 setInterval(() => { for (const res of clients) res.write(': ping\n\n'); }, 25000);
 
 // ---------- AI assistant ----------
+// Runs the prompt through the local `claude` CLI instead of calling the Anthropic
+// API directly, so replies draw on your Claude subscription's usage rather than a
+// separate metered API key. Everything goes over stdin so there's no argv size
+// limit and no shell-escaping to get wrong.
+function runClaude(promptText, model) {
+  return new Promise((resolve, reject) => {
+    const child = spawn('claude', ['-p', '--model', model, '--output-format', 'text'], {
+      cwd: HOME,
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+    let out = '', err = '';
+    const timer = setTimeout(() => {
+      child.kill();
+      reject(new Error('timed out waiting for a reply'));
+    }, 60000);
+    child.stdout.on('data', d => { out += d; });
+    child.stderr.on('data', d => { err += d; });
+    child.on('error', e => { clearTimeout(timer); reject(e); });
+    child.on('close', code => {
+      clearTimeout(timer);
+      if (code !== 0) return reject(new Error(err.trim() || ('claude exited with code ' + code)));
+      resolve(out.trim());
+    });
+    child.stdin.end(promptText);
+  });
+}
+
 async function assistantReply(project, userText) {
   const msgs = db.messages.filter(m => m.projectId === project.id);
   const reports = msgs.filter(m => m.role === 'report').slice(-5);
 
-  if (!cfg.anthropicApiKey) return offlineReply(project, reports, userText);
+  if (!claudeAvailable) return offlineReply(project, reports, userText);
 
   const reportContext = reports.length
     ? reports.map(r => {
@@ -118,27 +156,22 @@ Be direct, professional, and concise. Use short structured answers. If a report 
 Most recent reports (oldest first):
 ${reportContext}`;
 
-  // Recent conversation (user/assistant only), must start with user
+  // Recent conversation (user/assistant only), must start with user; this already
+  // ends with the current user turn since it's added to the db before this runs.
   let history = msgs.filter(m => m.role === 'user' || m.role === 'assistant').slice(-20)
     .map(m => ({ role: m.role, content: m.text }));
   while (history.length && history[0].role !== 'user') history.shift();
   history = history.length ? history : [{ role: 'user', content: userText }];
 
+  const transcript = history.map(h => (h.role === 'user' ? 'User: ' : 'Assistant: ') + h.content).join('\n\n');
+  const promptText = system + '\n\n---\nConversation so far:\n\n' + transcript +
+    '\n\nReply as the assistant to the last user message above. Reply with plain text only, no tool use.';
+
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': cfg.anthropicApiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({ model: cfg.model, max_tokens: 1200, system, messages: history })
-    });
-    const data = await r.json();
-    if (!r.ok) return 'AI service error: ' + (data.error && data.error.message || r.status);
-    return (data.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n').trim() || '(no reply)';
+    const reply = await runClaude(promptText, cfg.model);
+    return reply || '(no reply)';
   } catch (e) {
-    return 'Could not reach the AI service: ' + e.message;
+    return 'Could not get a reply from the claude CLI: ' + e.message;
   }
 }
 
@@ -153,7 +186,7 @@ function offlineReply(project, reports, text) {
     if (!reports.length) return 'No reports yet for ' + project.name + '.';
     return reports.slice().reverse().map(m => `- ${m.report.runDate} · ${m.report.status} · ${m.report.title}`).join('\n');
   }
-  return 'AI replies are off (no Anthropic API key in config.json). I can still answer "latest" or "list reports".';
+  return 'AI replies are off (the `claude` CLI isn\'t on PATH for this app). I can still answer "latest" or "list reports".';
 }
 
 // ---------- http helpers ----------
@@ -227,7 +260,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (p === '/api/info') {
-      return send(res, 200, { port: cfg.port, lan: lanAddresses(), aiEnabled: !!cfg.anthropicApiKey, model: cfg.model, owner: cfg.ownerName });
+      return send(res, 200, { port: cfg.port, lan: lanAddresses(), aiEnabled: claudeAvailable, model: cfg.model, owner: cfg.ownerName });
     }
 
     if (p === '/api/projects' && req.method === 'GET') {
@@ -292,7 +325,7 @@ server.listen(cfg.port, cfg.host, () => {
   console.log('\nProject Chat is running');
   console.log('  This computer:   http://localhost:' + cfg.port);
   for (const ip of lanAddresses()) console.log('  Other computers: http://' + ip + ':' + cfg.port);
-  console.log('  AI replies:      ' + (cfg.anthropicApiKey ? 'on (' + cfg.model + ')' : 'off — add anthropicApiKey to config.json'));
+  console.log('  AI replies:      ' + (claudeAvailable ? 'on (via claude CLI, ' + cfg.model + ')' : 'off — install the claude CLI and sign in with "claude" once, then restart'));
   console.log('  Report token:    ' + cfg.reportToken + '\n');
   if (module.exports.onReady) module.exports.onReady();
 });

@@ -38,11 +38,25 @@ Project Chat is running
 | `port` / `host` | Default `3500` on `0.0.0.0` (all network interfaces) |
 | `reportToken` | Secret agents use to post reports |
 | `accessPassword` | Optional password for the chat UI |
-| `anthropicApiKey` | Turns on AI replies (or set `ANTHROPIC_API_KEY` env var) |
 | `model` | Claude model for replies (default `claude-sonnet-5-5`) |
 | `ownerName` | Your name shown in the chat |
 
-Without an API key the chat still receives reports and answers "latest" and "list reports".
+## AI replies
+
+AI replies run through the `claude` CLI (Claude Code) installed on this PC, using
+whatever account it's signed into — a Claude subscription's usage, not a metered
+Anthropic API key. Install it and run `claude` once interactively to sign in, then
+restart Project Chat; the startup log and **Menu → Connect** show whether it found
+the CLI.
+
+Without the `claude` CLI on PATH, the chat still receives reports and answers
+"latest" and "list reports".
+
+**If the desktop `.exe` can't find `claude` but a terminal can:** a GUI-launched app
+on Windows doesn't always inherit the same PATH as a terminal (especially right
+after installing the CLI). Add the CLI's install folder to the **System** PATH (not
+just your user PATH) and restart Project Chat, or run `start.bat` instead of the
+`.exe`.
 
 ## Sending nightly reports
 `POST /api/reports` with header `Authorization: Bearer <reportToken>`:
