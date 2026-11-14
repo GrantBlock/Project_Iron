@@ -12,7 +12,7 @@ Mirrors `SPEC.md`'s table; update the Status column here as it changes, in sync 
 | --- | --- | --- |
 | T01 | Repo scaffold | Done |
 | T02 | Shape model | Done |
-| T03 | Editor canvas | In progress |
+| T03 | Editor canvas | Tested — pass |
 | T04 | Drawing tools | To do |
 | T05 | Callout notes + undo/redo | To do |
 | T06 | Save/open markup folder | To do |
