@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type Konva from "konva";
-import { dataUrlToBlob, exportFileName, flatten } from "./flatten";
+import { copyPngToClipboard, dataUrlToBlob, exportFileName, flatten } from "./flatten";
 
 function stubStage(toDataURL: () => string) {
   const st = { x: 12, y: -7, sx: 2.5, sy: 2.5 };
@@ -53,5 +53,26 @@ describe("flatten", () => {
   it("rejects when there is no image size", () => {
     const { stage } = stubStage(() => "");
     expect(() => flatten(stage, { width: 0, height: 0 })).toThrow(/no image/);
+  });
+});
+
+describe("copyPngToClipboard", () => {
+  const png = "data:image/png;base64,iVBORw0KGgo=";
+  class FakeItem {
+    constructor(public items: Record<string, Blob>) {}
+  }
+
+  it("writes one image/png item", async () => {
+    vi.stubGlobal("ClipboardItem", FakeItem);
+    const write = vi.fn().mockResolvedValue(undefined);
+    await copyPngToClipboard(png, { write } as unknown as Clipboard);
+    const [[items]] = write.mock.calls as [[FakeItem[]]];
+    expect(items).toHaveLength(1);
+    expect(items[0].items["image/png"].type).toBe("image/png");
+    vi.unstubAllGlobals();
+  });
+
+  it("explains the fix when the clipboard API is missing", async () => {
+    await expect(copyPngToClipboard(png, undefined)).rejects.toThrow(/use Export instead/);
   });
 });

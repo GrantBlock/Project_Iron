@@ -15,9 +15,9 @@ import { Sidebar } from "./Sidebar";
 import { StatusBar } from "./StatusBar";
 import { CalloutsPanel } from "./CalloutsPanel";
 import { Toolbar } from "./Toolbar";
-import { dataUrlToBlob, downloadPng, exportFileName, flatten, type Flattened } from "../io/flatten";
+import { copyPngToClipboard, dataUrlToBlob, downloadPng, exportFileName, flatten, type Flattened } from "../io/flatten";
 import { createMarkupStore, isPng, MarkupError, markupFolderName, type MarkupStore } from "../io";
-import { fitView, screenToImage, type Point, type Size, type View } from "./viewport";
+import { fitView, recentre, screenToImage, type Point, type Size, type View } from "./viewport";
 
 /** Resolve a swatch value ("var(--token)") to the hex string stored in the doc. */
 const resolveColor = (c: string) => {
@@ -88,7 +88,13 @@ export function EditorShell() {
   const [image, setImage] = useState<LoadedImage | null>(null);
   const { state, dispatch, stateRef, canUndo, canRedo } = useEditorStore();
   const shapes = useMemo(() => state.doc?.shapes ?? [], [state.doc]);
-  const [view, setView] = useState<View>({ scale: 1, x: 0, y: 0 });
+  const [view, setViewState] = useState<View>({ scale: 1, x: 0, y: 0 });
+  // True while the view is "fit to window": resizing refits and recentres. A user zoom/pan clears it; Ctrl+0 sets it again.
+  const fittedRef = useRef(true);
+  const setView = useCallback((update: View | ((v: View) => View)) => {
+    fittedRef.current = false;
+    setViewState(update);
+  }, []);
   const [tool, setTool] = useState<Tool>("select");
   const [color, setColorState] = useState("var(--signal-500)");
   const [strokeWidth, setStrokeWidthState] = useState<number>(DEFAULT_STROKE_WIDTH);
@@ -100,7 +106,19 @@ export function EditorShell() {
   live.current = { image, view };
 
   const onSize = useCallback((s: Size) => {
+    const prev = sizeRef.current;
     sizeRef.current = s;
+    const img = live.current.image;
+    if (!img || (prev.width === s.width && prev.height === s.height)) return;
+    if (fittedRef.current || prev.width === 0 || prev.height === 0) setViewState(fitView(s, img));
+    else setViewState((v) => recentre(v, prev, s));
+  }, []);
+
+  const fitToWindow = useCallback(() => {
+    const img = live.current.image;
+    if (!img) return;
+    fittedRef.current = true;
+    setViewState(fitView(sizeRef.current, img));
   }, []);
 
   const storeRef = useRef<MarkupStore | null>(null);
@@ -113,7 +131,8 @@ export function EditorShell() {
     flushSync(() => {
       setImage(img);
       dispatch({ type: "load", width: img.width, height: img.height, doc });
-      setView(fitView(sizeRef.current, img));
+      fittedRef.current = true;
+      setViewState(fitView(sizeRef.current, img));
     });
     live.current = { image: img, view: fitView(sizeRef.current, img) };
     return { width: img.width, height: img.height };
@@ -197,6 +216,16 @@ export function EditorShell() {
     );
   }, [exportPng]);
 
+  // Copy the flattened PNG (same pixels as Export) to the system clipboard.
+  const onCopy = useCallback(() => {
+    void exportPng()
+      .then((f) => copyPngToClipboard(f.dataUrl))
+      .then(
+        () => setNotice({ tone: "success", title: "Copied to clipboard", description: "Paste the marked-up image into any app." }),
+        (e: unknown) => fail(e, "Copy failed"),
+      );
+  }, [exportPng, fail]);
+
   const onAdd = useCallback((shape: NewShape, numbered: boolean) => dispatch({ type: "add", shape, numbered }), [dispatch]);
   const onUpdate = useCallback((id: string, patch: ShapePatch) => dispatch({ type: "update", id, patch }), [dispatch]);
   const onRemove = useCallback((id: string) => dispatch({ type: "remove", id }), [dispatch]);
@@ -228,6 +257,16 @@ export function EditorShell() {
       if (t instanceof HTMLElement && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
       if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
       const k = e.key.toLowerCase();
+      if (k === "0" && !e.shiftKey) {
+        e.preventDefault();
+        fitToWindow();
+        return;
+      }
+      if (k === "c" && e.shiftKey) {
+        e.preventDefault();
+        onCopy();
+        return;
+      }
       if (k === "s" && !e.shiftKey) {
         e.preventDefault();
         onSave();
@@ -240,7 +279,7 @@ export function EditorShell() {
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [dispatch, onSave]);
+  }, [dispatch, onSave, onCopy, fitToWindow]);
 
   // Tool hotkeys and Delete/Backspace.
   useEffect(() => {
@@ -366,6 +405,7 @@ export function EditorShell() {
           onOpenFile={() => fileRef.current?.click()}
           onNewSnip={() => void snipRef.current.start()}
           onExport={onExport}
+          onCopy={onCopy}
           canExport={!!image}
           onSave={onSave}
           onOpenMarkup={onOpenMarkup}

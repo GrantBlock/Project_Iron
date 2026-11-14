@@ -51,6 +51,7 @@ export function tauriDeps(rest: Pick<SnipDeps, "openImage" | "notify">): SnipDep
     },
     waitForOverlayResult: (snipId) => once<OverlayResult>(RESULT_EVENT, snipId).done,
     now: () => new Date(),
-    settle: () => new Promise((r) => setTimeout(r, 150)),
+    // Margin for the compositor to repaint the desktop after the editor leaves (it is moved off-screen first; see snip.rs).
+    settle: () => new Promise((r) => setTimeout(r, 300)),
   };
 }

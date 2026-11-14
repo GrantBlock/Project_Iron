@@ -48,3 +48,8 @@ export function fitView(container: Size, image: Size, padding = 48): View {
     y: (container.height - image.height * scale) / 2,
   };
 }
+
+/** Keep the image point at the old container's centre at the new container's centre, same scale. */
+export function recentre(v: View, from: Size, to: Size): View {
+  return { ...v, x: v.x + (to.width - from.width) / 2, y: v.y + (to.height - from.height) / 2 };
+}

@@ -29,12 +29,13 @@ interface Props {
   canUndo: boolean;
   canRedo: boolean;
   onExport: () => void;
+  onCopy: () => void;
   canExport: boolean;
   onSave: () => void;
   onOpenMarkup: () => void;
 }
 
-export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStrokeWidth, fileName, onOpenFile, onNewSnip, onUndo, onRedo, canUndo, canRedo, onExport, canExport, onSave, onOpenMarkup }: Props) {
+export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStrokeWidth, fileName, onOpenFile, onNewSnip, onUndo, onRedo, canUndo, canRedo, onExport, onCopy, canExport, onSave, onOpenMarkup }: Props) {
   return (
     <div
       data-testid="toolbar"
@@ -110,6 +111,9 @@ export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStroke
       <IconButton icon="folder-open" label="Open markup" data-testid="open-markup" onClick={onOpenMarkup} />
       <Tooltip label="Save markup" shortcut="Ctrl+S">
         <IconButton icon="save" label="Save" data-testid="save-markup" onClick={onSave} disabled={!canExport} />
+      </Tooltip>
+      <Tooltip label="Copy image to clipboard" shortcut="Ctrl+Shift+C">
+        <IconButton icon="clipboard-copy" label="Copy to clipboard" data-testid="copy-btn" onClick={onCopy} disabled={!canExport} />
       </Tooltip>
       <Button size="sm" icon="share" onClick={onExport} disabled={!canExport} data-testid="export-btn">
         Export

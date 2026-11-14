@@ -61,3 +61,11 @@ export function downloadPng(dataUrl: string, fileName: string): void {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+/** Put a PNG data URL on the system clipboard as an image (WebView2/WebKit async Clipboard API). */
+export async function copyPngToClipboard(dataUrl: string, clipboard: Clipboard | undefined = globalThis.navigator?.clipboard): Promise<void> {
+  if (!clipboard?.write || typeof ClipboardItem === "undefined") {
+    throw new Error("This window cannot write images to the clipboard — use Export instead.");
+  }
+  await clipboard.write([new ClipboardItem({ "image/png": dataUrlToBlob(dataUrl) })]);
+}

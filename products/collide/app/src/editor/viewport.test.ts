@@ -6,6 +6,7 @@ import {
   fitView,
   imageToScreen,
   panBy,
+  recentre,
   screenToImage,
   wheelFactor,
   zoomAt,
@@ -87,5 +88,17 @@ describe("fitView", () => {
     const v = fitView({ width: 500, height: 400 }, { width: 2000, height: 1000 }, 50);
     expect(v.scale).toBeCloseTo(400 / 2000, 9);
     expect(2000 * v.scale + 2 * v.x).toBeCloseTo(500, 9);
+  });
+});
+
+describe("recentre", () => {
+  it("keeps the image point at the container centre when the window resizes", () => {
+    const v = { scale: 2, x: 100, y: 50 };
+    const from = { width: 800, height: 600 };
+    const to = { width: 1200, height: 500 };
+    const centreBefore = screenToImage(v, { x: 400, y: 300 });
+    const centreAfter = screenToImage(recentre(v, from, to), { x: 600, y: 250 });
+    expect(centreAfter).toEqual(centreBefore);
+    expect(recentre(v, from, to).scale).toBe(2);
   });
 });

@@ -1,7 +1,15 @@
 //! T11: window choreography for a snip. The JS orchestrator (`src/snip/flow.ts`)
 //! decides the order; these commands only move windows.
 
+use std::sync::Mutex;
+
 use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize};
+
+/// Where the editor was before a snip moved it off-screen, so `show_editor` can put it back.
+static EDITOR_POS: Mutex<Option<PhysicalPosition<i32>>> = Mutex::new(None);
+
+/// Far outside any monitor (the coordinate Windows itself uses for minimized windows).
+const OFF_SCREEN: PhysicalPosition<i32> = PhysicalPosition { x: -32000, y: -32000 };
 
 const EDITOR: &str = "main";
 const OVERLAY: &str = "overlay";
@@ -15,14 +23,30 @@ fn msg(what: &str, e: tauri::Error) -> String {
     format!("Could not {what} ({e}) — restart Collide and try again.")
 }
 
+/// Hide the editor without leaving a ghost in the capture. Windows fades a hidden
+/// window out over ~200 ms (DWM animation), so the capture could catch it half-
+/// transparent. Moving the window off-screen first is instant, so the fade happens
+/// where no monitor can see it.
 #[tauri::command]
 pub fn hide_editor(app: AppHandle) -> Result<(), String> {
-    win(&app, EDITOR)?.hide().map_err(|e| msg("hide the editor", e))
+    let w = win(&app, EDITOR)?;
+    if let Ok(pos) = w.outer_position() {
+        if pos != OFF_SCREEN {
+            if let Ok(mut saved) = EDITOR_POS.lock() {
+                *saved = Some(pos);
+            }
+        }
+        let _ = w.set_position(OFF_SCREEN);
+    }
+    w.hide().map_err(|e| msg("hide the editor", e))
 }
 
 #[tauri::command]
 pub fn show_editor(app: AppHandle) -> Result<(), String> {
     let w = win(&app, EDITOR)?;
+    if let Some(pos) = EDITOR_POS.lock().ok().and_then(|mut p| p.take()) {
+        let _ = w.set_position(pos);
+    }
     let _ = w.unminimize();
     w.show().map_err(|e| msg("show the editor", e))?;
     w.set_focus().map_err(|e| msg("focus the editor", e))
