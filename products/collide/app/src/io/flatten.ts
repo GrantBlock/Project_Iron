@@ -73,6 +73,40 @@ export function contentBounds(image: { width: number; height: number }, rects: B
 }
 
 /**
+ * Render any area of the canvas (image pixels, may extend past the image) at source
+ * resolution, with `background` behind the image. Same exclusions as Export.
+ */
+export function flattenArea(stage: Konva.Stage, area: Box, background: string): Flattened {
+  const box = { x: Math.floor(area.x), y: Math.floor(area.y), width: 0, height: 0 };
+  box.width = Math.ceil(area.x + area.width) - box.x;
+  box.height = Math.ceil(area.y + area.height) - box.y;
+  if (!(box.width > 0 && box.height > 0)) throw new Error("The snip area is empty — drag a box over the canvas.");
+  const saved = { x: stage.x(), y: stage.y(), sx: stage.scaleX(), sy: stage.scaleY() };
+  const hidden = [...editorOnly(stage), ...stage.find(".snip-selection")];
+  const wasVisible = hidden.map((t) => t.visible());
+  const layer = stage.getLayers()[0];
+  let bg: Konva.Rect | null = null;
+  try {
+    hidden.forEach((t) => t.visible(false));
+    stage.position({ x: 0, y: 0 });
+    stage.scale({ x: 1, y: 1 });
+    if (layer) {
+      bg = new KonvaRect({ ...box, fill: background, listening: false });
+      layer.add(bg);
+      bg.moveToBottom();
+    }
+    const dataUrl = stage.toDataURL({ ...box, pixelRatio: 1, mimeType: "image/png" });
+    return { dataUrl, width: box.width, height: box.height };
+  } finally {
+    bg?.destroy();
+    stage.position({ x: saved.x, y: saved.y });
+    stage.scale({ x: saved.sx, y: saved.sy });
+    hidden.forEach((t, i) => t.visible(wasVisible[i]));
+    stage.batchDraw();
+  }
+}
+
+/**
  * Like {@link flatten}, but auto-cropped to the image plus all annotations (see
  * {@link contentBounds}), with `background` behind anything outside the image.
  */

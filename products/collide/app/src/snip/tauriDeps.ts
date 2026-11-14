@@ -32,7 +32,7 @@ function once<T>(name: string, snipId?: number): { registered: Promise<void>; do
 }
 
 /** Real wiring: Tauri commands + events. The overlay window listens for FRAME_EVENT and emits RESULT_EVENT. */
-export function tauriDeps(rest: Pick<SnipDeps, "openImage" | "notify">): SnipDeps {
+export function tauriDeps(rest: Pick<SnipDeps, "openImage" | "notify" | "delayMs">): SnipDeps {
   return {
     ...rest,
     invoke: isTauri() ? (cmd, args) => invoke(cmd, args) : undefined,

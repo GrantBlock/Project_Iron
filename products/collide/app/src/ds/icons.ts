@@ -3,6 +3,8 @@
 // Filled shapes are not in Lucide; drawn locally on the same 24px grid.
 import circleFilled from "./glyphs/circle-filled.svg?url";
 import squareFilled from "./glyphs/square-filled.svg?url";
+import crop from "lucide-static/icons/crop.svg?url";
+import timer from "lucide-static/icons/timer.svg?url";
 import circleAlert from "lucide-static/icons/circle-alert.svg?url";
 import circle from "lucide-static/icons/circle.svg?url";
 import clipboardCopy from "lucide-static/icons/clipboard-copy.svg?url";
@@ -28,6 +30,8 @@ export const ICON_URLS: Record<string, string> = {
   "circle-alert": circleAlert,
   "x": x,
   "circle-check": circleCheck,
+  "timer": timer,
+  "crop": crop,
   "circle-filled": circleFilled,
   "square-filled": squareFilled,
   "clipboard-copy": clipboardCopy,

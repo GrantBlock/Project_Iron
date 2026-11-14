@@ -30,6 +30,22 @@ function setup(opts: { result?: OverlayResult | Promise<OverlayResult>; fail?: R
 }
 
 describe("snip flow", () => {
+  it("with a delay: hides the editor, waits the delay, then settles and captures", async () => {
+    const { calls, deps } = setup({ result: { kind: "cancel" } });
+    deps.delayMs = () => 3000;
+    deps.wait = vi.fn(async (ms: number) => void calls.push(`wait ${ms}`));
+    await createSnipFlow(deps).start();
+    expect(calls.slice(0, 4)).toEqual(["hide_editor", "wait 3000", "settle", "capture_monitor"]);
+  });
+
+  it("no delay: no wait", async () => {
+    const { calls, deps } = setup({ result: { kind: "cancel" } });
+    deps.delayMs = () => 0;
+    deps.wait = vi.fn(async () => void calls.push("wait"));
+    await createSnipFlow(deps).start();
+    expect(calls).not.toContain("wait");
+  });
+
   it("success: hides editor, captures, shows overlay on the monitor, crops, restores, opens the crop", async () => {
     const { calls, invoke, deps, flow } = setup({ result: { kind: "crop", box: { x: 10, y: 20, w: 40, h: 30 }, scale: 1.25 } });
     await flow.start();

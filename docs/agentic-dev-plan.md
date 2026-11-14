@@ -35,6 +35,7 @@ Related (in `GrantBlock/designengineering-ai`, `Builder v0.1/`): `development-pa
 - [stated] 2026-11-14: Collide adds an X mark (remove) tool and filled rectangle / filled ellipse tools; fills are solid in the chosen colour; all three get numbered note boxes like the other shapes (Grant).
 - [stated] 2026-11-14: Grant asked this session to merge `claude/peaceful-babbage-04aj3j` into `development` (Collide Windows fixes, note boxes, new tools); test notes for Lydia in `products/collide/TESTER-NOTES.md` (Grant).
 - [stated] 2026-11-14: Collide copies a finished snip to the clipboard automatically, like Snipping Tool (Grant).
+- [stated] 2026-11-14: Collide adds Canvas snip (drag a box on the canvas; the area with markups is copied and opened as a new markup) and a New snip delay (No delay / 3 / 5 / 10 s, as in Snipping Tool; editor hidden during the delay; also applies to Ctrl+Alt+S (A)) (Grant).
 
 ## Roles
 

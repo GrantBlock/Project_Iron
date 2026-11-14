@@ -1,4 +1,4 @@
-export const TOOLS = ["select", "rect", "ellipse", "rect-fill", "ellipse-fill", "cross", "point"] as const;
+export const TOOLS = ["select", "rect", "ellipse", "rect-fill", "ellipse-fill", "cross", "point", "canvas-snip"] as const;
 export type Tool = (typeof TOOLS)[number];
 
 /** Hotkey (lower-case key) → tool. */

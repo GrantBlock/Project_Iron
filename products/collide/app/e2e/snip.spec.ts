@@ -43,3 +43,64 @@ test("if the clipboard refuses, the snip still opens and the toast says why", as
   await expect(page.getByTestId("notice")).toContainText("Copy failed");
   await expect(page.getByTestId("notice")).toContainText("Clipboard is busy");
 });
+
+test("Canvas snip: drag a box over image + markups; it is copied and opened as a new markup", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+  await page.waitForFunction(() => !!window.__collide);
+  await page.evaluate(() => window.__collide!.openImage("/tests/fixtures/sample-400x300.png"));
+  // A markup sticking out past the left edge, so the snip area can include canvas background.
+  await page.evaluate(() => window.__collide!.seedShape({ x: -40, y: 20, w: 100, h: 60 }));
+  await page.getByTestId("canvas-snip").click();
+  await expect(page.getByTestId("canvas")).toHaveAttribute("data-tool", "canvas-snip");
+
+  const box = (await page.getByTestId("canvas").boundingBox())!;
+  const s = (await page.evaluate(() => window.__collide!.getState().stage))!;
+  const at = (x: number, y: number) => ({ x: box.x + s.x + x * s.scale, y: box.y + s.y + y * s.scale });
+  const a = at(-60, 0);
+  const b = at(140, 100);
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.move(b.x, b.y, { steps: 5 });
+  await page.mouse.up();
+
+  await expect(page.getByTestId("notice")).toContainText("Snip copied to clipboard");
+  await expect(page.getByTestId("file-name")).toHaveText(/^canvas-snip-\d{4}-\d{2}-\d{2}-\d{4}$/);
+  await expect(page.getByTestId("canvas")).toHaveAttribute("data-tool", "select");
+  const st = (await page.evaluate(() => window.__collide!.getState())) as { image: { width: number; height: number } };
+  expect([st.image.width, st.image.height]).toEqual([200, 100]);
+  // The new markup starts empty: the old rectangle is now part of the picture.
+  expect(((await page.evaluate(() => window.__collide!.getDoc())) as { shapes: unknown[] }).shapes).toHaveLength(0);
+  const size = await page.evaluate(async () => {
+    const [item] = await navigator.clipboard.read();
+    const bmp = await createImageBitmap(await item.getType("image/png"));
+    return [bmp.width, bmp.height];
+  });
+  expect(size).toEqual([200, 100]);
+});
+
+test("Canvas snip: Esc leaves the mode without snipping", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+  await page.waitForFunction(() => !!window.__collide);
+  await expect(page.getByTestId("canvas-snip")).toBeDisabled();
+  await page.evaluate(() => window.__collide!.openImage("/tests/fixtures/sample-400x300.png"));
+  await page.getByTestId("canvas-snip").click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("canvas")).toHaveAttribute("data-tool", "select");
+  await expect(page.getByTestId("file-name")).toHaveText("sample-400x300.png");
+});
+
+test("snip delay: choices match Snipping Tool and the choice is remembered", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+  await page.waitForFunction(() => !!window.__collide);
+  const sel = page.getByTestId("snip-delay");
+  await expect(sel).toHaveValue("0");
+  await expect(sel.locator("option")).toHaveText(["No delay", "3 s", "5 s", "10 s"]);
+  await sel.selectOption("5");
+  await page.reload();
+  await page.waitForFunction(() => !!window.__collide);
+  await expect(page.getByTestId("snip-delay")).toHaveValue("5");
+});
