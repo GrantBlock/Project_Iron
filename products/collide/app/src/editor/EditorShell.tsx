@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { flushSync } from "react-dom";
 import type { AnnotationsDoc, Shape } from "../model";
-import { GlassPanel } from "../ds";
+import { GlassPanel, Toast } from "../ds";
 import { Canvas, cssVar, type CanvasHandle, type LoadedImage } from "./Canvas";
 import { nextShapeId, type NewShape, type ShapePatch } from "./store";
 import { DEFAULT_STROKE_WIDTH, TOOL_KEYS, type Tool } from "./tools";
@@ -11,6 +11,7 @@ import { Sidebar } from "./Sidebar";
 import { StatusBar } from "./StatusBar";
 import { CalloutsPanel } from "./CalloutsPanel";
 import { Toolbar } from "./Toolbar";
+import { downloadPng, exportFileName, flatten, type Flattened } from "../io/flatten";
 import { fitView, screenToImage, type Point, type Size, type View } from "./viewport";
 
 /** Resolve a swatch value ("var(--token)") to the hex string stored in the doc. */
@@ -37,6 +38,7 @@ export interface CollideTestState {
   shapes: { id: string; x: number; y: number; w: number; h: number }[];
   /** Shape positions measured from the Konva nodes and converted to image-relative coordinates. */
   shapesOnImage: { id: string; x: number; y: number }[];
+  selectedId: string | null;
 }
 
 export interface CollideHook {
@@ -49,6 +51,8 @@ export interface CollideHook {
   getDoc: () => AnnotationsDoc | null;
   /** Convert a point in canvas-container coordinates to image pixels using the current view. */
   screenToImage: (p: Point) => Point;
+  /** Flatten to a PNG at source size (no download). Resolves with the data URL and its size. */
+  exportPng: () => Promise<Flattened>;
 }
 
 declare global {
@@ -87,6 +91,22 @@ export function EditorShell() {
     live.current = { image: img, view: fitView(sizeRef.current, img) };
     return { width: img.width, height: img.height };
   }, [dispatch]);
+
+  const exportPng = useCallback(async (): Promise<Flattened> => {
+    const { image: img } = live.current;
+    const stage = handleRef.current?.stage();
+    if (!img || !stage) throw new Error("Nothing to export: no image is open.");
+    return flatten(stage, img);
+  }, []);
+
+  const [exportError, setExportError] = useState(false);
+  const onExport = useCallback(() => {
+    setExportError(false);
+    void exportPng().then(
+      (f) => downloadPng(f.dataUrl, exportFileName(live.current.image?.name ?? "image")),
+      () => setExportError(true),
+    );
+  }, [exportPng]);
 
   const onAdd = useCallback((shape: NewShape, numbered: boolean) => dispatch({ type: "add", shape, numbered }), [dispatch]);
   const onUpdate = useCallback((id: string, patch: ShapePatch) => dispatch({ type: "update", id, patch }), [dispatch]);
@@ -179,6 +199,7 @@ export function EditorShell() {
         return id;
       },
       getDoc: () => stateRef.current.doc,
+      exportPng,
       screenToImage: (p) => screenToImage(live.current.view, p),
       getState: () => {
         const { image: img } = live.current;
@@ -187,6 +208,7 @@ export function EditorShell() {
         const bg = stage?.findOne(".background") ?? null;
         const inv = bg?.getAbsoluteTransform().copy().invert();
         return {
+          selectedId: stateRef.current.selectedId,
           image: img && { name: img.name, width: img.width, height: img.height },
           stage: stage && { scale: stage.scaleX(), x: stage.x(), y: stage.y(), width: stage.width(), height: stage.height() },
           shapes: ss.map((s) => ({ id: s.id, x: s.x, y: s.y, w: s.w, h: s.h })),
@@ -203,7 +225,7 @@ export function EditorShell() {
     return () => {
       delete window.__collide;
     };
-  }, [open, dispatch, stateRef]);
+  }, [open, dispatch, stateRef, exportPng]);
 
   return (
     <div
@@ -232,6 +254,8 @@ export function EditorShell() {
           setStrokeWidth={setStrokeWidth}
           fileName={image?.name ?? "No image"}
           onOpenFile={() => fileRef.current?.click()}
+          onExport={onExport}
+          canExport={!!image}
           onUndo={undo}
           onRedo={redo}
           canUndo={canUndo}
@@ -258,6 +282,16 @@ export function EditorShell() {
         </div>
         <StatusBar zoom={view.scale} dims={image && { width: image.width, height: image.height }} />
       </GlassPanel>
+      {exportError && (
+        <div style={{ position: "fixed", right: 28, bottom: 52, zIndex: 10 }} data-testid="export-error">
+          <Toast
+            tone="error"
+            title="Export failed"
+            description="The image could not be drawn. Try again or reopen the image."
+            onClose={() => setExportError(false)}
+          />
+        </div>
+      )}
       <input ref={fileRef} type="file" accept="image/*" hidden data-testid="file-input" onChange={onFile} />
     </div>
   );

@@ -27,9 +27,11 @@ interface Props {
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  onExport: () => void;
+  canExport: boolean;
 }
 
-export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStrokeWidth, fileName, onOpenFile, onUndo, onRedo, canUndo, canRedo }: Props) {
+export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStrokeWidth, fileName, onOpenFile, onUndo, onRedo, canUndo, canRedo, onExport, canExport }: Props) {
   return (
     <div
       data-testid="toolbar"
@@ -103,7 +105,7 @@ export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStroke
       <IconButton icon="redo-2" label="Redo" disabled={!canRedo} onClick={onRedo} style={canRedo ? undefined : { opacity: 0.4, cursor: "not-allowed" }} />
       <Sep />
       <IconButton icon="save" label="Save" />
-      <Button size="sm" icon="share">
+      <Button size="sm" icon="share" onClick={onExport} disabled={!canExport} data-testid="export-btn">
         Export
       </Button>
     </div>

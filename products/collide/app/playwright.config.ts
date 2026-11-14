@@ -7,6 +7,8 @@ const preinstalled = "/opt/pw-browsers/chromium";
 
 export default defineConfig({
   testDir: "e2e",
+  // Platform-independent baselines (Chromium only).
+  snapshotPathTemplate: "{testDir}/__snapshots__/{testFilePath}/{arg}{ext}",
   use: {
     baseURL: "http://localhost:1420",
     trace: "off",

@@ -7,3 +7,4 @@ export { Input } from "./Input";
 export { Kbd } from "./Kbd";
 export { NavItem, NavSection } from "./NavItem";
 export { Tooltip } from "./Tooltip";
+export { Toast } from "./Toast";
