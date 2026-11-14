@@ -8,8 +8,8 @@
 <style>
   :root {
     --navy: #0b2a5b; --navy-2: #12397a; --blue: #1a6fd1; --line: #e3e5e8;
-    --text: #1f2328; --muted: #6b7280; --bubble-me: #fbf3f3; --bg: #eef1f5;
-    --ink: #12152a; --blush: #f1dede;
+    --text: #1f2328; --muted: #6b7280; --bubble-me: #f0954a; --bg: #eef1f5;
+    --ink: #12152a; --blush: #f2f3f4; /* grayish white: banner, chat and panel backgrounds */
     --pass: #1f8a4c; --fail: #c62828; --warn: #b26a00; --info: #4682b4;
   }
   * { box-sizing: border-box; }
@@ -17,17 +17,17 @@
   body { display: flex; align-items: center; justify-content: center; padding: 16px; }
 
   .widget { width: 440px; max-width: 100%; height: min(820px, calc(100vh - 32px)); background: #fff; border-radius: 6px;
-            box-shadow: 0 10px 40px rgba(10,30,60,.18); display: flex; flex-direction: column; overflow: hidden; position: relative; }
-  .widget.min { height: 56px; }
-  .widget.min header { padding-bottom: 0; background: var(--ink); }
+            box-shadow: 0 10px 40px rgba(10,30,60,.18); background: var(--blush); display: flex; flex-direction: column; overflow: hidden; position: relative; }
+  .widget.min { height: auto; } .widget.min > :not(header) { display: none; }
+  
   /* Desktop app window: fill the window */
-  body.app { padding: 0; background: #fff; }
+  body.app { padding: 0; background: var(--blush); }
   body.app .widget { width: 100%; height: 100vh; border-radius: 0; box-shadow: none; }
   body.app #minBtn, body.app #closeBtn { display: none; }
 
   /* Header */
   header { background: url("/banner.png") center bottom / 100% auto no-repeat, var(--ink); color: #fff; flex-shrink: 0;
-           padding: 0 14px 10%; /* 10% of width = banner's 1080x108 proportions */ }
+           padding: 0 14px 11.111%; /* 1/9 of width = banner's 1080x120 proportions */ }
   header .bar { height: 56px; display: flex; align-items: center; gap: 10px; }
   .pill { background: rgba(255,255,255,.18); border: 0; color: #fff; font-size: 14px; padding: 6px 14px; border-radius: 16px; cursor: pointer; }
   .pill:hover { background: rgba(255,255,255,.28); }
@@ -47,8 +47,9 @@
   .avatar.report { color: #fff; background: var(--navy-2); border-color: var(--navy-2); }
   .bubble { border: 1px solid var(--line); border-radius: 4px; padding: 12px 14px; font-size: 14.5px; line-height: 1.45; max-width: 82%;
             background: #fff; word-wrap: break-word; overflow-wrap: anywhere; }
-  .row.me .bubble { background: var(--bubble-me); border-color: #e7caca; }
-  .bubble { border-color: #ead3d3; }
+  .row.me .bubble { background: var(--bubble-me); border-color: #e08436; color: var(--ink); }
+  .row.me .time { color: #5c3413; }
+  .bubble { border-color: #e1e4e8; }
   .bubble b.name { font-weight: 600; }
   .bubble p { margin: 4px 0; } .bubble ul { margin: 4px 0; padding-left: 18px; }
   .bubble code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; font-size: 12.5px; }
@@ -71,22 +72,22 @@
   .typing { font-size: 13px; color: var(--muted); padding: 0 14px 6px; height: 20px; background: var(--blush); }
 
   /* Composer */
-  .composer { border-top: 1px solid var(--line); display: flex; align-items: flex-end; gap: 10px; padding: 12px 12px 14px 14px; flex-shrink: 0; }
-  textarea { flex: 1; border: 0; outline: none; resize: none; font: inherit; font-size: 16px; color: var(--text); max-height: 120px; padding: 8px 0; }
+  .composer { background: var(--blush); border-top: 1px solid var(--line); display: flex; align-items: flex-end; gap: 10px; padding: 12px 12px 14px 14px; flex-shrink: 0; }
+  textarea { flex: 1; border: 0; background: transparent; outline: none; resize: none; font: inherit; font-size: 16px; color: var(--text); max-height: 120px; padding: 8px 0; }
   textarea::placeholder { color: #7a7f87; }
   .send { width: 48px; height: 48px; border-radius: 50%; border: 0; background: var(--blue); cursor: pointer; display: grid; place-items: center; flex-shrink: 0; }
   .send:disabled { opacity: .5; cursor: default; }
   .send svg { width: 24px; height: 24px; }
 
   /* Menu panel */
-  .panel { position: absolute; top: 56px; left: 0; right: 0; bottom: 0; background: #fff; transform: translateX(-100%); transition: transform .2s ease; display: flex; flex-direction: column; z-index: 5; }
+  .panel { position: absolute; top: var(--header-h, 107px); left: 0; right: 0; bottom: 0; background: var(--blush); transform: translateX(-100%); transition: transform .2s ease; display: flex; flex-direction: column; z-index: 5; }
   .panel.open { transform: translateX(0); }
   .panel .tabs { display: flex; border-bottom: 1px solid var(--line); }
   .panel .tabs button { flex: 1; background: none; border: 0; padding: 12px; font-size: 14px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; }
   .panel .tabs button.active { color: var(--navy); border-color: var(--navy); font-weight: 600; }
   .panel .body { flex: 1; overflow-y: auto; padding: 12px 14px; }
   .team { font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 12px 0 6px; }
-  .proj { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 6px; margin-bottom: 8px; cursor: pointer; }
+  .proj { background: #fff; display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 6px; margin-bottom: 8px; cursor: pointer; }
   .proj:hover { background: #f7f8fa; }
   .proj.current { border-color: var(--navy); box-shadow: inset 3px 0 0 var(--navy); }
   .proj .meta { flex: 1; min-width: 0; }
@@ -103,6 +104,7 @@
   .muted { color: var(--muted); font-size: 13px; }
   .empty { color: var(--muted); font-size: 14px; text-align: center; margin-top: 40px; }
   .flash { animation: flash 1.4s ease; } @keyframes flash { 0% { background: #fff6d6; } 100% { background: #fff; } }
+  .row.me .bubble.flash { animation: none; }
 </style>
 </head>
 <body>
@@ -206,6 +208,9 @@ function appendMessage(m) {
   log.scrollTop = log.scrollHeight;
 }
 
+// Keep the menu panel below the full header so the banner always shows
+function syncHeader() { document.documentElement.style.setProperty('--header-h', document.querySelector('header').offsetHeight + 'px'); }
+addEventListener('resize', syncHeader);
 function project() { return state.projects.find(p => p.id === state.current); }
 function setHeader() {
   const p = project();
@@ -325,6 +330,7 @@ function connectEvents() {
 }
 
 (async () => {
+  syncHeader();
   state.info = await api('/api/info').catch(() => null);
   await loadProjects();
   if (state.current) await selectProject(state.current); else { setHeader(); renderLog(); }
