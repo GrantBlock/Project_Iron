@@ -77,6 +77,8 @@ export interface CollideHook {
   /** Flatten to a PNG at source size (no download). Resolves with the data URL and its size. */
   exportPng: () => Promise<Flattened>;
   copyFit: () => Promise<Flattened>;
+  /** What a finished snip does: open the crop, then copy it to the clipboard. */
+  openSnip: (url: string, name: string) => Promise<unknown>;
 }
 
 declare global {
@@ -225,14 +227,17 @@ export function EditorShell() {
   }, [exportPng]);
 
   // Copy: the image plus every annotation (auto-cropped, canvas background outside the image) to the clipboard.
-  const onCopy = useCallback(() => {
-    void copyFit()
-      .then((f) => copyPngToClipboard(f.dataUrl))
-      .then(
-        () => setNotice({ tone: "success", title: "Copied to clipboard", description: "Paste the marked-up image into any app." }),
-        (e: unknown) => fail(e, "Copy failed"),
-      );
-  }, [copyFit, fail]);
+  const copyToClipboard = useCallback(
+    (title: string) =>
+      copyFit()
+        .then((f) => copyPngToClipboard(f.dataUrl))
+        .then(
+          () => setNotice({ tone: "success", title, description: "Paste the marked-up image into any app." }),
+          (e: unknown) => fail(e, "Copy failed"),
+        ),
+    [copyFit, fail],
+  );
+  const onCopy = useCallback(() => void copyToClipboard("Copied to clipboard"), [copyToClipboard]);
 
   const onAdd = useCallback((shape: NewShape, numbered: boolean) => dispatch({ type: "add", shape, numbered }), [dispatch]);
   const onUpdate = useCallback((id: string, patch: ShapePatch) => dispatch({ type: "update", id, patch }), [dispatch]);
@@ -315,9 +320,22 @@ export function EditorShell() {
   }, [dispatch, stateRef]);
 
   // T11: New snip button and the global hotkey (Rust emits SNIP_REQUEST_EVENT) both run the same flow.
+  // A finished snip opens in the editor and goes straight to the clipboard, like Snipping Tool.
+  // A failed copy only shows its own toast; the snip itself still counts as done.
+  const openSnip = useCallback(
+    async (url: string, name: string) => {
+      const size = await open(url, name);
+      await copyToClipboard("Snip copied to clipboard");
+      return size;
+    },
+    [open, copyToClipboard],
+  );
+  const openSnipRef = useRef(openSnip);
+  openSnipRef.current = openSnip;
+
   const snipRef = useRef<ReturnType<typeof createSnipFlow>>({ start: async () => undefined, isBusy: () => false });
   useEffect(() => {
-    const flow = createSnipFlow(tauriDeps({ openImage: (url, name) => open(url, name), notify: setNotice }));
+    const flow = createSnipFlow(tauriDeps({ openImage: (url, name) => openSnipRef.current(url, name), notify: setNotice }));
     snipRef.current = flow;
     if (!isTauri()) return;
     const un = listen(SNIP_REQUEST_EVENT, () => void flow.start());
@@ -356,6 +374,7 @@ export function EditorShell() {
       getDoc: () => stateRef.current.doc,
       exportPng,
       copyFit,
+      openSnip,
       openMarkup,
       saveMarkup,
       screenToImage: (p) => screenToImage(live.current.view, p),
@@ -383,7 +402,7 @@ export function EditorShell() {
     return () => {
       delete window.__collide;
     };
-  }, [open, dispatch, stateRef, exportPng, copyFit, openMarkup, saveMarkup]);
+  }, [open, dispatch, stateRef, exportPng, copyFit, openSnip, openMarkup, saveMarkup]);
 
   // In the desktop app the OS window already has a title bar and border, so the in-app
   // frame and "Collide" title row would show twice; fill the window edge to edge instead.

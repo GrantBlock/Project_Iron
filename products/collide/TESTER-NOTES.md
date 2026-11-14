@@ -19,6 +19,9 @@ Run: `cd products/collide/app && pnpm install && pnpm test && pnpm e2e --trace o
 6. **Desktop window: one border, one title.** In Tauri, the native Windows title bar is kept and the in-app frame/title row is dropped. The browser build keeps the framed look (`e2e/frame.spec.ts`).
    - Windows: `pnpm tauri dev`. One title bar, no rounded inner panel, no gap at the edges.
 
+7. **A finished snip is copied to the clipboard automatically**, like Snipping Tool. Toast: "Snip copied to clipboard". If the copy fails, the snip still opens and the toast says why (`e2e/snip.spec.ts`).
+   - Windows: Ctrl+Alt+S, drag a box, then paste straight into another app without clicking Copy.
+
 ## Known gaps / watch for
 
 - **Export still saves at the source image size**, so note boxes outside the image are cut off in Export and `export.png`. Grant hasn't decided yet whether Export should crop like Copy. Report it, don't file it as a bug.

@@ -34,6 +34,7 @@ Related (in `GrantBlock/designengineering-ai`, `Builder v0.1/`): `development-pa
 - [stated] 2026-11-14: Collide: a callout with an empty note still shows its number (as a chip) and arrow in the editor, Copy and Export. A "Hide #" toggle in the Callouts sidebar leaves a callout's number box and arrow out of Copy/Export (dimmed in the editor); per callout (A) (Grant).
 - [stated] 2026-11-14: Collide adds an X mark (remove) tool and filled rectangle / filled ellipse tools; fills are solid in the chosen colour; all three get numbered note boxes like the other shapes (Grant).
 - [stated] 2026-11-14: Grant asked this session to merge `claude/peaceful-babbage-04aj3j` into `development` (Collide Windows fixes, note boxes, new tools); test notes for Lydia in `products/collide/TESTER-NOTES.md` (Grant).
+- [stated] 2026-11-14: Collide copies a finished snip to the clipboard automatically, like Snipping Tool (Grant).
 
 ## Roles
 
