@@ -354,7 +354,8 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
   const [draft, setDraft] = useState<Draft | null>(null);
   const [edit, setEdit] = useState<TextEdit | null>(null);
   const spaceRef = useRef(false);
-  const panRef = useRef<{ id: number; x: number; y: number } | null>(null);
+  /** Pan in progress: pointer and view at the start. The view follows (now - start), so a dropped move event cannot lose distance. */
+  const panRef = useRef<{ id: number; x: number; y: number; view: View } | null>(null);
   const draftRef = useRef<Draft | null>(null);
   const committed = useRef(false);
   /** Live position/size while a shape or note box is being dragged, so arrows follow. */
@@ -442,19 +443,19 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
     e.preventDefault();
     e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
-    panRef.current = { id: e.pointerId, x: e.clientX, y: e.clientY };
+    panRef.current = { id: e.pointerId, x: e.clientX, y: e.clientY, view: live.current.view };
     setPanning(true);
   };
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     const p = panRef.current;
     if (!p || p.id !== e.pointerId) return;
-    const dx = e.clientX - p.x;
-    const dy = e.clientY - p.y;
-    panRef.current = { ...p, x: e.clientX, y: e.clientY };
-    onViewChange((v) => panBy(v, dx, dy));
+    const start = p.view;
+    onViewChange(() => panBy(start, e.clientX - p.x, e.clientY - p.y));
   };
   const endPan = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (panRef.current?.id !== e.pointerId) return;
+    const p = panRef.current;
+    if (p?.id !== e.pointerId) return;
+    if (e.type === "pointerup") onViewChange(() => panBy(p.view, e.clientX - p.x, e.clientY - p.y));
     panRef.current = null;
     setPanning(false);
   };
