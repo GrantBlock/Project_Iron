@@ -1,4 +1,6 @@
-# Project Chat
+# Agent Chat (formerly Project Chat)
+
+The app is named **Agent Chat** from 0.3.3. Settings and history stay in `%APPDATA%\Project Chat\`.
 
 Local chat app for talking with your project agents and receiving their nightly feature spec run reports.
 Seeded with **Lydia · Project Iron · designengineering.ai Development Team**.

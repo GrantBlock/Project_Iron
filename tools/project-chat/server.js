@@ -346,7 +346,7 @@ const server = http.createServer(async (req, res) => {
 
 pruneAll();
 server.listen(cfg.port, cfg.host, () => {
-  console.log('\nProject Chat is running');
+  console.log('\nAgent Chat is running');
   console.log('  This computer:   http://localhost:' + cfg.port);
   for (const ip of lanAddresses()) console.log('  Other computers: http://' + ip + ':' + cfg.port);
   console.log('  AI replies:      ' + (claudeAvailable ? 'on (via claude CLI, ' + cfg.model + ')' : 'off — install the claude CLI and sign in with "claude" once, then restart'));
