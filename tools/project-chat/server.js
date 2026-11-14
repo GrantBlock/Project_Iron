@@ -41,7 +41,7 @@ const cfg = loadConfig();
 // your Claude subscription, instead of a metered Anthropic API key.
 function checkClaudeCli() {
   try {
-    const r = spawnSync('claude', ['--version'], { timeout: 5000 });
+    const r = spawnSync('claude', ['--version'], { timeout: 5000, shell: process.platform === 'win32' });
     return r.status === 0;
   } catch {
     return false;
@@ -115,6 +115,8 @@ function runClaude(promptText, model) {
   return new Promise((resolve, reject) => {
     const child = spawn('claude', ['-p', '--model', model, '--output-format', 'text'], {
       cwd: HOME,
+      // Windows: the CLI is often claude.cmd, which Node can only launch through a shell
+      shell: process.platform === 'win32',
       stdio: ['pipe', 'pipe', 'pipe']
     });
     let out = '', err = '';
