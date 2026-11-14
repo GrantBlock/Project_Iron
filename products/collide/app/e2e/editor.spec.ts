@@ -20,8 +20,7 @@ test("shell has the design-system layout and an empty AI pane", async ({ page })
   const box = async (id: string) => (await page.getByTestId(id).boundingBox())!;
   expect((await box("toolbar")).height).toBe(52);
   expect((await box("sidebar")).width).toBe(232);
-  const ai = await box("ai-pane");
-  expect(ai.width).toBe(296);
+  expect((await box("inspector")).width).toBe(296);
   await expect(page.getByTestId("ai-pane")).toBeEmpty();
 });
 

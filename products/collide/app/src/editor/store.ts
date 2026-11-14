@@ -1,5 +1,5 @@
 // Editor document store: one pure reducer over the annotations doc and the selection.
-// T05 wraps this reducer with undo/redo history; keep every doc change an action here.
+// Wrapped by history.ts (T05) for undo/redo; keep every doc change an action here.
 import { nextCalloutNumber, type AnnotationsDoc, type Shape } from "../model";
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;

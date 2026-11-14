@@ -1,8 +1,7 @@
 import { Button, IconButton, Tooltip } from "../ds";
 import { STROKE_WIDTHS, type Tool } from "./tools";
 
-// Ported from design-system/ui_kits/snip-markup/Toolbar.jsx. New snip, Save, Export, Undo and
-// Redo are wired in later tasks.
+// Ported from design-system/ui_kits/snip-markup/Toolbar.jsx. New snip, Save and Export are wired in later tasks.
 const tools: [Tool, string, string, string][] = [
   ["select", "mouse-pointer-2", "Select", "V"],
   ["rect", "square", "Rectangle", "R"],
@@ -24,9 +23,13 @@ interface Props {
   setStrokeWidth: (w: number) => void;
   fileName: string;
   onOpenFile: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
-export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStrokeWidth, fileName, onOpenFile }: Props) {
+export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStrokeWidth, fileName, onOpenFile, onUndo, onRedo, canUndo, canRedo }: Props) {
   return (
     <div
       data-testid="toolbar"
@@ -96,8 +99,8 @@ export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStroke
       <div data-testid="file-name" style={{ flex: 1, textAlign: "center", font: "400 12px/1 var(--font-mono)", color: "var(--text-3)" }}>
         {fileName}
       </div>
-      <IconButton icon="undo-2" label="Undo" />
-      <IconButton icon="redo-2" label="Redo" />
+      <IconButton icon="undo-2" label="Undo" disabled={!canUndo} onClick={onUndo} style={canUndo ? undefined : { opacity: 0.4, cursor: "not-allowed" }} />
+      <IconButton icon="redo-2" label="Redo" disabled={!canRedo} onClick={onRedo} style={canRedo ? undefined : { opacity: 0.4, cursor: "not-allowed" }} />
       <Sep />
       <IconButton icon="save" label="Save" />
       <Button size="sm" icon="share">

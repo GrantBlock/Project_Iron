@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
+import { flushSync } from "react-dom";
 import type { AnnotationsDoc, Shape } from "../model";
 import { GlassPanel } from "../ds";
 import { Canvas, cssVar, type CanvasHandle, type LoadedImage } from "./Canvas";
@@ -8,6 +9,7 @@ import { DEFAULT_STROKE_WIDTH, TOOL_KEYS, type Tool } from "./tools";
 import { useEditorStore } from "./useEditorStore";
 import { Sidebar } from "./Sidebar";
 import { StatusBar } from "./StatusBar";
+import { CalloutsPanel } from "./CalloutsPanel";
 import { Toolbar } from "./Toolbar";
 import { fitView, screenToImage, type Point, type Size, type View } from "./viewport";
 
@@ -57,7 +59,7 @@ declare global {
 
 export function EditorShell() {
   const [image, setImage] = useState<LoadedImage | null>(null);
-  const { state, dispatch, stateRef } = useEditorStore();
+  const { state, dispatch, stateRef, canUndo, canRedo } = useEditorStore();
   const shapes = useMemo(() => state.doc?.shapes ?? [], [state.doc]);
   const [view, setView] = useState<View>({ scale: 1, x: 0, y: 0 });
   const [tool, setTool] = useState<Tool>("select");
@@ -76,9 +78,12 @@ export function EditorShell() {
 
   const open = useCallback(async (url: string, name: string) => {
     const img = await loadImage(url, name);
-    setImage(img);
-    dispatch({ type: "load", width: img.width, height: img.height });
-    setView(fitView(sizeRef.current, img));
+    // Commit synchronously so the Konva nodes exist when the promise resolves (test hook relies on it).
+    flushSync(() => {
+      setImage(img);
+      dispatch({ type: "load", width: img.width, height: img.height });
+      setView(fitView(sizeRef.current, img));
+    });
     live.current = { image: img, view: fitView(sizeRef.current, img) };
     return { width: img.width, height: img.height };
   }, [dispatch]);
@@ -101,6 +106,27 @@ export function EditorShell() {
     setStrokeWidthState(w);
     restyle({ strokeWidth: w });
   };
+
+  const undo = useCallback(() => dispatch({ type: "undo" }), [dispatch]);
+  const redo = useCallback(() => dispatch({ type: "redo" }), [dispatch]);
+  const onNote = useCallback((id: string, note: string) => dispatch({ type: "update", id, patch: { note } }), [dispatch]);
+  const onCommit = useCallback(() => dispatch({ type: "commit" }), [dispatch]);
+
+  // Undo / redo shortcuts; inside text fields the browser's own text undo applies.
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      const t = e.target;
+      if (t instanceof HTMLElement && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+      const k = e.key.toLowerCase();
+      if (k === "z" && !e.shiftKey) dispatch({ type: "undo" });
+      else if (k === "y" || (k === "z" && e.shiftKey)) dispatch({ type: "redo" });
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, [dispatch]);
 
   // Tool hotkeys and Delete/Backspace.
   useEffect(() => {
@@ -138,7 +164,7 @@ export function EditorShell() {
       openImage: (url, name) => open(url, name ?? nameFromUrl(url)),
       seedShape: (s) => {
         const id = nextShapeId(stateRef.current.doc?.shapes ?? []);
-        dispatch({
+        flushSync(() => dispatch({
           type: "add",
           shape: {
             type: "rect",
@@ -149,7 +175,7 @@ export function EditorShell() {
             stroke: cssVar("--signal-500"),
             strokeWidth: 2,
           },
-        });
+        }));
         return id;
       },
       getDoc: () => stateRef.current.doc,
@@ -206,6 +232,10 @@ export function EditorShell() {
           setStrokeWidth={setStrokeWidth}
           fileName={image?.name ?? "No image"}
           onOpenFile={() => fileRef.current?.click()}
+          onUndo={undo}
+          onRedo={redo}
+          canUndo={canUndo}
+          canRedo={canRedo}
         />
         <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
           <Sidebar current={image && { name: image.name, meta: `${image.width} × ${image.height}` }} />
@@ -224,10 +254,7 @@ export function EditorShell() {
             onSelect={onSelect}
             handleRef={handleRef}
           />
-          <div
-            data-testid="ai-pane"
-            style={{ width: "var(--layout-inspector)", flex: "none", borderLeft: "1px solid var(--line-1)", boxSizing: "border-box" }}
-          />
+          <CalloutsPanel shapes={shapes} selectedId={state.selectedId} onSelect={onSelect} onNote={onNote} onCommit={onCommit} />
         </div>
         <StatusBar zoom={view.scale} dims={image && { width: image.width, height: image.height }} />
       </GlassPanel>
