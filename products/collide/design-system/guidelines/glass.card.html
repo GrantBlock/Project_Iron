@@ -1,0 +1,11 @@
+<!-- @dsCard group="Brand" viewport="700x240" name="Glass borders" subtitle="Gradient hairline: bright top edge fading to 3.5%" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css"><style>
+body{padding:20px 24px;box-sizing:border-box;min-height:100vh;background:var(--bg-canvas)}
+.lbl{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3)}
+.mono{font-family:var(--font-mono);font-size:11px;color:var(--text-3);letter-spacing:.02em}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.glass{background:linear-gradient(var(--glass-fill-strong),var(--glass-fill-strong)) padding-box,var(--glass-border) border-box;border:1px solid transparent;box-shadow:var(--shadow-2)}
+body{background:var(--ambient-ember),var(--bg-canvas)}</style></head><body><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;height:190px">
+ <div class="glass" style="border-radius:var(--radius-xl);padding:14px;display:flex;flex-direction:column;justify-content:space-between"><span class="lbl">Panel</span><span class="mono">glass-fill-strong + glass-border</span></div>
+ <div style="border-radius:var(--radius-xl);padding:14px;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(var(--glass-fill),var(--glass-fill)) padding-box,var(--glass-border) border-box;border:1px solid transparent;backdrop-filter:blur(var(--blur-glass));box-shadow:var(--shadow-3)"><span class="lbl">Floating</span><span class="mono">glass-fill · blur 24 · shadow-3</span></div>
+ <div style="border-radius:var(--radius-xl);padding:14px;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(var(--glass-fill-strong),var(--glass-fill-strong)) padding-box,var(--glass-border-signal) border-box;border:1px solid transparent;box-shadow:var(--shadow-2),0 0 40px -12px rgba(255,61,31,.5)"><span class="lbl" style="color:var(--signal-300)">Active</span><span class="mono">glass-border-signal</span></div></div></body></html>

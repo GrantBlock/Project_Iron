@@ -1,10 +1,10 @@
-# Snip & Markup Tool — Feature Spec
+# Collide — Feature Spec
 
-Nov 13, 2026 · Grant
+Nov 13, 2026 · Grant. **Named 2026-11-14:** the app is called **Collide**; Snip & Markup is its first feature, not the product name.
 
 ## Goal
 
-A local-only Windows desktop tool to snip a screen region or open a PDF, mark it up with boxes, circles, arrows and numbered callouts, and use an AI side panel to turn those markups into action items. No cloud sync and no Liveblocks: every file stays on this PC.
+Collide is a local-only Windows desktop tool to snip a screen region or open a PDF, mark it up with boxes, circles, arrows and numbered callouts, and use an AI side panel to turn those markups into action items. No cloud sync and no Liveblocks: every file stays on this PC.
 
 **Success criteria**
 
@@ -68,6 +68,23 @@ Tauri v2 with a React frontend; every library below is free for commercial use. 
 | AI (offline) | Ollama + a vision-capable model | Private, free, lower quality |
 | AI (cloud, optional) | Claude API | Better output; images leave the PC |
 
+## Design system
+
+**Added 2026-11-14 (Grant):** Collide has its own visual identity, separate from Block Concepts' brand — built from a screenshot of the Phase 1 concept mockup plus three mood references, no codebase/Figma/logo/font files provided. Lives in `design-system/` in this folder:
+
+- `design-system/readme.md` — the full brand book: voice and copy rules, color, type, backgrounds, line work, glass borders, elevation, radii, motion, layout, density, iconography
+- `design-system/tokens/*.css` — `colors.css`, `typography.css`, `spacing.css`, `effects.css`, `fonts.css`, `base.css`; import via `design-system/styles.css`
+- `design-system/components/` — React primitives: actions (Button, IconButton), forms (Input, Textarea, Select, Checkbox, Switch), display (Icon, Badge, Chip, Kbd, GlassPanel), navigation (Tabs, NavItem), feedback (Tooltip, Toast, Dialog)
+- `design-system/guidelines/*.card.html` — foundation specimen cards (colors, type, spacing, glass, motion, etc.)
+- `design-system/ui_kits/snip-markup/` — a working click-through of the Phase 1 editor and capture overlay already restyled in Collide (Toolbar, Sidebar, Canvas, Inspector, CaptureOverlay) — **read this before building T03–T11**; it answers most layout questions the task board doesn't spell out
+- `design-system/uploads/` — the 4 source screenshots it was built from
+
+**Identity, in brief:** near-black ink ramp (`--ink-975` to `--ink-50`), one red-orange **signal** accent (`--signal-500 #FF3D1F`) rationed to roughly one per view, **steel** blue (`--steel-500 #4C87C4`) for callout numbers/selection/info, ember copper for ambient background glow only. Geist / Geist Mono (Google Fonts substitute — ⚠ not licensed; replace `tokens/fonts.css` if real font files arrive). Signature glass-border panels, dot-grid canvas, hairlines at low alpha, square-cornered dashed selection boxes, Lucide icons (⚠ substitute, no icon set was provided). Full rules, exact values and copy voice are in `design-system/readme.md` — read it rather than this summary before implementing UI.
+
+**Supersedes** `concept-mockup.html` in this folder (the Block Concepts-styled version made before Collide's own identity existed) — kept for history, not a build reference. `design-system/ui_kits/snip-markup/index.html` is the current one.
+
+**Still not decided** (unchanged from Open questions below, and explicitly left out of the design system on purpose): single- vs. all-monitor capture, default AI (offline Ollama vs. Claude), and whether exports carry branding.
+
 ## Data model and storage
 
 One folder per markup plus a single SQLite index; nothing leaves the PC unless the cloud AI option is used.
@@ -115,7 +132,7 @@ Five phases, each usable on its own; phase 1 runs in a browser before any deskto
 
 This section is the Planner agent's operating instructions for the overnight build. The Planner reads the whole spec above, then runs the team against this brief.
 
-**Amended 2026-11-14 (Claude, approved by Grant):** the original brief had the task loop squash-merging straight to `main`. Project Iron's `CLAUDE.md` says agents never merge and `main` is live-releases only — Grant merges, after a pull request. This run follows that rule instead: task branches merge into this run's own integration branch, `snip-markup/run-1`, and the Planner opens one pull request from it into `development` for Grant to review in the morning. Nothing in this run pushes to `development` or `main` directly, and nothing merges without Grant.
+**Amended 2026-11-14 (Claude, approved by Grant):** the original brief had the task loop squash-merging straight to `main`. Project Iron's `CLAUDE.md` says agents never merge and `main` is live-releases only — Grant merges, after a pull request. This run follows that rule instead: task branches merge into this run's own integration branch, `snip-markup/run-1`, and the Planner opens one pull request from it into `development` for Grant to review in the morning. Nothing in this run pushes to `development` or `main` directly, and nothing merges without Grant. (`snip-markup/run-1` is this run's branch name only, kept as-is for continuity — the app itself is named **Collide**, per the Design system section above.)
 
 ## Mission and defaults
 
@@ -140,7 +157,7 @@ Opus plans and unblocks; Sonnet does the volume. Every task passes Coder → Rev
 | --- | --- | --- | --- |
 | Planner | Opus 5.5 | Task order, assignments, scope calls, blockers, status board | `PLAN.md`, `HANDOFF.md`, task tickets |
 | Coder | Sonnet 5.5 | Implementation + unit tests for its task, on a task branch | Commits on `task/Txx-*` |
-| Reviewer | Sonnet 5.5 | Diff review against acceptance criteria and the rules below | Approve, or a numbered fix list |
+| Reviewer | Sonnet 5.5 | Diff review against acceptance criteria, the rules below, and `design-system/` (tokens, components, `ui_kits/snip-markup/`) | Approve, or a numbered fix list |
 | Tester | Sonnet 5.5 (low effort) | Full test suite + the task's acceptance check; e2e tests with Playwright | Pass/fail report in `reports/Txx.md` |
 
 **Task loop**
@@ -182,6 +199,7 @@ The run stays on Pro limits: protect `snip-markup/run-1`, finish what you start,
 - Commit messages start with the task ID (`T04: add ellipse tool`)
 - Every task ships with its tests; no task is Done on "it works on my run"
 - Keep the stack from the Tech stack table; any new dependency needs Planner approval logged in `PLAN.md`
+- Any UI task (T03–T05, T10, T11) uses the tokens and components in `design-system/` — colors, type, spacing, radii, motion — rather than inventing styles; `design-system/ui_kits/snip-markup/` already shows the intended look for the editor and capture overlay
 
 **Usage budget (Pro: 5-hour session limit + weekly limit)**
 
@@ -199,7 +217,7 @@ The run stays on Pro limits: protect `snip-markup/run-1`, finish what you start,
 
 ## Morning handoff
 
-By morning `snip-markup/run-1` holds working code, a pull request from it into `development` is open for Grant to review, the board above reflects reality, and `HANDOFF.md` says exactly what to test first. Reporting for this run is GitHub issues/PR comments only tonight — not Project Chat (no bridge from the cloud build to the local app yet).
+By morning `snip-markup/run-1` holds working code, a pull request from it into `development` is open for Grant to review, the board above reflects reality, and `HANDOFF.md` says exactly what to test first. Reporting for this run is GitHub only tonight — a comment on [issue #2 "Nightly report"](https://github.com/GrantBlock/Project_Iron/issues/2), signed "Lydia (Tester)" per the dev plan's agent-signature rule, not Project Chat (no bridge from the cloud build to the local app yet, and all Project Iron work reports through the same Lydia thread there, not a separate Collide project).
 
 **The team leaves**
 

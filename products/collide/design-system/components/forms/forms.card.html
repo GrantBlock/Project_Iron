@@ -1,0 +1,19 @@
+<!-- @dsCard group="Components" viewport="700x200" name="Forms" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
+<script src="../../_ds_bundle.js" onerror="this.remove()"></script>
+<script src="../../tools/ds-loader.js"></script>
+<style>body{padding:20px 24px;box-sizing:border-box;min-height:100vh}</style></head><body><div id="root"></div>
+<script type="text/babel">
+loadCollide('../../').then(NS => {
+const { Button, IconButton, Input, Textarea, Checkbox, Switch, Select, Badge, Chip, Kbd, Icon, GlassPanel, PanelHeader, Tabs, NavItem, NavSection, Tooltip, Toast, Dialog } = NS;
+function Demo(){ return (<>
+<div style={{"display":"grid","gridTemplateColumns":"1fr 1fr","gap":"18px"}}>
+ <div style={{"display":"flex","flexDirection":"column","gap":"10px"}}><Input icon="search" placeholder="Search notes…" /><Input placeholder="Invalid value" invalid defaultValue="line 3 guard" /><Textarea placeholder="Add a note for the electrician…" rows={2} /></div>
+ <div style={{"display":"flex","flexDirection":"column","gap":"14px"}}><Select options={['Claude','Ollama (offline)']} /><Checkbox checked label="Include callouts in export" /><Checkbox label="Attach original image" /><Switch checked label="Capture all monitors" /><Switch label="Offline model" /></div>
+</div></>); }
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+});
+</script></body></html>
