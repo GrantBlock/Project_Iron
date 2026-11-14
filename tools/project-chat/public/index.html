@@ -195,7 +195,7 @@ function renderMessage(m, cont) {
     inner = `<div class="report-kicker">Nightly report · ${esc(r.runDate)}</div>
       <div class="report-head"><span class="chip ${esc(r.status)}">${esc(r.status)}</span><span class="report-title">${esc(r.title)}</span></div>
       ${stats}${r.summary ? md(r.summary) : ''}
-      ${r.body || r.link ? `<button class="toggle">View full report</button><div class="full">${md(r.body)}${r.link ? `<p><a href="${esc(r.link)}" target="_blank" rel="noopener">Open link</a></p>` : ''}</div>` : ''}`;
+      ${r.body || r.link ? `<button class="toggle">View full report</button><div class="full">${md(r.body)}${r.link ? `<p><a href="${esc(r.link)}" target="_blank" rel="noopener">${/github\.com/.test(r.link) ? 'Open on GitHub' : 'Open link'}</a></p>` : ''}</div>` : ''}`;
   } else {
     inner = md(m.text);
   }
@@ -310,8 +310,42 @@ function renderPanel() {
       <div class="kv"><code>POST http://${i.lan[0] || 'localhost'}:${i.port}/api/reports</code></div>
       <div class="kv">Header: <code>Authorization: Bearer &lt;reportToken from config.json&gt;</code></div>
       <div class="kv">Project id for this chat: <code>${esc(p ? p.id : '')}</code></div>
-      <div class="muted">See scripts/send-report.ps1 for a ready-made sender.</div>`;
+      <div class="muted">See scripts/send-report.ps1 for a ready-made sender.</div>
+      <div class="team">GitHub report source</div>
+      <div class="muted">For cloud agents: the app reads ${esc(p ? p.agent : 'the agent')}'s "Nightly report" comments from this issue.</div>
+      <form class="add gh" id="ghForm" style="border-top:0;margin-top:6px;padding-top:0">
+        <input name="repo" placeholder="owner/repo, e.g. GrantBlock/Project_Iron">
+        <input name="issue" placeholder="Issue number, e.g. 12" inputmode="numeric">
+        <div style="display:flex;gap:8px"><button style="flex:1">Save</button><button type="button" id="ghCheck" style="flex:1;background:#e3e7ee;color:var(--navy)">Check now</button></div>
+        <div class="muted" id="ghStatus">Loading…</div>
+      </form>`;
+    loadGithub();
   }
+}
+
+function ghStatusText(r) {
+  if (!r || !r.github) return 'Not set. Reports only arrive through the report endpoint.';
+  const st = r.status || {};
+  const when = st.lastCheck ? new Date(st.lastCheck).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'not yet';
+  return st.lastError ? `Last check ${when}: ${st.lastError}` : `Watching ${r.github.repo} #${r.github.issue}. Last check ${when}; ${st.imported || 0} imported this session. Checks every ${r.pollMinutes || 5} min.`;
+}
+async function loadGithub() {
+  const p = project(); if (!p) return;
+  const f = $('#ghForm'); if (!f) return;
+  const url = `/api/projects/${encodeURIComponent(p.id)}/github`;
+  const r = await api(url).catch(e => ({ error: e.message }));
+  if (r.github) { f.repo.value = r.github.repo; f.issue.value = r.github.issue; }
+  $('#ghStatus').textContent = r.error || ghStatusText(r);
+  f.onsubmit = async e => {
+    e.preventDefault(); $('#ghStatus').textContent = 'Saving and checking…';
+    try { const x = await api(url, { method: 'PUT', body: JSON.stringify({ repo: f.repo.value, issue: f.issue.value }) }); $('#ghStatus').textContent = ghStatusText({ ...x, pollMinutes: r.pollMinutes }); }
+    catch (err) { $('#ghStatus').textContent = err.message; }
+  };
+  $('#ghCheck').onclick = async () => {
+    $('#ghStatus').textContent = 'Checking…';
+    try { await api(url, { method: 'POST' }); const x = await api(url); $('#ghStatus').textContent = ghStatusText(x); }
+    catch (err) { $('#ghStatus').textContent = err.message; }
+  };
 }
 
 // ---- Send chat ----
