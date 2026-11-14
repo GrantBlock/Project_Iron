@@ -2,15 +2,18 @@
 
 2026-11-14 · Grant decided, Claude wrote. The Planner reads this file, `SPEC.md` (run 1's team, task loop and rules), `../../docs/unified-app-plan.md` and `HANDOFF.md`, then runs the team against this brief.
 
+**What Collide is (Grant):** a hosted chat and product editor, custom built for Grant's multi-PC, multi-chat-session workflow in AI development.
+
 ## Decisions (Grant, 2026-11-14)
 
-- **One app, called Collide.** Its two sections are **Collide Snip** (today's editor) and **Collide Chat** (today's Agent Chat). Future features become more sections.
+- **One app, called Collide.** Its sections are **Collide Snip** (today's editor), **Collide Chat** (today's Agent Chat) and **Collide Editor** (zip of Markdown + images, below). Future features become more sections.
 - **Order:** first move Collide from Tauri to **Electron + Node** with no change in what it does; then move Agent Chat into Collide as Collide Chat.
 - **Works like Agent Chat:** one Node server on **port 3500**; Server and Connected modes; a Connect screen; a tray icon; closing the window in Server mode hides it to the tray and keeps serving.
 - **Server PC:** markups save automatically as you edit. The Save (push) button is greyed out there.
 - **Connected PC:** sessions stay in **local storage**, listed in the **left sidebar**, each with a **save-to-server (cloud) icon**. Local storage is only for holding work until it is pushed to the server. If the server is off, unsent work stays local and retries automatically.
 - **Single user:** Grant talking with Claude, plus snip storage, plus future features. No per-person logins. A required access code still protects the server, because screenshots can hold customer data.
-- **AI:** chat replies run through the `claude` CLI on the server PC, at most **2 at a time** (Grant: "2 … then add a" — the rest of that answer is still open).
+- **AI:** chat replies run through the `claude` CLI on the server PC, at most **2 at a time**.
+- **Then Collide Editor:** unpack a `.zip`, open and edit its Markdown (`.md`) files with their images, add images from snip saves, and repack the zip.
 - **Phones and browsers** can open `http://<server>:3500` (view, chat, mark up; no screen capture).
 - RealVNC stays for admin on the server; laptops use Connected mode for daily work.
 
@@ -25,10 +28,11 @@
 - Removed when T17 is done: `@tauri-apps/*`, `src-tauri/` (Rust crates `xcap`, `image`, `tauri-*`).
 - The Node server uses only Node's own modules (no Express), like Agent Chat.
 - Anything else needs a row in `PLAN.md` and a line in `ISSUES.md` for Grant.
+- Phase D needs a zip library and a Markdown renderer. Proposed (not yet approved by Grant): `fflate` (zip, small, no dependencies) and `markdown-it` (Markdown preview, escapes HTML by default). The Planner must not start T25 until Grant approves them, or must use alternatives Grant names.
 
 ## Task board
 
-Phase E (Electron, **must**) runs first. Phase C (Collide Chat, **must**) starts only when Phase E is Done. Phase S (stretch) runs only if usage remains. T24 always runs last.
+Phase E (Electron, **must**) runs first. Phase C (Collide Chat, **must**) starts only when Phase E is Done. Phase D (Collide Editor) and then Phase S (stretch) run only if usage remains. T24 always runs last.
 
 | ID | Phase | Task | Acceptance check | Depends on |
 | --- | --- | --- | --- | --- |
@@ -41,6 +45,10 @@ Phase E (Electron, **must**) runs first. Phase C (Collide Chat, **must**) starts
 | T19 | C | First-run import from `%APPDATA%\Project Chat\`: `db.json` (projects, messages, reports), `config.json` (report token, GitHub token, poll minutes, keep-reports, owner name), the agent picture. Never deletes the old folder. If Agent Chat is still running on 3500, say "Close Agent Chat first" with the fix. | Import test with a fixture copy of an Agent Chat data folder: every message and report appears; the report token still works | T18 |
 | T20 | C | **Collide Chat** UI in React with the design system: a left rail switches **Collide Snip / Collide Chat**; projects, messages, report cards, composer, typing indicator, live updates, agent picture, notifications. Feature parity with Agent Chat 0.3.6. | e2e: send a message, see the queued and typing states, receive a reply (fake CLI); a report posted to `/api/reports` appears live | T18 |
 | T21 | C | Server/Connected modes like Agent Chat's `main.js`: `desktop.json`, Connect screen (design system), Test connection, Save and restart; tray (Open, Copy network link, Copy report token, Open settings folder, Connect to another computer…, Quit); close-to-tray in Server mode. A Connected window loads `http://<server>:3500` and keeps the local bridge (snip, clipboard) from T14. | e2e with two app instances (server and connected on different ports in tests): the connected one shows the server's chats; its snip uses the local capture | T19, T20 |
+| T25 | D | **Collide Editor: open a zip.** Unpack a `.zip` into a working folder on the server (`%APPDATA%\Collide\editor\<name>\`); list its files in the left sidebar (Markdown, images, other). Reject paths that escape the folder (`../`), absolute paths and oversized files (limits (A): 200 MB unpacked, 5,000 files). | Fixture zips: normal, nested folders, a `../` entry (refused with a clear message), a non-UTF-8 name | T18 |
+| T26 | D | **Edit Markdown with images.** Split view: text editor and live preview. Relative image links (`![](images/a.png)`) resolve inside the zip. Rename or delete images, with a warning listing the `.md` files that link to them. Autosave in the working folder (server) or local storage (Connected), like Snip. | Edit → preview updates; renaming an image warns about the links; reopen shows the edits | T25 |
+| T27 | D | **Insert from snip saves.** An "Insert snip" picker lists saved markups (export PNG + name). Choosing one copies its `export.png` into the zip's `images/` folder with a unique name and inserts `![<markup name>](images/<file>.png)` at the cursor. Callout notes can go in as a numbered list under the image (option). | Insert puts the file in `images/` and the link in the `.md`; the preview shows the image | T26, T22 if done (else local `Documents/Collide/Markups`) |
+| T28 | D | **Repack.** Build a new `.zip` with the same folder layout; untouched files are kept byte-for-byte; download or save-as. The original zip is never overwritten without "Replace original?". | Unpack → repack with no edits gives the same file list and identical file bytes; edited and added files are included | T25 |
 | T22 | S | Markups on the server: storage API with versions; autosave on the server; on a Connected PC, a **Local** list in the left sidebar with a cloud-save icon per session, automatic retry while the server is off, and a "changed on the server" choice (open theirs / save yours as a copy) on conflicts. | Laptop snip → cloud icon → visible on the server and in a second client; conflict test | T21 |
 | T23 | S | Required access code: the server generates a code; each device enters it once and gets a device token; tray **Devices…** to name and revoke. Phones and browsers ask for the code once. | Revoked token can't load or save; the report token is unchanged | T21 |
 | T24 | — | Handoff: `HANDOFF.md`, test summary, Windows manual checks for Grant and Lydia (`TESTER-NOTES.md`), next steps. | Matches the final board | All attempted |

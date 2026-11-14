@@ -38,6 +38,7 @@ Related (in `GrantBlock/designengineering-ai`, `Builder v0.1/`): `development-pa
 - [stated] 2026-11-14: Collide adds Canvas snip (drag a box on the canvas; the area with markups is copied and opened as a new markup) and a New snip delay (No delay / 3 / 5 / 10 s, as in Snipping Tool; editor hidden during the delay; also applies to Ctrl+Alt+S (A)) (Grant).
 - [stated] 2026-11-14: Collide: right-click drag pans the canvas view (Space + left-drag still works); no context menu on the canvas (Grant).
 - [stated] 2026-11-14: One app named Collide, with sections Collide Snip and Collide Chat (Agent Chat moves in). Collide moves from Tauri to Electron + Node first, then Agent Chat becomes Collide Chat; server on port 3500 with Server/Connected modes like Agent Chat; autosave on the server; laptops keep local sessions in the left sidebar with a save-to-server icon and auto-retry; single user (Grant); AI queue 2; required access code. Run brief: `products/collide/RUN2.md` (Grant).
+- [stated] 2026-11-14: Collide adds a third section, Collide Editor: unpack a zip, open and edit its Markdown files with images, insert images from snip saves, repack the zip. Collide is a hosted chat and product editor custom built for Grant's multi-PC, multi-chat-session AI development workflow (Grant).
 
 ## Roles
 
