@@ -29,9 +29,11 @@ interface Props {
   canRedo: boolean;
   onExport: () => void;
   canExport: boolean;
+  onSave: () => void;
+  onOpenMarkup: () => void;
 }
 
-export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStrokeWidth, fileName, onOpenFile, onUndo, onRedo, canUndo, canRedo, onExport, canExport }: Props) {
+export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStrokeWidth, fileName, onOpenFile, onUndo, onRedo, canUndo, canRedo, onExport, canExport, onSave, onOpenMarkup }: Props) {
   return (
     <div
       data-testid="toolbar"
@@ -104,7 +106,10 @@ export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStroke
       <IconButton icon="undo-2" label="Undo" disabled={!canUndo} onClick={onUndo} style={canUndo ? undefined : { opacity: 0.4, cursor: "not-allowed" }} />
       <IconButton icon="redo-2" label="Redo" disabled={!canRedo} onClick={onRedo} style={canRedo ? undefined : { opacity: 0.4, cursor: "not-allowed" }} />
       <Sep />
-      <IconButton icon="save" label="Save" />
+      <IconButton icon="folder-open" label="Open markup" data-testid="open-markup" onClick={onOpenMarkup} />
+      <Tooltip label="Save markup" shortcut="Ctrl+S">
+        <IconButton icon="save" label="Save" data-testid="save-markup" onClick={onSave} disabled={!canExport} />
+      </Tooltip>
       <Button size="sm" icon="share" onClick={onExport} disabled={!canExport} data-testid="export-btn">
         Export
       </Button>

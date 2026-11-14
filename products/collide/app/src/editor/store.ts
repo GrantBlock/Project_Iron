@@ -27,7 +27,7 @@ export interface EditorState {
 }
 
 export type Action =
-  | { type: "load"; width: number; height: number }
+  | { type: "load"; width: number; height: number; doc?: AnnotationsDoc }
   | { type: "add"; shape: NewShape; numbered?: boolean }
   | { type: "update"; id: string; patch: ShapePatch }
   | { type: "remove"; id: string }
@@ -48,6 +48,7 @@ export function nextShapeId(shapes: readonly Shape[]): string {
 export function reducer(state: EditorState, action: Action): EditorState {
   switch (action.type) {
     case "load":
+      if (action.doc) return { doc: action.doc, selectedId: null };
       return { doc: { version: 1, source: { kind: "image", width: action.width, height: action.height }, shapes: [] }, selectedId: null };
     case "add": {
       if (!state.doc) return state;

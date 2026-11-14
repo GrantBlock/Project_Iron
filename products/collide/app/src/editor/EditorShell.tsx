@@ -11,7 +11,8 @@ import { Sidebar } from "./Sidebar";
 import { StatusBar } from "./StatusBar";
 import { CalloutsPanel } from "./CalloutsPanel";
 import { Toolbar } from "./Toolbar";
-import { downloadPng, exportFileName, flatten, type Flattened } from "../io/flatten";
+import { dataUrlToBlob, downloadPng, exportFileName, flatten, type Flattened } from "../io/flatten";
+import { createMarkupStore, isPng, MarkupError, markupFolderName, type MarkupStore } from "../io";
 import { fitView, screenToImage, type Point, type Size, type View } from "./viewport";
 
 /** Resolve a swatch value ("var(--token)") to the hex string stored in the doc. */
@@ -27,6 +28,20 @@ function loadImage(url: string, name: string): Promise<LoadedImage> {
     el.onerror = () => reject(new Error(`Could not load image: ${name}`));
     el.src = url;
   });
+}
+
+async function toPngBytes(blob: Blob): Promise<Uint8Array> {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  if (isPng(bytes)) return bytes;
+  // Other formats (jpeg, webp): re-encode so source.png is really a PNG of the same pixels.
+  const bmp = await createImageBitmap(blob);
+  const c = document.createElement("canvas");
+  c.width = bmp.width;
+  c.height = bmp.height;
+  c.getContext("2d")!.drawImage(bmp, 0, 0);
+  const out = await new Promise<Blob | null>((r) => c.toBlob(r, "image/png"));
+  if (!out) throw new Error("PNG encoding failed");
+  return new Uint8Array(await out.arrayBuffer());
 }
 
 const nameFromUrl = (url: string) => decodeURIComponent(url.split("?")[0].split("/").pop() || "image");
@@ -51,6 +66,10 @@ export interface CollideHook {
   getDoc: () => AnnotationsDoc | null;
   /** Convert a point in canvas-container coordinates to image pixels using the current view. */
   screenToImage: (p: Point) => Point;
+  /** Open a saved markup: by folder id, or the picker/most recent when omitted. Resolves with the folder name, or null if cancelled. */
+  openMarkup: (folder?: string) => Promise<string | null>;
+  /** Save the current markup. Resolves with the folder id. */
+  saveMarkup: () => Promise<string>;
   /** Flatten to a PNG at source size (no download). Resolves with the data URL and its size. */
   exportPng: () => Promise<Flattened>;
 }
@@ -80,17 +99,30 @@ export function EditorShell() {
     sizeRef.current = s;
   }, []);
 
-  const open = useCallback(async (url: string, name: string) => {
-    const img = await loadImage(url, name);
+  const storeRef = useRef<MarkupStore | null>(null);
+  const getStore = () => (storeRef.current ??= createMarkupStore());
+  /** Original bytes of the open image (as PNG) and the markup folder it was saved to / opened from. */
+  const sourceRef = useRef<{ bytes: Promise<Uint8Array>; folder: string | null } | null>(null);
+
+  const showImage = useCallback((img: LoadedImage, doc?: AnnotationsDoc) => {
     // Commit synchronously so the Konva nodes exist when the promise resolves (test hook relies on it).
     flushSync(() => {
       setImage(img);
-      dispatch({ type: "load", width: img.width, height: img.height });
+      dispatch({ type: "load", width: img.width, height: img.height, doc });
       setView(fitView(sizeRef.current, img));
     });
     live.current = { image: img, view: fitView(sizeRef.current, img) };
     return { width: img.width, height: img.height };
   }, [dispatch]);
+
+  const open = useCallback(async (url: string, name: string) => {
+    const img = await loadImage(url, name);
+    // Keep the original bytes so source.png is the untouched source image (fetched lazily, awaited on save).
+    const bytes = fetch(url).then((r) => r.blob()).then(toPngBytes);
+    bytes.catch(() => undefined);
+    sourceRef.current = { bytes, folder: null };
+    return showImage(img);
+  }, [showImage]);
 
   const exportPng = useCallback(async (): Promise<Flattened> => {
     const { image: img } = live.current;
@@ -98,6 +130,59 @@ export function EditorShell() {
     if (!img || !stage) throw new Error("Nothing to export: no image is open.");
     return flatten(stage, img);
   }, []);
+
+  const [notice, setNotice] = useState<{ tone: "error" | "success"; title: string; description: string } | null>(null);
+  const fail = useCallback((e: unknown, fallbackTitle: string) => {
+    const title = e instanceof MarkupError ? e.title : fallbackTitle;
+    const description = e instanceof Error ? e.message : String(e);
+    setNotice({ tone: "error", title, description });
+  }, []);
+
+  const saveMarkup = useCallback(async (): Promise<string> => {
+    const { image: img } = live.current;
+    const doc = stateRef.current.doc;
+    const src = sourceRef.current;
+    if (!img || !doc || !src) throw new MarkupError("Could not save markup", "No image is open. Open an image, then save.");
+    const flat = await exportPng();
+    const exportBytes = new Uint8Array(await dataUrlToBlob(flat.dataUrl).arrayBuffer());
+    const folderName = src.folder ?? markupFolderName(img.name);
+    const id = await getStore().save(folderName, { sourcePng: await src.bytes, annotations: doc, exportPng: exportBytes });
+    src.folder = id.replace(/[\\/]+$/, "").split(/[\\/]/).pop() ?? id;
+    return id;
+  }, [exportPng, stateRef]);
+
+  const openMarkup = useCallback(async (folder?: string): Promise<string | null> => {
+    const store = getStore();
+    const id = folder ?? (await store.pick());
+    if (!id) return null;
+    const m = await store.open(id);
+    const blob = new Blob([m.sourcePng as BlobPart], { type: "image/png" });
+    const img = await loadImage(URL.createObjectURL(blob), m.folderName);
+    if (img.width !== m.annotations.source.width || img.height !== m.annotations.source.height) {
+      throw new MarkupError(
+        "Could not open markup",
+        `source.png is ${img.width}×${img.height} but annotations.json says ${m.annotations.source.width}×${m.annotations.source.height}. Restore the matching source.png or re-save the markup.`,
+      );
+    }
+    sourceRef.current = { bytes: Promise.resolve(m.sourcePng), folder: m.folderName };
+    showImage(img, m.annotations);
+    return m.folderName;
+  }, [showImage]);
+
+  const onSave = useCallback(() => {
+    setNotice(null);
+    saveMarkup().then(
+      (id) => setNotice({ tone: "success", title: "Markup saved", description: id }),
+      (e: unknown) => fail(e, "Could not save markup"),
+    );
+  }, [saveMarkup, fail]);
+  const onOpenMarkup = useCallback(() => {
+    setNotice(null);
+    openMarkup().then(
+      (n) => n && setNotice({ tone: "success", title: "Markup opened", description: n }),
+      (e: unknown) => fail(e, "Could not open markup"),
+    );
+  }, [openMarkup, fail]);
 
   const [exportError, setExportError] = useState(false);
   const onExport = useCallback(() => {
@@ -139,6 +224,11 @@ export function EditorShell() {
       if (t instanceof HTMLElement && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
       if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
       const k = e.key.toLowerCase();
+      if (k === "s" && !e.shiftKey) {
+        e.preventDefault();
+        onSave();
+        return;
+      }
       if (k === "z" && !e.shiftKey) dispatch({ type: "undo" });
       else if (k === "y" || (k === "z" && e.shiftKey)) dispatch({ type: "redo" });
       else return;
@@ -146,7 +236,7 @@ export function EditorShell() {
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [dispatch]);
+  }, [dispatch, onSave]);
 
   // Tool hotkeys and Delete/Backspace.
   useEffect(() => {
@@ -200,6 +290,8 @@ export function EditorShell() {
       },
       getDoc: () => stateRef.current.doc,
       exportPng,
+      openMarkup,
+      saveMarkup,
       screenToImage: (p) => screenToImage(live.current.view, p),
       getState: () => {
         const { image: img } = live.current;
@@ -225,7 +317,7 @@ export function EditorShell() {
     return () => {
       delete window.__collide;
     };
-  }, [open, dispatch, stateRef, exportPng]);
+  }, [open, dispatch, stateRef, exportPng, openMarkup, saveMarkup]);
 
   return (
     <div
@@ -256,6 +348,8 @@ export function EditorShell() {
           onOpenFile={() => fileRef.current?.click()}
           onExport={onExport}
           canExport={!!image}
+          onSave={onSave}
+          onOpenMarkup={onOpenMarkup}
           onUndo={undo}
           onRedo={redo}
           canUndo={canUndo}
@@ -290,6 +384,11 @@ export function EditorShell() {
             description="The image could not be drawn. Try again or reopen the image."
             onClose={() => setExportError(false)}
           />
+        </div>
+      )}
+      {notice && (
+        <div style={{ position: "fixed", right: 28, bottom: 100, zIndex: 10 }} data-testid="notice">
+          <Toast tone={notice.tone} title={notice.title} description={notice.description} onClose={() => setNotice(null)} />
         </div>
       )}
       <input ref={fileRef} type="file" accept="image/*" hidden data-testid="file-input" onChange={onFile} />

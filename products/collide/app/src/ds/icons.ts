@@ -2,7 +2,9 @@
 // Add an import here when a new icon is used.
 import circleAlert from "lucide-static/icons/circle-alert.svg?url";
 import circle from "lucide-static/icons/circle.svg?url";
+import circleCheck from "lucide-static/icons/circle-check.svg?url";
 import fileUp from "lucide-static/icons/file-up.svg?url";
+import folderOpen from "lucide-static/icons/folder-open.svg?url";
 import hash from "lucide-static/icons/hash.svg?url";
 import mousePointer2 from "lucide-static/icons/mouse-pointer-2.svg?url";
 import moveUpRight from "lucide-static/icons/move-up-right.svg?url";
@@ -20,6 +22,8 @@ export const ICON_URLS: Record<string, string> = {
   "circle": circle,
   "circle-alert": circleAlert,
   "x": x,
+  "circle-check": circleCheck,
+  "folder-open": folderOpen,
   "file-up": fileUp,
   "hash": hash,
   "mouse-pointer-2": mousePointer2,
