@@ -1,7 +1,7 @@
 {
   "name": "project-chat",
   "productName": "Agent Chat",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Local AI assistant chat and nightly agent report inbox",
   "author": "Block Concepts LLC",
   "main": "main.js",
