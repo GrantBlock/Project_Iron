@@ -1,4 +1,6 @@
-# Project Chat
+# Agent Chat (formerly Project Chat)
+
+The app is named **Agent Chat** from 0.3.3. Settings and history stay in `%APPDATA%\Project Chat\`.
 
 Local chat app for talking with your project agents and receiving their nightly feature spec run reports.
 Seeded with **Lydia · Project Iron · designengineering.ai Development Team**.
@@ -49,6 +51,8 @@ Project Chat is running
 | `model` | Claude model for replies (default `claude-sonnet-5-5`) |
 | `ownerName` | Your name shown in the chat |
 | `maxMessages` | Messages kept per project; older ones are deleted (default `30`) |
+| `githubPollMinutes` | How often to check GitHub report sources (default `5`) |
+| `githubToken` | Optional GitHub token for private repos or higher rate limits |
 | `keepReports` | Newest reports always kept, even past `maxMessages` (default `5`) |
 
 ## AI replies
@@ -67,6 +71,35 @@ on Windows doesn't always inherit the same PATH as a terminal (especially right
 after installing the CLI). Add the CLI's install folder to the **System** PATH (not
 just your user PATH) and restart Project Chat, or run `start.bat` instead of the
 `.exe`.
+
+## GitHub report source (cloud agents)
+
+Cloud agents (Claude Code scheduled sessions) can't reach this PC, so they post the nightly report as a **comment on a GitHub issue** and Agent Chat pulls it in.
+
+**Set up (once per project):** Menu → Connect → GitHub report source → `owner/repo` and the issue number → **Save**. The app checks every 5 minutes (`githubPollMinutes`) and on **Check now**. Public repos need no token; for a private repo or to avoid rate limits, put a fine-grained read-only token in `githubToken` in `config.json`.
+
+**What gets imported:** only new comments whose first line contains "Nightly report" and is signed by the project's agent (for Project Iron, `Lydia`). Other comments are ignored. Each comment is imported once, even after restarts or chat trimming.
+
+**Comment format the agent must post:**
+
+```markdown
+Lydia (Tester) · Nightly report · 2026-11-14
+**Status:** PARTIAL
+**Ready to merge:** 2 · **Blocked:** 1 · **Changes requested:** 1 · **Usage:** 62%
+
+Summary: Two PRs ready; sidebar blocked on a missing design token.
+
+## Ready to merge
+- #12 Design tokens — PR #15
+## Blocked
+- #14 Sidebar — what was tried, what's needed
+```
+
+- Line 1: `<Agent> (<Role>) · Nightly report · YYYY-MM-DD`
+- `**Status:**` one of `PASS`, `FAIL`, `PARTIAL`, `INFO`
+- One line of `**Label:** value` pairs separated by `·` (shown as counts on the card)
+- `Summary:` one or two lines (shown on the card)
+- Everything after is the full report (shown under "View full report"), with a link back to the comment
 
 ## Sending nightly reports
 `POST /api/reports` with header `Authorization: Bearer <reportToken>`:

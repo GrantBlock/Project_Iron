@@ -27,6 +27,8 @@ function loadConfig() {
       accessPassword: '',
       model: 'claude-sonnet-5-5',
       maxMessages: 30,
+      githubPollMinutes: 5,
+      githubToken: '',
       keepReports: 5,
       ownerName: 'Grant'
     };
@@ -212,6 +214,82 @@ function offlineReply(project, reports, text) {
   return 'AI replies are off (the `claude` CLI isn\'t on PATH for this app). I can still answer "latest" or "list reports".';
 }
 
+// ---------- GitHub report source ----------
+// Cloud agents can't reach this PC, so they post their nightly report as a
+// comment on a GitHub issue and this app pulls it in. Each project can have
+// project.github = { repo: 'owner/name', issue: 12, since: ISO time of last import }.
+const GITHUB_API = process.env.GITHUB_API || 'https://api.github.com';
+const ghStatus = {}; // projectId -> { lastCheck, lastError, imported }
+const ghEtag = {};   // projectId -> last ETag, so unchanged issues cost no rate limit
+
+function parseReport(body) {
+  // Expected format (first line is the signature):
+  //   Lydia (Tester) · Nightly report · 2026-11-14
+  //   **Status:** PARTIAL
+  //   **Ready to merge:** 2 · **Blocked:** 1 · **Usage:** 62%
+  //   Summary: one or two lines.
+  //   ## Ready to merge ... (rest is the full report)
+  const text = String(body || '').replace(/\r\n/g, '\n');
+  const lines = text.split('\n');
+  const sig = lines[0] || '';
+  if (!/nightly report/i.test(sig)) return null;
+  const sigParts = sig.split('·').map(x => x.trim());
+  const author = (sigParts[0] || '').replace(/\s*\(.*\)\s*$/, '').replace(/[*_]/g, '').trim();
+  const runDate = (sig.match(/\d{4}-\d{2}-\d{2}/) || [new Date().toISOString().slice(0, 10)])[0];
+  let status = 'info', summary = '', stats = {}, rest = [];
+  for (const line of lines.slice(1)) {
+    const st = line.match(/^\s*\*\*Status:\*\*\s*([A-Za-z-]+)/i);
+    const sm = line.match(/^\s*(?:\*\*)?Summary:(?:\*\*)?\s*(.*)$/i);
+    if (st) { status = st[1].toLowerCase(); continue; }
+    if (sm && !summary) { summary = sm[1].trim(); continue; }
+    if (/^\s*\*\*[^*]+:\*\*/.test(line) && !rest.some(l => l.trim())) {
+      for (const m of line.matchAll(/\*\*([^*]+):\*\*\s*([^·]+)/g)) stats[m[1].trim().toLowerCase()] = m[2].trim();
+      continue;
+    }
+    rest.push(line);
+  }
+  return { author, runDate, status, summary, stats, body: rest.join('\n').trim() };
+}
+
+async function checkGithub(project) {
+  const g = project.github;
+  if (!g || !g.repo || !g.issue) return;
+  const st = ghStatus[project.id] = ghStatus[project.id] || { imported: 0 };
+  st.lastCheck = new Date().toISOString();
+  try {
+    const url = `${GITHUB_API}/repos/${g.repo}/issues/${g.issue}/comments?per_page=100` + (g.since ? '&since=' + encodeURIComponent(g.since) : '');
+    const headers = { 'accept': 'application/vnd.github+json', 'user-agent': 'agent-chat' };
+    if (cfg.githubToken) headers.authorization = 'Bearer ' + cfg.githubToken;
+    if (ghEtag[project.id]) headers['if-none-match'] = ghEtag[project.id];
+    const r = await fetch(url, { headers, signal: AbortSignal.timeout(15000) });
+    if (r.status === 304) { st.lastError = ''; return; }
+    if (!r.ok) throw new Error('GitHub answered ' + r.status + (r.status === 404 ? ' (check the repo and issue number)' : r.status === 403 ? ' (rate limit; add githubToken to config.json)' : ''));
+    ghEtag[project.id] = r.headers.get('etag') || '';
+    const comments = await r.json();
+    const seen = new Set(db.messages.filter(m => m.projectId === project.id && m.sourceId).map(m => m.sourceId));
+    let newest = g.since || '';
+    for (const c of comments) {
+      if (c.created_at > newest) newest = c.created_at;
+      const id = 'gh-comment-' + c.id;
+      if (seen.has(id) || (g.since && c.created_at <= g.since)) continue;
+      const rp = parseReport(c.body);
+      if (!rp) continue;
+      if (rp.author && project.agent && rp.author.toLowerCase() !== project.agent.toLowerCase()) continue; // only this project's agent
+      addMessage({
+        projectId: project.id, role: 'report', author: rp.author || project.agent, sourceId: id,
+        text: rp.summary || 'Nightly report',
+        report: { title: 'Nightly report ' + rp.runDate, status: rp.status, runDate: rp.runDate, summary: rp.summary, body: rp.body, stats: Object.keys(rp.stats).length ? rp.stats : null, link: c.html_url }
+      });
+      st.imported++;
+    }
+    if (newest && newest !== g.since) { g.since = newest; saveDb(); }
+    st.lastError = '';
+  } catch (e) {
+    st.lastError = e.message;
+  }
+}
+function checkAllGithub() { for (const pr of db.projects) if (pr.github) checkGithub(pr); }
+
 // ---------- http helpers ----------
 function send(res, code, obj) {
   res.writeHead(code, { 'content-type': 'application/json' });
@@ -220,7 +298,7 @@ function send(res, code, obj) {
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let b = '';
-    req.on('data', c => { b += c; if (b.length > 2e6) { reject(new Error('Body too large')); req.destroy(); } });
+    req.on('data', c => { b += c; if (b.length > 8e6) { reject(new Error('Body too large')); req.destroy(); } });
     req.on('end', () => { try { resolve(b ? JSON.parse(b) : {}); } catch { reject(new Error('Invalid JSON')); } });
   });
 }
@@ -310,6 +388,59 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, db.messages.filter(x => x.projectId === pr.id).slice(-200));
     }
 
+    m = p.match(/^\/api\/projects\/([^/]+)\/github$/);
+    if (m) {
+      const pr = findProject(decodeURIComponent(m[1]));
+      if (!pr) return send(res, 404, { error: 'Project not found' });
+      if (req.method === 'PUT') {
+        const b = await readBody(req);
+        const repo = String(b.repo || '').trim().replace(/^https?:\/\/github\.com\//i, '').replace(/\.git$|\/$/g, '');
+        const issue = parseInt(b.issue, 10);
+        if (!repo && !b.issue) { delete pr.github; delete ghStatus[pr.id]; saveDb(); return send(res, 200, { ok: true, github: null }); }
+        if (!/^[\w.-]+\/[\w.-]+$/.test(repo) || !(issue > 0)) return send(res, 400, { error: 'Use owner/repo and an issue number' });
+        const changed = !pr.github || pr.github.repo !== repo || pr.github.issue !== issue;
+        pr.github = changed ? { repo, issue, since: '' } : pr.github;
+        if (changed) { delete ghStatus[pr.id]; delete ghEtag[pr.id]; }
+        saveDb();
+        await checkGithub(pr);
+        return send(res, 200, { ok: true, github: pr.github, status: ghStatus[pr.id] || null });
+      }
+      if (req.method === 'POST') { await checkGithub(pr); return send(res, 200, { ok: true, status: ghStatus[pr.id] || null }); }
+      return send(res, 200, { github: pr.github || null, status: ghStatus[pr.id] || null, pollMinutes: Number(cfg.githubPollMinutes) || 5 });
+    }
+
+    // Agent picture: stored only on this PC (data/avatars), never in the repository
+    m = p.match(/^\/api\/projects\/([^/]+)\/avatar$/);
+    if (m) {
+      const pr = findProject(decodeURIComponent(m[1]));
+      if (!pr) return send(res, 404, { error: 'Project not found' });
+      const dir = path.join(DATA_DIR, 'avatars');
+      const existing = () => fs.existsSync(dir) ? fs.readdirSync(dir).filter(f => f.startsWith(pr.id + '.')) : [];
+      if (req.method === 'POST') {
+        const b = await readBody(req);
+        const mm = String(b.dataUrl || '').match(/^data:image\/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/=]+)$/);
+        if (!mm) return send(res, 400, { error: 'Use a PNG, JPG, WebP or GIF image' });
+        const buf = Buffer.from(mm[2], 'base64');
+        if (buf.length > 5 * 1024 * 1024) return send(res, 400, { error: 'Image is over 5 MB' });
+        fs.mkdirSync(dir, { recursive: true });
+        existing().forEach(f => fs.unlinkSync(path.join(dir, f)));
+        fs.writeFileSync(path.join(dir, pr.id + '.' + (mm[1] === 'jpeg' ? 'jpg' : mm[1])), buf);
+        pr.avatar = `/api/projects/${encodeURIComponent(pr.id)}/avatar?v=${Date.now()}`;
+        saveDb(); broadcast({ type: 'projects' });
+        return send(res, 200, { ok: true, avatar: pr.avatar });
+      }
+      if (req.method === 'DELETE') {
+        existing().forEach(f => fs.unlinkSync(path.join(dir, f)));
+        delete pr.avatar; saveDb(); broadcast({ type: 'projects' });
+        return send(res, 200, { ok: true });
+      }
+      const f = existing()[0];
+      if (!f) { res.writeHead(404); return res.end('No picture'); }
+      const ext = path.extname(f);
+      res.writeHead(200, { 'content-type': ext === '.jpg' ? 'image/jpeg' : 'image/' + ext.slice(1), 'cache-control': 'max-age=31536000' });
+      return fs.createReadStream(path.join(dir, f)).pipe(res);
+    }
+
     m = p.match(/^\/api\/projects\/([^/]+)\/chat$/);
     if (m && req.method === 'POST') {
       const pr = findProject(decodeURIComponent(m[1]));
@@ -346,11 +477,13 @@ const server = http.createServer(async (req, res) => {
 
 pruneAll();
 server.listen(cfg.port, cfg.host, () => {
-  console.log('\nProject Chat is running');
+  console.log('\nAgent Chat is running');
   console.log('  This computer:   http://localhost:' + cfg.port);
   for (const ip of lanAddresses()) console.log('  Other computers: http://' + ip + ':' + cfg.port);
   console.log('  AI replies:      ' + (claudeAvailable ? 'on (via claude CLI, ' + cfg.model + ')' : 'off — install the claude CLI and sign in with "claude" once, then restart'));
   console.log('  Report token:    ' + cfg.reportToken + '\n');
+  checkAllGithub();
+  setInterval(checkAllGithub, (Number(cfg.githubPollMinutes) || 5) * 60 * 1000);
   if (module.exports.onReady) module.exports.onReady();
 });
 server.on('error', e => { if (module.exports.onError) module.exports.onError(e); else throw e; });

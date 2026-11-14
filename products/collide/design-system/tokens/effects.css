@@ -1,0 +1,46 @@
+:root {
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --radius-pill: 999px;
+
+  /* Elevation: every level carries a 1px inner top highlight (the "glass lip") */
+  --shadow-0: inset 0 1px 0 rgba(255,255,255,0.04);
+  --shadow-1: inset 0 1px 0 rgba(255,255,255,0.05), 0 1px 2px rgba(0,0,0,0.45);
+  --shadow-2: inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 6px rgba(0,0,0,0.40), 0 12px 32px -12px rgba(0,0,0,0.65);
+  --shadow-3: inset 0 1px 0 rgba(255,255,255,0.08), 0 6px 16px rgba(0,0,0,0.45), 0 32px 80px -20px rgba(0,0,0,0.80);
+  --shadow-inset: inset 0 1px 2px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.04);
+  --glow-signal: 0 0 0 1px rgba(255,61,31,0.55), 0 0 28px -6px rgba(255,61,31,0.65);
+  --focus-ring: 0 0 0 1px var(--ink-950), 0 0 0 3px rgba(255,61,31,0.45);
+
+  /* Glass: gradient hairline border. Use as border-box background layer with border: 1px solid transparent */
+  --glass-border: linear-gradient(180deg, var(--glass-edge-hi) 0%, var(--glass-edge-lo) 38%, rgba(255,255,255,0.06) 100%);
+  --glass-border-signal: linear-gradient(180deg, rgba(255,106,79,0.7), rgba(255,61,31,0.15) 60%, rgba(255,61,31,0.35));
+  --blur-glass: 24px;
+  --blur-heavy: 48px;
+
+  /* Line work */
+  --pattern-dots: radial-gradient(rgba(255,255,255,0.10) 1px, transparent 1.3px) 0 0 / 8px 8px;
+  --pattern-dots-fine: radial-gradient(rgba(255,255,255,0.08) 0.8px, transparent 1px) 0 0 / 5px 5px;
+  --pattern-hatch: repeating-linear-gradient(135deg, rgba(255,255,255,0.035) 0 10px, transparent 10px 22px);
+  --pattern-bars: repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0 6px, transparent 6px 10px);
+  --pattern-ticks: repeating-linear-gradient(90deg, rgba(255,255,255,0.26) 0 1px, transparent 1px 6px);
+  --pattern-grid: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px) 0 0 / 24px 24px, linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px) 0 0 / 24px 24px;
+  --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.06 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+
+  /* Ambient light */
+  --ambient-ember: radial-gradient(110% 80% at 12% -10%, rgba(184,105,59,0.30), transparent 55%), radial-gradient(80% 70% at 105% 110%, rgba(76,135,196,0.10), transparent 60%);
+  --ambient-signal: radial-gradient(60% 60% at 50% 50%, rgba(255,61,31,0.18), transparent 70%);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-snap: cubic-bezier(0.3, 1.4, 0.5, 1);
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 360ms;
+  --dur-4: 640ms;
+}
