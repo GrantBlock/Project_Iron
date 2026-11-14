@@ -59,6 +59,11 @@
   .mavatar { width: 28px; height: 28px; border-radius: 50%; background: #fff; color: var(--navy); display: grid; place-items: center;
              font-size: 11.5px; font-weight: 700; box-shadow: 0 0 0 1px #dfe2e6; flex-shrink: 0; }
   .mavatar.report { background: var(--navy-2); color: #fff; box-shadow: none; }
+  .mavatar img, .avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+  .mavatar.pic, .avatar.pic { background: #fff; padding: 0; overflow: hidden; }
+  .pic-row { display: flex; align-items: center; gap: 10px; margin: 2px 0 6px; font-size: 13px; }
+  .pic-row .avatar { width: 44px; height: 44px; }
+  .linkbtn { background: none; border: 0; color: var(--blue); cursor: pointer; padding: 0; font-size: 13px; }
   .row.me .mavatar { background: var(--blue); color: #fff; box-shadow: none; }
   .bubble { background: #fff; border-radius: 12px; padding: 10px 14px; font-size: 14.5px; line-height: 1.45; max-width: 78%;
             margin-left: 36px; box-shadow: 0 1px 1px rgba(18,21,42,.05); word-wrap: break-word; overflow-wrap: anywhere; }
@@ -179,6 +184,12 @@ const initials = n => String(n || '?').split(/\s+/).map(w => w[0]).join('').slic
 const fmtTime = ts => new Date(ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 const fmtDay = ts => new Date(ts).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
 
+// The project's agent picture (stored on the server PC), or initials
+function agentPic(projectId, author) {
+  const pr = state.projects.find(p => p.id === projectId);
+  return pr && pr.avatar && String(author).toLowerCase() === String(pr.agent).toLowerCase() ? pr.avatar : '';
+}
+function avatarInner(pic, name) { return pic ? `<img src="${esc(pic)}" alt="">` : esc(initials(name)); }
 function sameGroup(a, b) {
   return a && b && a.author === b.author && (a.role === 'user') === (b.role === 'user') &&
     fmtDay(a.ts) === fmtDay(b.ts) && (new Date(b.ts) - new Date(a.ts)) < 5 * 60 * 1000;
@@ -199,7 +210,8 @@ function renderMessage(m, cont) {
   } else {
     inner = md(m.text);
   }
-  row.innerHTML = `<div class="who"><div class="mavatar ${m.role === 'report' ? 'report' : ''}">${esc(initials(m.author))}</div><span>${esc(m.author)}</span></div>
+  const pic = me ? '' : agentPic(m.projectId, m.author);
+  row.innerHTML = `<div class="who"><div class="mavatar ${pic ? 'pic' : m.role === 'report' ? 'report' : ''}">${avatarInner(pic, m.author)}</div><span>${esc(m.author)}</span></div>
     <div class="bubble">${inner}</div><div class="time">${fmtTime(m.ts)}</div>`;
   const t = row.querySelector('.toggle');
   if (t) t.onclick = () => { const f = row.querySelector('.full'); f.classList.toggle('open'); t.textContent = f.classList.contains('open') ? 'Hide full report' : 'View full report'; };
@@ -270,10 +282,16 @@ function renderPanel() {
     for (const p of state.projects) (teams[p.team] ||= []).push(p);
     body.innerHTML = Object.entries(teams).map(([team, list]) => `<div class="team">${esc(team)}</div>` + list.map(p => `
       <div class="proj ${p.id === state.current ? 'current' : ''}" data-id="${esc(p.id)}">
-        <div class="avatar">${esc(initials(p.agent))}</div>
+        <div class="avatar ${p.avatar ? 'pic' : ''}">${avatarInner(p.avatar, p.agent)}</div>
         <div class="meta"><div class="n">${esc(p.name)}</div><div class="a">${esc(p.agent)}${p.description ? ' · ' + esc(p.description) : ''}</div></div>
         ${state.unread[p.id] ? `<span class="badge">${state.unread[p.id]}</span>` : ''}
       </div>`).join('')).join('') + `
+      ${project() ? `<div class="team">${esc(project().agent)}'s picture</div>
+      <div class="pic-row"><div class="avatar ${project().avatar ? 'pic' : ''}">${avatarInner(project().avatar, project().agent)}</div>
+        <button type="button" class="linkbtn" id="picBtn">Choose picture</button>
+        ${project().avatar ? '<button type="button" class="linkbtn" id="picDel">Remove</button>' : ''}
+        <input type="file" id="picFile" accept="image/png,image/jpeg,image/webp,image/gif" hidden></div>
+      <div class="muted">Saved only on the server PC, not in the repository.</div>` : ''}
       <form class="add" id="addForm">
         <div class="muted">Add a project</div>
         <input name="team" placeholder="Team (e.g. designengineering.ai Development Team)" required>
@@ -283,6 +301,14 @@ function renderPanel() {
         <button>Add project</button>
       </form>`;
     body.querySelectorAll('.proj').forEach(el => el.onclick = () => selectProject(el.dataset.id));
+    if ($('#picBtn')) {
+      $('#picBtn').onclick = () => $('#picFile').click();
+      $('#picFile').onchange = async e => { const f = e.target.files[0]; if (f) await setAgentPicture(f); };
+    }
+    if ($('#picDel')) $('#picDel').onclick = async () => {
+      await api(`/api/projects/${encodeURIComponent(state.current)}/avatar`, { method: 'DELETE' });
+      await loadProjects(); renderLog(); renderPanel();
+    };
     $('#addForm').onsubmit = async e => {
       e.preventDefault();
       const f = Object.fromEntries(new FormData(e.target));
@@ -348,6 +374,20 @@ async function loadGithub() {
   };
 }
 
+// Center-crop the chosen image to a 256 px square before upload
+async function setAgentPicture(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = bad; i.src = url; });
+    const side = Math.min(img.naturalWidth, img.naturalHeight), S = 256;
+    const c = document.createElement('canvas'); c.width = c.height = S;
+    c.getContext('2d').drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, S, S);
+    await api(`/api/projects/${encodeURIComponent(state.current)}/avatar`, { method: 'POST', body: JSON.stringify({ dataUrl: c.toDataURL('image/png') }) });
+    await loadProjects(); renderLog(); renderPanel();
+  } catch (e) { alert('Could not use that picture: ' + (e.message || 'unreadable image')); }
+  finally { URL.revokeObjectURL(url); }
+}
+
 // ---- Send chat ----
 async function send() {
   const input = $('#input'), text = input.value.trim();
@@ -386,7 +426,7 @@ function connectEvents() {
     } else if (evt.type === 'typing' && evt.projectId === state.current) {
       $('#typing').textContent = `${evt.author} is typing…`;
       clearTimeout(typingTimer); typingTimer = setTimeout(() => $('#typing').textContent = '', 60000);
-    } else if (evt.type === 'projects') { await loadProjects(); if ($('#panel').classList.contains('open')) renderPanel(); }
+    } else if (evt.type === 'projects') { await loadProjects(); renderLog(); if ($('#panel').classList.contains('open')) renderPanel(); }
   };
 }
 

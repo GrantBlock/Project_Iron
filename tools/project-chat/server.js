@@ -298,7 +298,7 @@ function send(res, code, obj) {
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let b = '';
-    req.on('data', c => { b += c; if (b.length > 2e6) { reject(new Error('Body too large')); req.destroy(); } });
+    req.on('data', c => { b += c; if (b.length > 8e6) { reject(new Error('Body too large')); req.destroy(); } });
     req.on('end', () => { try { resolve(b ? JSON.parse(b) : {}); } catch { reject(new Error('Invalid JSON')); } });
   });
 }
@@ -407,6 +407,38 @@ const server = http.createServer(async (req, res) => {
       }
       if (req.method === 'POST') { await checkGithub(pr); return send(res, 200, { ok: true, status: ghStatus[pr.id] || null }); }
       return send(res, 200, { github: pr.github || null, status: ghStatus[pr.id] || null, pollMinutes: Number(cfg.githubPollMinutes) || 5 });
+    }
+
+    // Agent picture: stored only on this PC (data/avatars), never in the repository
+    m = p.match(/^\/api\/projects\/([^/]+)\/avatar$/);
+    if (m) {
+      const pr = findProject(decodeURIComponent(m[1]));
+      if (!pr) return send(res, 404, { error: 'Project not found' });
+      const dir = path.join(DATA_DIR, 'avatars');
+      const existing = () => fs.existsSync(dir) ? fs.readdirSync(dir).filter(f => f.startsWith(pr.id + '.')) : [];
+      if (req.method === 'POST') {
+        const b = await readBody(req);
+        const mm = String(b.dataUrl || '').match(/^data:image\/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/=]+)$/);
+        if (!mm) return send(res, 400, { error: 'Use a PNG, JPG, WebP or GIF image' });
+        const buf = Buffer.from(mm[2], 'base64');
+        if (buf.length > 5 * 1024 * 1024) return send(res, 400, { error: 'Image is over 5 MB' });
+        fs.mkdirSync(dir, { recursive: true });
+        existing().forEach(f => fs.unlinkSync(path.join(dir, f)));
+        fs.writeFileSync(path.join(dir, pr.id + '.' + (mm[1] === 'jpeg' ? 'jpg' : mm[1])), buf);
+        pr.avatar = `/api/projects/${encodeURIComponent(pr.id)}/avatar?v=${Date.now()}`;
+        saveDb(); broadcast({ type: 'projects' });
+        return send(res, 200, { ok: true, avatar: pr.avatar });
+      }
+      if (req.method === 'DELETE') {
+        existing().forEach(f => fs.unlinkSync(path.join(dir, f)));
+        delete pr.avatar; saveDb(); broadcast({ type: 'projects' });
+        return send(res, 200, { ok: true });
+      }
+      const f = existing()[0];
+      if (!f) { res.writeHead(404); return res.end('No picture'); }
+      const ext = path.extname(f);
+      res.writeHead(200, { 'content-type': ext === '.jpg' ? 'image/jpeg' : 'image/' + ext.slice(1), 'cache-control': 'max-age=31536000' });
+      return fs.createReadStream(path.join(dir, f)).pipe(res);
     }
 
     m = p.match(/^\/api\/projects\/([^/]+)\/chat$/);
