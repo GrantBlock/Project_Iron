@@ -714,6 +714,66 @@ button { cursor: pointer; }
   .notesbtn { bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
   .stage { padding: 12px; }
 }
+
+/* ---------- Added for feature parity with Collide (run 1 + Grant's fixes) and Agent Chat 0.3.6 ---------- */
+.badge { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font: 600 11px/18px var(--font-ui); text-align: center; }
+.day { align-self: center; font-size: 11.5px; color: var(--t4); padding: 2px 10px; border-radius: 999px; background: var(--sunk); }
+.msg.grouped { margin-top: -10px; }
+.msg.grouped .avatar { visibility: hidden; }
+.msg .avatar img, .avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+.kicker { font: 500 10px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--t4); }
+:root[data-app-theme="aura"] .kicker { font: 700 11px/1 var(--font-ui); letter-spacing: 0; text-transform: none; }
+.status.fail { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
+.status.partial { background: color-mix(in srgb, var(--warn) 20%, transparent); color: var(--warn); }
+.status.info { background: color-mix(in srgb, var(--info) 18%, transparent); color: var(--info); }
+.stats { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--t3); }
+.stats b { color: var(--t1); font-variant-numeric: tabular-nums; }
+.full { border-top: var(--border-w) solid var(--line-2); margin-top: 6px; padding-top: 6px; }
+.full h4 { margin: 8px 0 4px; font-size: 13px; }
+.full a { color: var(--info); }
+:root[data-app-theme="aura"] .full a { color: var(--aura-ink); text-decoration: underline; }
+.linkbtn { border: 0; background: none; padding: 0; color: var(--info); font-weight: 500; justify-self: start; }
+:root[data-app-theme="aura"] .linkbtn { color: var(--aura-ink); text-decoration: underline; }
+.typing { max-width: 760px; width: 100%; margin: 0 auto; padding: 0 18px 4px; color: var(--t4); font-size: 12px; display: flex; align-items: center; gap: 6px; }
+.typing i { width: 5px; height: 5px; border-radius: 50%; background: var(--t4); animation: blink 1s infinite; }
+.typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes blink { 50% { opacity: .25; } }
+.hpop { position: absolute; right: 12px; top: 52px; z-index: 20; width: min(320px, calc(100% - 24px)); max-height: 60vh; overflow: auto; background: var(--raised); color: var(--t1); border: var(--border-w) solid var(--line-2); border-radius: var(--r-panel); box-shadow: var(--shadow); padding: 8px; display: grid; gap: 2px; }
+.hpop .rep { display: grid; gap: 3px; padding: 8px; border-radius: var(--r-ctl); border: 0; background: transparent; text-align: left; color: var(--t1); }
+.hpop .rep:hover { background: var(--hover); }
+.dialog { position: absolute; z-index: 25; top: 96px; left: 50%; transform: translateX(-50%); width: min(420px, calc(100% - 32px)); background: var(--raised); color: var(--t1); border: var(--border-w) solid var(--line-2); border-radius: var(--r-panel); box-shadow: var(--shadow); padding: 14px; display: grid; gap: 10px; }
+.chat { position: relative; }
+.field { display: grid; gap: 5px; }
+.field input[type="text"], .field input:not([type]), .field input[type="password"], .field input[type="number"] { height: 32px; border-radius: var(--r-ctl); border: var(--border-w) solid var(--line-2); background: var(--sunk); padding: 0 10px; color: var(--t1); min-width: 0; }
+.radio { display: flex; gap: 8px; align-items: center; }
+.settings { overflow: auto; padding: 18px 22px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.card { background: var(--raised); border: var(--border-w) solid var(--line); border-radius: var(--r-card); padding: 14px; display: grid; gap: 10px; max-width: 640px; min-width: 0; }
+.card h3 { margin: 0; font-size: 14px; font-weight: 600; display: flex; gap: 8px; align-items: center; }
+.card code { font: 12px var(--font-mono); background: var(--sunk); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.btnrow { display: flex; gap: 8px; flex-wrap: wrap; }
+.stage { display: block; place-items: initial; padding: 0; overflow: hidden; touch-action: none; }
+.zoomer { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.zoomer svg.snipfull { width: 100%; height: 100%; max-width: none; box-shadow: none; border-radius: 0; }
+.stage.cursor-add .zoomer { cursor: crosshair; }
+.stage.panning .zoomer { cursor: grabbing; }
+.readout { position: absolute; z-index: 3; padding: 3px 7px; border-radius: 4px; background: rgba(9,9,11,.85); color: #F3F2EF; font: 11px var(--font-mono); pointer-events: none; }
+.hidebtn { height: 22px; padding: 0 8px; border-radius: 999px; border: var(--border-w) solid var(--line-2); background: transparent; color: var(--t3); font: 500 10px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+.hidebtn[aria-pressed="true"] { background: var(--sunk); color: var(--t1); }
+.el .row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.el.dim { opacity: .55; }
+.fname { flex: 1; text-align: center; font: 12px var(--font-mono); color: var(--t3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 40px; }
+.stroke { width: 28px; height: 28px; border-radius: var(--r-ctl); border: 0; background: transparent; display: grid; place-items: center; color: var(--t3); }
+.stroke[aria-pressed="true"] { background: var(--raised); color: var(--t1); box-shadow: inset 0 0 0 var(--border-w) var(--line-2); }
+.stroke span { width: 14px; border-radius: 999px; background: currentColor; display: block; }
+.toolbar > * { flex: none; }
+.toolbar .tool { min-width: 30px; padding: 0 6px; }
+.toolbar .vsep { margin: 0 4px; }
+.toolbar .fname { flex: 1 1 0; }
+.kbd { font: 10.5px/1 var(--font-mono); padding: 2px 4px; border-radius: 4px; border: 1px solid var(--line-2); color: var(--t3); }
+.parity { width: 100%; border-collapse: collapse; font-size: 12px; margin: 6px 0 10px; }
+.parity td { padding: 3px 4px; border-top: 1px solid var(--line-2); vertical-align: top; color: var(--t2); }
+.parity td:first-child { color: var(--t1); width: 46%; }
+.notes h4 { margin: 12px 0 2px; font-size: 12.5px; }
 </style>
 
 <div class="app" id="app">
@@ -723,26 +783,53 @@ button { cursor: pointer; }
     <section class="chat" id="chat" aria-label="Chat"></section>
   </div>
 </div>
+<input type="file" id="picFile" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+<input type="file" id="imgFile" accept="image/png,image/jpeg,image/webp" hidden>
 <button class="notesbtn" id="notesBtn" aria-expanded="false">Draft layout · notes</button>
 <div class="notes" id="notes" hidden>
   <h3>Draft (not yet approved by Grant)</h3>
   <ol>
     <li><b>Chat is home.</b> Recents on the left, the open chat on the right, like Agent Chat.</li>
-    <li><b>Snip and Editor have no page of their own.</b> They open as a workspace when you open a snip, a zip file or an agent's files: from Recents, New snip, Open zip, or an attachment in a message.</li>
-    <li><b>Workspace</b> = header (name, save state, Save, Close) + toolbar + canvas + numbered list on the right. Chat moves to a dock on the right and can be minimised. Close returns to chat; unsaved changes ask first.</li>
-    <li><b>Zips</b> appear in Recents next to chats and snips. A zip expands to its folder tree in the sidebar.</li>
-    <li><b>Agents</b> in the sidebar open their Personality and Memory files for editing.</li>
-    <li><b>Themes:</b> System, Light, Dark, Aura (14 grounds). The banner and avatars redraw from the theme. The logo is never recoloured.</li>
+    <li><b>Snip and Editor have no page of their own.</b> They open as a workspace when you open a snip, a zip file or an agent's files.</li>
+    <li><b>Workspace</b> = header (name, save state, Save, Close) + toolbar + canvas + numbered list. Chat moves to a dock on the right. Close returns to chat; unsaved changes ask first.</li>
+    <li><b>Zips</b> appear in Recents and expand to their folder tree.</li>
+    <li><b>Agents</b> open their Personality and Memory files, and their picture.</li>
+    <li><b>Themes:</b> System, Light, Dark, Aura (14 grounds). The banner redraws from the theme. The logo is never recoloured.</li>
   </ol>
-  <p class="hint">Example content only. Chats are from the Lydia screenshot; snips, the zip and the memory file are placeholders.</p>
+  <h4>Collide Snip today (TESTER-NOTES 1–10, run 1) → here</h4>
+  <table class="parity">
+    <tr><td>New snip, Ctrl+Alt+S, delay 0/3/5/10 s</td><td>Sidebar, top</td></tr>
+    <tr><td>Snip copied to clipboard automatically</td><td>Toast after New snip</td></tr>
+    <tr><td>Canvas snip with W × H readout, Esc leaves</td><td>Snip toolbar, first button</td></tr>
+    <tr><td>Open file, Open markup, Save Ctrl+S, Copy Ctrl+Shift+C, Export</td><td>Snip toolbar; Save in the header</td></tr>
+    <tr><td>Select V, Rectangle R, Ellipse O, Filled rectangle, Filled ellipse, X mark X, Point P</td><td>Snip toolbar</td></tr>
+    <tr><td>4 colours, stroke 2/3/5, undo/redo (50 steps), Delete</td><td>Snip toolbar, keys</td></tr>
+    <tr><td>Numbered note boxes outside the image, arrows, drag to move; empty note = number chip</td><td>Canvas</td></tr>
+    <tr><td>Callouts panel: notes, Hide # / Show #</td><td>Numbered list on the right</td></tr>
+    <tr><td>Wheel zoom, right-drag and Space-drag pan, Ctrl+0 refit, refit on resize</td><td>Canvas</td></tr>
+    <tr><td>Status bar: Ctrl Alt S to snip, zoom %, W × H</td><td>Under the canvas</td></tr>
+    <tr><td>Search, Recent, Tags</td><td>Sidebar</td></tr>
+    <tr><td>Editor hides without a ghost; one title bar</td><td>Desktop shell (not shown here)</td></tr>
+  </table>
+  <h4>Agent Chat 0.3.6 → here</h4>
+  <table class="parity">
+    <tr><td>Projects grouped by team, unread badges, add a project</td><td>Sidebar → Chats filter; New chat</td></tr>
+    <tr><td>Reports list for the project</td><td>Chat header → Reports</td></tr>
+    <tr><td>Report card: Nightly report kicker, status chip, stats, summary, full report, Open on GitHub</td><td>Chat</td></tr>
+    <tr><td>Day separators, grouped messages, typing, live updates, "latest" and "list reports"</td><td>Chat</td></tr>
+    <tr><td>Connect: Server/Connected, Test connection, Save and restart, links, AI status, report endpoint, GitHub report source, Check now</td><td>Settings (gear, or the Server pill)</td></tr>
+    <tr><td>Agent picture, stored only on the server PC</td><td>Agent files → Choose picture</td></tr>
+    <tr><td>Desktop notifications for reports; access password</td><td>Settings</td></tr>
+    <tr><td>Tray, close to tray, minimise, copy link and token</td><td>Desktop shell; copy buttons in Settings</td></tr>
+  </table>
+  <p class="hint">Example content only. Chats are from the Lydia screenshot; snips, the zip and the memory file are placeholders. Collide Editor (zip) is run 2 T25–T28 and not built yet.</p>
 </div>
-<div class="toast" id="toast" hidden></div>
+<div class="toast" id="toast" hidden role="status"></div>
 
 <script>
 const LOGO_PATH = "M0 0h32v1h-32zM0 1h32v1h-32zM0 2h32v1h-32zM0 3h21v1h-21zM22 3h5v1h-5zM29 3h1v1h-1zM31 3h1v1h-1zM1 4h1v1h-1zM4 4h26v1h-26zM31 4h1v1h-1zM1 5h1v1h-1zM3 5h24v1h-24zM28 5h1v1h-1zM30 5h2v1h-2zM1 6h2v1h-2zM4 6h18v1h-18zM23 6h4v1h-4zM28 6h1v1h-1zM0 7h1v1h-1zM2 7h2v1h-2zM5 7h2v1h-2zM8 7h8v1h-8zM17 7h1v1h-1zM19 7h6v1h-6zM26 7h5v1h-5zM2 8h1v1h-1zM4 8h16v1h-16zM21 8h3v1h-3zM25 8h5v1h-5zM0 9h1v1h-1zM5 9h10v1h-10zM16 9h5v1h-5zM23 9h1v1h-1zM25 9h1v1h-1zM28 9h2v1h-2zM0 10h1v1h-1zM2 10h5v1h-5zM8 10h13v1h-13zM22 10h4v1h-4zM28 10h3v1h-3zM3 11h1v1h-1zM5 11h2v1h-2zM8 11h5v1h-5zM14 11h3v1h-3zM18 11h8v1h-8zM27 11h2v1h-2zM31 11h1v1h-1zM2 12h1v1h-1zM5 12h3v1h-3zM9 12h3v1h-3zM13 12h1v1h-1zM15 12h9v1h-9zM25 12h1v1h-1zM28 12h1v1h-1zM6 13h1v1h-1zM8 13h7v1h-7zM16 13h3v1h-3zM20 13h5v1h-5zM27 13h1v1h-1zM8 14h4v1h-4zM15 14h1v1h-1zM17 14h5v1h-5zM31 14h1v1h-1zM3 15h1v1h-1zM6 15h2v1h-2zM10 15h4v1h-4zM15 15h7v1h-7zM23 15h2v1h-2zM26 15h1v1h-1zM28 15h1v1h-1zM4 16h1v1h-1zM6 16h1v1h-1zM10 16h2v1h-2zM13 16h1v1h-1zM15 16h4v1h-4zM21 16h3v1h-3zM29 16h2v1h-2zM6 17h1v1h-1zM8 17h1v1h-1zM11 17h1v1h-1zM13 17h2v1h-2zM17 17h1v1h-1zM19 17h3v1h-3zM25 17h1v1h-1zM28 17h1v1h-1zM30 17h1v1h-1zM2 18h1v1h-1zM13 18h3v1h-3zM18 18h7v1h-7zM26 18h1v1h-1zM0 19h1v1h-1zM5 19h1v1h-1zM7 19h1v1h-1zM9 19h1v1h-1zM12 19h1v1h-1zM15 19h2v1h-2zM18 19h1v1h-1zM21 19h1v1h-1zM23 19h1v1h-1zM25 19h2v1h-2zM28 19h1v1h-1zM30 19h2v1h-2zM2 20h2v1h-2zM6 20h2v1h-2zM10 20h5v1h-5zM18 20h2v1h-2zM21 20h4v1h-4zM28 20h1v1h-1zM2 21h1v1h-1zM4 21h1v1h-1zM7 21h1v1h-1zM12 21h1v1h-1zM15 21h1v1h-1zM21 21h1v1h-1zM26 21h1v1h-1zM1 22h1v1h-1zM3 22h1v1h-1zM5 22h1v1h-1zM8 22h1v1h-1zM13 22h1v1h-1zM17 22h1v1h-1zM19 22h2v1h-2zM22 22h1v1h-1zM24 22h1v1h-1zM29 22h1v1h-1zM7 23h1v1h-1zM10 23h1v1h-1zM15 23h1v1h-1zM20 23h3v1h-3zM31 23h1v1h-1zM2 24h1v1h-1zM12 24h2v1h-2zM23 24h1v1h-1zM7 25h1v1h-1zM10 25h1v1h-1zM19 25h1v1h-1zM21 25h3v1h-3zM25 25h2v1h-2zM30 25h2v1h-2zM3 26h3v1h-3zM9 26h1v1h-1zM11 26h2v1h-2zM14 26h1v1h-1zM16 26h1v1h-1zM18 26h1v1h-1zM1 27h1v1h-1zM3 27h2v1h-2zM7 27h1v1h-1zM10 27h3v1h-3zM15 27h1v1h-1zM17 27h2v1h-2zM22 27h1v1h-1zM25 27h1v1h-1zM28 27h1v1h-1zM30 27h2v1h-2zM1 28h2v1h-2zM6 28h3v1h-3zM12 28h7v1h-7zM20 28h2v1h-2zM24 28h6v1h-6zM0 29h2v1h-2zM3 29h1v1h-1zM5 29h2v1h-2zM9 29h1v1h-1zM13 29h2v1h-2zM16 29h1v1h-1zM18 29h1v1h-1zM20 29h1v1h-1zM23 29h1v1h-1zM25 29h2v1h-2zM29 29h3v1h-3zM1 30h1v1h-1zM15 30h1v1h-1zM22 30h5v1h-5zM30 30h1v1h-1zM1 31h1v1h-1zM11 31h4v1h-4zM30 31h2v1h-2z";
 const AURA = [{"name": "sage", "bg": "#94ac94", "hl": "#e42c04"}, {"name": "stone", "bg": "#ccc6c4", "hl": "#f4f404"}, {"name": "slate", "bg": "#5c7474", "hl": "#ecd434"}, {"name": "ash", "bg": "#848484", "hl": "#f4f404"}, {"name": "umber", "bg": "#7c6c5c", "hl": "#d4ac8c"}, {"name": "cobalt", "bg": "#345cc4", "hl": "#fcfcfc"}, {"name": "bone", "bg": "#d4d4c4", "hl": "#cc0414"}, {"name": "moss", "bg": "#748464", "hl": "#ecf484"}, {"name": "jade", "bg": "#74b494", "hl": "#447c5c"}, {"name": "linen", "bg": "#e4e4d4", "hl": "#ec4c3c"}, {"name": "fog", "bg": "#cccccc", "hl": "#ecd434"}, {"name": "olive", "bg": "#6c7464", "hl": "#ec4c1c"}, {"name": "lichen", "bg": "#9ca49c", "hl": "#0c0c0c"}, {"name": "paper", "bg": "#e4e4e4", "hl": "#fcbc5c"}];
 
-/* ---------- Icons (Lucide-style line icons, drawn inline) ---------- */
 const I = {
   chat: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/>',
   scissors: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/>',
@@ -785,37 +872,61 @@ const I = {
   menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
 };
+
+Object.assign(I, {
+  share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/>',
+  folderOpen: '<path d="m6 14 1.5-2.9A2 2 0 0 1 9.2 10H20a2 2 0 0 1 1.9 2.5l-1.5 6A2 2 0 0 1 18.4 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.7.9l.8 1.2a2 2 0 0 0 1.7.9H18a2 2 0 0 1 2 2v2"/>',
+  fileUp: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="M12 17v-6M9 14l3-3 3 3"/>',
+  squareFill: '<rect x="4" y="5" width="16" height="14" rx="1.5" fill="currentColor" fill-opacity=".35"/>',
+  circleFill: '<circle cx="12" cy="12" r="8" fill="currentColor" fill-opacity=".35"/>',
+  cross: '<path d="M6 6l12 12M18 6 6 18"/>',
+  dot: '<circle cx="12" cy="12" r="4" fill="currentColor"/>',
+  file2: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="M9 13h6M9 17h6"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+  bell: '<path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
+  key: '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/>',
+  github: '<path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.1-1.3-.3-2.5-1-3.5.3-1.2.3-2.4 0-3.5 0 0-1 0-3 1.5a10.6 10.6 0 0 0-6 0C7 2 6 2 6 2c-.3 1.1-.3 2.3 0 3.5A5.4 5.4 0 0 0 5 9c0 3.5 3 5.5 6 5.5-.4.5-.8 1.1-1 1.7-.2.6-.2 1.2-.1 1.8v4M9 18c-4.5 2-5-2-7-2"/>',
+  server: '<rect x="2" y="3" width="20" height="8" rx="2"/><rect x="2" y="13" width="20" height="8" rx="2"/><path d="M6 7h.01M6 17h.01"/>',
+  reports: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="m9 15 2 2 4-4"/>',
+});
 const ico = (n, cls = '') => `<svg class="ico ${cls}" viewBox="0 0 24 24" aria-hidden="true">${I[n] || ''}</svg>`;
-const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const logo = (cls = 'logo') => `<svg class="${cls}" viewBox="0 0 32 32" shape-rendering="crispEdges" aria-label="Collide"><defs><clipPath id="lr"><rect width="32" height="32" rx="7.2"/></clipPath></defs><path fill="#FF3D1F" clip-path="url(#lr)" d="${LOGO_PATH}"/></svg>`;
+const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const clone = (o) => JSON.parse(JSON.stringify(o));
 
 /* ---------- Example data ---------- */
 const AGENTS = {
-  lydia:    { name: 'Lydia', role: 'Tester', hue: 0 },
-  hrongar:  { name: 'Hrongar', role: 'Coder', hue: 1 },
-  farengar: { name: 'Farengar', role: 'Reviewer', hue: 2 },
-  irileth:  { name: 'Irileth', role: 'Planner', hue: 3 },
+  lydia:    { name: 'Lydia', role: 'Tester', hue: 0, pic: '' },
+  hrongar:  { name: 'Hrongar', role: 'Coder', hue: 1, pic: '' },
+  farengar: { name: 'Farengar', role: 'Reviewer', hue: 2, pic: '' },
+  irileth:  { name: 'Irileth', role: 'Planner', hue: 3, pic: '' },
 };
+const TEAM = 'designengineering.ai Development Team';
+// Agent Chat: one chat per project, each with its agent, grouped by team.
 const CHATS = [
-  { id: 'c-lydia', agent: 'lydia', title: 'Project Iron', meta: 'Lydia · nothing from PR #4 yet', time: '11:51', day: 'Today', saved: true },
-  { id: 'c-hrongar', agent: 'hrongar', title: 'Collide run 2', meta: 'Hrongar · T13 Electron shell', time: '09:12', day: 'Today', saved: true },
-  { id: 'c-irileth', agent: 'irileth', title: 'Unified app plan', meta: 'Irileth · questions 1–7 answered', time: 'Thu', day: 'Earlier', saved: true },
-  { id: 'c-farengar', agent: 'farengar', title: 'PR reviews', meta: 'Farengar · PR #3 review passed', time: 'Thu', day: 'Earlier', saved: false },
+  { id: 'project-iron', agent: 'lydia', title: 'Project Iron', team: TEAM, desc: 'nightly reports', meta: 'Lydia · nothing from PR #4 yet', time: '11:51', day: 'Today', unread: 0 },
+  { id: 'collide-run-2', agent: 'hrongar', title: 'Collide run 2', team: TEAM, desc: 'coder', meta: 'Hrongar · T13 Electron shell', time: '09:12', day: 'Today', unread: 2 },
+  { id: 'planning', agent: 'irileth', title: 'Planning', team: 'Block Concepts', desc: 'planner chat', meta: 'Irileth · run 2 brief written', time: 'Thu', day: 'Earlier', unread: 0 },
+  { id: 'reviews', agent: 'farengar', title: 'PR reviews', team: TEAM, desc: 'reviewer', meta: 'Farengar · PR #3 review passed', time: 'Thu', day: 'Earlier', unread: 1 },
 ];
+const TYPE_LABEL = { rect: 'Rectangle', ellipse: 'Ellipse', 'rect-fill': 'Filled rectangle', 'ellipse-fill': 'Filled ellipse', cross: 'X mark', point: 'Point' };
+const SIG = '#FF3D1F', STEEL = '#4C87C4', AMBER = '#E3A73A', INK50 = '#F3F2EF';
 const SNIPS = [
-  { id: 's-line3', name: 'Line 3 conveyor guard', w: 1280, h: 720, day: 'Today', time: '10:40', saved: false, tags: ['LINE 3', 'CONVEYOR'],
-    callouts: [
-      { n: 1, x: 214, y: 118, w: 96, h: 70, type: 'Rectangle', note: 'Guard bracket cracked at the weld. Re-weld before next PM.' },
-      { n: 2, x: 404, y: 176, w: 70, h: 56, type: 'Rectangle', note: 'Belt tracking drifts toward the motor side.' },
-      { n: 3, x: 520, y: 64, w: 84, h: 40, type: 'Callout', note: 'HMI header label says M-310. Should read M-301.' },
+  { id: 's-line3', art: 'line3', name: 'Line 3 conveyor guard', w: 1280, h: 720, day: 'Today', time: '10:40', saved: false, tags: ['LINE 3', 'CONVEYOR'],
+    shapes: [
+      { n: 1, type: 'rect', x: 214, y: 118, w: 96, h: 74, color: SIG, sw: 3, note: 'Guard bracket cracked at the weld. Re-weld before next PM.' },
+      { n: 2, type: 'ellipse', x: 398, y: 142, w: 82, h: 66, color: SIG, sw: 3, note: 'Belt tracking drifts toward the motor side.' },
+      { n: 3, type: 'rect-fill', x: 514, y: 66, w: 92, h: 34, color: AMBER, sw: 3, note: 'HMI label reads M-310. Should read M-301.' },
+      { n: 4, type: 'point', x: 300, y: 262, w: 0, h: 0, color: STEEL, sw: 3, note: '' },
     ] },
-  { id: 's-hmi', name: 'HMI header grid', w: 1920, h: 1080, day: 'Today', time: '08:05', saved: true, tags: ['LINE 3'],
-    callouts: [
-      { n: 1, x: 60, y: 40, w: 160, h: 46, type: 'Rectangle', note: 'Start button sits 6 px off the header grid.' },
-      { n: 2, x: 430, y: 40, w: 150, h: 46, type: 'Rectangle', note: 'Alarm count wraps at 150% scaling.' },
+  { id: 's-hmi', art: 'hmi', name: 'HMI header grid', w: 1920, h: 1080, day: 'Today', time: '08:05', saved: true, tags: ['LINE 3'],
+    shapes: [
+      { n: 1, type: 'rect', x: 60, y: 40, w: 160, h: 46, color: SIG, sw: 3, note: 'Start button sits 6 px off the header grid.' },
+      { n: 2, type: 'cross', x: 444, y: 40, w: 30, h: 30, color: SIG, sw: 3, note: 'Alarm count wraps at 150% scaling.', hide: true },
     ] },
-  { id: 's-pid', name: 'P&ID V-101 tag', w: 2400, h: 1600, day: 'Earlier', time: 'Wed', saved: true, tags: ['P&ID'],
-    callouts: [ { n: 1, x: 300, y: 150, w: 90, h: 70, type: 'Callout', note: 'Valve tag missing on the drawing.' } ] },
+  { id: 's-pid', art: 'pid', name: 'P&ID V-101 tag', w: 2400, h: 1350, day: 'Earlier', time: 'Wed', saved: true, tags: ['P&ID'],
+    shapes: [ { n: 1, type: 'ellipse-fill', x: 250, y: 140, w: 92, h: 76, color: STEEL, sw: 3, note: 'Valve tag missing on the drawing.' } ] },
 ];
 const P06 = `# P06 Project Workspace Spec
 
@@ -844,7 +955,7 @@ The project workspace holds Import, Specifications, Layout, Schedule and Exports
 [placeholder]
 `;
 const ZIPS = [
-  { id: 'z-builder', name: 'builder-v0.1.zip', meta: '14 files · 2.1 MB', day: 'Today', time: '11:20', saved: true,
+  { id: 'z-builder', name: 'builder-v0.1.zip', meta: '14 files · 2.1 MB', day: 'Today', time: '11:20',
     tree: { name: 'Builder v0.1', kids: [
       { name: 'CLAUDE.md', type: 'md', text: '# Working rules\n\n- Direct, concise, structured.\n- Mark assumptions (A) and placeholders [brackets].\n' },
       { name: 'design', kids: [
@@ -858,7 +969,7 @@ const ZIPS = [
       { name: 'README.md', type: 'md', text: '# Builder v0.1\n\nPrototype, specs and design system.\n' },
       { name: 'package.json', type: 'code', text: '{\n  "name": "builder",\n  "version": "0.1.0"\n}\n' },
     ] } },
-  { id: 'z-notes', name: 'collide-run-2-notes.zip', meta: '3 files · 48 KB', day: 'Earlier', time: 'Thu', saved: true,
+  { id: 'z-notes', name: 'collide-run-2-notes.zip', meta: '3 files · 48 KB', day: 'Earlier', time: 'Thu',
     tree: { name: 'collide-run-2-notes', kids: [ { name: 'RUN2.md', type: 'md', text: '# Collide run 2 brief\n\nElectron first, then Collide Chat.\n' }, { name: 'HANDOFF.md', type: 'md', text: '# Handoff\n\n[placeholder]\n' }, { name: 'board.png', type: 'image' } ] } },
 ];
 const AGENT_FILES = {
@@ -905,23 +1016,32 @@ for (const k of ['hrongar', 'farengar', 'irileth']) {
     memory: { path: `[server]/agents/${k}/memory.md`, text: `# ${a.name} memory\n\n- [placeholder]\n` },
   };
 }
+const RUN1 = { status: 'pass', title: 'Collide run 1', runDate: '2026-11-14', stats: { 'Ready to merge': 1, Blocked: 0, 'Changes requested': 0 },
+  summary: 'PR #3, `snip-markup/run-1` → `development`, ready for your review and merge.',
+  body: '## Ready to merge\n- PR #3 Snip & Markup run 1 (T01–T12)\n## Manual checks\n- Windows: Ctrl+Alt+S capture, 150% scaling, second monitor',
+  link: 'https://github.com/GrantBlock/Project_Iron/issues/2' };
 const MESSAGES = {
-  'c-lydia': [
-    { from: 'lydia', time: '06:30', report: { status: 'Ready', title: 'Collide run 1', line: 'PR #3 · snip-markup/run-1 → development', note: 'Ready for your review and merge.' } },
-    { from: 'lydia', time: '10:41', text: '<p>Grant sent a snip for the Line 3 punch list.</p>', snip: 's-line3' },
-    { from: 'me', time: '11:51', text: '<p>im at pr 4 10 minutes ago, what did you get reported</p>' },
-    { from: 'lydia', time: '11:51', text: '<p><b>Reported so far: nothing from PR #4.</b> The newest report I have is still "Collide run 1" (2026-11-14), which covers PR #3. Nothing in it mentions #4.</p><p><b>Why #4 may not show up:</b></p><ul><li>No report has been posted for it, so a run for #4 may not have finished or posted yet.</li><li>The app may follow only the issue you set in Connect (#2).</li><li>Anything you did on #4 directly doesn\'t reach me unless it arrives as a report.</li></ul>' },
+  'project-iron': [
+    { from: 'lydia', day: 'Yesterday', time: '06:30', report: { status: 'info', title: 'Test report', runDate: '2026-11-13', stats: {}, summary: 'Manual format check, not a real run.', body: '', link: '' } },
+    { from: 'lydia', day: 'Today', time: '06:30', report: RUN1 },
+    { from: 'lydia', day: 'Today', time: '10:41', text: '<p>Grant sent a snip for the Line 3 punch list.</p>', snip: 's-line3' },
+    { from: 'me', day: 'Today', time: '11:51', text: '<p>im at pr 4 10 minutes ago, what did you get reported</p>' },
+    { from: 'lydia', day: 'Today', time: '11:51', text: '<p><b>Reported so far: nothing from PR #4.</b> The newest report I have is still "Collide run 1" (2026-11-14), which covers PR #3. Nothing in it mentions #4.</p><p><b>What I have:</b></p><ul><li>Test report (manual format check, not a real run).</li><li>Collide run 1: PR #3, <code>snip-markup/run-1</code> → <code>development</code>, ready for your review and merge.</li></ul>' },
+    { from: 'lydia', day: 'Today', time: '11:51', text: '<p><b>Why #4 may not show up:</b></p><ul><li>No report has been posted for it, so a run for #4 may not have finished or posted yet.</li><li>The app may follow only the issue you set in Connect (#2). It may not pick up a different PR or issue.</li><li>Anything you did on #4 directly, like comments, pushes or reviews, doesn\'t reach me unless it arrives as a report.</li></ul>' },
   ],
-  'c-hrongar': [ { from: 'hrongar', time: '09:12', text: '<p>T13 started: Electron shell in <code>products/collide/app/</code>. Every existing test still passes.</p>' } ],
-  'c-irileth': [ { from: 'me', time: 'Thu', text: '<p>Name it Collide. Port 3500. Autosave on the server.</p>' }, { from: 'irileth', time: 'Thu', text: '<p>Recorded in the unified app plan. Run 2 brief is in <code>products/collide/RUN2.md</code>.</p>' } ],
-  'c-farengar': [ { from: 'farengar', time: 'Thu', report: { status: 'Review passed', title: 'PR #3 review', line: 'snip-markup/run-1 · 0 comments open', note: 'Matches SPEC.md and the design system.' } } ],
+  'collide-run-2': [ { from: 'hrongar', day: 'Today', time: '09:12', text: '<p>T13 started: Electron shell in <code>products/collide/app/</code>.</p>' }, { from: 'hrongar', day: 'Today', time: '09:13', text: '<p>Every existing test still passes.</p>' } ],
+  'planning': [ { from: 'me', day: 'Thu', time: 'Thu', text: '<p>Name it Collide. Port 3500. Autosave on the server.</p>' }, { from: 'irileth', day: 'Thu', time: 'Thu', text: '<p>Recorded in the unified app plan. Run 2 brief is in <code>products/collide/RUN2.md</code>.</p>' } ],
+  'reviews': [ { from: 'farengar', day: 'Thu', time: 'Thu', report: { status: 'pass', title: 'PR #3 review', runDate: '2026-11-13', stats: { Comments: 0 }, summary: 'Matches SPEC.md and the design system.', body: '', link: '' } } ],
 };
 
 /* ---------- State ---------- */
 const S = {
-  theme: 'system', aura: 'sage', filter: 'all', chat: 'c-lydia', ws: null, dirty: false, dockMin: false,
-  open: { 'z-builder': true, 'z-builder/design': true, 'z-builder/design/specs': true }, tool: 'select', sel: null, color: 'accent',
+  theme: 'system', aura: 'sage', filter: 'all', chat: 'project-iron', ws: null, dirty: false, dockMin: false,
+  open: { 'z-builder': true, 'z-builder/design': true, 'z-builder/design/specs': true },
+  tool: 'select', sel: null, color: SIG, sw: 3, view: null, panning: null, drag: null, hist: [], redo: [],
   docView: 'split', agentTab: 'personality', pop: false, picker: false, closing: false, phoneChat: false, sideOpen: false, query: '',
+  reportsPop: false, addProject: false, typing: false, openReports: {}, pending: null, attach: null, delay: 'No delay',
+  settings: { mode: 'server', server: '', repo: 'GrantBlock/Project_Iron', issue: '2', notify: true, password: '' },
 };
 try { const t = localStorage.getItem('collide-proto-theme'); const a = localStorage.getItem('collide-proto-aura'); if (t) S.theme = t; if (a) S.aura = a; } catch (e) {}
 
@@ -930,49 +1050,117 @@ const app = $('#app');
 const avatar = (key, cls = '') => {
   const a = AGENTS[key];
   if (!a) return `<span class="avatar ${cls}" style="background:var(--t1);color:var(--bg)">G</span>`;
-  // Avatars use theme tokens only: info, accent, ink, and a tone step.
+  if (a.pic) return `<span class="avatar ${cls}" aria-hidden="true"><img src="${a.pic}" alt=""></span>`;
   const fills = ['var(--info)', 'var(--t1)', 'var(--t3)', 'var(--accent)'];
   const fg = ['var(--on-info)', 'var(--bg)', 'var(--bg)', 'var(--on-accent)'];
   return `<span class="avatar ${cls}" style="background:${fills[a.hue]};color:${fg[a.hue]}" aria-hidden="true">${a.name[0]}</span>`;
 };
 
-/* ---------- Snip image (example picture, fixed colours: it is user content) ---------- */
-function snipSVG(id, cls = 'snipthumb', overlay = false) {
-  const s = SNIPS.find((x) => x.id === id) || SNIPS[0];
-  let art = '';
-  if (s.id === 's-line3') {
-    art = `<rect width="640" height="360" fill="#2b2f33"/><rect x="0" y="0" width="640" height="34" fill="#1d2023"/>
+/* ---------- Snip: image, shapes, note boxes (same rules as src/editor/notes.ts, scaled) ---------- */
+const IW = 640;
+const ih = (s) => Math.round(IW * s.h / s.w);
+const NOTE_W = 150, NOTE_GAP = 26, NOTE_STACK = 6, NOTE_PAD = 6, BADGE = 16, LINE = 14, CHARS = 22;
+function wrap(t) { const words = String(t).split(/\s+/).filter(Boolean); const out = []; let cur = ''; for (const w of words) { if ((cur + ' ' + w).trim().length > CHARS) { if (cur) out.push(cur); cur = w; } else cur = (cur + ' ' + w).trim(); } if (cur) out.push(cur); return out; }
+function noteBoxes(s) {
+  const H = ih(s), taken = [], out = {};
+  for (const sh of s.shapes) {
+    const lines = sh.note ? wrap(sh.note) : [];
+    const w = lines.length ? NOTE_W : NOTE_PAD * 2 + BADGE;
+    const h = Math.max(BADGE, lines.length * LINE) + NOTE_PAD * 2;
+    const c = { x: sh.x + sh.w / 2, y: sh.y + sh.h / 2 };
+    let box;
+    if (sh.box) box = { ...sh.box, w, h };
+    else {
+      const d = [['left', c.x], ['right', IW - c.x], ['top', c.y], ['bottom', H - c.y]].reduce((a, b) => (b[1] < a[1] ? b : a))[0];
+      box = d === 'left' ? { x: -NOTE_GAP - w, y: c.y - h / 2 } : d === 'right' ? { x: IW + NOTE_GAP, y: c.y - h / 2 } : d === 'top' ? { x: c.x - w / 2, y: -NOTE_GAP - h } : { x: c.x - w / 2, y: H + NOTE_GAP };
+      box.w = w; box.h = h;
+      const vert = d === 'left' || d === 'right';
+      for (let i = 0; i < 40; i++) {
+        const hit = taken.find((t) => box.x < t.x + t.w + NOTE_STACK && t.x < box.x + box.w + NOTE_STACK && box.y < t.y + t.h + NOTE_STACK && t.y < box.y + box.h + NOTE_STACK);
+        if (!hit) break;
+        if (vert) box.y = hit.y + hit.h + NOTE_STACK; else box.x = hit.x + hit.w + NOTE_STACK;
+      }
+    }
+    taken.push(box);
+    // Arrow: from the box edge to the shape edge
+    const to = sh.type === 'point' ? { x: c.x, y: c.y } : { x: Math.min(Math.max(box.x + box.w / 2, sh.x), sh.x + sh.w), y: Math.min(Math.max(box.y + box.h / 2, sh.y), sh.y + sh.h) };
+    const from = { x: Math.min(Math.max(to.x, box.x), box.x + box.w), y: Math.min(Math.max(to.y, box.y), box.y + box.h) };
+    if (sh.type === 'point') { const dx = from.x - to.x, dy = from.y - to.y, l = Math.hypot(dx, dy) || 1; to.x += dx / l * 9; to.y += dy / l * 9; }
+    out[sh.n] = { box, lines, from, to };
+  }
+  return out;
+}
+function bounds(s, withNotes = true) {
+  let x0 = 0, y0 = 0, x1 = IW, y1 = ih(s);
+  if (withNotes) { const nb = noteBoxes(s); for (const sh of s.shapes) { if (sh.hide) continue; const b = nb[sh.n].box; x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.w); y1 = Math.max(y1, b.y + b.h); } }
+  return { x0, y0, x1, y1 };
+}
+function artSVG(s) {
+  const H = ih(s);
+  if (s.img) return `<image href="${s.img}" x="0" y="0" width="${IW}" height="${H}" preserveAspectRatio="none"/>`;
+  if (s.art === 'line3') return `<rect width="640" height="360" fill="#2b2f33"/><rect width="640" height="34" fill="#1d2023"/>
       <text x="14" y="22" fill="#cfd4d8" font-family="Geist Mono, monospace" font-size="13">LINE 3 · CONVEYOR C-3 · AUTO</text>
       <rect x="520" y="70" width="80" height="26" rx="3" fill="#3a3f44"/><text x="530" y="88" fill="#e8b04a" font-family="Geist Mono, monospace" font-size="12">M-310</text>
       <rect x="40" y="200" width="560" height="38" rx="19" fill="#4a5056"/><g fill="#6c737a">${[60,120,180,240,300,360,420,480,540,580].map((x) => `<circle cx="${x}" cy="219" r="13"/>`).join('')}</g>
       <rect x="220" y="124" width="84" height="58" fill="none" stroke="#c9c24a" stroke-width="5"/><path d="M226 182v18M298 182v18" stroke="#c9c24a" stroke-width="5"/>
       <rect x="410" y="150" width="58" height="50" rx="4" fill="#5d6a74"/><text x="420" y="180" fill="#dfe5ea" font-family="Geist Mono, monospace" font-size="12">M-301</text>
       <path d="M40 270h560" stroke="#3b4146" stroke-width="8"/><text x="14" y="340" fill="#8b949b" font-family="Geist Mono, monospace" font-size="11">RATE 42 FT/MIN · 0 ALARMS</text>`;
-  } else if (s.id === 's-hmi') {
-    art = `<rect width="640" height="360" fill="#e9ecef"/><rect width="640" height="110" fill="#22313f"/>
+  if (s.art === 'hmi') return `<rect width="640" height="360" fill="#e9ecef"/><rect width="640" height="110" fill="#22313f"/>
       <rect x="66" y="46" width="150" height="34" rx="4" fill="#2e8a5e"/><text x="110" y="68" fill="#fff" font-family="Geist, sans-serif" font-size="14">START</text>
       <rect x="240" y="40" width="150" height="34" rx="4" fill="#a82410"/><text x="290" y="62" fill="#fff" font-family="Geist, sans-serif" font-size="14">STOP</text>
       <rect x="436" y="44" width="140" height="34" rx="4" fill="#e3a73a"/><text x="448" y="66" fill="#22313f" font-family="Geist Mono, monospace" font-size="12">ALARMS 12 ACT…</text>
       ${[0,1,2].map((r) => [0,1,2,3].map((c) => `<rect x="${40 + c * 145}" y="${135 + r * 72}" width="125" height="56" rx="6" fill="#fff" stroke="#c9ced3"/>`).join('')).join('')}`;
-  } else {
-    art = `<rect width="640" height="360" fill="#f6f5f0"/><g stroke="#1b1b1b" stroke-width="2" fill="none"><path d="M40 180h220M330 180h270"/><path d="M260 160l70 40v-40l-70 40z"/><circle cx="460" cy="180" r="34"/><path d="M460 146v-60h80"/></g>
+  return `<rect width="640" height="360" fill="#f6f5f0"/><g stroke="#1b1b1b" stroke-width="2" fill="none"><path d="M40 180h220M330 180h270"/><path d="M260 160l70 40v-40l-70 40z"/><circle cx="460" cy="180" r="34"/><path d="M460 146v-60h80"/></g>
       <text x="440" y="186" font-family="Geist Mono, monospace" font-size="12" fill="#1b1b1b">T-1</text><text x="46" y="170" font-family="Geist Mono, monospace" font-size="11" fill="#1b1b1b">2"-PW-104</text>`;
+}
+function shapeSVG(sh, sel) {
+  const st = `stroke="${sh.color}" stroke-width="${sh.sw}"`;
+  const fill = sh.type.endsWith('-fill') ? `fill="${sh.color}" fill-opacity=".3"` : 'fill="none"';
+  let g = '';
+  if (sh.type === 'rect' || sh.type === 'rect-fill') g = `<rect x="${sh.x}" y="${sh.y}" width="${sh.w}" height="${sh.h}" ${fill} ${st}/>`;
+  else if (sh.type === 'ellipse' || sh.type === 'ellipse-fill') g = `<ellipse cx="${sh.x + sh.w / 2}" cy="${sh.y + sh.h / 2}" rx="${sh.w / 2}" ry="${sh.h / 2}" ${fill} ${st}/>`;
+  else if (sh.type === 'cross') g = `<path d="M${sh.x} ${sh.y}l${sh.w} ${sh.h}M${sh.x + sh.w} ${sh.y}l${-sh.w} ${sh.h}" ${st} stroke-linecap="round"/>`;
+  else g = `<circle cx="${sh.x}" cy="${sh.y}" r="${3 + sh.sw}" fill="${sh.color}" stroke="#fff" stroke-width="1.5"/>`;
+  const hit = sh.type === 'point' ? `<circle cx="${sh.x}" cy="${sh.y}" r="12" fill="transparent"/>` : `<rect x="${sh.x - 4}" y="${sh.y - 4}" width="${sh.w + 8}" height="${sh.h + 8}" fill="transparent"/>`;
+  let selg = '';
+  if (sel) {
+    const b = sh.type === 'point' ? { x: sh.x - 10, y: sh.y - 10, w: 20, h: 20 } : { x: sh.x - 3, y: sh.y - 3, w: sh.w + 6, h: sh.h + 6 };
+    selg = `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="none" stroke="#fff" stroke-dasharray="4 3" stroke-width="1"/>` +
+      [[b.x, b.y], [b.x + b.w, b.y], [b.x, b.y + b.h], [b.x + b.w, b.y + b.h]].map(([x, y]) => `<rect x="${x - 3}" y="${y - 3}" width="6" height="6" fill="#fff" stroke="#09090B"/>`).join('');
   }
-  let ov = '';
-  if (overlay) {
-    ov = s.callouts.map((c) => {
-      const on = S.sel === c.n;
-      const stroke = on ? 'var(--accent)' : '#FF3D1F';
-      return `<g data-callout="${c.n}" style="cursor:pointer"><rect x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" fill="none" stroke="${stroke}" stroke-width="${on ? 4 : 3}" ${c.type === 'Callout' ? 'rx="6"' : ''}/>
-        <circle cx="${c.x}" cy="${c.y}" r="13" style="fill:${on ? 'var(--accent)' : 'var(--info)'}"/><text x="${c.x}" y="${c.y + 4.5}" text-anchor="middle" font-family="Geist Mono, monospace" font-size="13" font-weight="600" style="fill:${on ? 'var(--on-accent)' : 'var(--on-info)'}">${c.n}</text></g>`;
-    }).join('');
-  } else {
-    ov = s.callouts.map((c) => `<rect x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" fill="none" stroke="#FF3D1F" stroke-width="4"/>`).join('');
-  }
-  return `<svg class="${cls}" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${esc(s.name)}">${art}${ov}</svg>`;
+  return `<g data-shape="${sh.n}" style="cursor:${S.tool === 'select' ? 'move' : 'inherit'}">${g}${hit}${selg}</g>`;
+}
+function noteSVG(sh, nb, sel) {
+  const { box, lines, from, to } = nb;
+  const op = sh.hide ? 0.35 : 1;
+  const text = lines.map((l, i) => `<text x="${box.x + NOTE_PAD + BADGE + 6}" y="${box.y + NOTE_PAD + 11 + i * LINE}" font-family="Geist, sans-serif" font-size="11.5" fill="#09090B">${esc(l)}</text>`).join('');
+  return `<g data-box="${sh.n}" opacity="${op}" style="cursor:move">
+    <line x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" stroke="${sh.color}" stroke-width="2" marker-end="url(#ah-${slug(sh.color)})"/>
+    <rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" rx="5" fill="#FFFFFF" stroke="${sel ? '#09090B' : sh.color}" stroke-width="${sel ? 2 : 1.5}"/>
+    <circle cx="${box.x + NOTE_PAD + BADGE / 2}" cy="${box.y + NOTE_PAD + BADGE / 2}" r="${BADGE / 2}" fill="${sh.color}"/>
+    <text x="${box.x + NOTE_PAD + BADGE / 2}" y="${box.y + NOTE_PAD + BADGE / 2 + 4}" text-anchor="middle" font-family="Geist Mono, monospace" font-size="10.5" font-weight="600" fill="#fff">${sh.n}</text>${text}</g>`;
+}
+function markers(s) {
+  return [...new Set(s.shapes.map((x) => x.color))].map((c) => `<marker id="ah-${slug(c)}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="${c}"/></marker>`).join('');
+}
+/** mode: 'thumb' (image + shapes) | 'full' (editor, interactive) | 'export' (what Copy produces) */
+function snipSVG(id, cls = 'snipthumb', mode = 'thumb') {
+  const s = SNIPS.find((x) => x.id === id) || SNIPS[0];
+  const H = ih(s);
+  if (mode === 'thumb') return `<svg class="${cls}" viewBox="0 0 ${IW} ${H}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${esc(s.name)}">${artSVG(s)}${s.shapes.map((sh) => shapeSVG(sh, false)).join('')}</svg>`;
+  const nb = noteBoxes(s);
+  const shown = mode === 'export' ? s.shapes.filter((x) => !x.hide) : s.shapes;
+  const b = mode === 'export' ? bounds(s) : { x0: -200, y0: -80, x1: IW + 200, y1: H + 80 };
+  const m = mode === 'export' && (b.x0 < 0 || b.y0 < 0 || b.x1 > IW || b.y1 > H) ? 12 : 0;
+  const vb = `${b.x0 - m} ${b.y0 - m} ${b.x1 - b.x0 + 2 * m} ${b.y1 - b.y0 + 2 * m}`;
+  return `<svg class="${cls}" viewBox="${vb}" ${mode === 'full' ? `width="${b.x1 - b.x0}" height="${b.y1 - b.y0}"` : ''} role="img" aria-label="${esc(s.name)}">
+    <defs>${markers(s)}</defs>${mode === 'export' && m ? `<rect x="${b.x0 - m}" y="${b.y0 - m}" width="${b.x1 - b.x0 + 2 * m}" height="${b.y1 - b.y0 + 2 * m}" fill="#09090B"/>` : ''}
+    <g data-image="1">${artSVG(s)}</g>
+    ${shown.map((sh) => shapeSVG(sh, mode === 'full' && S.sel === sh.n)).join('')}
+    ${shown.map((sh) => noteSVG(sh, nb[sh.n], mode === 'full' && S.sel === sh.n)).join('')}
+    <g id="liveRect"></g></svg>`;
 }
 
-/* ---------- Banner: the Agent Chat pixel dissolve, redrawn from theme tokens ---------- */
 function drawBanner(cv, seed = 7) {
   const r = cv.getBoundingClientRect();
   if (!r.width) return;
@@ -1010,6 +1198,7 @@ function drawBanner(cv, seed = 7) {
 }
 const redrawBanners = () => document.querySelectorAll('canvas.banner').forEach((c, i) => drawBanner(c, Number(c.dataset.seed || i + 3)));
 
+
 /* ---------- Theme ---------- */
 function applyTheme() {
   const root = document.documentElement;
@@ -1044,33 +1233,34 @@ function renderSide() {
   const q = S.query.toLowerCase();
   const rows = [];
   const want = (t) => S.filter === 'all' || S.filter === t;
-  if (want('chats')) CHATS.forEach((c) => rows.push({ t: 'chat', o: c, day: c.day, key: c.title + c.meta }));
-  if (want('snips')) SNIPS.forEach((s) => rows.push({ t: 'snip', o: s, day: s.day, key: s.name }));
+  if (want('chats')) CHATS.forEach((c) => rows.push({ t: 'chat', o: c, day: c.day, group: c.team, key: c.title + c.meta + c.team }));
+  if (want('snips')) SNIPS.forEach((s) => rows.push({ t: 'snip', o: s, day: s.day, key: s.name + s.shapes.map((x) => x.note).join(' ') + s.tags.join(' ') }));
   if (want('zips')) ZIPS.forEach((z) => rows.push({ t: 'zip', o: z, day: z.day, key: z.name }));
   const shown = rows.filter((r) => !q || r.key.toLowerCase().includes(q));
-  const days = ['Today', 'Earlier'];
-  const count = (d) => shown.filter((r) => r.day === d).length;
   const isAura = S.theme === 'aura';
   const lab = (t, n) => isAura ? `${t} {${String(n).padStart(2, '0')}}` : t;
   const rowHTML = (r) => {
     const o = r.o;
     if (r.t === 'chat') {
-      const active = !S.ws && S.chat === o.id || (S.ws && S.chat === o.id && false);
-      return `<button class="item ${S.chat === o.id && !S.ws ? 'active' : ''}" data-chat="${o.id}">${avatar(o.agent)}<span style="min-width:0"><div class="ttl">${esc(o.title)}</div><div class="meta">${esc(o.meta)}</div></span><span class="meta">${o.time}</span></button>`;
+      return `<button class="item ${S.chat === o.id && !S.ws ? 'active' : ''}" data-chat="${o.id}">${avatar(o.agent)}<span style="min-width:0"><div class="ttl">${esc(o.title)}</div><div class="meta">${esc(o.meta)}</div></span>${o.unread ? `<span class="badge" aria-label="${o.unread} unread">${o.unread}</span>` : `<span class="meta">${o.time}</span>`}</button>`;
     }
     if (r.t === 'snip') {
       const active = S.ws && S.ws.kind === 'snip' && S.ws.id === o.id;
-      return `<button class="item ${active ? 'active' : ''}" data-snip="${o.id}"><span class="thumb">${snipSVG(o.id)}</span><span style="min-width:0"><div class="ttl">${esc(o.name)}</div><div class="meta"><span class="mono">${o.callouts.length} callouts · ${o.w} × ${o.h}</span></div></span>${cloudIcon(o.saved)}</button>`;
+      return `<button class="item ${active ? 'active' : ''}" data-snip="${o.id}"><span class="thumb">${snipSVG(o.id)}</span><span style="min-width:0"><div class="ttl">${esc(o.name)}</div><div class="meta"><span class="mono">${o.shapes.length} callouts · ${o.w} × ${o.h}</span></div></span>${cloudIcon(o.saved)}</button>`;
     }
     const open = !!S.open[o.id];
     return `<button class="item" data-zip="${o.id}" aria-expanded="${open}"><span class="thumb">${ico('package')}</span><span style="min-width:0"><div class="ttl">${esc(o.name)}</div><div class="meta"><span class="mono">${o.meta}</span></div></span><span class="cloud" style="transform:rotate(${open ? 90 : 0}deg);transition:transform 120ms">${ico('chev', 'sm')}</span></button>${open ? `<div class="tree">${treeHTML(o.tree, o.id, 0)}</div>` : ''}`;
   };
-  const listHTML = days.map((d) => count(d) ? `<div class="sec"><span class="label">${lab(d, count(d))}</span></div>${shown.filter((r) => r.day === d).map(rowHTML).join('')}` : '').join('') || `<p class="hint" style="padding:12px 8px">Nothing matches "${esc(S.query)}".</p>`;
+  // Chats filter groups by team, like Agent Chat's Projects; everything else groups by day.
+  const groups = S.filter === 'chats' ? [...new Set(shown.map((r) => r.group))] : ['Today', 'Earlier'];
+  const inGroup = (r, g) => (S.filter === 'chats' ? r.group === g : r.day === g);
+  const listHTML = groups.map((g) => { const n = shown.filter((r) => inGroup(r, g)).length; return n ? `<div class="sec"><span class="label" title="${esc(g)}" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(lab(g, n))}</span></div>${shown.filter((r) => inGroup(r, g)).map(rowHTML).join('')}` : ''; }).join('') || `<p class="hint" style="padding:12px 8px">Nothing matches "${esc(S.query)}".</p>`;
   const agentHTML = Object.entries(AGENTS).map(([k, a]) => {
     const active = S.ws && S.ws.kind === 'agent' && S.ws.id === k;
     return `<button class="item ${active ? 'active' : ''}" data-agent="${k}">${avatar(k)}<span style="min-width:0"><div class="ttl">${a.name}</div><div class="meta">${a.role} · personality, memory</div></span><span class="cloud">${ico('brain', 'sm')}</span></button>`;
   }).join('');
   const f = (id, l) => `<button class="chip" data-filter="${id}" aria-pressed="${S.filter === id}">${l}</button>`;
+  const unread = CHATS.reduce((a, c) => a + c.unread, 0);
   const pop = S.pop ? `<div class="pop" role="dialog" aria-label="Appearance">
       <span class="label">Theme</span>
       <div class="seg">${['system', 'light', 'dark', 'aura'].map((t) => `<button data-theme-set="${t}" aria-pressed="${S.theme === t}">${t[0].toUpperCase() + t.slice(1)}</button>`).join('')}</div>
@@ -1078,106 +1268,171 @@ function renderSide() {
       <span class="hint">${S.theme === 'system' ? 'Follows Windows: Light or Dark.' : S.theme === 'aura' ? 'Aura: flat grounds, one highlight. Sage is the default.' : S.theme === 'light' ? 'Collide Light. Draft (not yet approved by Grant).' : 'Collide Dark, from the design system.'}</span>
     </div>` : '';
   $('#side').innerHTML = `
-    <div class="brand">${logo()}<span class="word">Collide</span><span class="mode label" title="Server mode: this PC holds the chats and markups"><span class="dot"></span>Server</span></div>
+    <div class="brand">${logo()}<span class="word">Collide</span><button class="mode label" id="modePill" style="border:0" title="${S.settings.mode === 'server' ? 'Server: this PC keeps the chats and markups and receives reports' : 'Connected to the server PC'}"><span class="dot"></span>${S.settings.mode === 'server' ? 'Server' : 'Connected'}</button></div>
     <div class="actions">
-      <button class="btn primary" id="newSnip">${ico('scissors')}New snip</button>
-      <select class="select" id="delay" aria-label="Snip delay"><option>No delay</option><option>3 s</option><option>5 s</option><option>10 s</option></select>
+      <button class="btn primary" id="newSnip" title="New snip (Ctrl+Alt+S)">${ico('scissors')}New snip</button>
+      <label style="display:contents"><span hidden>Snip delay</span><select class="select" id="delay" aria-label="Delay before New snip captures">${['No delay', '3 s', '5 s', '10 s'].map((d) => `<option ${S.delay === d ? 'selected' : ''}>${d}</option>`).join('')}</select></label>
       <div class="row3"><button class="btn" id="newChat">${ico('plus')}New chat</button><button class="btn" id="openZip">${ico('package')}Open zip</button></div>
     </div>
-    <label class="search">${ico('search', 'sm')}<input id="q" placeholder="Search chats, snips, zips" value="${esc(S.query)}" aria-label="Search"></label>
-    <div class="filters">${f('all', 'All')}${f('chats', 'Chats')}${f('snips', 'Snips')}${f('zips', 'Zips')}</div>
+    <label class="search">${ico('search', 'sm')}<input id="q" placeholder="Search chats, notes, zips" value="${esc(S.query)}" aria-label="Search"></label>
+    <div class="filters">${f('all', 'All')}${f('chats', unread ? `Chats ${unread}` : 'Chats')}${f('snips', 'Snips')}${f('zips', 'Zips')}</div>
     <div class="scroll">
       ${listHTML}
       <div class="sec"><span class="label">${lab('Agents', 4)}</span></div>
       ${agentHTML}
       <div class="sec"><span class="label">Tags</span></div>
-      <div class="tags"><span class="tag">Line 3</span><span class="tag">Conveyor</span><span class="tag">P&amp;ID</span></div>
+      <div class="tags">${['Line 3', 'Conveyor', 'P&ID'].map((t) => `<button class="tag" data-tag="${esc(t)}">${esc(t)}</button>`).join('')}</div>
     </div>
     <div class="foot">${pop}
       <button class="btn ghost" id="themeBtn" aria-expanded="${S.pop}">${ico('palette')}Appearance</button>
       <span style="flex:1"></span>
-      <button class="btn ghost icon" title="Settings" aria-label="Settings">${ico('settings')}</button>
+      <button class="btn ghost icon" id="settingsBtn" title="Settings and Connect" aria-label="Settings and Connect">${ico('settings')}</button>
     </div>`;
   const qi = $('#q'); if (S._focusQ) { qi.focus(); qi.setSelectionRange(qi.value.length, qi.value.length); S._focusQ = false; }
 }
 
 /* ---------- Chat ---------- */
+function mdLite(src) { return esc(src).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>'); }
+function fullReportHTML(body) {
+  let out = '', list = false;
+  for (const line of String(body).split('\n')) {
+    const li = /^\s*[-*]\s+(.*)/.exec(line), h = /^#{1,6}\s+(.*)/.exec(line);
+    if (li) { if (!list) { out += '<ul>'; list = true; } out += `<li>${mdLite(li[1])}</li>`; continue; }
+    if (list) { out += '</ul>'; list = false; }
+    if (h) out += `<h4>${mdLite(h[1])}</h4>`; else if (line.trim()) out += `<p>${mdLite(line)}</p>`;
+  }
+  return out + (list ? '</ul>' : '');
+}
+function reportHTML(r, key) {
+  const open = !!S.openReports[key];
+  const st = Object.entries(r.stats || {});
+  return `<div class="report" id="rep-${key}"><span class="kicker">Nightly report · ${esc(r.runDate)}</span>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="status ${esc(r.status)}">${esc(r.status)}</span><b>${esc(r.title)}</b></div>
+    ${st.length ? `<div class="stats">${st.map(([k, v]) => `<span><b>${esc(v)}</b> ${esc(k)}</span>`).join('')}</div>` : ''}
+    ${r.summary ? `<span>${mdLite(r.summary)}</span>` : ''}
+    ${r.body || r.link ? `<button class="linkbtn" data-report="${key}" aria-expanded="${open}">${open ? 'Hide full report' : 'View full report'}</button>${open ? `<div class="full">${fullReportHTML(r.body)}${r.link ? `<p><a href="${esc(r.link)}" target="_blank" rel="noopener">Open on GitHub</a></p>` : ''}</div>` : ''}` : ''}</div>`;
+}
 function renderChat() {
   const c = CHATS.find((x) => x.id === S.chat);
   const a = c ? AGENTS[c.agent] : null;
   const msgs = c ? (MESSAGES[c.id] || []) : [];
-  const ctx = S.ws ? (S.ws.kind === 'snip' ? SNIPS.find((s) => s.id === S.ws.id).name : S.ws.kind === 'doc' ? S.ws.name : `${AGENTS[S.ws.id].name} · ${S.agentTab}`) : null;
-  const body = c ? msgs.map((m) => {
-    if (m.from === 'me') return `<div class="msg me"><div><div class="bubble">${m.text}</div><div class="time">${m.time}</div></div></div>`;
-    const inner = m.report
-      ? `<div class="report"><span class="status">${esc(m.report.status)}</span><b>${esc(m.report.title)}</b><span class="mono" style="color:var(--t3)">${esc(m.report.line)}</span><span>${esc(m.report.note)}</span><button class="btn" style="justify-self:start;height:28px;margin-top:4px">View full report</button></div>`
-      : `${m.text}${m.snip ? `<button class="attach" data-snip="${m.snip}">${snipSVG(m.snip)}<span style="min-width:0"><b>${esc(SNIPS.find((s) => s.id === m.snip).name)}</b><div class="meta mono" style="color:var(--t3)">Open in Snip</div></span></button>` : ''}`;
-    return `<div class="msg">${avatar(m.from)}<div style="min-width:0;flex:1"><div class="sender">${AGENTS[m.from].name}</div><div class="bubble">${inner}</div><div class="time" style="text-align:left">${m.time}</div></div></div>`;
-  }).join('') : `<div class="empty">${logo()}<h2>New chat<span>Snip, open a zip, or type.</span></h2><p>Snips and zip files you open here appear in Recents on the left.</p></div>`;
+  const ctx = S.ws ? (S.ws.kind === 'snip' ? SNIPS.find((s) => s.id === S.ws.id).name : S.ws.kind === 'doc' ? S.ws.name : S.ws.kind === 'settings' ? 'Settings' : `${AGENTS[S.ws.id].name} · ${S.agentTab}`) : null;
+  let prev = null, body = '';
+  msgs.forEach((m, i) => {
+    if (!prev || prev.day !== m.day) body += `<div class="day">${esc(m.day)}</div>`;
+    const grouped = prev && prev.from === m.from && prev.day === m.day && prev.time === m.time && !m.report && !prev.report;
+    if (m.from === 'me') body += `<div class="msg me ${grouped ? 'grouped' : ''}"><div><div class="bubble">${m.text}${m.snip ? `<button class="attach" data-snip="${m.snip}">${snipSVG(m.snip)}<span><b>${esc(SNIPS.find((s) => s.id === m.snip).name)}</b></span></button>` : ''}</div><div class="time">${m.time}</div></div></div>`;
+    else {
+      const inner = m.report ? reportHTML(m.report, `${c.id}-${i}`)
+        : `${m.text}${m.snip ? `<button class="attach" data-snip="${m.snip}">${snipSVG(m.snip)}<span style="min-width:0"><b>${esc(SNIPS.find((s) => s.id === m.snip).name)}</b><div class="meta mono" style="color:var(--t3)">Open in Snip</div></span></button>` : ''}`;
+      body += `<div class="msg ${grouped ? 'grouped' : ''}">${avatar(m.from)}<div style="min-width:0;flex:1">${grouped ? '' : `<div class="sender">${AGENTS[m.from].name}</div>`}<div class="bubble" ${m.report ? 'style="padding:4px;background:transparent;border:0"' : ''}>${inner}</div><div class="time" style="text-align:left">${m.time}</div></div></div>`;
+    }
+    prev = m;
+  });
+  if (c && !msgs.length) body = '<div class="empty"><p>No messages yet.</p></div>';
+  const reports = msgs.map((m, i) => ({ m, i })).filter((x) => x.m.report);
   $('#chat').innerHTML = `
     <div class="dockbar"><button class="btn ghost icon" id="dockOpen" title="Show chat" aria-label="Show chat">${ico('chat')}</button>${a ? avatar(c.agent) : ''}</div>
     <div class="chathead"><canvas class="banner" data-seed="${c ? c.id.length + 3 : 5}"></canvas>
       <div class="bar">
         <button class="hbtn mobile-only" id="sideBtn" aria-label="Recents">${ico('menu', 'sm')}</button>
         ${a ? avatar(c.agent) : logo()}
-        <div class="who"><div class="n">${c ? esc(a.name + ' · ' + c.title) : 'New chat'}</div><div class="s">${c ? esc(a.role + ' · reports from issue #2') : 'Claude on the server PC'}</div></div>
-        
-        ${a ? `<button class="hbtn" data-agent="${c.agent}" title="Edit ${a.name}'s personality and memory">${ico('brain', 'sm')}<span>Agent files</span></button>` : ''}
+        <div class="who"><div class="n">${c ? esc(a.name + ' · ' + c.title) : 'New chat'}</div><div class="s">${c ? esc(c.team) : 'Claude on the server PC'}</div></div>
+        ${c ? `<button class="hbtn" id="reportsBtn" aria-expanded="${S.reportsPop}" title="Reports in this project">${ico('reports', 'sm')}<span>Reports ${reports.length}</span></button>` : ''}
+        ${a ? `<button class="hbtn" data-agent="${c.agent}" title="Edit ${a.name}'s personality, memory and picture">${ico('brain', 'sm')}<span>Agent files</span></button>` : ''}
         ${S.ws ? `<button class="hbtn mobile-only" id="phoneBack" aria-label="Back to workspace">${ico('x', 'sm')}</button><button class="hbtn" id="dockMin" title="Minimise chat" aria-label="Minimise chat">${ico('panelRight', 'sm')}</button>` : ''}
       </div>
     </div>
-    <div class="log"><div class="log-inner">${body}</div></div>
+    ${S.reportsPop && c ? `<div class="hpop" role="dialog" aria-label="Reports">${reports.length ? reports.slice().reverse().map(({ m, i }) => `<button class="rep" data-goto="${c.id}-${i}"><span style="display:flex;gap:8px;align-items:center"><span class="status ${esc(m.report.status)}">${esc(m.report.status)}</span><b>${esc(m.report.title)}</b></span><span class="meta" style="color:var(--t4);font-size:11.5px">${esc(m.report.runDate)} · ${AGENTS[m.from].name}</span></button>`).join('') : '<p class="hint" style="padding:8px">No reports yet for this project.</p>'}</div>` : ''}
+    ${S.addProject ? `<form class="dialog" id="addForm" aria-label="Add a project"><span class="label">Add a project</span>
+      <label class="field"><span class="hint">Team</span><input id="apTeam" value="${esc(TEAM)}" required></label>
+      <label class="field"><span class="hint">Project name</span><input id="apName" placeholder="Project Iron" required></label>
+      <label class="field"><span class="hint">Agent name</span><input id="apAgent" placeholder="Lydia" required></label>
+      <label class="field"><span class="hint">Description (optional)</span><input id="apDesc" placeholder="Nightly reports"></label>
+      <div class="btnrow"><button class="btn primary">Add project</button><button type="button" class="btn ghost" id="apCancel">Cancel</button></div></form>` : ''}
+    <div class="log"><div class="log-inner">${c ? body : `<div class="empty">${logo()}<h2>New chat<span>Snip, open a zip, or type.</span></h2><p>Snips and zip files you open here appear in Recents on the left.</p></div>`}</div></div>
+    ${S.typing && a ? `<div class="typing"><i></i><i></i><i></i> ${a.name} is typing…</div>` : ''}
     <div class="composer-wrap">
-      ${ctx ? `<div class="context"><span class="ctx">${ico(S.ws.kind === 'snip' ? 'scissors' : S.ws.kind === 'doc' ? 'md' : 'brain', 'sm')}Ask about: ${esc(ctx)}</span></div>` : ''}
+      ${ctx || S.attach ? `<div class="context">${ctx ? `<span class="ctx">${ico(S.ws.kind === 'snip' ? 'scissors' : S.ws.kind === 'doc' ? 'md' : S.ws.kind === 'settings' ? 'settings' : 'brain', 'sm')}Ask about: ${esc(ctx)}</span>` : ''}${S.attach ? `<span class="ctx">${ico('image', 'sm')}${esc(SNIPS.find((s) => s.id === S.attach).name)} <button class="linkbtn" id="dropAttach" aria-label="Remove attachment">${ico('x', 'sm')}</button></span>` : ''}</div>` : ''}
       <form class="composer" id="composer">
         <button type="button" class="btn ghost icon" title="Snip into this message" aria-label="Snip into this message" id="snipInto">${ico('scissors')}</button>
         <button type="button" class="btn ghost icon" title="Attach a file or zip" aria-label="Attach a file or zip">${ico('clip')}</button>
-        <textarea id="input" rows="1" placeholder="${a ? 'Message ' + a.name : 'Message Claude'}" aria-label="Message"></textarea>
+        <textarea id="input" rows="1" placeholder="${a ? 'Type reply' : 'Message Claude'}" aria-label="Message"></textarea>
         <button class="send" aria-label="Send">${ico('send')}</button>
       </form>
     </div>`;
   const log = $('.log', $('#chat')); log.scrollTop = log.scrollHeight;
+  requestAnimationFrame(redrawBanners);
 }
 
 /* ---------- Workspace ---------- */
-const COLORS = [['accent', 'var(--accent)'], ['steel', '#4C87C4'], ['amber', '#E3A73A'], ['moss', '#3FAF7A'], ['ink', 'var(--t1)']];
-function headHTML(kindIcon, name, path, extra = '') {
+const COLORS = [[SIG, 'Signal'], [STEEL, 'Steel'], [AMBER, 'Amber'], [INK50, 'White']];
+function headHTML(kindIcon, name, path, extra = '', saveLabel) {
   return `<div class="wshead">
     <button class="btn ghost icon mobile-only" id="sideBtn2" aria-label="Recents">${ico('menu')}</button>
     <span class="kind">${ico(kindIcon)}</span>
     <div style="min-width:0;display:grid"><span class="name">${esc(name)}</span><span class="path mono">${esc(path)}</span></div>
     <span style="flex:1"></span>
-    <span class="saved ${S.dirty ? 'dirty' : ''}"><span class="d"></span><span class="lbl">${S.dirty ? 'Unsaved changes' : 'Saved on the server · autosave'}</span></span>
+    <span class="saved ${S.dirty ? 'dirty' : ''}"><span class="d"></span><span class="lbl">${S.dirty ? 'Unsaved changes' : saveLabel || (S.settings.mode === 'server' ? 'Saved on the server · autosave' : 'Saved on the server')}</span></span>
     ${extra}
-    <button class="btn" id="wsSave" ${S.dirty ? '' : 'disabled'}>${ico('save')}<span>Save</span></button>
+    <button class="btn" id="wsSave" title="Save (Ctrl+S)" ${S.dirty ? '' : 'disabled'}>${ico('save')}<span>Save</span></button>
     <button class="btn mobile-only" id="phoneChat" aria-label="Chat">${ico('chat')}</button>
     <button class="btn" id="wsClose" title="Close and return to chat">${ico('x')}<span>Close</span></button>
   </div>
   ${S.closing ? `<div class="unsaved" role="alert"><span class="msgtxt">Save changes to <b>${esc(name)}</b> before closing?</span><button class="btn primary" id="saveClose">Save and close</button><button class="btn" id="discardClose">Close without saving</button><button class="btn ghost" id="cancelClose">Cancel</button></div>` : ''}`;
 }
+const snipOf = () => SNIPS.find((x) => x.id === S.ws.id);
+function zoomPct() { const s = snipOf(); return Math.round(S.view.k * IW / s.w * 100); }
+function fitView() {
+  const st = $('#stage'); if (!st || !S.ws || S.ws.kind !== 'snip') return;
+  const s = snipOf(), W = IW + 400, H = ih(s) + 160;
+  const r = st.getBoundingClientRect();
+  const k = Math.min(r.width / W, r.height / H) * 0.98;
+  S.view = { k, x: (r.width - W * k) / 2, y: (r.height - H * k) / 2, fit: true };
+  applyView();
+}
+function applyView() {
+  const z = $('#zoomer'); if (!z || !S.view) return;
+  const s = snipOf();
+  z.style.width = (IW + 400) + 'px'; z.style.height = (ih(s) + 160) + 'px';
+  z.style.transform = `translate(${S.view.x}px, ${S.view.y}px) scale(${S.view.k})`;
+  const zs = $('#zoomStat'); if (zs) zs.textContent = zoomPct() + '%';
+}
+function redrawStage() { const z = $('#zoomer'); if (z) { z.innerHTML = snipSVG(S.ws.id, 'snipfull', 'full'); } }
 function renderSnipWS() {
-  const s = SNIPS.find((x) => x.id === S.ws.id);
-  const tools = [['select', 'pointer', 'Select', 'V'], ['rect', 'square', 'Rectangle', 'R'], ['ellipse', 'circle', 'Ellipse', 'O'], ['arrow', 'arrow', 'Arrow', 'A'], ['callout', 'callout', 'Callout', 'C'], ['text', 'text', 'Text', 'T'], ['pen', 'pen', 'Pen', 'P']];
-  $('#ws').innerHTML = headHTML('scissors', s.name, `Markups/${s.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/ · ${s.w} × ${s.h}`) + `
+  const s = snipOf();
+  const tools = [['select', 'pointer', 'Select', 'V'], ['rect', 'square', 'Rectangle', 'R'], ['ellipse', 'circle', 'Ellipse', 'O'], ['rect-fill', 'squareFill', 'Filled rectangle', ''], ['ellipse-fill', 'circleFill', 'Filled ellipse', ''], ['cross', 'cross', 'X mark', 'X'], ['point', 'dot', 'Point', 'P']];
+  $('#ws').innerHTML = headHTML('scissors', s.name, `Documents/Collide/Markups/${slug(s.name)}/`) + `
     <div class="toolbar" role="toolbar" aria-label="Markup tools">
-      ${tools.map(([k, ic, l, key]) => `<button class="tool" data-tool="${k}" aria-pressed="${S.tool === k}" title="${l} (${key})" aria-label="${l}">${ico(ic)}</button>`).join('')}
+      <button class="tool" data-tool="canvas-snip" aria-pressed="${S.tool === 'canvas-snip'}" title="Canvas snip: drag a box on the canvas; copies it and opens it as a new markup (Esc cancels)" aria-label="Canvas snip">${ico('crop')}</button>
+      <button class="tool" id="openFile" title="Open file" aria-label="Open file">${ico('fileUp')}</button>
       <span class="vsep"></span>
-      ${COLORS.map(([k, v]) => `<button class="swatch" data-color="${k}" aria-pressed="${S.color === k}" aria-label="Colour ${k}" style="background:${v}"></button>`).join('<span style="width:4px"></span>')}
+      ${tools.map(([k, ic, l, key]) => `<button class="tool" data-tool="${k}" aria-pressed="${S.tool === k}" title="${l}${key ? ` (${key})` : ''}" aria-label="${l}">${ico(ic)}</button>`).join('')}
       <span class="vsep"></span>
-      <button class="tool" title="Undo (Ctrl+Z)" aria-label="Undo" id="undo">${ico('undo')}</button><button class="tool" title="Redo" aria-label="Redo">${ico('redo')}</button>
+      ${COLORS.map(([v, l]) => `<button class="swatch" data-color="${v}" aria-pressed="${S.color === v}" aria-label="Colour ${l}" style="background:${v}"></button>`).join('<span style="width:4px"></span>')}
       <span class="vsep"></span>
-      <button class="tool" title="Canvas snip: drag a box to copy it" aria-label="Canvas snip">${ico('crop')}</button>
-      <button class="tool" id="copyImg" title="Copy image to clipboard (Ctrl+Shift+C)">${ico('copy')}<span>Copy</span></button>
+      <span role="group" aria-label="Stroke width" style="display:flex;gap:2px">${[2, 3, 5].map((w) => `<button class="stroke" data-sw="${w}" aria-pressed="${S.sw === w}" aria-label="Stroke ${w}"><span style="height:${w}px"></span></button>`).join('')}</span>
+      <span style="flex:1 1 0;min-width:4px"></span>
+      <button class="tool" id="undo" title="Undo (Ctrl+Z)" aria-label="Undo" ${S.hist.length ? '' : 'disabled style="opacity:.4"'}>${ico('undo')}</button>
+      <button class="tool" id="redoBtn" title="Redo (Ctrl+Y)" aria-label="Redo" ${S.redo.length ? '' : 'disabled style="opacity:.4"'}>${ico('redo')}</button>
+      <span class="vsep"></span>
+      <button class="tool" id="openMarkup" title="Open markup" aria-label="Open markup">${ico('folderOpen')}</button>
+      <button class="tool" id="copyImg" title="Copy image to clipboard (Ctrl+Shift+C)" aria-label="Copy to clipboard">${ico('copy')}</button>
+      <button class="btn" id="exportBtn" style="height:28px">${ico('share', 'sm')}Export</button>
     </div>
     <div class="wsbody">
-      <div class="stage ${S.tool === 'callout' || S.tool === 'rect' ? 'cursor-add' : ''}" id="stage">${snipSVG(s.id, 'snipfull', true)}</div>
+      <div class="stage ${['canvas-snip', 'select'].includes(S.tool) ? '' : 'cursor-add'} ${S.tool === 'canvas-snip' ? 'cursor-add' : ''}" id="stage"><div class="zoomer" id="zoomer">${snipSVG(s.id, 'snipfull', 'full')}</div></div>
       <aside class="numbered" aria-label="Callouts">
-        <div class="head"><span class="label">Callouts ${S.theme === 'aura' ? `{${String(s.callouts.length).padStart(2, '0')}}` : '· ' + s.callouts.length}</span><button class="btn ghost" style="height:26px;font-size:12px" data-tool="callout">${ico('plus', 'sm')}Add</button></div>
-        <div class="list">${s.callouts.length ? s.callouts.map((c) => `<div class="el ${S.sel === c.n ? 'sel' : ''}" data-sel="${c.n}"><span class="num">${c.n}</span><div style="min-width:0"><div class="k">${c.type}</div>${S.sel === c.n ? `<textarea data-note="${c.n}" aria-label="Note for callout ${c.n}">${esc(c.note)}</textarea>` : `<div class="txt">${esc(c.note || 'No note yet.')}</div>`}</div></div>`).join('') : '<p class="hint" style="padding:8px">Draw on the image to add a callout.</p>'}</div>
+        <div class="head"><span class="label">Callouts ${S.theme === 'aura' ? `{${String(s.shapes.length).padStart(2, '0')}}` : '· ' + s.shapes.length}</span></div>
+        <div class="list" id="calloutList">${calloutsHTML(s)}</div>
         <div class="foot2"><button class="btn" id="askSnip">${ico('chat')}Ask about this snip</button></div>
       </aside>
     </div>
-    <div class="statusbar"><span>${s.w} × ${s.h}</span><span>Zoom fit</span><span>${s.callouts.length} callouts</span><span style="margin-left:auto">Ctrl+Alt+S new snip</span></div>`;
+    <div class="statusbar"><span class="kbd">Ctrl</span><span class="kbd" style="margin-left:-10px">Alt</span><span class="kbd" style="margin-left:-10px">S</span><span style="margin-left:-8px">to snip</span><span style="margin-left:auto" id="zoomStat"></span><span>${s.w} × ${s.h}</span></div>`;
+  if (S.view && S.view.id === s.id && !S.view.fit) applyView(); else requestAnimationFrame(() => { fitView(); S.view.id = s.id; });
+}
+function calloutsHTML(s) {
+  return s.shapes.length ? s.shapes.map((c) => `<div class="el ${S.sel === c.n ? 'sel' : ''} ${c.hide ? 'dim' : ''}" data-sel="${c.n}"><span class="num" style="background:${c.color};color:${c.color === INK50 ? '#09090B' : '#fff'}">${c.n}</span><div style="min-width:0"><div class="row"><span class="k">${TYPE_LABEL[c.type]}</span><button class="hidebtn" data-hide="${c.n}" aria-pressed="${!!c.hide}" title="${c.hide ? 'Number and arrow are hidden from Copy and Export' : 'Hide this number and arrow from Copy and Export'}">${c.hide ? 'Show #' : 'Hide #'}</button></div><textarea data-note="${c.n}" rows="2" placeholder="Add a note" aria-label="Note for callout ${c.n}">${esc(c.note)}</textarea></div></div>`).join('') : '<p class="hint" style="padding:8px">Draw on the image to add a callout.</p>';
 }
 function headings(text) {
   const out = []; text.split('\n').forEach((l, i) => { const m = /^(#{1,3})\s+(.*)/.exec(l); if (m) out.push({ level: m[1].length, text: m[2], line: i }); const im = /^!\[([^\]]*)\]\(([^)]+)\)/.exec(l); if (im) out.push({ level: 9, text: im[1] || im[2], line: i, img: true }); });
@@ -1192,8 +1447,8 @@ function mdHTML(src) {
     if ((m = /^(#{1,3})\s+(.*)/.exec(line))) { close(); html += `<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`; }
     else if ((m = /^!\[([^\]]*)\]\(([^)]+)\)/.exec(line))) {
       close();
-      const snip = SNIPS.find((s) => m[2].includes(s.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')));
-      html += `<figure>${snip ? snipSVG(snip.id, 'fig', true) : `<svg viewBox="0 0 640 200"><rect width="640" height="200" fill="var(--sunk)"/></svg>`}<figcaption class="mono">${esc(m[2])}</figcaption></figure>`;
+      const snip = SNIPS.find((s) => m[2].includes(slug(s.name)));
+      html += `<figure>${snip ? snipSVG(snip.id, 'fig', 'export') : `<svg viewBox="0 0 640 200"><rect width="640" height="200" fill="var(--sunk)"/></svg>`}<figcaption class="mono">${esc(m[2])}</figcaption></figure>`;
     }
     else if ((m = /^\s*[-*]\s+(.*)/.exec(line))) { if (list !== 'ul') { close(); html += '<ul>'; list = 'ul'; } html += `<li>${inline(m[1])}</li>`; }
     else if ((m = /^\s*\d+\.\s+(.*)/.exec(line))) { if (list !== 'ol') { close(); html += '<ol>'; list = 'ol'; } html += `<li>${inline(m[1])}</li>`; }
@@ -1223,15 +1478,15 @@ function renderDocWS() {
         <div class="list">${outline.map((h, i) => `<button class="el" data-line="${h.line}"><span class="num">${i + 1}</span><div style="min-width:0"><div class="k">${h.img ? 'Image' : 'Heading ' + h.level}</div><div class="txt" style="padding-left:${h.img ? 0 : (h.level - 1) * 8}px">${esc(h.text)}</div></div></button>`).join('') || '<p class="hint" style="padding:8px">No headings in this file.</p>'}</div>
         <div class="foot2"><button class="btn" id="askDoc">${ico('chat')}Ask about this file</button></div>
       </aside>
-      ${S.picker ? `<div class="picker" role="dialog" aria-label="Insert snip"><span class="label">Insert snip</span>${SNIPS.map((s) => `<button class="attach" data-insert="${s.id}">${snipSVG(s.id)}<span><b>${esc(s.name)}</b><div class="meta mono" style="color:var(--t3)">${s.callouts.length} callouts · goes to images/</div></span></button>`).join('')}<label class="hint" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="withNotes" checked> Add callout notes as a numbered list</label><button class="btn ghost" id="pickClose">Cancel</button></div>` : ''}
+      ${S.picker ? `<div class="picker" role="dialog" aria-label="Insert snip"><span class="label">Insert snip</span>${SNIPS.map((s) => `<button class="attach" data-insert="${s.id}">${snipSVG(s.id)}<span><b>${esc(s.name)}</b><div class="meta mono" style="color:var(--t3)">${s.shapes.length} callouts · export.png → images/</div></span></button>`).join('')}<label class="hint" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="withNotes" checked> Add callout notes as a numbered list</label><button class="btn ghost" id="pickClose">Cancel</button></div>` : ''}
     </div>
     <div class="statusbar"><span>${esc(w.zip)}</span><span>UTF-8 · LF</span><span style="margin-left:auto">${w.text.split('\n').length} lines</span></div>`;
 }
 function renderImageWS() {
   const w = S.ws;
   $('#ws').innerHTML = headHTML('image', w.name, w.zip + w.path.replace(w.zipId, ''), '') + `
-    <div class="toolbar"><button class="tool">${ico('scissors')}<span>Open in Snip</span></button><button class="tool">${ico('copy')}<span>Copy</span></button><span class="hint mono" style="padding:0 6px">Rename warns about .md files that link to it</span></div>
-    <div class="wsbody"><div class="stage">${snipSVG('s-line3', 'snipfull', false)}</div><aside class="numbered"><div class="head"><span class="label">Linked from · 1</span></div><div class="list"><button class="el"><span class="num">1</span><div><div class="k">Markdown</div><div class="txt">P06-Project-Workspace-Spec.md</div></div></button></div></aside></div>
+    <div class="toolbar"><button class="tool" data-snip="s-line3">${ico('scissors')}<span>Open in Snip</span></button><button class="tool" id="copyImg">${ico('copy')}<span>Copy</span></button><span class="hint mono" style="padding:0 6px">Rename warns about .md files that link to it</span></div>
+    <div class="wsbody"><div class="stage" style="display:grid;place-items:center;padding:24px">${snipSVG('s-line3', 'snipfull', 'export')}</div><aside class="numbered"><div class="head"><span class="label">Linked from · 1</span></div><div class="list"><button class="el"><span class="num">1</span><div><div class="k">Markdown</div><div class="txt">P06-Project-Workspace-Spec.md</div></div></button></div></aside></div>
     <div class="statusbar"><span>PNG · 1280 × 720</span></div>`;
 }
 function renderAgentWS() {
@@ -1239,23 +1494,51 @@ function renderAgentWS() {
   const text = S.ws.text;
   const outline = headings(text).filter((h) => !h.img);
   $('#ws').innerHTML = headHTML('brain', `${a.name} · ${S.agentTab === 'personality' ? 'Personality' : 'Memory'}`, f.path) + `
-    <div class="agenthero"><canvas class="banner" data-solid="0.45" data-seed="${a.hue + 11}"></canvas><div class="in">${avatar(k)}<div><h2>${a.name}</h2><div class="label" style="margin-top:6px">${a.role}</div></div><span style="flex:1"></span>
+    <div class="agenthero"><canvas class="banner" data-solid="0.45" data-seed="${a.hue + 11}"></canvas><div class="in">${avatar(k)}<div><h2>${a.name}</h2><div class="label" style="margin-top:6px">${a.role}</div>
+      <div style="display:flex;gap:10px;margin-top:6px"><button class="linkbtn" id="picBtn" data-pic="${k}">Choose picture</button>${a.pic ? `<button class="linkbtn" id="picDel" data-pic="${k}">Remove</button>` : ''}</div></div><span style="flex:1"></span>
       <div class="tabs" role="tablist"><button role="tab" data-tab="personality" aria-selected="${S.agentTab === 'personality'}">${ico('user', 'sm')} Personality</button><button role="tab" data-tab="memory" aria-selected="${S.agentTab === 'memory'}">${ico('brain', 'sm')} Memory</button></div></div></div>
     <div class="toolbar"><button class="tool" data-md="## " aria-label="Heading">${ico('h')}</button><button class="tool" data-md="- " aria-label="List">${ico('list')}</button><button class="tool" data-md="**" aria-label="Bold">${ico('bold')}</button>
-      <span class="vsep"></span><span class="hint">${S.agentTab === 'personality' ? 'Read at the start of every run. Changes apply to the next run.' : 'What the agent keeps between runs. You can add, edit or delete lines.'}</span></div>
+      <span class="vsep"></span><span class="hint">${S.agentTab === 'personality' ? 'Read at the start of every run. Changes apply to the next run.' : 'What the agent keeps between runs. You can add, edit or delete lines.'} The picture is saved only on the server PC, not in the repository.</span></div>
     <div class="wsbody">
       <div class="docsplit split"><textarea class="src" id="src" spellcheck="true" aria-label="${esc(f.path)}">${esc(text)}</textarea><div class="preview" id="preview">${mdHTML(text)}</div></div>
       <aside class="numbered"><div class="head"><span class="label">Sections · ${outline.length}</span></div>
         <div class="list">${outline.map((h, i) => `<button class="el" data-line="${h.line}"><span class="num">${i + 1}</span><div style="min-width:0"><div class="k">Heading ${h.level}</div><div class="txt">${esc(h.text)}</div></div></button>`).join('')}</div>
-        <div class="foot2"><span class="hint">Draft (not yet approved by Grant): where these files live. See notes.</span></div></aside>
+        <div class="foot2"><span class="hint">Draft (not yet approved by Grant): where these files live.</span></div></aside>
     </div>
     <div class="statusbar"><span>${esc(f.path)}</span><span style="margin-left:auto">${text.split('\n').length} lines</span></div>`;
   requestAnimationFrame(redrawBanners);
+}
+const SETTINGS_SECTIONS = [['mode', 'This computer', 'server'], ['links', 'Open from other computers', 'globe'], ['ai', 'AI replies', 'brain'], ['endpoint', 'Agent report endpoint', 'send'], ['github', 'GitHub report source', 'github'], ['notify', 'Notifications', 'bell'], ['access', 'Access password', 'key']];
+function renderSettingsWS() {
+  const st = S.settings, c = CHATS.find((x) => x.id === S.chat) || CHATS[0];
+  const card = (id, title, icon, body) => `<section class="card" id="set-${id}"><h3>${ico(icon, 'sm')}${title}</h3>${body}</section>`;
+  $('#ws').innerHTML = headHTML('settings', 'Settings', '%APPDATA%\\Collide\\config.json', '', 'Saved') + `
+    <div class="wsbody">
+      <div class="settings">
+        ${card('mode', 'This computer', 'server', `
+          <label class="radio"><input type="radio" name="mode" value="server" ${st.mode === 'server' ? 'checked' : ''}> <b>Server</b><span class="hint">keeps the chats and markups, runs the AI and receives reports</span></label>
+          <label class="radio"><input type="radio" name="mode" value="client" ${st.mode === 'client' ? 'checked' : ''}> <b>Connected</b><span class="hint">opens the server PC's Collide; snips and Copy stay on this PC</span></label>
+          ${st.mode === 'client' ? `<label class="field"><span class="hint">Server address</span><input id="srvAddr" value="${esc(st.server)}" placeholder="[server address]:3500"></label>` : ''}
+          <div class="btnrow"><button class="btn" id="testConn">Test connection</button><button class="btn primary" id="saveRestart">Save and restart</button></div>
+          <span class="hint">${st.mode === 'client' ? 'Connected to ' + esc(st.server || '[server address]') : 'Running as the server. On the other computer, choose Connected and enter an address from Open from other computers.'} Closing the window hides Collide to the tray so other computers stay connected.</span>`)}
+        ${card('links', 'Open from other computers', 'globe', `<div><code>http://[this PC's network address]:3500</code></div><div><code>http://[Tailscale address]:3500</code></div><div class="btnrow"><button class="btn" data-copy="Network link">${ico('copy', 'sm')}Copy network link</button></div><span class="hint">Phones and browsers can open the link too (no screen capture).</span>`)}
+        ${card('ai', 'AI replies', 'brain', `<span>On · <code>claude</code> CLI found on this PC · model <code>claude-sonnet-5-5</code></span><span class="hint">Replies use the subscription the CLI is signed into. At most 2 run at once; others show "queued".</span>`)}
+        ${card('endpoint', 'Agent report endpoint', 'send', `<div><code>POST http://[this PC]:3500/api/reports</code></div><div>Header: <code>Authorization: Bearer &lt;report token&gt;</code></div><div>Project id for this chat: <code>${esc(c.id)}</code></div><div class="btnrow"><button class="btn" data-copy="Report token">${ico('key', 'sm')}Copy report token</button></div><span class="hint">See scripts/send-report.ps1 for a ready-made sender.</span>`)}
+        ${card('github', 'GitHub report source', 'github', `<span class="hint">For cloud agents: Collide reads ${esc(AGENTS[c.agent].name)}'s "Nightly report" comments from this issue.</span>
+          <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:8px"><label class="field"><span class="hint">owner/repo</span><input id="ghRepo" value="${esc(st.repo)}"></label><label class="field"><span class="hint">Issue</span><input id="ghIssue" type="number" value="${esc(st.issue)}"></label></div>
+          <div class="btnrow"><button class="btn" id="ghSave">Save</button><button class="btn" id="ghCheck">Check now</button></div><span class="hint" id="ghStatus">Checked 11:50 · checks every 5 minutes · 1 report imported</span>`)}
+        ${card('notify', 'Notifications', 'bell', `<label class="radio"><input type="checkbox" id="notifyBox" ${st.notify ? 'checked' : ''}> Desktop notification when a report arrives and Collide is in the background</label>`)}
+        ${card('access', 'Access password', 'key', `<label class="field"><span class="hint">Optional. Other computers, phones and browsers ask for it once.</span><input id="accessPw" type="password" value="${esc(st.password)}" placeholder="No password"></label>`)}
+      </div>
+      <aside class="numbered" aria-label="Sections"><div class="head"><span class="label">Sections · ${SETTINGS_SECTIONS.length}</span></div>
+        <div class="list">${SETTINGS_SECTIONS.map(([id, t], i) => `<button class="el" data-goto-set="${id}"><span class="num">${i + 1}</span><div style="min-width:0"><div class="txt" style="margin:0;color:var(--t1)">${t}</div></div></button>`).join('')}</div></aside>
+    </div>`;
 }
 function renderWS() {
   if (!S.ws) { $('#ws').innerHTML = ''; return; }
   if (S.ws.kind === 'snip') renderSnipWS();
   else if (S.ws.kind === 'doc') S.ws.type === 'image' ? renderImageWS() : renderDocWS();
+  else if (S.ws.kind === 'settings') renderSettingsWS();
   else renderAgentWS();
 }
 function layout() {
@@ -1268,10 +1551,12 @@ function render() { layout(); renderSide(); renderWS(); renderChat(); requestAni
 
 /* ---------- Actions ---------- */
 let toastT;
-function toast(t) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (el.hidden = true), 2200); }
+function toast(t) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (el.hidden = true), 2600); }
 function openWS(ws) {
-  if (S.ws && S.dirty) { S.closing = true; S.pending = ws; render(); return; }
-  S.ws = ws; S.dirty = false; S.closing = false; S.sel = null; S.picker = false; S.sideOpen = false; S.phoneChat = false; render();
+  if (S.ws && S.dirty) { S.closing = true; S.pending = ws; renderWS(); return; }
+  S.ws = ws; S.dirty = false; S.closing = false; S.sel = null; S.picker = false; S.sideOpen = false; S.phoneChat = false; S.hist = []; S.redo = []; S.view = null; S.reportsPop = false;
+  if (ws.kind === 'snip' && S.tool === 'canvas-snip') S.tool = 'select';
+  render();
 }
 function openFile(path) {
   const zip = ZIPS.find((z) => path.startsWith(z.id + '/'));
@@ -1279,16 +1564,18 @@ function openFile(path) {
   openWS({ kind: 'doc', type: file.type, name: file.name, path, text: file.text || '', zip: zip.name, zipId: zip.id, file });
 }
 function save() {
-  if (S.ws && S.ws.kind === 'doc' && S.ws.file) S.ws.file.text = S.ws.text;
-  if (S.ws && S.ws.kind === 'agent') AGENT_FILES[S.ws.id][S.agentTab].text = S.ws.text;
-  if (S.ws && S.ws.kind === 'snip') SNIPS.find((s) => s.id === S.ws.id).saved = true;
-  S.dirty = false; toast('Saved on the server');
+  if (!S.ws) return;
+  if (S.ws.kind === 'doc' && S.ws.file) S.ws.file.text = S.ws.text;
+  if (S.ws.kind === 'agent') AGENT_FILES[S.ws.id][S.agentTab].text = S.ws.text;
+  if (S.ws.kind === 'snip') { snipOf().saved = S.settings.mode === 'server'; }
+  S.dirty = false; S.closing = false;
+  toast(S.ws.kind === 'snip' ? `Saved to Markups/${slug(snipOf().name)}/ (source.png, annotations.json, export.png)` : S.ws.kind === 'settings' ? 'Saved' : 'Saved on the server');
 }
 function closeWS(force) {
-  if (S.dirty && !force) { S.closing = true; render(); return; }
+  if (S.dirty && !force) { S.closing = true; renderWS(); return; }
   const next = S.pending; S.pending = null;
   S.ws = null; S.dirty = false; S.closing = false; S.sel = null; S.picker = false; S.phoneChat = false;
-  if (next) { S.ws = next; }
+  if (next) S.ws = next;
   render();
 }
 function markDirty() {
@@ -1296,55 +1583,107 @@ function markDirty() {
   const sv = $('.saved', $('#ws')); if (sv) { sv.classList.add('dirty'); sv.querySelector('.lbl').textContent = 'Unsaved changes'; }
   const b = $('#wsSave'); if (b) b.disabled = false;
 }
+function pushHist() { const s = snipOf(); S.hist.push(clone(s.shapes)); if (S.hist.length > 50) S.hist.shift(); S.redo = []; }
+function snipChanged(full = true) { const s = snipOf(); s.saved = false; markDirty(); if (full) { renderWS(); renderSide(); } else redrawStage(); }
+function copyToast(what) {
+  const s = snipOf(), b = bounds(s), f = s.w / IW, hidden = s.shapes.filter((x) => x.hide).length;
+  const spill = b.x0 < 0 || b.y0 < 0 || b.x1 > IW || b.y1 > ih(s);
+  const w = Math.round((b.x1 - b.x0) * f + (spill ? 48 : 0)), h = Math.round((b.y1 - b.y0) * f + (spill ? 48 : 0));
+  toast(`${what} ${w} × ${h}${spill ? ' with note boxes' : ''}${hidden ? ` · ${hidden} hidden callout left out` : ''}`);
+}
+function newSnip(fromCanvas) {
+  const base = S.ws && S.ws.kind === 'snip' ? snipOf() : SNIPS[0];
+  const now = new Date(), t = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const s = { id: 's-' + Date.now(), art: base.art, img: base.img, name: fromCanvas ? `Canvas snip ${t}` : `Snip ${t}`, w: base.w, h: base.h, day: 'Today', time: t, saved: S.settings.mode === 'server', tags: [], shapes: [] };
+  SNIPS.unshift(s); S.dirty = false; S.tool = 'select';
+  openWS({ kind: 'snip', id: s.id });
+  toast(fromCanvas ? 'Copied to clipboard · opened as a new markup' : 'Snip copied to clipboard');
+}
+function sendReply(c, text) {
+  S.typing = true; renderChat();
+  setTimeout(() => {
+    S.typing = false;
+    const msgs = MESSAGES[c.id] = MESSAGES[c.id] || [];
+    const reps = msgs.filter((m) => m.report);
+    let reply;
+    if (/^latest$/i.test(text.trim())) reply = reps.length ? `<p>Latest report: <b>${esc(reps[reps.length - 1].report.title)}</b> (${esc(reps[reps.length - 1].report.runDate)}). ${mdLite(reps[reps.length - 1].report.summary)}</p>` : '<p>No reports yet.</p>';
+    else if (/^list reports$/i.test(text.trim())) reply = `<ul>${reps.map((m) => `<li>${esc(m.report.runDate)} · ${esc(m.report.status)} · ${esc(m.report.title)}</li>`).join('') || '<li>No reports yet.</li>'}</ul>`;
+    else reply = '<p>Prototype: real replies come from the <code>claude</code> CLI on the server PC, 2 at a time.</p>';
+    msgs.push({ from: c.agent, day: 'Today', time: 'now', text: reply });
+    renderChat();
+  }, 1200);
+}
 
 document.addEventListener('click', (e) => {
-  const t = e.target.closest('button, [data-callout], [data-sel], .cloud[data-push]');
-  if (!t) { if (S.pop && !e.target.closest('.pop')) { S.pop = false; renderSide(); } return; }
+  const t = e.target.closest('button, .cloud[data-push], [data-sel]');
+  if (!t) { let ch = false; if (S.pop && !e.target.closest('.pop')) { S.pop = false; renderSide(); } if (S.reportsPop && !e.target.closest('.hpop')) { S.reportsPop = false; ch = true; } if (ch) renderChat(); return; }
   const d = t.dataset;
-  if (t.matches('.cloud[data-push]')) { e.stopPropagation(); const snipEl = t.closest('[data-snip]'); const s = SNIPS.find((x) => x.id === snipEl.dataset.snip); s.saved = true; renderSide(); toast('Saved to the server'); return; }
-  if (d.chat) { S.chat = d.chat; S.sideOpen = false; if (S.ws) { S.dockMin = false; S.phoneChat = true; } render(); return; }
+  if (t.matches('.cloud[data-push]')) { e.stopPropagation(); const s = SNIPS.find((x) => x.id === t.closest('[data-snip]').dataset.snip); s.saved = true; renderSide(); toast('Saved to the server'); return; }
+  if (d.chat) { S.chat = d.chat; CHATS.find((x) => x.id === d.chat).unread = 0; S.sideOpen = false; S.reportsPop = false; if (S.ws) { S.dockMin = false; S.phoneChat = true; } render(); return; }
   if (d.snip) { openWS({ kind: 'snip', id: d.snip }); return; }
   if (d.zip) { S.open[d.zip] = !S.open[d.zip]; renderSide(); return; }
   if (d.toggle) { S.open[d.toggle] = !S.open[d.toggle]; renderSide(); return; }
   if (d.file) { openFile(d.file); return; }
   if (d.agent) { S.agentTab = 'personality'; openWS({ kind: 'agent', id: d.agent, text: AGENT_FILES[d.agent].personality.text }); return; }
   if (d.filter) { S.filter = d.filter; renderSide(); return; }
-  if (d.themeSet) { S.theme = d.themeSet; applyTheme(); renderSide(); renderWS(); return; }
+  if (d.tag) { S.query = d.tag; S.filter = 'snips'; renderSide(); return; }
+  if (d.themeSet) { S.theme = d.themeSet; applyTheme(); renderSide(); if (S.ws && S.ws.kind === 'snip') renderSnipWS(); return; }
   if (d.aura) { S.aura = d.aura; applyTheme(); renderSide(); return; }
-  if (d.tool) { S.tool = d.tool; renderWS(); return; }
-  if (d.color) { S.color = d.color; renderWS(); return; }
+  if (d.tool) { S.tool = d.tool; if (d.tool === 'canvas-snip') toast('Drag a box on the canvas. Esc leaves.'); renderWS(); return; }
+  if (d.color) { S.color = d.color; if (S.sel) { pushHist(); snipOf().shapes.find((x) => x.n === S.sel).color = d.color; snipChanged(); } else renderWS(); return; }
+  if (d.sw) { S.sw = Number(d.sw); if (S.sel) { pushHist(); snipOf().shapes.find((x) => x.n === S.sel).sw = S.sw; snipChanged(); } else renderWS(); return; }
+  if (d.hide) { e.stopPropagation(); pushHist(); const sh = snipOf().shapes.find((x) => x.n === Number(d.hide)); sh.hide = !sh.hide; snipChanged(); return; }
   if (d.view) { S.docView = d.view; renderWS(); return; }
+  if (d.report) { S.openReports[d.report] = !S.openReports[d.report]; renderChat(); const el = document.getElementById('rep-' + d.report); if (el) el.scrollIntoView({ block: 'nearest' }); return; }
+  if (d.goto) { S.reportsPop = false; S.openReports[d.goto] = true; renderChat(); const el = document.getElementById('rep-' + d.goto); if (el) el.scrollIntoView({ block: 'center' }); return; }
+  if (d.gotoSet) { const el = document.getElementById('set-' + d.gotoSet); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
+  if (d.copy) { toast(`${d.copy} copied`); return; }
   if (d.tab) { if (S.dirty) { toast('Save or close first'); return; } S.agentTab = d.tab; S.ws.text = AGENT_FILES[S.ws.id][d.tab].text; renderWS(); renderChat(); return; }
-  if (d.callout || d.sel) { S.sel = Number(d.callout || d.sel); renderWS(); const ta = $(`[data-note="${S.sel}"]`); if (ta && d.sel && !e.target.closest('textarea')) ta.focus(); return; }
+  if (d.sel && !e.target.closest('textarea, .hidebtn')) { S.sel = Number(d.sel); redrawStage(); document.querySelectorAll('#calloutList .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.sel) === S.sel)); return; }
   if (d.line !== undefined) { const ta = $('#src'); if (ta) { const lines = ta.value.split('\n'); const pos = lines.slice(0, Number(d.line)).join('\n').length + (Number(d.line) ? 1 : 0); ta.focus(); ta.setSelectionRange(pos, pos + (lines[d.line] || '').length); const lh = parseFloat(getComputedStyle(ta).lineHeight) || 20; ta.scrollTop = Math.max(0, d.line * lh - 60); } return; }
-  if (d.md !== undefined) { const ta = $('#src'); if (ta) { const s = ta.selectionStart, en = ta.selectionEnd, sel = ta.value.slice(s, en); const ins = d.md === '**' ? `**${sel || 'bold'}**` : d.md === '[](url)' ? `[${sel || 'link'}](url)` : d.md + sel; ta.setRangeText(ins, s, en, 'end'); ta.dispatchEvent(new Event('input')); ta.focus(); } return; }
+  if (d.md !== undefined) { const ta = $('#src'); if (ta) { const s = ta.selectionStart, en = ta.selectionEnd, sel = ta.value.slice(s, en); const ins = d.md === '**' ? `**${sel || 'bold'}**` : d.md === '[](url)' ? `[${sel || 'link'}](url)` : d.md + sel; ta.setRangeText(ins, s, en, 'end'); ta.dispatchEvent(new Event('input', { bubbles: true })); ta.focus(); } return; }
   if (d.insert) {
-    const s = SNIPS.find((x) => x.id === d.insert), slug = s.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    const notes = $('#withNotes') && $('#withNotes').checked ? '\n\n' + s.callouts.map((c) => `${c.n}. ${c.note}`).join('\n') : '';
-    const ta = $('#src'); const pos = ta.selectionStart; const ins = `\n![${s.name}](images/${slug}.png)${notes}\n`;
-    S.ws.text = ta.value.slice(0, pos) + ins + ta.value.slice(pos); S.picker = false; S.dirty = true; renderWS(); toast(`Copied to images/${slug}.png`); return;
+    const s = SNIPS.find((x) => x.id === d.insert), sl = slug(s.name);
+    const notes = $('#withNotes') && $('#withNotes').checked ? '\n\n' + s.shapes.filter((c) => c.note).map((c) => `${c.n}. ${c.note}`).join('\n') : '';
+    const ta = $('#src'); const pos = ta.selectionStart; const ins = `\n![${s.name}](images/${sl}.png)${notes}\n`;
+    S.ws.text = ta.value.slice(0, pos) + ins + ta.value.slice(pos); S.picker = false; S.dirty = true; renderWS(); toast(`Copied export.png to images/${sl}.png`); return;
   }
   switch (t.id) {
     case 'themeBtn': S.pop = !S.pop; renderSide(); return;
-    case 'newSnip': { const d2 = $('#delay').value; toast(d2 === 'No delay' ? 'Drag a box on your screen. Esc cancels.' : `Snip in ${d2}`); setTimeout(() => openWS({ kind: 'snip', id: 's-line3' }), d2 === 'No delay' ? 600 : 1200); return; }
-    case 'newChat': S.chat = null; S.ws && S.dirty ? (S.closing = true) : (S.ws = null); render(); return;
+    case 'settingsBtn': case 'modePill': openWS({ kind: 'settings' }); return;
+    case 'newSnip': { const dl = S.delay; if (dl === 'No delay') { toast('Drag a box on your screen. Esc cancels.'); setTimeout(() => newSnip(false), 700); } else { toast(`Collide hides, waits ${dl}, then captures`); setTimeout(() => newSnip(false), 1600); } return; }
+    case 'newChat': S.addProject = true; S.reportsPop = false; if (S.ws) { S.dockMin = false; S.phoneChat = true; layout(); } renderChat(); setTimeout(() => $('#apName') && $('#apName').focus(), 30); return;
+    case 'apCancel': S.addProject = false; renderChat(); return;
     case 'openZip': S.open['z-builder'] = true; S.filter = 'all'; renderSide(); toast('Unpacked builder-v0.1.zip on the server'); return;
-    case 'wsSave': save(); renderWS(); return;
+    case 'reportsBtn': S.reportsPop = !S.reportsPop; renderChat(); return;
+    case 'wsSave': save(); renderWS(); renderSide(); return;
     case 'wsClose': closeWS(false); return;
     case 'saveClose': save(); closeWS(true); return;
-    case 'discardClose': if (S.ws && S.ws.kind === 'doc' && S.ws.file) S.ws.text = S.ws.file.text; closeWS(true); return;
+    case 'discardClose': if (S.ws && S.ws.kind === 'snip' && S.hist.length) snipOf().shapes = S.hist[0]; closeWS(true); return;
     case 'cancelClose': S.closing = false; S.pending = null; renderWS(); return;
-    case 'dockMin': S.dockMin = true; layout(); return;
-    case 'dockOpen': S.dockMin = false; layout(); return;
+    case 'dockMin': S.dockMin = true; layout(); requestAnimationFrame(() => S.view && S.view.fit && fitView()); return;
+    case 'dockOpen': S.dockMin = false; layout(); requestAnimationFrame(() => S.view && S.view.fit && fitView()); return;
     case 'phoneChat': S.phoneChat = true; layout(); return;
     case 'phoneBack': S.phoneChat = false; layout(); return;
     case 'sideBtn': case 'sideBtn2': S.sideOpen = !S.sideOpen; layout(); return;
     case 'insertSnip': S.picker = true; renderWS(); return;
     case 'pickClose': S.picker = false; renderWS(); return;
-    case 'repack': toast(`Repacked ${S.ws.zip} · original kept`); return;
-    case 'copyImg': toast('Copied to this PC’s clipboard'); return;
+    case 'repack': toast(`Repacked ${S.ws.zip} · untouched files kept byte-for-byte · original kept`); return;
+    case 'copyImg': if (S.ws && S.ws.kind === 'snip') copyToast('Copied'); else toast('Copied to this PC’s clipboard'); return;
+    case 'exportBtn': { const s = snipOf(); toast(`Exported ${slug(s.name)}.png · ${s.w} × ${s.h} (source size)`); return; }
+    case 'openFile': $('#imgFile').click(); return;
+    case 'openMarkup': toast('Opens a markup folder from Documents/Collide/Markups'); return;
+    case 'undo': if (S.hist.length) { const s = snipOf(); S.redo.push(clone(s.shapes)); s.shapes = S.hist.pop(); S.sel = null; snipChanged(); } return;
+    case 'redoBtn': if (S.redo.length) { const s = snipOf(); S.hist.push(clone(s.shapes)); s.shapes = S.redo.pop(); snipChanged(); } return;
     case 'askSnip': case 'askDoc': S.dockMin = false; S.phoneChat = true; layout(); setTimeout(() => $('#input') && $('#input').focus(), 50); return;
-    case 'snipInto': toast('Snip attaches to this message'); return;
+    case 'snipInto': S.attach = (S.ws && S.ws.kind === 'snip') ? S.ws.id : SNIPS[0].id; renderChat(); toast('Snip copied to clipboard · attached to this message'); return;
+    case 'dropAttach': S.attach = null; renderChat(); return;
+    case 'picBtn': S._picFor = d.pic; $('#picFile').click(); return;
+    case 'picDel': AGENTS[d.pic].pic = ''; render(); return;
+    case 'testConn': toast(S.settings.mode === 'server' ? 'This PC is the server · port 3500 is free' : `Reached ${S.settings.server || '[server address]'} · Collide 0.4 [placeholder]`); return;
+    case 'saveRestart': toast('Saved · Collide restarts in ' + (S.settings.mode === 'server' ? 'Server' : 'Connected') + ' mode'); renderSide(); return;
+    case 'ghSave': toast('GitHub report source saved'); return;
+    case 'ghCheck': $('#ghStatus').textContent = 'Checked just now · no new reports'; return;
     case 'notesBtn': { const n = $('#notes'); n.hidden = !n.hidden; t.setAttribute('aria-expanded', String(!n.hidden)); return; }
   }
 });
@@ -1352,42 +1691,136 @@ document.addEventListener('click', (e) => {
   if (!S.sideOpen) return;
   if (!e.target.closest('.side') && !e.target.closest('#sideBtn') && !e.target.closest('#sideBtn2')) { S.sideOpen = false; layout(); }
 }, true);
-// Add a callout by clicking the image with the Callout or Rectangle tool
+document.addEventListener('change', (e) => {
+  const t = e.target;
+  if (t.id === 'delay') { S.delay = t.value; return; }
+  if (t.name === 'mode') { S.settings.mode = t.value; renderWS(); return; }
+  if (t.id === 'notifyBox') { S.settings.notify = t.checked; toast(t.checked ? 'Notifications on' : 'Notifications off'); return; }
+  if ((t.id === 'picFile' || t.id === 'imgFile') && t.files && t.files[0]) {
+    const file = t.files[0], r = new FileReader();
+    r.onload = () => {
+      if (t.id === 'picFile') { AGENTS[S._picFor].pic = r.result; render(); toast('Picture saved on the server PC'); }
+      else { const im = new Image(); im.onload = () => { const s = { id: 's-' + Date.now(), img: r.result, name: file.name.replace(/\.[^.]+$/, ''), w: im.naturalWidth, h: im.naturalHeight, day: 'Today', time: 'now', saved: false, tags: [], shapes: [] }; SNIPS.unshift(s); openWS({ kind: 'snip', id: s.id }); }; im.src = r.result; }
+    };
+    r.readAsDataURL(file); t.value = '';
+  }
+});
+
+/* ---------- Canvas: draw, select, move, note boxes, zoom, pan, canvas snip ---------- */
+function toImage(e) { const svg = $('#zoomer svg'); const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
+let spaceDown = false;
+document.addEventListener('contextmenu', (e) => { if (e.target.closest('#stage')) e.preventDefault(); });
 document.addEventListener('pointerdown', (e) => {
-  const svg = e.target.closest('svg.snipfull');
-  if (!svg || !S.ws || S.ws.kind !== 'snip' || !['callout', 'rect'].includes(S.tool) || e.target.closest('[data-callout]')) return;
-  const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
-  const p = pt.matrixTransform(svg.getScreenCTM().inverse());
-  const s = SNIPS.find((x) => x.id === S.ws.id);
-  const n = s.callouts.length ? Math.max(...s.callouts.map((c) => c.n)) + 1 : 1;
-  s.callouts.push({ n, x: Math.round(p.x - 40), y: Math.round(p.y - 25), w: 80, h: 50, type: S.tool === 'callout' ? 'Callout' : 'Rectangle', note: '' });
-  S.sel = n; S.dirty = true; s.saved = false; render();
-  const ta = $(`[data-note="${n}"]`); if (ta) ta.focus();
+  const stage = e.target.closest('#stage');
+  if (!stage || !S.ws || S.ws.kind !== 'snip' || !S.view) return;
+  if (e.button === 2 || (e.button === 0 && spaceDown) || e.button === 1) {
+    S.panning = { x: e.clientX, y: e.clientY, vx: S.view.x, vy: S.view.y }; stage.classList.add('panning'); stage.setPointerCapture(e.pointerId); e.preventDefault(); return;
+  }
+  if (e.button !== 0) return;
+  const p = toImage(e), s = snipOf();
+  if (S.tool === 'canvas-snip') { S.drag = { kind: 'csnip', x0: p.x, y0: p.y, x1: p.x, y1: p.y }; stage.setPointerCapture(e.pointerId); return; }
+  if (S.tool === 'select') {
+    const boxEl = e.target.closest('[data-box]'), shEl = e.target.closest('[data-shape]');
+    const n = boxEl ? Number(boxEl.dataset.box) : shEl ? Number(shEl.dataset.shape) : null;
+    S.sel = n; document.querySelectorAll('#calloutList .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.sel) === n));
+    if (n) { const sh = s.shapes.find((x) => x.n === n); pushHist(); S.drag = { kind: boxEl ? 'box' : 'move', n, p0: p, orig: clone(sh), box0: boxEl ? clone(noteBoxes(s)[n].box) : null, moved: false }; stage.setPointerCapture(e.pointerId); }
+    redrawStage(); return;
+  }
+  // Drawing tools
+  pushHist();
+  const n = s.shapes.length ? Math.max(...s.shapes.map((c) => c.n)) + 1 : 1;
+  const sh = { n, type: S.tool, x: Math.round(p.x), y: Math.round(p.y), w: 0, h: 0, color: S.color, sw: S.sw, note: '' };
+  s.shapes.push(sh); S.sel = n;
+  if (S.tool === 'point') { snipChanged(); const ta = $(`[data-note="${n}"]`); if (ta) ta.focus(); return; }
+  S.drag = { kind: 'draw', n, p0: p }; stage.setPointerCapture(e.pointerId); redrawStage();
+});
+document.addEventListener('pointermove', (e) => {
+  if (S.panning) { S.view.x = S.panning.vx + e.clientX - S.panning.x; S.view.y = S.panning.vy + e.clientY - S.panning.y; S.view.fit = false; applyView(); return; }
+  if (!S.drag) return;
+  const p = toImage(e), s = snipOf();
+  if (S.drag.kind === 'csnip') {
+    Object.assign(S.drag, { x1: p.x, y1: p.y });
+    const x = Math.min(S.drag.x0, p.x), y = Math.min(S.drag.y0, p.y), w = Math.abs(p.x - S.drag.x0), h = Math.abs(p.y - S.drag.y0);
+    $('#liveRect').innerHTML = `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="rgba(255,255,255,.06)" stroke="#fff" stroke-dasharray="5 4" stroke-width="${1 / S.view.k}"/>`;
+    let ro = $('#readout'); if (!ro) { ro = document.createElement('div'); ro.id = 'readout'; ro.className = 'readout'; $('#stage').appendChild(ro); }
+    const r = $('#stage').getBoundingClientRect(); ro.style.left = (e.clientX - r.left + 12) + 'px'; ro.style.top = (e.clientY - r.top + 12) + 'px';
+    ro.textContent = `${Math.round(w * s.w / IW)} × ${Math.round(h * s.w / IW)}`; return;
+  }
+  const sh = s.shapes.find((x) => x.n === S.drag.n);
+  const dx = p.x - S.drag.p0.x, dy = p.y - S.drag.p0.y;
+  if (S.drag.kind === 'draw') { sh.x = Math.round(Math.min(S.drag.p0.x, p.x)); sh.y = Math.round(Math.min(S.drag.p0.y, p.y)); sh.w = Math.round(Math.abs(dx)); sh.h = Math.round(Math.abs(dy)); }
+  else if (S.drag.kind === 'move') { sh.x = Math.round(S.drag.orig.x + dx); sh.y = Math.round(S.drag.orig.y + dy); S.drag.moved = true; }
+  else if (S.drag.kind === 'box') { sh.box = { x: Math.round(S.drag.box0.x + dx), y: Math.round(S.drag.box0.y + dy) }; S.drag.moved = true; }
+  redrawStage();
+});
+document.addEventListener('pointerup', () => {
+  if (S.panning) { S.panning = null; const st = $('#stage'); if (st) st.classList.remove('panning'); return; }
+  if (!S.drag) return;
+  const dr = S.drag; S.drag = null;
+  if (dr.kind === 'csnip') { const ro = $('#readout'); if (ro) ro.remove(); const w = Math.abs(dr.x1 - dr.x0), h = Math.abs(dr.y1 - dr.y0); if (w > 6 && h > 6) newSnip(true); else $('#liveRect').innerHTML = ''; return; }
+  const s = snipOf(), sh = s.shapes.find((x) => x.n === dr.n);
+  if (dr.kind === 'draw') { if (sh.w < 8 || sh.h < 8) { sh.w = sh.type === 'cross' ? 28 : 80; sh.h = sh.type === 'cross' ? 28 : 50; sh.x -= sh.w / 2; sh.y -= sh.h / 2; } snipChanged(); const ta = $(`[data-note="${dr.n}"]`); if (ta) ta.focus(); return; }
+  if (dr.moved) snipChanged(); else S.hist.pop();
+});
+document.addEventListener('wheel', (e) => {
+  const stage = e.target.closest('#stage'); if (!stage || !S.view) return;
+  e.preventDefault();
+  const r = stage.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+  const k2 = Math.min(8, Math.max(0.1, S.view.k * (e.deltaY < 0 ? 1.1 : 1 / 1.1)));
+  S.view.x = mx - (mx - S.view.x) * k2 / S.view.k; S.view.y = my - (my - S.view.y) * k2 / S.view.k; S.view.k = k2; S.view.fit = false; applyView();
+}, { passive: false });
+document.addEventListener('dblclick', (e) => {
+  const el = e.target.closest('[data-box], [data-shape]'); if (!el) return;
+  const n = Number(el.dataset.box || el.dataset.shape); S.sel = n; const ta = $(`[data-note="${n}"]`); if (ta) { ta.focus(); ta.select(); }
 });
 document.addEventListener('input', (e) => {
   if (e.target.id === 'q') { S.query = e.target.value; S._focusQ = true; renderSide(); return; }
-  if (e.target.dataset.note) { const s = SNIPS.find((x) => x.id === S.ws.id); s.callouts.find((c) => c.n === Number(e.target.dataset.note)).note = e.target.value; markDirty(); return; }
+  if (e.target.dataset.note) { const sh = snipOf().shapes.find((c) => c.n === Number(e.target.dataset.note)); sh.note = e.target.value; markDirty(); snipOf().saved = false; redrawStage(); return; }
   if (e.target.id === 'src') { S.ws.text = e.target.value; const pv = $('#preview'); if (pv && (S.ws.kind === 'agent' || S.ws.type === 'md')) pv.innerHTML = mdHTML(S.ws.text); markDirty(); return; }
+  if (e.target.id === 'srvAddr') { S.settings.server = e.target.value; return; }
+  if (e.target.id === 'ghRepo') { S.settings.repo = e.target.value; return; }
+  if (e.target.id === 'ghIssue') { S.settings.issue = e.target.value; return; }
+  if (e.target.id === 'accessPw') { S.settings.password = e.target.value; return; }
   if (e.target.id === 'input') { e.target.style.height = 'auto'; e.target.style.height = Math.min(140, e.target.scrollHeight) + 'px'; }
 });
 document.addEventListener('submit', (e) => {
   e.preventDefault();
-  const inp = $('#input'); const v = inp.value.trim(); if (!v || !S.chat) return;
-  (MESSAGES[S.chat] = MESSAGES[S.chat] || []).push({ from: 'me', time: 'now', text: `<p>${esc(v)}</p>` });
-  renderChat(); toast('Prototype: replies come from the claude CLI on the server');
+  if (e.target.id === 'addForm') {
+    const name = $('#apName').value.trim(), agent = $('#apAgent').value.trim(); if (!name || !agent) return;
+    const key = slug(agent); if (!AGENTS[key]) { AGENTS[key] = { name: agent, role: 'Agent', hue: Object.keys(AGENTS).length % 4, pic: '' }; AGENT_FILES[key] = { personality: { path: `agents/${key}.md`, text: `# ${agent}\n\n[placeholder]\n` }, memory: { path: `[server]/agents/${key}/memory.md`, text: `# ${agent} memory\n\n- [placeholder]\n` } }; }
+    const id = slug(name) || 'project';
+    CHATS.unshift({ id, agent: key, title: name, team: $('#apTeam').value.trim() || TEAM, desc: $('#apDesc').value.trim(), meta: `${agent} · new project`, time: 'now', day: 'Today', unread: 0 });
+    MESSAGES[id] = []; S.chat = id; S.addProject = false; render(); toast(`Added ${name}`); return;
+  }
+  const inp = $('#input'); const v = inp.value.trim(); const c = CHATS.find((x) => x.id === S.chat); if ((!v && !S.attach) || !c) return;
+  (MESSAGES[c.id] = MESSAGES[c.id] || []).push({ from: 'me', day: 'Today', time: 'now', text: v ? `<p>${esc(v)}</p>` : '', snip: S.attach || undefined });
+  S.attach = null; c.meta = `${AGENTS[c.agent].name} · ${v.slice(0, 40)}`; c.time = 'now';
+  renderChat(); renderSide(); sendReply(c, v);
 });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { if (S.picker) { S.picker = false; renderWS(); } else if (S.pop) { S.pop = false; renderSide(); } else if (S.sideOpen) { S.sideOpen = false; layout(); } }
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's' && S.ws) { e.preventDefault(); save(); renderWS(); }
-  if (e.key === 'Enter' && !e.shiftKey && e.target.id === 'input') { e.preventDefault(); $('#composer').requestSubmit(); }
-  if (S.ws && S.ws.kind === 'snip' && !/TEXTAREA|INPUT|SELECT/.test(e.target.tagName) && !e.ctrlKey && !e.metaKey) {
-    const map = { v: 'select', r: 'rect', o: 'ellipse', a: 'arrow', c: 'callout', t: 'text', p: 'pen' };
-    if (map[e.key.toLowerCase()]) { S.tool = map[e.key.toLowerCase()]; renderWS(); }
+  const typing = /TEXTAREA|INPUT|SELECT/.test(e.target.tagName);
+  if (e.key === ' ' && !typing) { spaceDown = true; if (e.target.closest && !e.target.closest('button')) e.preventDefault(); }
+  if (e.key === 'Escape') {
+    if (S.tool === 'canvas-snip') { S.tool = 'select'; renderWS(); return; }
+    if (S.picker) { S.picker = false; renderWS(); } else if (S.addProject) { S.addProject = false; renderChat(); } else if (S.reportsPop) { S.reportsPop = false; renderChat(); } else if (S.pop) { S.pop = false; renderSide(); } else if (S.sideOpen) { S.sideOpen = false; layout(); }
   }
+  const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
+  if (ctrl && e.altKey && k === 's') { e.preventDefault(); $('#newSnip').click(); return; }
+  if (ctrl && k === 's' && S.ws) { e.preventDefault(); if (S.dirty) { save(); renderWS(); renderSide(); } return; }
+  if (e.key === 'Enter' && !e.shiftKey && e.target.id === 'input') { e.preventDefault(); $('#composer').requestSubmit(); return; }
+  if (!S.ws || S.ws.kind !== 'snip' || typing) return;
+  if (ctrl && e.shiftKey && k === 'c') { e.preventDefault(); copyToast('Copied'); return; }
+  if (ctrl && k === 'z') { e.preventDefault(); $('#undo').click(); return; }
+  if (ctrl && k === 'y') { e.preventDefault(); $('#redoBtn').click(); return; }
+  if (ctrl && k === '0') { e.preventDefault(); fitView(); return; }
+  if ((e.key === 'Delete' || e.key === 'Backspace') && S.sel) { pushHist(); const s = snipOf(); s.shapes = s.shapes.filter((x) => x.n !== S.sel); S.sel = null; snipChanged(); return; }
+  const map = { v: 'select', r: 'rect', o: 'ellipse', x: 'cross', p: 'point' };
+  if (!ctrl && map[k]) { S.tool = map[k]; renderWS(); }
 });
+document.addEventListener('keyup', (e) => { if (e.key === ' ') spaceDown = false; });
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => requestAnimationFrame(redrawBanners));
 new MutationObserver(() => requestAnimationFrame(redrawBanners)).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(redrawBanners, 120); });
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { redrawBanners(); if (S.view && S.view.fit) fitView(); }, 120); });
 
 applyTheme();
 render();
