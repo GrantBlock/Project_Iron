@@ -51,7 +51,7 @@ Summary: One or two plain sentences: what is ready, what needs Grant.
 
 Rules for the format:
 
-- Line 1 must be `Lydia (Tester) · Nightly report · YYYY-MM-DD` (the date of the morning the report is written, Central time). Agent Chat ignores comments without "Nightly report" on line 1 or signed by another agent.
+- Line 1 should be `Lydia (Tester) · Nightly report · YYYY-MM-DD` (the date of the morning the report is written, Central time). Agent Chat also accepts a `## YYYY-MM-DD: title` heading with a `— Lydia (Tester)` sign-off on the last line (the style of the 2026-11-14 run), but only `**Status:**` gives the report a colored status, and only short `**Label:** value` lines show as counts. Comments signed by another agent, or not signed, are ignored.
 - Separate the counts with ` · ` and keep each count as `**Label:** value`.
 - `Summary:` is one line, at most two sentences.
 - Empty sections say `- none`.

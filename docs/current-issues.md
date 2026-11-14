@@ -29,6 +29,7 @@ Updated 2026-11-13 · Grant Block. Open problems and decisions waiting on Grant.
 
 | Date | Item |
 | --- | --- |
+| 2026-11-14 | Lydia's 2026-11-14 run report (sign-off style, no "Nightly report" line) was skipped by Agent Chat: the app now accepts both styles and re-reads skipped comments once after updating |
 | 2026-11-13 | Collide icon was added to Agent Chat by mistake: reverted; Agent Chat keeps the 0.3.5 icons |
 | 2026-11-13 | Cloud sessions can't reach the PC over Tailscale: reports now go through GitHub issue #2 and Agent Chat pulls them in |
 | 2026-11-13 | `claude` CLI not found: installed the standalone CLI and added it to PATH; AI replies on |
