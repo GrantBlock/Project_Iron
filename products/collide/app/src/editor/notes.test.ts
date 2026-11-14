@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Shape } from "../model";
-import { hasNoteBox, layoutNotes, leader, leaderTarget, nearestSide, NOTE_GAP, NOTE_PAD, NOTE_STACK_GAP, NOTE_W, POINT_CLEARANCE, noteHeight, placeNote } from "./notes";
+import { hasNoteBox, layoutNotes, leader, leaderTarget, nearestSide, NOTE_GAP, NOTE_PAD, NOTE_CHIP_W, NOTE_STACK_GAP, NOTE_W, noteSize, POINT_CLEARANCE, noteHeight, placeNote } from "./notes";
 
 const img = { width: 400, height: 300 };
 const base = { stroke: "#f00", strokeWidth: 2 };
@@ -24,17 +24,25 @@ describe("note box layout", () => {
 
   it("stacks boxes on the same side so they never overlap", () => {
     const shapes = [rect("a1", 0, 100), rect("a2", 0, 105), rect("a3", 0, 110)];
-    const boxes = [...layoutNotes(shapes, img, () => 15, "x").values()];
+    const boxes = [...layoutNotes(shapes, img, () => 15).values()];
     for (let i = 1; i < boxes.length; i++) expect(boxes[i].y).toBeGreaterThanOrEqual(boxes[i - 1].y + boxes[i - 1].h + NOTE_STACK_GAP);
     expect(boxes.every((b) => b.x + b.w <= 0)).toBe(true);
   });
 
   it("keeps a box the user moved/resized and fits its height to the text", () => {
     const s = rect("a1", 10, 10, 40, 20, { label: { x: 500, y: 20, w: 150 }, note: "long" });
-    const box = layoutNotes([s], img, (_t, w) => (w < 100 ? 60 : 30), "x").get("a1")!;
+    const box = layoutNotes([s], img, (_t, w) => (w < 100 ? 60 : 30)).get("a1")!;
     expect(box).toEqual({ x: 500, y: 20, w: 150, h: noteHeight(30) });
     expect(noteHeight(30)).toBe(30 + NOTE_PAD * 2);
-    expect(layoutNotes([{ ...s, label: undefined }], img, () => 15, "x").get("a1")!.w).toBe(NOTE_W);
+    expect(layoutNotes([{ ...s, label: undefined }], img, () => 15).get("a1")!.w).toBe(NOTE_W);
+  });
+
+  it("an empty note is a number chip (so the number and arrow still show); typing grows it to a box", () => {
+    const s = rect("a1", 10, 140);
+    expect(noteSize(s, 150, () => 15)).toEqual({ w: NOTE_CHIP_W, h: noteHeight(0) });
+    expect(noteSize({ ...s, note: "  " } as Shape, 150, () => 15).w).toBe(NOTE_CHIP_W);
+    expect(noteSize({ ...s, note: "hi" } as Shape, 150, () => 15)).toEqual({ w: 150, h: noteHeight(15) });
+    expect(noteSize({ ...s, note: "hi" } as Shape, undefined, () => 15).w).toBe(NOTE_W);
   });
 
   it("only rects, ellipses and points with a number get boxes", () => {

@@ -85,18 +85,26 @@ async function toPage(page: import("@playwright/test").Page, ix: number, iy: num
 const doc = (page: import("@playwright/test").Page) =>
   page.evaluate(() => window.__collide!.getDoc()) as Promise<{ shapes: { note?: string; label?: { x: number; y: number; w: number } }[] }>;
 
-test("a point gets a note box outside the image; Copy leaves out an empty box and includes a filled one", async ({ page }) => {
+test("an empty note still shows its number and arrow in Copy; Hide # leaves them out", async ({ page }) => {
+  const copyW = async () => ((await page.evaluate(() => window.__collide!.copyFit())) as { width: number }).width;
   await page.keyboard.press("p");
   const pt = await toPage(page, 380, 150);
   await page.mouse.click(pt.x, pt.y);
-  // Empty note: box shows in the editor only, so Copy is the plain image.
-  expect(((await page.evaluate(() => window.__collide!.copyFit())) as { width: number }).width).toBe(400);
+  // Empty note: a number chip right of the image, included in Copy.
+  const chip = await copyW();
+  expect(chip).toBeGreaterThan(400 + 40);
+  expect(chip).toBeLessThan(400 + 40 + 100);
+  // With text, the box grows.
   await page.getByTestId("callout-note").first().fill("background needs blending");
   await page.keyboard.press("Tab");
-  // Box sits right of the image (nearest side), so Copy grows to the right only.
-  const f = (await page.evaluate(() => window.__collide!.copyFit())) as { width: number; height: number };
-  expect(f.width).toBeGreaterThan(400 + 40 + 200);
-  expect(f.height).toBe(300 + 2 * 24);
+  expect(await copyW()).toBeGreaterThan(400 + 40 + 200);
+  // Hide # drops the box and arrow from Copy and is saved in the doc.
+  await page.getByTestId("hide-number").first().click();
+  await expect(page.getByTestId("hide-number").first()).toHaveText("Show #");
+  expect(await copyW()).toBe(400);
+  expect(((await doc(page)).shapes[0] as { hideNumber?: boolean }).hideNumber).toBe(true);
+  await page.getByTestId("hide-number").first().click();
+  expect(await copyW()).toBeGreaterThan(400 + 40 + 200);
 });
 
 test("double-click edits a note on the canvas; drag moves the box and its right edge resizes it", async ({ page }) => {
@@ -108,12 +116,14 @@ test("double-click edits a note on the canvas; drag moves the box and its right 
   await page.mouse.move(b.x, b.y, { steps: 5 });
   await page.mouse.up();
   await page.keyboard.press("v");
-  // Auto-placed left of the image: x = -40 - 200 .. -40, centred on y = 140.
-  const inBox = await toPage(page, -140, 140);
-  await page.mouse.dblclick(inBox.x, inBox.y);
+  // Empty: a number chip left of the image (x = -40 - 34 .. -40), centred on y = 140.
+  const chip = await toPage(page, -57, 140);
+  await page.mouse.dblclick(chip.x, chip.y);
   await page.getByTestId("note-editor").fill("Check the header colour against the brand palette");
   await page.keyboard.press("Enter");
   expect((await doc(page)).shapes[0].note).toBe("Check the header colour against the brand palette");
+  // Now a full box: x = -40 - 200 .. -40.
+  const inBox = await toPage(page, -140, 140);
 
   // Move the box up by 60.
   await page.mouse.move(inBox.x, inBox.y);

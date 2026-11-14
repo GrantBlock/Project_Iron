@@ -14,8 +14,8 @@ export interface Flattened {
  * Transformer, no branding. The stage's view and the Transformer's visibility are
  * restored before returning (the work is synchronous, so nothing repaints in between).
  */
-/** Editor-only nodes left out of every export: the Transformer and empty note boxes (with their arrows). */
-const editorOnly = (stage: Konva.Stage) => [...stage.find("Transformer"), ...stage.find(".note-empty")];
+/** Editor-only nodes left out of every export: the Transformer and note boxes (with arrows) set to "Hide #". */
+const editorOnly = (stage: Konva.Stage) => [...stage.find("Transformer"), ...stage.find(".note-hidden")];
 
 export function flatten(stage: Konva.Stage, size: { width: number; height: number }): Flattened {
   const { width, height } = size;

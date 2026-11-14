@@ -4,7 +4,7 @@ import { Arrow, Circle, Ellipse, Group, Image as KonvaImage, Label, Layer, Rect,
 import Konva from "konva";
 import type { Shape } from "../model";
 import { BADGE_SIZE, isRealDrag, resizeShape, shapeFromDrag, type DrawTool, type Style } from "./geometry";
-import { hasNoteBox, layoutNotes, leader, NOTE_BADGE, NOTE_BADGE_GAP, NOTE_FONT, NOTE_MIN_W, NOTE_PAD, noteHeight, noteTextWidth, type Box } from "./notes";
+import { hasNoteBox, layoutNotes, leader, NOTE_BADGE, NOTE_BADGE_GAP, NOTE_FONT, NOTE_MIN_W, NOTE_PAD, NOTE_W, noteSize, noteTextWidth, type Box } from "./notes";
 import type { NewShape, ShapePatch } from "./store";
 import type { Tool } from "./tools";
 import { imageToScreen, panBy, screenToImage, wheelFactor, zoomAt, type Point, type Size, type View } from "./viewport";
@@ -54,7 +54,7 @@ const measureText = (text: string, fontSize: number) => {
 
 const isDrawTool = (t: Tool): t is DrawTool & Tool => t === "rect" || t === "ellipse";
 
-/** Shown in an empty note box in the editor (left out of Copy/Export). */
+/** Placeholder in the on-canvas note editor. */
 export const NOTE_PLACEHOLDER = "Describe…";
 
 /** Height of `text` wrapped to `width` at the note font size. */
@@ -208,7 +208,8 @@ function NoteBox({ shape, box, selected, interactive, onSelect, onMove, onResize
   };
   return (
     <Group
-      name={empty ? "note-box note-empty" : "note-box"}
+      name={shape.hideNumber ? "note-box note-hidden" : "note-box"}
+      opacity={shape.hideNumber ? 0.35 : 1}
       x={box.x}
       y={box.y}
       listening={interactive}
@@ -246,20 +247,20 @@ function NoteBox({ shape, box, selected, interactive, onSelect, onMove, onResize
         fill={cssVar("--ink-50")}
         listening={false}
       />
-      <Text
+      {!empty && <Text
         name="note-text"
         x={textX}
         y={NOTE_PAD + Math.max(0, (NOTE_BADGE - NOTE_FONT * 1.25) / 2)}
         width={noteTextWidth(box.w)}
-        text={empty ? NOTE_PLACEHOLDER : note}
+        text={note}
         fontSize={NOTE_FONT}
         lineHeight={1.25}
         fontFamily={fontFamily}
-        fill={cssVar(empty ? "--text-4" : "--text-1")}
+        fill={cssVar("--text-1")}
         wrap="word"
         listening={false}
-      />
-      {interactive && (
+      />}
+      {interactive && !empty && (
         <Rect
           name="note-resize"
           x={box.w - 4}
@@ -501,14 +502,12 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
   );
   const notes = useMemo(() => {
     if (!image) return new Map<string, Box>();
-    const boxes = layoutNotes(liveShapes, image, measureNote, NOTE_PLACEHOLDER);
+    const boxes = layoutNotes(liveShapes, image, measureNote);
     if (moving && (moving.box || moving.w)) {
       const b = boxes.get(moving.id);
       const s = liveShapes.find((x) => x.id === moving.id);
       if (b && s) {
-        const w = moving.w ?? b.w;
-        const h = noteHeight(measureNote(s.note?.trim() || NOTE_PLACEHOLDER, noteTextWidth(w)));
-        boxes.set(moving.id, { ...b, ...(moving.box ?? {}), w, h });
+        boxes.set(moving.id, { ...b, ...(moving.box ?? {}), ...noteSize(s, moving.w ?? b.w, measureNote) });
       }
     }
     return boxes;
@@ -620,11 +619,11 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
                 const box = notes.get(s.id);
                 const pts = box && leader(s, box);
                 if (!box || !pts) return null;
-                const empty = !s.note?.trim();
                 return (
                   <Arrow
                     key={`leader-${s.id}`}
-                    name={empty ? "note-leader note-empty" : "note-leader"}
+                    name={s.hideNumber ? "note-leader note-hidden" : "note-leader"}
+                    opacity={s.hideNumber ? 0.35 : 1}
                     points={pts}
                     stroke={s.stroke}
                     fill={s.stroke}
@@ -739,7 +738,7 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
             position: "absolute",
             left: editBoxPos.x,
             top: editBoxPos.y,
-            width: noteTextWidth(editBox.w) * view.scale,
+            width: noteTextWidth(Math.max(editBox.w, NOTE_W)) * view.scale,
             height: Math.max(editBox.h - NOTE_PAD * 2, NOTE_BADGE) * view.scale,
             margin: 0,
             padding: 0,

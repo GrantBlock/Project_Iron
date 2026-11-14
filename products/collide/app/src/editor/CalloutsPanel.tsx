@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Badge } from "../ds";
 import type { Shape } from "../model";
+import { hasNoteBox } from "./notes";
 
 const NOTE_IDLE_MS = 500;
 const TYPE_LABEL: Record<Shape["type"], string> = {
@@ -20,10 +21,12 @@ interface Props {
   onNote: (id: string, note: string) => void;
   /** Ends the current note typing burst (one undo step). */
   onCommit: () => void;
+  /** Toggle "Hide #" (number box + arrow left out of Copy/Export). */
+  onToggleHide: (id: string) => void;
 }
 
 /** Right pane: Callouts list on top (kit Inspector), empty AI placeholder below. */
-export function CalloutsPanel({ shapes, selectedId, onSelect, onNote, onCommit }: Props) {
+export function CalloutsPanel({ shapes, selectedId, onSelect, onNote, onCommit, onToggleHide }: Props) {
   const callouts = shapes.filter((s) => s.callout !== undefined);
   const timer = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(timer.current), []);
@@ -85,6 +88,33 @@ export function CalloutsPanel({ shapes, selectedId, onSelect, onNote, onCommit }
                   style={{ background: "transparent", border: 0, outline: "none", color: "var(--text-1)", font: "var(--type-sm)", padding: 0, width: "100%" }}
                 />
               </div>
+              {hasNoteBox(s) && (
+                <button
+                  type="button"
+                  data-testid="hide-number"
+                  aria-pressed={!!s.hideNumber}
+                  title={s.hideNumber ? "Number and arrow are hidden from Copy and Export" : "Hide this number and arrow from Copy and Export"}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleHide(s.id);
+                  }}
+                  style={{
+                    flex: "none",
+                    alignSelf: "center",
+                    padding: "3px 6px",
+                    border: "1px solid var(--line-2)",
+                    borderRadius: "var(--radius-sm)",
+                    background: s.hideNumber ? "var(--surface-2)" : "transparent",
+                    color: s.hideNumber ? "var(--text-1)" : "var(--text-3)",
+                    font: "500 10px/1 var(--font-mono)",
+                    letterSpacing: "var(--tracking-label)",
+                    textTransform: "uppercase",
+                    cursor: "pointer",
+                  }}
+                >
+                  {s.hideNumber ? "Show #" : "Hide #"}
+                </button>
+              )}
             </div>
           );
         })}

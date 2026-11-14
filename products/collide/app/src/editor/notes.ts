@@ -31,6 +31,9 @@ export type Side = "left" | "right" | "top" | "bottom";
 export const hasNoteBox = (s: Shape): boolean =>
   (s.type === "rect" || s.type === "ellipse" || s.type === "point") && s.callout !== undefined;
 
+/** An empty note is just its number: a chip this wide (and `noteHeight(0)` tall). */
+export const NOTE_CHIP_W = NOTE_PAD * 2 + NOTE_BADGE;
+
 /** Width available to the note text inside a box of width `w`. */
 export const noteTextWidth = (w: number): number => Math.max(1, w - NOTE_PAD * 2 - NOTE_BADGE - NOTE_BADGE_GAP);
 
@@ -120,6 +123,14 @@ export function leader(s: Pick<Shape, "type" | "x" | "y" | "w" | "h">, box: Box)
   return [from.x, from.y, to.x, to.y];
 }
 
+/** Size of a shape's note box at width `w`: a number chip when the note is empty, else fitted to the text. */
+export function noteSize(s: Shape, w: number | undefined, measure: (text: string, width: number) => number): { w: number; h: number } {
+  const note = s.note?.trim();
+  if (!note) return { w: NOTE_CHIP_W, h: noteHeight(0) };
+  const width = w ?? NOTE_W;
+  return { w: width, h: noteHeight(measure(note, noteTextWidth(width))) };
+}
+
 /**
  * Boxes for every shape with a note box, in shape order. A box the user moved/resized
  * keeps its stored `label`; others are auto-placed clear of the ones before them.
@@ -129,14 +140,12 @@ export function layoutNotes(
   shapes: readonly Shape[],
   image: { width: number; height: number },
   measure: (text: string, width: number) => number,
-  placeholder: string,
 ): Map<string, Box> {
   const out = new Map<string, Box>();
   const taken: Box[] = [];
   for (const s of shapes) {
     if (!hasNoteBox(s)) continue;
-    const w = s.label?.w ?? NOTE_W;
-    const h = noteHeight(measure(s.note?.trim() || placeholder, noteTextWidth(w)));
+    const { w, h } = noteSize(s, s.label?.w, measure);
     const box = s.label ? { x: s.label.x, y: s.label.y, w, h } : placeNote(s, image, { w, h }, taken);
     out.set(s.id, box);
     taken.push(box);

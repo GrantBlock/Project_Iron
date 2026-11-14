@@ -31,6 +31,7 @@ Related (in `GrantBlock/designengineering-ai`, `Builder v0.1/`): `development-pa
 - [stated] 2026-11-09: Claude builds; Grant decides and reviews results, not code. No throwaway work.
 - [stated] 2026-11-14: Collide keyboard shortcuts (incl. Ctrl+Shift+C Copy and Ctrl+0 fit-to-window) are decided later in an accessibility spec; current bindings are provisional.
 - [stated] 2026-11-14: Collide callouts: every rectangle, ellipse and new Point gets a numbered note box placed outside the image on the nearest side (stacked, draggable), with an arrow to the shape; box width is adjustable and height fits the text; edit on canvas (double-click) or in the Callouts panel; empty boxes are left out of Copy/Export. Toolbar becomes Select, Rectangle, Ellipse, Point (Arrow, Text, Callout tools removed); old markups with those shapes still open and display (Grant).
+- [stated] 2026-11-14: Collide: a callout with an empty note still shows its number (as a chip) and arrow in the editor, Copy and Export. A "Hide #" toggle in the Callouts sidebar leaves a callout's number box and arrow out of Copy/Export (dimmed in the editor); per callout (A) (Grant).
 
 ## Roles
 

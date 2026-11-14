@@ -440,7 +440,14 @@ export function EditorShell() {
             onSelect={onSelect}
             handleRef={handleRef}
           />
-          <CalloutsPanel shapes={shapes} selectedId={state.selectedId} onSelect={onSelect} onNote={onNote} onCommit={onCommit} />
+          <CalloutsPanel
+            shapes={shapes}
+            selectedId={state.selectedId}
+            onSelect={onSelect}
+            onNote={onNote}
+            onCommit={onCommit}
+            onToggleHide={(id) => dispatch({ type: "update", id, patch: { hideNumber: !shapes.find((s) => s.id === id)?.hideNumber } })}
+          />
         </div>
         <StatusBar zoom={view.scale} dims={image && { width: image.width, height: image.height }} />
       </GlassPanel>

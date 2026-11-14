@@ -18,6 +18,8 @@ const base = {
   note: z.string().optional(),
   /** Where the user put the note box (image px, top-left + width). Absent = auto-placed. */
   label: z.object({ x: num, y: num, w: num.positive() }).optional(),
+  /** "Hide #": the note box and arrow show dimmed in the editor and are left out of Copy/Export. */
+  hideNumber: z.boolean().optional(),
 };
 
 const simple = (type: "rect" | "ellipse" | "point" | "highlight") =>
