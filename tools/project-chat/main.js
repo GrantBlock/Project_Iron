@@ -114,7 +114,7 @@ ipcMain.handle('pc:save', async (_e, mode, url) => {
 
 // ---------- tray ----------
 function createTray() {
-  tray = new Tray(nativeImage.createFromPath(ICON).resize({ width: 16, height: 16 }));
+  tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'build', 'tray.png'))); // tray@2x.png is picked up on high-DPI screens
   tray.setToolTip('Agent Chat');
   let items;
   if (desktop.mode === 'client') {
