@@ -2,6 +2,8 @@
 
 Draft (not yet approved by Grant): 2026-11-14. Working name **[App name]**. Nothing in this plan is built yet.
 
+**Approved by Grant 2026-11-14:** the app is **Collide**, with sections **Collide Snip** and **Collide Chat**. Order: P0 (Electron) first, then P1. Port 3500. Autosave on the server. Laptops keep local sessions in the left sidebar with a save-to-server (cloud) icon, and retry automatically. Single user. AI queue: 2. Tonight's run brief: `products/collide/RUN2.md`. Where this file says [App name], read Collide.
+
 ## Goal
 
 Grant uses one main PC (the **server**) and connects from several laptops with RealVNC. Agent Chat and Collide are separate apps today. This plan merges them into **one desktop app with one server**. The server holds the chats, agent reports and markups, and runs the AI. Every laptop opens the same chats and markups, captures its own screen, and copies to its own clipboard.
