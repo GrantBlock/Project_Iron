@@ -307,6 +307,11 @@ function connectEvents() {
       } else { state.unread[m.projectId] = (state.unread[m.projectId] || 0) + 1; setHeader(); }
       if (m.role === 'report' && document.hidden && 'Notification' in window && Notification.permission === 'granted')
         new Notification(`${m.author}: ${m.report.status.toUpperCase()}`, { body: m.report.title });
+    } else if (evt.type === 'pruned' && evt.projectId === state.current) {
+      const gone = new Set(evt.ids);
+      state.messages = state.messages.filter(m => !gone.has(m.id));
+      evt.ids.forEach(id => { const el = document.getElementById('m-' + id); if (el) el.remove(); });
+      document.querySelectorAll('#log .day').forEach(d => { const n = d.nextElementSibling; if (!n || n.classList.contains('day')) d.remove(); });
     } else if (evt.type === 'typing' && evt.projectId === state.current) {
       $('#typing').textContent = `${evt.author} is typing…`;
       clearTimeout(typingTimer); typingTimer = setTimeout(() => $('#typing').textContent = '', 60000);

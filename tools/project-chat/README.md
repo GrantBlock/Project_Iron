@@ -11,6 +11,14 @@ Seeded with **Lydia · Project Iron · designengineering.ai Development Team**.
 - Windows SmartScreen may warn on first run (the .exe isn't code-signed): More info → Run anyway.
 - Don't run start.bat at the same time — both use port 3500.
 
+### Using it on a second computer
+Run the server on one PC only (the one that stays on overnight). On the other computer:
+1. Run the .exe → tray icon → **Connect to another computer…**
+2. Enter the server's address, e.g. `100.91.95.74:3500` (Tailscale) → **Test connection** → **Save and restart**.
+3. The app now opens the main PC's chat in its own window and stores nothing locally. Closing it quits.
+
+To switch back: tray → **Change connection…** → **Run the server on this computer**. The choice is saved in `%APPDATA%\Project Chat\desktop.json`.
+
 Rebuild the .exe: `npm install` then `npm run dist` (output in `dist/`).
 
 ## Run from source (Windows)
@@ -40,6 +48,8 @@ Project Chat is running
 | `accessPassword` | Optional password for the chat UI |
 | `model` | Claude model for replies (default `claude-sonnet-5-5`) |
 | `ownerName` | Your name shown in the chat |
+| `maxMessages` | Messages kept per project; older ones are deleted (default `30`) |
+| `keepReports` | Newest reports always kept, even past `maxMessages` (default `5`) |
 
 ## AI replies
 

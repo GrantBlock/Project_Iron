@@ -1,7 +1,7 @@
 {
   "name": "project-chat",
   "productName": "Project Chat",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Local AI assistant chat and nightly agent report inbox",
   "author": "Block Concepts LLC",
   "main": "main.js",
@@ -10,7 +10,9 @@
     "app": "electron .",
     "dist": "electron-builder --win portable --x64"
   },
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "private": true,
   "devDependencies": {
     "electron": "^33.0.0",
@@ -19,9 +21,23 @@
   "build": {
     "appId": "com.blockconcepts.projectchat",
     "productName": "Project Chat",
-    "files": ["main.js", "server.js", "public/**", "build/icon.png"],
-    "win": { "target": "portable", "icon": "build/icon.ico", "signAndEditExecutable": false },
-    "portable": { "artifactName": "ProjectChat-${version}.exe" },
-    "directories": { "output": "dist" }
+    "files": [
+      "main.js",
+      "server.js",
+      "preload.js",
+      "public/**",
+      "build/icon.png"
+    ],
+    "win": {
+      "target": "portable",
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false
+    },
+    "portable": {
+      "artifactName": "ProjectChat-${version}.exe"
+    },
+    "directories": {
+      "output": "dist"
+    }
   }
 }

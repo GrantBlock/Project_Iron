@@ -26,6 +26,8 @@ function loadConfig() {
       reportToken: crypto.randomBytes(18).toString('hex'),
       accessPassword: '',
       model: 'claude-sonnet-5-5',
+      maxMessages: 30,
+      keepReports: 5,
       ownerName: 'Grant'
     };
     fs.writeFileSync(CONFIG_PATH, JSON.stringify(fresh, null, 2));
@@ -95,8 +97,27 @@ function addMessage(m) {
   db.messages.push(msg);
   saveDb();
   broadcast({ type: 'message', message: msg });
+  pruneProject(msg.projectId);
   return msg;
 }
+
+// Keep each project's chat thin: the newest `maxMessages` messages, plus the
+// newest `keepReports` reports even if they're older (the assistant reads those).
+function pruneProject(projectId) {
+  const max = Number(cfg.maxMessages) || 30;
+  const keepReports = Number(cfg.keepReports ?? 5);
+  const mine = db.messages.filter(x => x.projectId === projectId);
+  if (mine.length <= max) return;
+  const keep = new Set(mine.slice(-max).map(x => x.id));
+  mine.filter(x => x.role === 'report').slice(-keepReports).forEach(x => keep.add(x.id));
+  const removed = mine.filter(x => !keep.has(x.id)).map(x => x.id);
+  if (!removed.length) return;
+  const gone = new Set(removed);
+  db.messages = db.messages.filter(x => !gone.has(x.id));
+  saveDb();
+  broadcast({ type: 'pruned', projectId, ids: removed });
+}
+function pruneAll() { for (const pr of db.projects) pruneProject(pr.id); }
 
 // ---------- live updates (SSE) ----------
 const clients = new Set();
@@ -323,6 +344,7 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+pruneAll();
 server.listen(cfg.port, cfg.host, () => {
   console.log('\nProject Chat is running');
   console.log('  This computer:   http://localhost:' + cfg.port);
