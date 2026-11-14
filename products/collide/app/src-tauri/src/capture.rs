@@ -67,16 +67,6 @@ pub trait Capturer {
     fn capture_at(&self, x: i32, y: i32) -> Result<Frame, CaptureError>;
 }
 
-/// Pure monitor selection: index of the monitor containing the point, if any.
-/// Handles negative origins (monitors left of / above the primary).
-pub fn select_monitor(x: i32, y: i32, monitors: &[MonitorInfo]) -> Option<usize> {
-    let (px, py) = (i64::from(x), i64::from(y));
-    monitors.iter().position(|m| {
-        let (mx, my) = (i64::from(m.x), i64::from(m.y));
-        px >= mx && px < mx + i64::from(m.width) && py >= my && py < my + i64::from(m.height)
-    })
-}
-
 pub struct XcapCapturer;
 
 impl Capturer for XcapCapturer {
@@ -198,19 +188,5 @@ mod tests {
     fn error_serializes_to_cause_and_fix_message() {
         let v = serde_json::to_value(CaptureError::NoMonitor).unwrap();
         assert!(v.as_str().unwrap().contains("try again"));
-    }
-
-    #[test]
-    fn select_monitor_across_several_with_negative_origins() {
-        let ms = [mon(0, 0, 1920, 1080), mon(-1280, -200, 1280, 1024), mon(1920, 0, 2560, 1440)];
-        assert_eq!(select_monitor(10, 10, &ms), Some(0));
-        assert_eq!(select_monitor(-1, 0, &ms), Some(1));
-        assert_eq!(select_monitor(-1280, -200, &ms), Some(1));
-        assert_eq!(select_monitor(-1281, 0, &ms), None);
-        assert_eq!(select_monitor(1919, 1079, &ms), Some(0));
-        assert_eq!(select_monitor(1920, 0, &ms), Some(2));
-        assert_eq!(select_monitor(4479, 1439, &ms), Some(2));
-        assert_eq!(select_monitor(4480, 0, &ms), None);
-        assert_eq!(select_monitor(0, 0, &[]), None);
     }
 }

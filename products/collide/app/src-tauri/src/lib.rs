@@ -1,4 +1,5 @@
 pub mod capture;
+pub mod crop;
 
 pub const APP_NAME: &str = "Collide";
 
@@ -6,7 +7,7 @@ pub const APP_NAME: &str = "Collide";
 pub fn run() {
     tauri::Builder::default()
         .manage(capture::CaptureState::default())
-        .invoke_handler(tauri::generate_handler![capture::capture_monitor])
+        .invoke_handler(tauri::generate_handler![capture::capture_monitor, crop::crop_capture])
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .run(tauri::generate_context!())
