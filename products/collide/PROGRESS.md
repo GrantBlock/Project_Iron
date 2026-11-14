@@ -2,7 +2,7 @@
 
 Live status board for `snip-markup/run-1`, kept current by the **Planner** as the run goes — this reflects right now, not history. `HANDOFF.md` (written at the end) and `reports/` are the historical record; don't duplicate their detail here.
 
-**Status:** Not started · **Current task:** — · **Last updated:** — by —
+**Status:** Running · **Current task:** T01 · **Last updated:** 2026-11-14 by Planner
 
 ## Task board
 
@@ -10,7 +10,7 @@ Mirrors `SPEC.md`'s table; update the Status column here as it changes, in sync 
 
 | ID | Task | Status |
 | --- | --- | --- |
-| T01 | Repo scaffold | To do |
+| T01 | Repo scaffold | In progress |
 | T02 | Shape model | To do |
 | T03 | Editor canvas | To do |
 | T04 | Drawing tools | To do |
