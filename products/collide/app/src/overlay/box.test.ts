@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cropRect, isEmptyBox, normalizeBox, readout } from "./box";
+import { cropRect, effectiveScale, isEmptyBox, normalizeBox, readout } from "./box";
 
 describe("normalizeBox", () => {
   const a = { x: 100, y: 80 };
@@ -59,5 +59,17 @@ describe("cropRect (port of crop.rs crop_rect)", () => {
     expect(cropRect(B(0, 0, 1, 1), 0, 10, 10)).toBeNull();
     for (const b of [B(-30, 0, 30, 10), B(100, 0, 10, 10), B(0, 100, 10, 10), B(0, -10, 10, 10), B(500, 500, 10, 10)])
       expect(cropRect(b, 1, 100, 100)).toBeNull();
+  });
+});
+
+describe("effectiveScale (mixed DPI)", () => {
+  it("derives physical-per-CSS from the frame's physical width and the viewport", () => {
+    // Passed scale 1, but a 2880-wide capture shown in a 1920 CSS px viewport means 1.5.
+    expect(effectiveScale(2880, 1920, 1)).toBe(1.5);
+    expect(cropRect({ x: 100, y: 100, w: 200, h: 100 }, effectiveScale(2880, 1920, 1), 2880, 1620)).toEqual({ x: 150, y: 150, w: 300, h: 150 });
+  });
+  it("falls back to the passed scale without a physical width or viewport", () => {
+    expect(effectiveScale(undefined, 1920, 1.25)).toBe(1.25);
+    expect(effectiveScale(2880, 0, 1.25)).toBe(1.25);
   });
 });

@@ -20,7 +20,7 @@ Mirrors `SPEC.md`'s table; update the Status column here as it changes, in sync 
 | T08 | Rust capture_monitor | Done |
 | T09 | Rust crop_capture | Done |
 | T10 | Overlay window | Done |
-| T11 | Wire-up | In progress |
+| T11 | Wire-up | Tested — pass (automated); manual pending Grant |
 | T12 | Handoff | To do |
 
 ## Usage

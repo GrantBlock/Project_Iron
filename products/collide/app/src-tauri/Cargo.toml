@@ -15,10 +15,9 @@ tauri-build = { version = "2", features = [] }
 base64 = "0.23"
 image = { version = "0.25", default-features = false, features = ["png"] }
 serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
+tauri-plugin-global-shortcut = "2"
 xcap = "0.9"
-
-[dev-dependencies]
-serde_json = "1"

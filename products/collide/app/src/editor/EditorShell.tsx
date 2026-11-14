@@ -2,7 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { flushSync } from "react-dom";
 import type { AnnotationsDoc, Shape } from "../model";
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { GlassPanel, Toast } from "../ds";
+import { createSnipFlow } from "../snip/flow";
+import { isTauri, SNIP_REQUEST_EVENT, tauriDeps } from "../snip/tauriDeps";
 import { Canvas, cssVar, type CanvasHandle, type LoadedImage } from "./Canvas";
 import { nextShapeId, type NewShape, type ShapePatch } from "./store";
 import { DEFAULT_STROKE_WIDTH, TOOL_KEYS, type Tool } from "./tools";
@@ -263,6 +267,20 @@ export function EditorShell() {
     return () => window.removeEventListener("keydown", key);
   }, [dispatch, stateRef]);
 
+  // T11: New snip button and the global hotkey (Rust emits SNIP_REQUEST_EVENT) both run the same flow.
+  const snipRef = useRef<ReturnType<typeof createSnipFlow>>({ start: async () => undefined, isBusy: () => false });
+  useEffect(() => {
+    const flow = createSnipFlow(tauriDeps({ openImage: (url, name) => open(url, name), notify: setNotice }));
+    snipRef.current = flow;
+    if (!isTauri()) return;
+    const un = listen(SNIP_REQUEST_EVENT, () => void flow.start());
+    void invoke("get_settings_status").then((s) => {
+      const warning = (s as { warning?: string | null } | null)?.warning;
+      if (warning) setNotice({ tone: "error", title: "Hotkey setting not used", description: warning });
+    }, () => undefined);
+    return () => void un.then((f) => f());
+  }, [open]);
+
   const onFile = (e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (f) void open(URL.createObjectURL(f), f.name);
@@ -346,6 +364,7 @@ export function EditorShell() {
           setStrokeWidth={setStrokeWidth}
           fileName={image?.name ?? "No image"}
           onOpenFile={() => fileRef.current?.click()}
+          onNewSnip={() => void snipRef.current.start()}
           onExport={onExport}
           canExport={!!image}
           onSave={onSave}

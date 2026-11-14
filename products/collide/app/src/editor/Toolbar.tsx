@@ -23,6 +23,7 @@ interface Props {
   setStrokeWidth: (w: number) => void;
   fileName: string;
   onOpenFile: () => void;
+  onNewSnip: () => void;
   onUndo: () => void;
   onRedo: () => void;
   canUndo: boolean;
@@ -33,14 +34,14 @@ interface Props {
   onOpenMarkup: () => void;
 }
 
-export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStrokeWidth, fileName, onOpenFile, onUndo, onRedo, canUndo, canRedo, onExport, canExport, onSave, onOpenMarkup }: Props) {
+export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStrokeWidth, fileName, onOpenFile, onNewSnip, onUndo, onRedo, canUndo, canRedo, onExport, canExport, onSave, onOpenMarkup }: Props) {
   return (
     <div
       data-testid="toolbar"
       style={{ height: 52, boxSizing: "border-box", flex: "none", display: "flex", alignItems: "center", gap: 4, padding: "0 10px", borderBottom: "1px solid var(--line-1)" }}
     >
       <Tooltip label="New snip" shortcut="Ctrl+Alt+S">
-        <Button variant="primary" size="sm" icon="scissors">
+        <Button variant="primary" size="sm" icon="scissors" onClick={onNewSnip} data-testid="new-snip">
           New snip
         </Button>
       </Tooltip>

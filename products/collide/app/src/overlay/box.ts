@@ -64,3 +64,13 @@ export function readout(box: Box, scale: number, frameW: number, frameH: number)
 export function isEmptyBox(box: Box): boolean {
   return box.w <= 0 || box.h <= 0;
 }
+
+/**
+ * Physical px per CSS px for this overlay. The captured frame's physical width over the
+ * overlay's viewport CSS width is the truth (the window may sit on a different-DPI
+ * monitor than the one that was captured); the passed scale is only the fallback.
+ */
+export function effectiveScale(physicalWidth: number | undefined, viewportWidth: number, passed: number): number {
+  if (physicalWidth && physicalWidth > 0 && viewportWidth > 0) return physicalWidth / viewportWidth;
+  return passed;
+}

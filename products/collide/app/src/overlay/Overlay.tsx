@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { isEmptyBox, normalizeBox, readout, type Box, type Point } from "./box";
+import { effectiveScale, isEmptyBox, normalizeBox, readout, type Box, type Point } from "./box";
 
 export type OverlayResult = { kind: "crop"; box: Box; scale: number } | { kind: "cancel" };
 
@@ -8,10 +8,12 @@ interface Props {
   frame: string;
   /** Display scale factor: physical px per logical px. */
   scale: number;
+  /** Physical width of the captured frame; with it, the real scale is derived from the viewport. */
+  physicalWidth?: number;
   onResult: (r: OverlayResult) => void;
 }
 
-export function Overlay({ frame, scale, onResult }: Props) {
+export function Overlay({ frame, scale: passedScale, physicalWidth, onResult }: Props) {
   const root = useRef<HTMLDivElement>(null);
   const [start, setStart] = useState<Point | null>(null);
   const [box, setBox] = useState<Box | null>(null);
@@ -37,6 +39,7 @@ export function Overlay({ frame, scale, onResult }: Props) {
     const r = root.current!.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   };
+  const currentScale = () => effectiveScale(physicalWidth, root.current?.getBoundingClientRect().width ?? 0, passedScale);
   const bounds = () => {
     const r = root.current!.getBoundingClientRect();
     return { w: r.width, h: r.height };
@@ -64,11 +67,12 @@ export function Overlay({ frame, scale, onResult }: Props) {
       return;
     }
     setBox(final);
-    onResult({ kind: "crop", box: final, scale });
+    onResult({ kind: "crop", box: final, scale: currentScale() });
   };
 
   // Real image size when loaded, else the viewport in physical px.
   const vp = root.current?.getBoundingClientRect();
+  const scale = currentScale();
   const frameW = natural?.w ?? Math.round((vp?.width ?? 0) * scale);
   const frameH = natural?.h ?? Math.round((vp?.height ?? 0) * scale);
   const shown = box && !isEmptyBox(box) ? box : null;
