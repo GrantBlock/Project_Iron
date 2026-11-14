@@ -52,7 +52,8 @@ Intentional additions: **Icon** (wrapper so Lucide glyphs inherit color), **NavI
 - ⚠ Substitution: no icon set was provided; Lucide is the closest match to the concept's thin outline glyphs.
 
 ## Logo
-No logo was provided. "Collide" is set in Geist Semibold, −4–5% tracking, as a placeholder wherever a mark would go.
+
+**Added 2026-11-14 (Grant):** `assets/logo/collide-icon-512.svg` (512×512 app icon/mark) and `assets/logo/favicon.svg` (browser-tab size) — the signal-red rounded-square glyph. Use these files directly for the app icon, taskbar icon and favicon; never redraw or recolor them. Where a wordmark is needed beside the mark, "Collide" still sets in Geist Semibold, −4–5% tracking, text color `--text-1`.
 
 ## Fonts
 ⚠ Geist / Geist Mono are loaded from Google Fonts as a substitute. Supply licensed font files to replace `tokens/fonts.css`.

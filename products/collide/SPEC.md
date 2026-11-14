@@ -155,19 +155,19 @@ Opus plans and unblocks; Sonnet does the volume. Every task passes Coder → Rev
 
 | Role | Model | Owns | Output |
 | --- | --- | --- | --- |
-| Planner | Opus 5.5 | Task order, assignments, scope calls, blockers, status board | `PLAN.md`, `HANDOFF.md`, task tickets |
-| Coder | Sonnet 5.5 | Implementation + unit tests for its task, on a task branch | Commits on `task/Txx-*` |
-| Reviewer | Sonnet 5.5 | Diff review against acceptance criteria, the rules below, and `design-system/` (tokens, components, `ui_kits/snip-markup/`) | Approve, or a numbered fix list |
-| Tester | Sonnet 5.5 (low effort) | Full test suite + the task's acceptance check; e2e tests with Playwright | Pass/fail report in `reports/Txx.md` |
+| Planner | Opus 5.5 | Task order, assignments, scope calls, blockers, status board | `PLAN.md`, `HANDOFF.md`, task tickets, keeps `PROGRESS.md` current |
+| Coder | Sonnet 5.5 | Implementation + unit tests for its task, on a task branch | Commits on `task/Txx-*`; logs a row in `ISSUES.md` if stuck on something only Grant can answer |
+| Reviewer | Sonnet 5.5 | Diff review against acceptance criteria, the rules below, and `design-system/` (tokens, components, `ui_kits/snip-markup/`) | Approve, or a numbered fix list; logs a row in `ISSUES.md` for anything that blocks merge rather than a normal fix (a design conflict, a scope question) |
+| Tester | Sonnet 5.5 (low effort) | Full test suite + the task's acceptance check; e2e tests with Playwright | Pass/fail report in `reports/Txx.md`; updates that task's row in `PROGRESS.md`'s task board |
 
 **Task loop**
 
-1. Planner picks the next unblocked task and writes a ticket: goal, files in scope, acceptance criteria (copied from the board).
+1. Planner picks the next unblocked task, writes a ticket (goal, files in scope, acceptance criteria copied from the board), and marks it "In progress" in `PROGRESS.md`.
 2. Coder implements on `task/Txx-<slug>` (branched from `snip-markup/run-1`) with unit tests, then hands to Reviewer.
 3. Reviewer approves or returns a fix list. Maximum 2 review rounds.
-4. Tester runs `pnpm test`, `pnpm e2e` and `cargo test`, plus the task's acceptance check.
-5. Pass → squash-merge the task branch into `snip-markup/run-1`, Planner marks Done. Fail → back to Coder.
-6. After 2 failed Coder cycles on one task, Planner marks it Blocked, logs why in `HANDOFF.md`, and moves to the next independent task.
+4. Tester runs `pnpm test`, `pnpm e2e` and `cargo test`, plus the task's acceptance check, and records the result in `PROGRESS.md`.
+5. Pass → squash-merge the task branch into `snip-markup/run-1`, Planner marks Done in both the task board and `PROGRESS.md`. Fail → back to Coder.
+6. After 2 failed Coder cycles on one task, Planner marks it Blocked in `PROGRESS.md`, adds a row to `ISSUES.md` saying what was tried and what's needed, logs the same in `HANDOFF.md`, and moves to the next independent task.
 
 ## Task board
 
