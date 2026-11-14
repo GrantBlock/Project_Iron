@@ -2,7 +2,7 @@
 import type { NewShape } from "./store";
 import type { Point } from "./viewport";
 
-export type DrawTool = "rect" | "ellipse" | "arrow";
+export type DrawTool = "rect" | "ellipse" | "cross" | "arrow";
 
 /** Diameter of a callout badge in image pixels (A). */
 export const BADGE_SIZE = 24;

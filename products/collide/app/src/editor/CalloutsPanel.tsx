@@ -8,6 +8,7 @@ const TYPE_LABEL: Record<Shape["type"], string> = {
   rect: "Rectangle",
   ellipse: "Ellipse",
   point: "Point",
+  cross: "X mark",
   arrow: "Arrow",
   text: "Text",
   callout: "Callout",
@@ -76,7 +77,7 @@ export function CalloutsPanel({ shapes, selectedId, onSelect, onNote, onCommit, 
                 {s.callout}
               </span>
               <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
-                <span style={{ font: "500 10px/1 var(--font-mono)", letterSpacing: "var(--tracking-label)", textTransform: "uppercase", color: "var(--text-4)" }}>{TYPE_LABEL[s.type]}</span>
+                <span style={{ font: "500 10px/1 var(--font-mono)", letterSpacing: "var(--tracking-label)", textTransform: "uppercase", color: "var(--text-4)" }}>{s.fill ? `Filled ${TYPE_LABEL[s.type].toLowerCase()}` : TYPE_LABEL[s.type]}</span>
                 <input
                   data-testid="callout-note"
                   value={s.note ?? ""}

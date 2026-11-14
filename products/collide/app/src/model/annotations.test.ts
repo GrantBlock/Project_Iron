@@ -9,6 +9,9 @@ const shapes: Shape[] = [
   { id: "a4", type: "text", ...common, text: "Hello", fontSize: 16 },
   { id: "a5", type: "callout", ...common, callout: 2 },
   { id: "a6", type: "highlight", ...common },
+  { id: "a7", type: "cross", ...common, hideNumber: true },
+  { id: "a8", type: "rect", ...common, fill: true, label: { x: -100, y: 5, w: 120 } },
+  { id: "a9", type: "point", ...common, w: 0, h: 0 },
 ];
 const doc: AnnotationsDoc = { version: 1, source: { kind: "image", width: 800, height: 600 }, shapes };
 
@@ -40,7 +43,7 @@ describe("annotations", () => {
   it("rejects an unknown shape type naming the path and allowed types", () => {
     const msg = err(withShape({ ...shapes[0], type: "star" }));
     expect(msg).toContain("shapes[0].type");
-    expect(msg).toContain("rect, ellipse, point, arrow, text, callout, highlight");
+    expect(msg).toContain("rect, ellipse, point, cross, arrow, text, callout, highlight");
   });
 
   it("rejects wrong version and missing type-specific fields", () => {

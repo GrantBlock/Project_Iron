@@ -6,6 +6,9 @@ const tools: [Tool, string, string, string][] = [
   ["select", "mouse-pointer-2", "Select", "V"],
   ["rect", "square", "Rectangle", "R"],
   ["ellipse", "circle", "Ellipse", "O"],
+  ["rect-fill", "square-filled", "Filled rectangle", ""],
+  ["ellipse-fill", "circle-filled", "Filled ellipse", ""],
+  ["cross", "x", "X mark (remove)", "X"],
   ["point", "map-pin", "Point", "P"],
 ];
 const colors = ["var(--signal-500)", "var(--steel-500)", "var(--amber-500)", "var(--ink-50)"];

@@ -59,6 +59,7 @@ describe("leader arrow", () => {
     expect(e.x).toBeCloseTo(100);
     expect(e.y).toBeCloseTo(125);
     expect(leaderTarget({ type: "point", x: 7, y: 9, w: 0, h: 0 }, { x: 0, y: 0 })).toEqual({ x: 7, y: 9 });
+    expect(leaderTarget({ type: "cross", x: 100, y: 100, w: 80, h: 40 }, { x: 0, y: 0 })).toEqual({ x: 140, y: 120 });
   });
 
   it("starts on the box edge facing the shape", () => {

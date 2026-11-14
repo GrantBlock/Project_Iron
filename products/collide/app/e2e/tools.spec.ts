@@ -87,6 +87,51 @@ test("draws one of each tool; the doc has the expected types and bounds (100% an
   for (const s of doc.shapes) expect(s.stroke).toMatch(/^#[0-9a-f]{6}$/i);
 });
 
+test("X mark, filled rectangle and filled ellipse: drawn, numbered, filled, and the X resizes", async ({ page }) => {
+  await page.getByRole("button", { name: "Filled rectangle" }).click();
+  await drag(page, [20, 20], [100, 70]);
+  await page.getByRole("button", { name: "Filled ellipse" }).click();
+  await drag(page, [150, 20], [230, 70]);
+  await page.keyboard.press("x");
+  await drag(page, [260, 160], [340, 240]);
+  let doc = await getDoc(page);
+  expect(doc.shapes.map((s) => [s.type, (s as { fill?: boolean }).fill ?? false, s.callout])).toEqual([
+    ["rect", true, 1],
+    ["ellipse", true, 2],
+    ["cross", false, 3],
+  ]);
+  for (const [k, v] of Object.entries({ x: 260, y: 160, w: 80, h: 80 })) near(doc.shapes[2][k as "x"], v, `cross.${k}`);
+  await expect(page.getByTestId("callout-row").nth(0)).toContainText("Filled rectangle");
+  await expect(page.getByTestId("callout-row").nth(2)).toContainText("X mark");
+
+  // The filled rectangle paints its colour inside (sample the canvas at its centre).
+  const c = await toPage(page, 60, 45);
+  const px = await page.evaluate(
+    ([x, y]) => {
+      const cv = document.querySelector<HTMLCanvasElement>('[data-testid="canvas"] canvas')!;
+      const r = cv.getBoundingClientRect();
+      const k = cv.width / r.width;
+      return Array.from(cv.getContext("2d")!.getImageData((x - r.left) * k, (y - r.top) * k, 1, 1).data);
+    },
+    [c.x, c.y],
+  );
+  expect(px[0]).toBeGreaterThan(200); // signal red fill, not the dark image underneath
+  expect(px[2]).toBeLessThan(120);
+
+  // Select the X on its stroke and resize it from the bottom-right corner.
+  await page.keyboard.press("v");
+  const onStroke = await toPage(page, 280, 180);
+  await page.mouse.click(onStroke.x, onStroke.y);
+  const corner = await toPage(page, 340, 240);
+  await page.mouse.move(corner.x + 2, corner.y + 2);
+  await page.mouse.down();
+  await page.mouse.move(corner.x + 22, corner.y + 12, { steps: 4 });
+  await page.mouse.up();
+  doc = await getDoc(page);
+  near(doc.shapes[2].w, 100, "cross resized w");
+  near(doc.shapes[2].h, 90, "cross resized h");
+});
+
 test("select, move, resize with a Transformer handle, and delete", async ({ page }) => {
   await page.keyboard.press("r");
   await drag(page, [100, 80], [220, 140]);
@@ -140,7 +185,7 @@ test("clicking empty canvas deselects; Backspace deletes a selected shape", asyn
 });
 
 test("toolbar buttons select tools and the stroke width applies to new shapes", async ({ page }) => {
-  await page.getByRole("button", { name: "Rectangle" }).click();
+  await page.getByRole("button", { name: "Rectangle", exact: true }).click();
   await expect(page.getByTestId("canvas")).toHaveAttribute("data-tool", "rect");
   await page.getByRole("button", { name: "Stroke 5" }).click();
   await page.getByTestId("swatch").nth(1).click();

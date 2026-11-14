@@ -29,7 +29,7 @@ export type Side = "left" | "right" | "top" | "bottom";
 
 /** Shapes that get a note box + arrow (callout badges, arrows and text keep their older look). */
 export const hasNoteBox = (s: Shape): boolean =>
-  (s.type === "rect" || s.type === "ellipse" || s.type === "point") && s.callout !== undefined;
+  (s.type === "rect" || s.type === "ellipse" || s.type === "point" || s.type === "cross") && s.callout !== undefined;
 
 /** An empty note is just its number: a chip this wide (and `noteHeight(0)` tall). */
 export const NOTE_CHIP_W = NOTE_PAD * 2 + NOTE_BADGE;
@@ -105,6 +105,8 @@ export function leaderTarget(s: Pick<Shape, "type" | "x" | "y" | "w" | "h">, fro
     return t >= 1 ? from : { x: c.x + dx * t, y: c.y + dy * t };
   }
   if (s.type === "point") return { x: s.x, y: s.y };
+  // An X has nothing at its box edges; point at where its legs cross.
+  if (s.type === "cross") return shapeCentre(s);
   return { x: clamp(from.x, s.x, s.x + s.w), y: clamp(from.y, s.y, s.y + s.h) };
 }
 

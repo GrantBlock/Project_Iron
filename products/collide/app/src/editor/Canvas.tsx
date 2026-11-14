@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
-import { Arrow, Circle, Ellipse, Group, Image as KonvaImage, Label, Layer, Rect, Stage, Tag, Text, Transformer } from "react-konva";
+import { Arrow, Circle, Ellipse, Group, Image as KonvaImage, Label, Layer, Rect, Shape as KonvaShape, Stage, Tag, Text, Transformer } from "react-konva";
 import Konva from "konva";
 import type { Shape } from "../model";
 import { BADGE_SIZE, isRealDrag, resizeShape, shapeFromDrag, type DrawTool, type Style } from "./geometry";
@@ -52,7 +52,16 @@ const measureText = (text: string, fontSize: number) => {
   return { w: t.width(), h: t.height() };
 };
 
-const isDrawTool = (t: Tool): t is DrawTool & Tool => t === "rect" || t === "ellipse";
+/** Drag tools → the shape they draw and whether it is filled. */
+const DRAG_TOOLS: Partial<Record<Tool, { shape: DrawTool; fill?: true }>> = {
+  rect: { shape: "rect" },
+  ellipse: { shape: "ellipse" },
+  "rect-fill": { shape: "rect", fill: true },
+  "ellipse-fill": { shape: "ellipse", fill: true },
+  cross: { shape: "cross" },
+};
+
+const draftShapeOf = (d: Draft, style: Style) => ({ ...shapeFromDrag(d.tool, d.a, d.b, style), ...(d.fill ? { fill: true } : {}) }) as NewShape;
 
 /** Placeholder in the on-canvas note editor. */
 export const NOTE_PLACEHOLDER = "Describe…";
@@ -63,6 +72,7 @@ const measureNote = (text: string, width: number) =>
 
 interface Draft {
   tool: DrawTool;
+  fill?: true;
   a: Point;
   b: Point;
 }
@@ -117,11 +127,34 @@ function ShapeNode({ shape, interactive, hidden, onSelect, onMoved, onEditText, 
   switch (shape.type) {
     case "rect":
     case "highlight":
-      main = <Rect name="main" width={shape.w} height={shape.h} stroke={shape.stroke} strokeWidth={shape.strokeWidth} cornerRadius={4} fill="transparent" />;
+      main = <Rect name="main" width={shape.w} height={shape.h} stroke={shape.stroke} strokeWidth={shape.strokeWidth} cornerRadius={4} fill={shape.fill ? shape.stroke : "transparent"} />;
+      break;
+    case "cross":
+      main = (
+        <KonvaShape
+          name="main"
+          width={shape.w}
+          height={shape.h}
+          stroke={shape.stroke}
+          strokeWidth={shape.strokeWidth}
+          lineCap="round"
+          hitStrokeWidth={Math.max(12, shape.strokeWidth)}
+          sceneFunc={(ctx, node) => {
+            const w = node.width();
+            const h = node.height();
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(w, h);
+            ctx.moveTo(w, 0);
+            ctx.lineTo(0, h);
+            ctx.strokeShape(node);
+          }}
+        />
+      );
       break;
     case "ellipse":
       main = (
-        <Ellipse name="main" x={shape.w / 2} y={shape.h / 2} radiusX={shape.w / 2} radiusY={shape.h / 2} stroke={shape.stroke} strokeWidth={shape.strokeWidth} fill="transparent" />
+        <Ellipse name="main" x={shape.w / 2} y={shape.h / 2} radiusX={shape.w / 2} radiusY={shape.h / 2} stroke={shape.stroke} strokeWidth={shape.strokeWidth} fill={shape.fill ? shape.stroke : "transparent"} />
       );
       break;
     case "point": {
@@ -423,8 +456,9 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
       live.current.onAdd({ type: "point", x: p.x, y: p.y, w: 0, h: 0, ...live.current.style }, true);
       return;
     }
-    if (!isDrawTool(t)) return;
-    const d: Draft = { tool: t, a: p, b: p };
+    const dt = DRAG_TOOLS[t];
+    if (!dt) return;
+    const d: Draft = { tool: dt.shape, fill: dt.fill, a: p, b: p };
     draftRef.current = d;
     setDraft(d);
     const move = (ev: PointerEvent) => {
@@ -442,7 +476,7 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
       if (!cur) return;
       const b = toImage(ev.clientX, ev.clientY);
       if (ev.type === "pointerup" && isRealDrag(cur.a, b, live.current.view.scale)) {
-        live.current.onAdd(shapeFromDrag(cur.tool, cur.a, b, live.current.style), true);
+        live.current.onAdd(draftShapeOf({ ...cur, b }, live.current.style), true);
       }
     };
     window.addEventListener("pointermove", move);
@@ -554,7 +588,7 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
   const keepRatio = selected?.type === "text";
   const cursor = panning ? "grabbing" : spaceDown ? "grab" : tool === "select" ? "default" : "crosshair";
   const draftShape: Shape | null = draft
-    ? ({ ...shapeFromDrag(draft.tool, draft.a, draft.b, style), id: "draft" } as Shape)
+    ? ({ ...draftShapeOf(draft, style), id: "draft" } as Shape)
     : null;
   const editPos = edit ? imageToScreen(view, edit.at) : null;
 
