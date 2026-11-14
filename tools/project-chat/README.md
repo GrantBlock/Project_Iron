@@ -15,11 +15,11 @@ Seeded with **Lydia · Project Iron · designengineering.ai Development Team**.
 
 ### Using it on a second computer
 Run the server on one PC only (the one that stays on overnight). On the other computer:
-1. Run the .exe → tray icon → **Connect to another computer…**
+1. Run the .exe → **Menu → Connect → This computer → Connected** (or tray icon → **Connect to another computer…**)
 2. Enter the server's address, e.g. `100.91.95.74:3500` (Tailscale) → **Test connection** → **Save and restart**.
 3. The app now opens the main PC's chat in its own window and stores nothing locally. Closing it quits.
 
-To switch back: tray → **Change connection…** → **Run the server on this computer**. The choice is saved in `%APPDATA%\Project Chat\desktop.json`.
+To switch back: **Menu → Connect → This computer → Server**, or tray → **Change connection…**. The choice is saved in `%APPDATA%\Project Chat\desktop.json`.
 
 Rebuild the .exe: `npm install` then `npm run dist` (output in `dist/`).
 

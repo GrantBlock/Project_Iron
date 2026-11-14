@@ -55,7 +55,8 @@ function createWindow() {
     maximizable: false, fullscreenable: false,
     title: desktop.mode === 'client' ? 'Agent Chat — ' + desktop.serverUrl : 'Agent Chat',
     icon: ICON, autoHideMenuBar: true, backgroundColor: '#12152a',
-    webPreferences: { contextIsolation: true, nodeIntegration: false }
+    // preload exposes only the connection settings (Menu > Connect > This computer)
+    webPreferences: { contextIsolation: true, nodeIntegration: false, preload: path.join(__dirname, 'preload.js') }
   });
   win.setMenuBarVisibility(false);
   win.loadURL(chatUrl());
@@ -95,7 +96,12 @@ function openSetup(message) {
   });
 }
 
-ipcMain.handle('pc:get', () => ({ ...desktop }));
+ipcMain.handle('pc:get', () => {
+  const os = require('os'), addresses = [];
+  for (const list of Object.values(os.networkInterfaces()))
+    for (const i of list || []) if (i.family === 'IPv4' && !i.internal) addresses.push(i.address);
+  return { ...desktop, port: srv ? srv.cfg.port : 3500, addresses };
+});
 ipcMain.handle('pc:test', (_e, url) => testServer(normalizeUrl(url)));
 ipcMain.handle('pc:save', async (_e, mode, url) => {
   if (mode === 'client') {

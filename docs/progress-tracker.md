@@ -49,7 +49,7 @@ Updated 2026-11-13 · Grant Block. Where Project Iron stands. Status: ✅ done �
 | 0.3.3 | 2026-11-13 | ✅ | Renamed Agent Chat; grouped messages; transparent banner |
 | 0.3.4 | 2026-11-13 | ✅ | Menu panel under the banner |
 | 0.3.5 | 2026-11-13 | ✅ in use | GitHub report source |
-| next | | 🟡 | Agent picture per project, set in Menu → Projects, stored only on the server PC (in source, not built) |
+| next | | 🟡 | In source, not built: agent picture (Menu → Projects); reads Lydia's sign-off style reports; Server / Connected switch in Menu → Connect |
 
 | Setup item | Status | Notes |
 | --- | --- | --- |

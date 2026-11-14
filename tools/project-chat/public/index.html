@@ -62,7 +62,6 @@
   .mavatar img, .avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
   .mavatar.pic, .avatar.pic { background: #fff; padding: 0; overflow: hidden; }
   .pic-row { display: flex; align-items: center; gap: 10px; margin: 2px 0 6px; font-size: 13px; }
-  .pic-row .avatar { width: 44px; height: 44px; }
   .linkbtn { background: none; border: 0; color: var(--blue); cursor: pointer; padding: 0; font-size: 13px; }
   .row.me .mavatar { background: var(--blue); color: #fff; box-shadow: none; }
   .bubble { background: #fff; border-radius: 12px; padding: 10px 14px; font-size: 14.5px; line-height: 1.45; max-width: 78%;
@@ -287,7 +286,7 @@ function renderPanel() {
         ${state.unread[p.id] ? `<span class="badge">${state.unread[p.id]}</span>` : ''}
       </div>`).join('')).join('') + `
       ${project() ? `<div class="team">${esc(project().agent)}'s picture</div>
-      <div class="pic-row"><div class="avatar ${project().avatar ? 'pic' : ''}">${avatarInner(project().avatar, project().agent)}</div>
+      <div class="pic-row">
         <button type="button" class="linkbtn" id="picBtn">Choose picture</button>
         ${project().avatar ? '<button type="button" class="linkbtn" id="picDel">Remove</button>' : ''}
         <input type="file" id="picFile" accept="image/png,image/jpeg,image/webp,image/gif" hidden></div>
@@ -328,6 +327,7 @@ function renderPanel() {
   } else {
     const i = state.info || { lan: [], port: '' }, p = project();
     body.innerHTML = `
+      <div id="modeBox"></div>
       <div class="team">Open from other computers</div>
       ${i.lan.map(ip => `<div class="kv"><code>http://${ip}:${i.port}</code></div>`).join('') || '<div class="muted">No network address found.</div>'}
       <div class="team">AI replies</div>
@@ -346,9 +346,39 @@ function renderPanel() {
         <div class="muted" id="ghStatus">Loading…</div>
       </form>`;
     loadGithub();
+    loadMode();
   }
 }
 
+// This computer: Server (keeps the chat) or Connected (opens the server PC's chat). Desktop app only.
+async function loadMode() {
+  const box = $('#modeBox'); if (!box || !window.pc) return;
+  const d = await window.pc.get();
+  box.innerHTML = `
+    <div class="team">This computer</div>
+    <form class="add" id="modeForm" style="border-top:0;margin-top:4px;padding-top:0">
+      <label class="kv" style="display:flex;gap:8px;align-items:center"><input type="radio" name="mode" value="server" ${d.mode !== 'client' ? 'checked' : ''}> <b>Server</b><span class="muted">keeps the chat and receives reports</span></label>
+      <label class="kv" style="display:flex;gap:8px;align-items:center"><input type="radio" name="mode" value="client" ${d.mode === 'client' ? 'checked' : ''}> <b>Connected</b><span class="muted">opens the server PC's chat</span></label>
+      <input name="url" placeholder="Server address, e.g. 100.x.x.x:3500" value="${esc((d.serverUrl || '').replace(/^http:\/\//, ''))}">
+      <div style="display:flex;gap:8px"><button type="button" id="modeTest" style="flex:1;background:#e3e7ee;color:var(--navy)">Test connection</button><button style="flex:1">Save and restart</button></div>
+      <div class="muted" id="modeStatus">${d.mode === 'client' ? 'Connected to ' + esc(d.serverUrl) : 'Running as the server. On the other computer, choose Connected and enter an address from Open from other computers below.'}</div>
+    </form>`;
+  const f = $('#modeForm'), st = $('#modeStatus');
+  const mode = () => f.querySelector('input[name=mode]:checked').value;
+  f.url.onfocus = () => { f.querySelector('input[value=client]').checked = true; };
+  $('#modeTest').onclick = async () => {
+    if (!f.url.value.trim()) return (st.textContent = 'Enter the server address first.');
+    st.textContent = 'Testing…'; const r = await window.pc.test(f.url.value);
+    st.textContent = r.ok ? 'Reachable. Save and restart to connect.' : r.error;
+  };
+  f.onsubmit = async e => {
+    e.preventDefault();
+    if (mode() === 'client' && !f.url.value.trim()) return (st.textContent = 'Enter the server address.');
+    st.textContent = mode() === 'client' ? 'Testing, then restarting…' : 'Restarting as the server…';
+    const r = await window.pc.save(mode(), f.url.value);
+    if (r && !r.ok) st.textContent = r.error;
+  };
+}
 function ghStatusText(r) {
   if (!r || !r.github) return 'Not set. Reports only arrive through the report endpoint.';
   const st = r.status || {};
