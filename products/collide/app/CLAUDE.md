@@ -12,6 +12,9 @@ Tauri v2 + React 18 + TypeScript (strict) + Vite. Package manager: pnpm. Run all
 - `pnpm e2e` — Playwright, chromium only, starts the dev server; uses `/opt/pw-browsers/chromium` if present. Do not run `playwright install` in the cloud box.
 - `cd src-tauri && cargo test` — Rust tests
 
+## Linux prerequisites
+`xcap` (screen capture) needs these on Debian/Ubuntu: `apt-get install -y libpipewire-0.3-dev libxcb1-dev libxrandr-dev libdbus-1-dev libgbm-dev libclang-dev libegl1-mesa-dev` (plus webkit2gtk-4.1 for the Tauri shell). Tests use a fake capturer and need no display.
+
 ## Layout
 - `src/` — React frontend (`main.tsx` imports `../../design-system/styles.css`)
 - `e2e/` — Playwright specs

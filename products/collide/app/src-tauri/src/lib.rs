@@ -1,8 +1,12 @@
+pub mod capture;
+
 pub const APP_NAME: &str = "Collide";
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(capture::CaptureState::default())
+        .invoke_handler(tauri::generate_handler![capture::capture_monitor])
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .run(tauri::generate_context!())

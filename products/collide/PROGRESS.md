@@ -17,7 +17,7 @@ Mirrors `SPEC.md`'s table; update the Status column here as it changes, in sync 
 | T05 | Callout notes + undo/redo | Done |
 | T06 | Save/open markup folder | Done |
 | T07 | Export flattened PNG | Done |
-| T08 | Rust capture_monitor | In progress |
+| T08 | Rust capture_monitor | Tested — pass |
 | T09 | Rust crop_capture | To do |
 | T10 | Overlay window | To do |
 | T11 | Wire-up | To do |
