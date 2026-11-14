@@ -11,7 +11,7 @@ Mirrors `SPEC.md`'s table; update the Status column here as it changes, in sync 
 | ID | Task | Status |
 | --- | --- | --- |
 | T01 | Repo scaffold | Done |
-| T02 | Shape model | In progress |
+| T02 | Shape model | Tested — pass |
 | T03 | Editor canvas | To do |
 | T04 | Drawing tools | To do |
 | T05 | Callout notes + undo/redo | To do |
