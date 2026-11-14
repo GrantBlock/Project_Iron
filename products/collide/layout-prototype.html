@@ -1,0 +1,1394 @@
+<title>Collide Layout Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Arimo:wght@400;700&display=swap">
+<!--
+  Collide layout prototype. Draft (not yet approved by Grant), 2026-11-14.
+  Layout: Recents sidebar | Chat. A snip, a zip file or an agent's files open as a workspace
+  (toolbar + canvas + numbered list) between the sidebar and a chat dock; Save / Close returns to chat.
+  Themes: Collide Dark (design system), Collide Light (Draft), Aura (14 grounds, default Sage).
+  Built from: products/collide/design-system (Collide) and the Aura design system zip (tokens copied below).
+-->
+<style>
+/* ---------- Aura tokens (copied from Aura tokens/themes.css and tokens/bubbles.css) ---------- */
+/* Aura themes. Pick ONE per product: set data-aura-theme on <html> or any container. Sage is the default on :root. */
+:root {
+  --aura-bg: #94ac94;
+  --aura-surface: #a1b6a1;
+  --aura-tile: #aec0ae;
+  --aura-sunk: #8aa08a;
+  --aura-deep: #657565;
+  --aura-ink: #0b0b0a;
+  --aura-ink-muted: #5f6e5f;
+  --aura-line: #7f947f;
+  --aura-dot-ghost: #7f947f;
+  --aura-accent: #e42c04;
+  --aura-on-accent: #f4f1ea;
+}
+[data-aura-theme="sage"] {
+  --aura-bg: #94ac94;
+  --aura-surface: #a1b6a1;
+  --aura-tile: #aec0ae;
+  --aura-sunk: #8aa08a;
+  --aura-deep: #657565;
+  --aura-ink: #0b0b0a;
+  --aura-ink-muted: #5f6e5f;
+  --aura-line: #7f947f;
+  --aura-dot-ghost: #7f947f;
+  --aura-accent: #e42c04;
+  --aura-on-accent: #f4f1ea;
+}
+[data-aura-theme="stone"] {
+  --aura-bg: #ccc6c4;
+  --aura-surface: #dbd7d6;
+  --aura-tile: #e8e5e4;
+  --aura-sunk: #beb8b6;
+  --aura-deep: #8b8785;
+  --aura-ink: #0b0b0a;
+  --aura-ink-muted: #9b9695;
+  --aura-line: #afaaa9;
+  --aura-dot-ghost: #b8b2b0;
+  --aura-accent: #f4f404;
+  --aura-on-accent: #0b0b0a;
+}
+[data-aura-theme="slate"] {
+  --aura-bg: #5c7474;
+  --aura-surface: #708585;
+  --aura-tile: #839595;
+  --aura-sunk: #566c6c;
+  --aura-deep: #3f4f4f;
+  --aura-ink: #0b0b0a;
+  --aura-ink-muted: #3b4a4a;
+  --aura-line: #4f6464;
+  --aura-dot-ghost: #4f6464;
+  --aura-accent: #ecd434;
+  --aura-on-accent: #0b0b0a;
+}
+[data-aura-theme="ash"] {
+  --aura-bg: #848484;
+  --aura-surface: #939393;
+  --aura-tile: #a2a2a2;
+  --aura-sunk: #7b7b7b;
+  --aura-deep: #5a5a5a;
+  --aura-ink: #0b0b0a;
+  --aura-ink-muted: #545454;
+  --aura-line: #727272;
+  --aura-dot-ghost: #727272;
+  --aura-accent: #f4f404;
+  --aura-on-accent: #0b0b0a;
+}
+[data-aura-theme="umber"] {
+  --aura-bg: #7c6c5c;
+  --aura-surface: #8c7e70;
+  --aura-tile: #9b8f83;
+  --aura-sunk: #736456;
+  --aura-deep: #54493f;
+  --aura-ink: #0b0b0a;
+  --aura-ink-muted: #4f453b;
+  --aura-line: #6b5d4f;
+  --aura-dot-ghost: #6b5d4f;
+  --aura-accent: #d4ac8c;
+  --aura-on-accent: #0b0b0a;
+}
+[data-aura-theme="cobalt"] {
+  --aura-bg: #345cc4;
+  --aura-surface: #4c70cb;
+  --aura-tile: #6583d2;
+  --aura-sunk: #3056b6;
+  --aura-deep: #233f85;
+  --aura-ink: #0b0b0a;
+  --aura-ink-muted: #213b7d;
+  --aura-line: #2d4fa9;
+  --aura-dot-ghost: #2d4fa9;
+  --aura-accent: #fcfcfc;
+  --aura-on-accent: #0b0b0a;
+}
+[data-aura-theme="bone"] {
+  --aura-bg: #d4d4c4;
+  --aura-surface: #e1e1d6;
+  --aura-tile: #ecece4;
+  --aura-sunk: #c5c5b6;
+  --aura-deep: #909085;
+  --aura-ink: #0b0b0a;
+  --aura-ink-muted: #a1a195;
+  --aura-line: #b6b6a9;
+  --aura-dot-ghost: #bfbfb0;
+  --aura-accent: #cc0414;
+  --aura-on-accent: #fcfcfc;
+}
+[data-aura-theme="moss"] {
+  --aura-bg: #748464;
+  --aura-surface: #859377;
+  --aura-tile: #95a289;
+  --aura-sunk: #6c7b5d;
+  --aura-deep: #4f5a44;
+  --aura-ink: #0b0b0a;
+  --aura-ink-muted: #4a5440;
+  --aura-line: #647256;
+  --aura-dot-ghost: #647256;
+  --aura-accent: #ecf484;
+  --aura-on-accent: #0b0b0a;
+}
+[data-aura-theme="jade"] {
+  --aura-bg: #74b494;
+  --aura-surface: #85bda1;
+  --aura-tile: #95c6ae;
+  --aura-sunk: #6ca78a;
+  --aura-deep: #4f7a65;
+  --aura-ink: #0b0b0a;
+  --aura-ink-muted: #4a735f;
+  --aura-line: #649b7f;
+  --aura-dot-ghost: #649b7f;
+  --aura-accent: #447c5c;
+  --aura-on-accent: #f4f1ea;
+}
+[data-aura-theme="linen"] {
+  --aura-bg: #e4e4d4;
+  --aura-surface: #ecece1;
+  --aura-tile: #f3f3ec;
+  --aura-sunk: #d4d4c5;
+  --aura-deep: #9b9b90;
+  --aura-ink: #0b0b0a;
+  --aura-ink-muted: #adada1;
+  --aura-line: #c4c4b6;
+  --aura-dot-ghost: #cdcdbf;
+  --aura-accent: #ec4c3c;
+  --aura-on-accent: #0b0b0a;
+}
+[data-aura-theme="fog"] {
+  --aura-bg: #cccccc;
+  --aura-surface: #dbdbdb;
+  --aura-tile: #e8e8e8;
+  --aura-sunk: #bebebe;
+  --aura-deep: #8b8b8b;
+  --aura-ink: #0b0b0a;
+  --aura-ink-muted: #9b9b9b;
+  --aura-line: #afafaf;
+  --aura-dot-ghost: #b8b8b8;
+  --aura-accent: #ecd434;
+  --aura-on-accent: #0b0b0a;
+}
+[data-aura-theme="olive"] {
+  --aura-bg: #6c7464;
+  --aura-surface: #7e8577;
+  --aura-tile: #8f9589;
+  --aura-sunk: #646c5d;
+  --aura-deep: #494f44;
+  --aura-ink: #0b0b0a;
+  --aura-ink-muted: #454a40;
+  --aura-line: #5d6456;
+  --aura-dot-ghost: #5d6456;
+  --aura-accent: #ec4c1c;
+  --aura-on-accent: #0b0b0a;
+}
+[data-aura-theme="lichen"] {
+  --aura-bg: #9ca49c;
+  --aura-surface: #a8afa8;
+  --aura-tile: #b4bab4;
+  --aura-sunk: #919991;
+  --aura-deep: #6a706a;
+  --aura-ink: #0b0b0a;
+  --aura-ink-muted: #646964;
+  --aura-line: #868d86;
+  --aura-dot-ghost: #868d86;
+  --aura-accent: #0c0c0c;
+  --aura-on-accent: #e4e4e4;
+}
+[data-aura-theme="paper"] {
+  --aura-bg: #e4e4e4;
+  --aura-surface: #ececec;
+  --aura-tile: #f3f3f3;
+  --aura-sunk: #d4d4d4;
+  --aura-deep: #9b9b9b;
+  --aura-ink: #0b0b0a;
+  --aura-ink-muted: #adadad;
+  --aura-line: #c4c4c4;
+  --aura-dot-ghost: #cdcdcd;
+  --aura-accent: #fcbc5c;
+  --aura-on-accent: #0b0b0a;
+}
+
+/* Aura Bubbles — chat/text-box variant of each theme. Scoped by the same data-aura-theme attribute. */
+:root {
+  --bubble-bg: #94ac94;
+  --bubble-fill-1: #b4c5b4;
+  --bubble-fill-2: #0b0b0a;
+  --bubble-text-1: #0b0b0a;
+  --bubble-text-2: #d4ded4;
+  --bubble-outline-1: #798d79;
+  --bubble-outline-2: #0b0b0a;
+  --bubble-highlight-fill: #e42c04;
+  --bubble-on-highlight: #f4f1ea;
+  --bubble-meta: #5f6e5f;
+  --bubble-input-fill: #a1b6a1;
+  --bubble-input-text: #0b0b0a;
+}
+[data-aura-theme="sage"] {
+  --bubble-bg: #94ac94;
+  --bubble-fill-1: #b4c5b4;
+  --bubble-fill-2: #0b0b0a;
+  --bubble-text-1: #0b0b0a;
+  --bubble-text-2: #d4ded4;
+  --bubble-outline-1: #798d79;
+  --bubble-outline-2: #0b0b0a;
+  --bubble-highlight-fill: #e42c04;
+  --bubble-on-highlight: #f4f1ea;
+  --bubble-meta: #5f6e5f;
+  --bubble-input-fill: #a1b6a1;
+  --bubble-input-text: #0b0b0a;
+}
+[data-aura-theme="stone"] {
+  --bubble-bg: #ccc6c4;
+  --bubble-fill-1: #e6e3e2;
+  --bubble-fill-2: #0b0b0a;
+  --bubble-text-1: #0b0b0a;
+  --bubble-text-2: #ebe8e7;
+  --bubble-outline-1: #a7a2a1;
+  --bubble-outline-2: #0b0b0a;
+  --bubble-highlight-fill: #f4f404;
+  --bubble-on-highlight: #0b0b0a;
+  --bubble-meta: #9b9695;
+  --bubble-input-fill: #dbd7d6;
+  --bubble-input-text: #0b0b0a;
+}
+[data-aura-theme="slate"] {
+  --bubble-bg: #5c7474;
+  --bubble-fill-1: #8d9e9e;
+  --bubble-fill-2: #0b0b0a;
+  --bubble-text-1: #0b0b0a;
+  --bubble-text-2: #bec7c7;
+  --bubble-outline-1: #4b5f5f;
+  --bubble-outline-2: #0b0b0a;
+  --bubble-highlight-fill: #ecd434;
+  --bubble-on-highlight: #0b0b0a;
+  --bubble-meta: #3b4a4a;
+  --bubble-input-fill: #708585;
+  --bubble-input-text: #0b0b0a;
+}
+[data-aura-theme="ash"] {
+  --bubble-bg: #848484;
+  --bubble-fill-1: #a9a9a9;
+  --bubble-fill-2: #0b0b0a;
+  --bubble-text-1: #0b0b0a;
+  --bubble-text-2: #cecece;
+  --bubble-outline-1: #6c6c6c;
+  --bubble-outline-2: #0b0b0a;
+  --bubble-highlight-fill: #f4f404;
+  --bubble-on-highlight: #0b0b0a;
+  --bubble-meta: #545454;
+  --bubble-input-fill: #939393;
+  --bubble-input-text: #0b0b0a;
+}
+[data-aura-theme="umber"] {
+  --bubble-bg: #7c6c5c;
+  --bubble-fill-1: #a3988d;
+  --bubble-fill-2: #0b0b0a;
+  --bubble-text-1: #0b0b0a;
+  --bubble-text-2: #cbc4be;
+  --bubble-outline-1: #66594b;
+  --bubble-outline-2: #0b0b0a;
+  --bubble-highlight-fill: #d4ac8c;
+  --bubble-on-highlight: #0b0b0a;
+  --bubble-meta: #4f453b;
+  --bubble-input-fill: #8c7e70;
+  --bubble-input-text: #0b0b0a;
+}
+[data-aura-theme="cobalt"] {
+  --bubble-bg: #345cc4;
+  --bubble-fill-1: #718dd6;
+  --bubble-fill-2: #fcfcfc;
+  --bubble-text-1: #0b0b0a;
+  --bubble-text-2: #0b0b0a;
+  --bubble-outline-1: #2b4ba1;
+  --bubble-outline-2: #fcfcfc;
+  --bubble-highlight-fill: #ecd434;
+  --bubble-on-highlight: #0b0b0a;
+  --bubble-meta: #a4b6e4;
+  --bubble-input-fill: #4c70cb;
+  --bubble-input-text: #0b0b0a;
+}
+[data-aura-theme="bone"] {
+  --bubble-bg: #d4d4c4;
+  --bubble-fill-1: #eaeae2;
+  --bubble-fill-2: #0b0b0a;
+  --bubble-text-1: #0b0b0a;
+  --bubble-text-2: #eeeee7;
+  --bubble-outline-1: #aeaea1;
+  --bubble-outline-2: #0b0b0a;
+  --bubble-highlight-fill: #cc0414;
+  --bubble-on-highlight: #fcfcfc;
+  --bubble-meta: #a1a195;
+  --bubble-input-fill: #e1e1d6;
+  --bubble-input-text: #0b0b0a;
+}
+[data-aura-theme="moss"] {
+  --bubble-bg: #748464;
+  --bubble-fill-1: #9ea993;
+  --bubble-fill-2: #0b0b0a;
+  --bubble-text-1: #0b0b0a;
+  --bubble-text-2: #c7cec1;
+  --bubble-outline-1: #5f6c52;
+  --bubble-outline-2: #0b0b0a;
+  --bubble-highlight-fill: #ecf484;
+  --bubble-on-highlight: #0b0b0a;
+  --bubble-meta: #4a5440;
+  --bubble-input-fill: #859377;
+  --bubble-input-text: #0b0b0a;
+}
+[data-aura-theme="jade"] {
+  --bubble-bg: #74b494;
+  --bubble-fill-1: #9ecbb4;
+  --bubble-fill-2: #0b0b0a;
+  --bubble-text-1: #0b0b0a;
+  --bubble-text-2: #c7e1d4;
+  --bubble-outline-1: #5f9479;
+  --bubble-outline-2: #0b0b0a;
+  --bubble-highlight-fill: #ecf484;
+  --bubble-on-highlight: #0b0b0a;
+  --bubble-meta: #4a735f;
+  --bubble-input-fill: #85bda1;
+  --bubble-input-text: #0b0b0a;
+}
+[data-aura-theme="linen"] {
+  --bubble-bg: #e4e4d4;
+  --bubble-fill-1: #f2f2ea;
+  --bubble-fill-2: #0b0b0a;
+  --bubble-text-1: #0b0b0a;
+  --bubble-text-2: #f4f4ee;
+  --bubble-outline-1: #bbbbae;
+  --bubble-outline-2: #0b0b0a;
+  --bubble-highlight-fill: #ec4c3c;
+  --bubble-on-highlight: #0b0b0a;
+  --bubble-meta: #adada1;
+  --bubble-input-fill: #ecece1;
+  --bubble-input-text: #0b0b0a;
+}
+[data-aura-theme="fog"] {
+  --bubble-bg: #cccccc;
+  --bubble-fill-1: #e6e6e6;
+  --bubble-fill-2: #0b0b0a;
+  --bubble-text-1: #0b0b0a;
+  --bubble-text-2: #ebebeb;
+  --bubble-outline-1: #a7a7a7;
+  --bubble-outline-2: #0b0b0a;
+  --bubble-highlight-fill: #ecd434;
+  --bubble-on-highlight: #0b0b0a;
+  --bubble-meta: #9b9b9b;
+  --bubble-input-fill: #dbdbdb;
+  --bubble-input-text: #0b0b0a;
+}
+[data-aura-theme="olive"] {
+  --bubble-bg: #6c7464;
+  --bubble-fill-1: #989e93;
+  --bubble-fill-2: #0b0b0a;
+  --bubble-text-1: #0b0b0a;
+  --bubble-text-2: #c4c7c1;
+  --bubble-outline-1: #595f52;
+  --bubble-outline-2: #0b0b0a;
+  --bubble-highlight-fill: #ec4c1c;
+  --bubble-on-highlight: #0b0b0a;
+  --bubble-meta: #454a40;
+  --bubble-input-fill: #7e8577;
+  --bubble-input-text: #0b0b0a;
+}
+[data-aura-theme="lichen"] {
+  --bubble-bg: #9ca49c;
+  --bubble-fill-1: #babfba;
+  --bubble-fill-2: #0b0b0a;
+  --bubble-text-1: #0b0b0a;
+  --bubble-text-2: #d7dbd7;
+  --bubble-outline-1: #808680;
+  --bubble-outline-2: #0b0b0a;
+  --bubble-highlight-fill: #f45c04;
+  --bubble-on-highlight: #0b0b0a;
+  --bubble-meta: #646964;
+  --bubble-input-fill: #a8afa8;
+  --bubble-input-text: #0b0b0a;
+}
+[data-aura-theme="paper"] {
+  --bubble-bg: #e4e4e4;
+  --bubble-fill-1: #f2f2f2;
+  --bubble-fill-2: #0b0b0a;
+  --bubble-text-1: #0b0b0a;
+  --bubble-text-2: #f4f4f4;
+  --bubble-outline-1: #bbbbbb;
+  --bubble-outline-2: #0b0b0a;
+  --bubble-highlight-fill: #fcbc5c;
+  --bubble-on-highlight: #0b0b0a;
+  --bubble-meta: #adadad;
+  --bubble-input-fill: #ececec;
+  --bubble-input-text: #0b0b0a;
+}
+
+
+/* ---------- App tokens. Bare :root = Collide Light (Draft). ---------- */
+:root {
+  --bg: #F3F2EF; --side: #ECEBE7; --panel: #FAFAF8; --raised: #FFFFFF; --hover: #E6E5E2; --sunk: #E6E5E2;
+  --line: rgba(9,9,11,.08); --line-2: rgba(9,9,11,.15);
+  --t1: #09090B; --t2: #26262E; --t3: #4B4B55; --t4: #6D6D77;
+  --accent: #D92E14; --on-accent: #FFFFFF; --accent-soft: rgba(217,46,20,.10);
+  --info: #2C5480; --on-info: #FFFFFF; --ok: #2E8A5E; --warn: #A8740F;
+  --me: #18181D; --me-text: #F3F2EF; --them: #FFFFFF; --them-text: #09090B; --them-line: rgba(9,9,11,.10);
+  --composer: #FFFFFF; --banner-ink: #18181D; --banner-spark: #D92E14; --canvas: #E9E8E4; --canvas-dot: rgba(9,9,11,.12);
+  --shadow: 0 1px 0 rgba(255,255,255,.7) inset, 0 12px 32px rgba(9,9,11,.10);
+  --font-ui: 'Geist', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-label: 'Geist Mono', ui-monospace, Menlo, Consolas, monospace;
+  --font-mono: 'Geist Mono', ui-monospace, Menlo, Consolas, monospace;
+  --label-case: uppercase; --label-track: .14em; --label-size: 10.5px; --label-weight: 500;
+  --title-weight: 600; --title-track: -.02em;
+  --r-ctl: 6px; --r-card: 10px; --r-panel: 14px; --r-btn: 6px;
+  --border-w: 1px;
+  color-scheme: light;
+}
+/* Collide Dark = the Collide design system as written */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-app-theme]) {
+    --bg: #09090B; --side: #0E0E11; --panel: #131317; --raised: #18181D; --hover: #1E1E24; --sunk: #0E0E11;
+    --line: rgba(255,255,255,.06); --line-2: rgba(255,255,255,.12);
+    --t1: #F3F2EF; --t2: #C4C3C8; --t3: #98989F; --t4: #6D6D77;
+    --accent: #FF3D1F; --on-accent: #FFFFFF; --accent-soft: rgba(255,61,31,.14);
+    --info: #4C87C4; --on-info: #FFFFFF; --ok: #3FAF7A; --warn: #E3A73A;
+    --me: #26262E; --me-text: #F3F2EF; --them: #18181D; --them-text: #E6E5E2; --them-line: rgba(255,255,255,.08);
+    --composer: #18181D; --banner-ink: #26262E; --banner-spark: #FF3D1F; --canvas: #0B0B0D; --canvas-dot: rgba(255,255,255,.07);
+    --shadow: 0 1px 0 rgba(255,255,255,.06) inset, 0 24px 60px rgba(0,0,0,.55);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]:not([data-app-theme]), :root[data-app-theme="dark"] {
+  --bg: #09090B; --side: #0E0E11; --panel: #131317; --raised: #18181D; --hover: #1E1E24; --sunk: #0E0E11;
+  --line: rgba(255,255,255,.06); --line-2: rgba(255,255,255,.12);
+  --t1: #F3F2EF; --t2: #C4C3C8; --t3: #98989F; --t4: #6D6D77;
+  --accent: #FF3D1F; --on-accent: #FFFFFF; --accent-soft: rgba(255,61,31,.14);
+  --info: #4C87C4; --on-info: #FFFFFF; --ok: #3FAF7A; --warn: #E3A73A;
+  --me: #26262E; --me-text: #F3F2EF; --them: #18181D; --them-text: #E6E5E2; --them-line: rgba(255,255,255,.08);
+  --composer: #18181D; --banner-ink: #26262E; --banner-spark: #FF3D1F; --canvas: #0B0B0D; --canvas-dot: rgba(255,255,255,.07);
+  --shadow: 0 1px 0 rgba(255,255,255,.06) inset, 0 24px 60px rgba(0,0,0,.55);
+  color-scheme: dark;
+}
+:root[data-app-theme="light"] { color-scheme: light; }
+/* Aura: flat grounds, tone steps instead of borders, ink text, one highlight, pills */
+:root[data-app-theme="aura"] {
+  --bg: var(--aura-bg); --side: var(--aura-bg); --panel: var(--aura-surface); --raised: var(--aura-tile); --hover: var(--aura-tile); --sunk: var(--aura-sunk);
+  --line: transparent; --line-2: var(--aura-line);
+  --t1: var(--aura-ink); --t2: var(--aura-ink);
+  --t3: color-mix(in srgb, var(--aura-ink) 72%, var(--aura-surface)); --t4: color-mix(in srgb, var(--aura-ink) 58%, var(--aura-surface));
+  --accent: var(--aura-accent); --on-accent: var(--aura-on-accent); --accent-soft: color-mix(in srgb, var(--aura-accent) 22%, transparent);
+  --info: var(--aura-ink); --on-info: var(--aura-surface); --ok: var(--aura-ink); --warn: var(--aura-ink);
+  --me: var(--bubble-fill-2); --me-text: var(--bubble-text-2); --them: var(--bubble-fill-1); --them-text: var(--bubble-text-1); --them-line: transparent;
+  --composer: var(--bubble-input-fill); --banner-ink: var(--aura-ink); --banner-spark: var(--aura-accent); --canvas: var(--aura-sunk); --canvas-dot: var(--aura-dot-ghost);
+  --shadow: none;
+  --font-ui: 'Helvetica Neue', Helvetica, 'Arimo', Arial, sans-serif;
+  --font-label: 'Helvetica Neue', Helvetica, 'Arimo', Arial, sans-serif;
+  --label-case: none; --label-track: 0; --label-size: 12px; --label-weight: 700;
+  --title-weight: 700; --title-track: -.03em;
+  --r-ctl: 14px; --r-card: 18px; --r-panel: 24px; --r-btn: 999px;
+  --border-w: 0px;
+  color-scheme: light;
+}
+:root[data-app-theme="aura"][data-aura-theme="ash"], :root[data-app-theme="aura"][data-aura-theme="slate"],
+:root[data-app-theme="aura"][data-aura-theme="olive"], :root[data-app-theme="aura"][data-aura-theme="umber"],
+:root[data-app-theme="aura"][data-aura-theme="moss"], :root[data-app-theme="aura"][data-aura-theme="cobalt"] {
+  --t3: color-mix(in srgb, var(--aura-ink) 80%, var(--aura-surface)); --t4: color-mix(in srgb, var(--aura-ink) 68%, var(--aura-surface));
+}
+
+/* ---------- Base ---------- */
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--t1); font: 400 13.5px/1.45 var(--font-ui); -webkit-font-smoothing: antialiased; overflow: hidden; transition: background-color 240ms ease-out, color 240ms ease-out; }
+* { box-sizing: border-box; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; box-shadow: 0 0 0 3px var(--accent-soft); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+.label { font: var(--label-weight) var(--label-size)/1 var(--font-label); letter-spacing: var(--label-track); text-transform: var(--label-case); color: var(--t3); }
+.mono { font-family: var(--font-mono); font-size: 11.5px; }
+.ico { width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.ico.sm { width: 14px; height: 14px; }
+
+/* ---------- App frame ---------- */
+.app { height: 100%; display: grid; grid-template-columns: 276px minmax(0,1fr); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+.side { background: var(--side); border-right: var(--border-w) solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+.main { display: grid; grid-template-columns: minmax(0,1fr); min-width: 0; min-height: 0; }
+.app.ws-open .main { grid-template-columns: minmax(0,1fr) 380px; }
+.app.ws-open.dock-min .main { grid-template-columns: minmax(0,1fr) 52px; }
+
+/* ---------- Sidebar ---------- */
+.brand { display: flex; align-items: center; gap: 10px; padding: 14px 14px 10px; }
+.brand svg.logo { width: 26px; height: 26px; flex: none; }
+.brand .word { font-weight: var(--title-weight); letter-spacing: var(--title-track); font-size: 17px; }
+.mode { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 999px; background: var(--raised); color: var(--t3); }
+.mode .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+.actions { display: grid; grid-template-columns: 1fr auto; gap: 6px; padding: 4px 12px 10px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 32px; padding: 0 12px; border-radius: var(--r-btn); border: var(--border-w) solid var(--line-2); background: var(--raised); color: var(--t1); font-weight: 500; white-space: nowrap; transition: background-color 120ms, transform 120ms; }
+.btn:hover { background: var(--hover); }
+.btn:active { transform: scale(.98); }
+.btn.primary { background: var(--accent); border-color: transparent; color: var(--on-accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--t2); }
+.btn.ghost:hover { background: var(--hover); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.icon { width: 32px; padding: 0; }
+.row3 { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.select { height: 32px; border-radius: var(--r-btn); border: var(--border-w) solid var(--line-2); background: var(--raised); padding: 0 8px; color: var(--t2); }
+.search { margin: 0 12px 10px; display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border-radius: var(--r-ctl); background: var(--sunk); border: var(--border-w) solid var(--line); color: var(--t3); }
+.search input { border: 0; background: none; outline: none; flex: 1; min-width: 0; color: var(--t1); }
+.filters { display: flex; gap: 4px; padding: 0 12px 8px; }
+.chip { height: 24px; padding: 0 9px; border-radius: 999px; border: var(--border-w) solid var(--line-2); background: transparent; color: var(--t3); font: var(--label-weight) 11px/1 var(--font-label); letter-spacing: calc(var(--label-track) * .5); text-transform: var(--label-case); }
+.chip[aria-pressed="true"] { background: var(--t1); color: var(--bg); border-color: var(--t1); }
+.scroll { flex: 1; overflow: auto; padding: 0 8px 8px; min-height: 0; }
+.sec { padding: 12px 6px 6px; display: flex; align-items: center; justify-content: space-between; }
+.item { width: 100%; display: grid; grid-template-columns: 30px minmax(0,1fr) auto; align-items: center; gap: 9px; padding: 6px 6px; border-radius: var(--r-ctl); border: 0; background: transparent; text-align: left; color: var(--t2); }
+.item:hover { background: var(--hover); color: var(--t1); }
+.item.active { background: var(--raised); color: var(--t1); box-shadow: inset 0 0 0 var(--border-w) var(--line-2); }
+:root[data-app-theme="aura"] .item.active { background: var(--aura-ink); color: var(--aura-surface); }
+:root[data-app-theme="aura"] .item.active .meta, :root[data-app-theme="aura"] .item.active .cloud { color: color-mix(in srgb, var(--aura-surface) 75%, var(--aura-ink)); }
+.item .ttl { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item .meta { color: var(--t4); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.thumb { width: 30px; height: 30px; border-radius: 7px; display: grid; place-items: center; background: var(--sunk); color: var(--t3); overflow: hidden; }
+.thumb svg.snipthumb { width: 30px; height: 30px; display: block; }
+.avatar { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 600; font-size: 12px; color: var(--on-info); background: var(--info); flex: none; }
+.cloud { color: var(--t4); display: inline-flex; }
+.cloud.local { color: var(--warn); }
+.tree { margin: 2px 0 4px 21px; padding-left: 8px; border-left: 1px solid var(--line-2); }
+.node { width: 100%; display: flex; align-items: center; gap: 6px; height: 26px; padding: 0 6px; border: 0; background: transparent; border-radius: 6px; color: var(--t3); text-align: left; font-size: 12.5px; white-space: nowrap; overflow: hidden; }
+.node:hover { background: var(--hover); color: var(--t1); }
+.node.active { color: var(--t1); background: var(--raised); }
+.node .chev { transition: transform 120ms; }
+.node.open .chev { transform: rotate(90deg); }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 6px 10px; }
+.tag { font: 500 10px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; padding: 5px 7px; border-radius: 4px; border: 1px solid var(--line-2); color: var(--t2); background: transparent; }
+:root[data-app-theme="aura"] .tag { font: 700 11px/1 var(--font-ui); letter-spacing: 0; text-transform: none; border: 0; background: var(--aura-tile); border-radius: 999px; padding: 6px 10px; }
+.foot { display: flex; align-items: center; gap: 6px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); border-top: var(--border-w) solid var(--line); position: relative; }
+
+/* Appearance popover */
+.pop { position: absolute; left: 10px; bottom: 54px; width: 254px; padding: 12px; border-radius: var(--r-panel); background: var(--raised); border: var(--border-w) solid var(--line-2); box-shadow: var(--shadow); z-index: 30; display: grid; gap: 10px; }
+.seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.seg button { height: 30px; border-radius: var(--r-btn); border: var(--border-w) solid var(--line-2); background: transparent; color: var(--t2); font-size: 12px; }
+.seg button[aria-pressed="true"] { background: var(--t1); color: var(--bg); border-color: var(--t1); }
+.swatches { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.sw { aspect-ratio: 1; width: 100%; border-radius: 50%; border: 0; position: relative; padding: 0; }
+.sw::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 38%; height: 38%; border-radius: 50%; background: var(--hl); }
+.sw[aria-pressed="true"] { outline: 2px solid var(--t1); outline-offset: 2px; }
+.hint { color: var(--t4); font-size: 11.5px; }
+
+/* ---------- Chat ---------- */
+.chat { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--panel); }
+.app.ws-open .chat { border-left: var(--border-w) solid var(--line); }
+.chathead { position: relative; height: 92px; flex: none; overflow: hidden; }
+.chathead canvas.banner { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.chathead .bar { position: relative; display: flex; align-items: center; gap: 10px; padding: 12px 14px; }
+.chathead .who { min-width: 0; flex: 1; }
+.app.ws-open .hbtn span { display: none; }
+.chathead .hbtn { flex: none; }
+.chathead .who .n { font-weight: var(--title-weight); letter-spacing: var(--title-track); font-size: 15px; color: var(--head-text, #F3F2EF); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chathead .who .s { font-size: 12px; color: var(--head-sub, rgba(243,242,239,.7)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-app-theme="aura"] .chathead .who .n { --head-text: var(--aura-surface); }
+:root[data-app-theme="aura"] .chathead .who .s { --head-sub: color-mix(in srgb, var(--aura-surface) 75%, var(--aura-ink)); }
+.chathead .avatar { box-shadow: 0 0 0 2px var(--panel); }
+.hbtn { height: 28px; padding: 0 10px; border-radius: var(--r-btn); border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.08); color: #F3F2EF; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
+.hbtn:hover { background: rgba(255,255,255,.16); }
+:root[data-app-theme="aura"] .hbtn { border: 0; background: var(--aura-surface); color: var(--aura-ink); }
+.log { flex: 1; overflow: auto; padding: 14px 18px 8px; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+.log-inner { width: 100%; max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+.msg { display: flex; gap: 10px; align-items: flex-start; }
+.msg.me { justify-content: flex-end; }
+.bubble { max-width: min(560px, 86%); padding: 10px 13px; border-radius: 16px; background: var(--them); color: var(--them-text); border: var(--border-w) solid var(--them-line); min-width: 0; overflow-wrap: anywhere; }
+.msg.me .bubble { background: var(--me); color: var(--me-text); border-color: transparent; border-bottom-right-radius: 5px; }
+.msg:not(.me) .bubble { border-top-left-radius: 5px; }
+.bubble p { margin: 0 0 6px; } .bubble p:last-child { margin: 0; }
+.bubble ul { margin: 4px 0 6px; padding-left: 18px; }
+.bubble code { font: 12px var(--font-mono); padding: 1px 5px; border-radius: 4px; background: var(--sunk); }
+.time { font-size: 11px; color: var(--t4); margin-top: 4px; text-align: right; }
+.sender { font-size: 12px; color: var(--t3); margin-bottom: 3px; font-weight: 500; }
+.report { margin-top: 6px; border-radius: var(--r-card); background: var(--raised); border: var(--border-w) solid var(--line-2); padding: 10px 12px; display: grid; gap: 4px; }
+.status { justify-self: start; font: 500 10px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; padding: 4px 7px; border-radius: 4px; background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
+:root[data-app-theme="aura"] .status { background: var(--aura-accent); color: var(--aura-on-accent); border-radius: 999px; font: 700 11px/1 var(--font-ui); letter-spacing: 0; text-transform: none; }
+.attach { margin-top: 6px; display: flex; gap: 10px; align-items: center; padding: 6px; border-radius: var(--r-card); background: var(--raised); border: var(--border-w) solid var(--line-2); color: var(--t1); text-align: left; width: 100%; }
+.attach:hover { background: var(--hover); }
+.attach svg.snipthumb { width: 96px; height: 54px; border-radius: 6px; flex: none; }
+.typing { display: flex; gap: 4px; padding: 0 18px 6px; }
+.composer-wrap { padding: 8px 14px calc(14px + env(safe-area-inset-bottom, 0px)); }
+.context { max-width: 760px; margin: 0 auto 6px; display: flex; gap: 6px; flex-wrap: wrap; }
+.ctx { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 8px; border-radius: 999px; background: var(--accent-soft); color: var(--t1); font-size: 12px; }
+.composer { max-width: 760px; margin: 0 auto; display: flex; align-items: flex-end; gap: 6px; padding: 6px; border-radius: 18px; background: var(--composer); border: var(--border-w) solid var(--line-2); }
+.composer textarea { flex: 1; min-width: 0; resize: none; border: 0; outline: none; background: transparent; padding: 7px 6px; max-height: 140px; line-height: 1.4; color: var(--t1); }
+.composer textarea::placeholder { color: var(--t4); }
+.send { width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; flex: none; }
+.dockbar { display: none; }
+.app.ws-open.dock-min .chat > :not(.dockbar) { display: none; }
+.app.ws-open.dock-min .dockbar { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 12px 0; }
+.empty { margin: auto; text-align: center; display: grid; gap: 10px; justify-items: center; max-width: 380px; padding: 24px; }
+.empty h2 { margin: 0; font-weight: var(--title-weight); letter-spacing: var(--title-track); font-size: 26px; line-height: 1.05; text-wrap: balance; }
+.empty h2 span { color: var(--t4); display: block; }
+.empty p { margin: 0; color: var(--t3); }
+
+/* ---------- Workspace ---------- */
+.ws { display: none; flex-direction: column; min-width: 0; min-height: 0; background: var(--bg); }
+.app.ws-open .ws { display: flex; }
+.wshead { display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 12px; border-bottom: var(--border-w) solid var(--line); background: var(--panel); flex: none; }
+.wshead .kind { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 7px; background: var(--sunk); color: var(--t2); }
+.wshead .name { font-weight: 600; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.wshead .path { color: var(--t4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.saved { display: inline-flex; align-items: center; gap: 6px; color: var(--t3); white-space: nowrap; }
+.saved .d { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
+.saved.dirty .d { background: var(--warn); }
+.toolbar { display: flex; align-items: center; gap: 2px; height: 46px; padding: 0 10px; border-bottom: var(--border-w) solid var(--line); background: var(--panel); flex: none; overflow-x: auto; }
+.tool { height: 32px; min-width: 32px; padding: 0 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: var(--r-ctl); border: 0; background: transparent; color: var(--t2); white-space: nowrap; }
+.tool:hover { background: var(--hover); color: var(--t1); }
+.tool[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+:root[data-app-theme="aura"] .tool[aria-pressed="true"] { background: var(--aura-ink); color: var(--aura-surface); }
+.tool kbd { font: 10px var(--font-mono); color: var(--t4); }
+.vsep { width: 1px; height: 20px; background: var(--line-2); margin: 0 6px; flex: none; }
+.swatch { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--panel); box-shadow: 0 0 0 1px var(--line-2); padding: 0; }
+.swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--t1); }
+.wsbody { flex: 1; display: grid; grid-template-columns: minmax(0,1fr) 288px; min-height: 0; }
+.stage { position: relative; overflow: auto; min-width: 0; background-color: var(--canvas); background-image: radial-gradient(var(--canvas-dot) 1px, transparent 1.2px); background-size: 16px 16px; display: grid; place-items: center; padding: 28px; }
+.stage svg.snipfull { width: 100%; max-width: 980px; height: auto; border-radius: 4px; box-shadow: 0 18px 50px rgba(0,0,0,.28); display: block; }
+.stage.cursor-add svg.snipfull { cursor: crosshair; }
+.numbered { border-left: var(--border-w) solid var(--line); background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
+.numbered .head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: var(--border-w) solid var(--line); }
+.numbered .list { overflow: auto; padding: 8px; display: grid; gap: 6px; align-content: start; flex: 1; }
+.el { display: grid; grid-template-columns: 24px minmax(0,1fr); gap: 10px; padding: 9px; border-radius: var(--r-card); border: var(--border-w) solid var(--line); background: var(--raised); text-align: left; color: var(--t1); width: 100%; }
+.el:hover { border-color: var(--line-2); }
+.el.sel { box-shadow: inset 0 0 0 1px var(--accent); }
+:root[data-app-theme="aura"] .el { background: var(--aura-tile); }
+:root[data-app-theme="aura"] .el.sel { box-shadow: inset 0 0 0 2px var(--aura-ink); }
+.num { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--info); color: var(--on-info); font: 600 11px/1 var(--font-mono); }
+.el.sel .num { background: var(--accent); color: var(--on-accent); }
+.el .k { font: 500 10px/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--t4); }
+.el textarea { width: 100%; margin-top: 6px; resize: vertical; min-height: 44px; border-radius: 6px; border: var(--border-w) solid var(--line-2); background: var(--sunk); padding: 6px 8px; color: var(--t1); font-size: 12.5px; }
+.el .txt { font-size: 12.5px; color: var(--t2); margin-top: 3px; }
+.numbered .foot2 { padding: 10px 12px; border-top: var(--border-w) solid var(--line); display: grid; gap: 6px; }
+.statusbar { height: 28px; display: flex; align-items: center; gap: 14px; padding: 0 12px; border-top: var(--border-w) solid var(--line); background: var(--panel); color: var(--t4); flex: none; font: 11px var(--font-mono); white-space: nowrap; overflow: hidden; }
+.unsaved { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 12px; background: var(--accent-soft); border-bottom: var(--border-w) solid var(--line); flex: none; }
+.unsaved .msgtxt { flex: 1; min-width: 180px; }
+
+/* Doc editor */
+.docsplit { display: grid; grid-template-columns: 1fr 1fr; min-height: 0; min-width: 0; }
+.docsplit.edit { grid-template-columns: 1fr 0; } .docsplit.preview { grid-template-columns: 0 1fr; }
+.docsplit.edit .preview, .docsplit.preview .src { display: none; }
+.docsplit textarea.src { border: 0; outline: none; resize: none; padding: 20px 22px; background: var(--panel); color: var(--t1); font: 12.5px/1.65 var(--font-mono); tab-size: 4; min-width: 0; border-right: var(--border-w) solid var(--line); }
+.preview { overflow: auto; padding: 20px 26px; background: var(--raised); min-width: 0; }
+.preview h1, .preview h2, .preview h3 { letter-spacing: var(--title-track); font-weight: var(--title-weight); line-height: 1.15; margin: 18px 0 8px; text-wrap: balance; }
+.preview h1 { font-size: 24px; margin-top: 0; } .preview h2 { font-size: 17px; } .preview h3 { font-size: 14.5px; }
+.preview p, .preview li { color: var(--t2); max-width: 68ch; }
+.preview code { font: 12px var(--font-mono); background: var(--sunk); padding: 1px 5px; border-radius: 4px; }
+.preview figure { margin: 10px 0 14px; } .preview figure svg { width: 100%; max-width: 520px; height: auto; border-radius: 6px; display: block; }
+.preview figcaption { color: var(--t4); font-size: 12px; margin-top: 4px; }
+.picker { position: absolute; z-index: 25; top: 100px; left: 50%; transform: translateX(-50%); width: min(420px, calc(100% - 32px)); background: var(--raised); border: var(--border-w) solid var(--line-2); border-radius: var(--r-panel); box-shadow: var(--shadow); padding: 12px; display: grid; gap: 8px; }
+
+/* Agent files */
+.agenthero { position: relative; height: 132px; flex: none; overflow: hidden; }
+.agenthero canvas { position: absolute; left: 0; right: 0; top: 0; width: 100%; height: 64px; }
+.agenthero .in { position: relative; display: flex; align-items: flex-end; flex-wrap: wrap; gap: 14px; height: 100%; padding: 16px 20px 14px; }
+.agenthero .avatar { width: 56px; height: 56px; font-size: 20px; box-shadow: 0 0 0 3px var(--bg); }
+.agenthero h2 { margin: 0; font-size: 22px; font-weight: var(--title-weight); letter-spacing: var(--title-track); }
+.tabs { display: flex; gap: 2px; }
+.tabs button { height: 30px; padding: 0 12px; border-radius: var(--r-btn); border: 0; background: transparent; color: var(--t3); font-weight: 500; }
+.tabs button[aria-selected="true"] { background: var(--raised); color: var(--t1); box-shadow: inset 0 0 0 var(--border-w) var(--line-2); }
+:root[data-app-theme="aura"] .tabs button[aria-selected="true"] { background: var(--aura-ink); color: var(--aura-surface); }
+
+/* Prototype notes */
+.notesbtn { position: fixed; right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 40; height: 30px; padding: 0 12px; border-radius: 999px; border: 1px dashed var(--line-2); background: var(--raised); color: var(--t2); font: 500 11px var(--font-mono); box-shadow: var(--shadow); }
+.notes { position: fixed; right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(122px + env(safe-area-inset-bottom, 0px)); z-index: 40; width: min(400px, calc(100vw - 28px)); max-height: 66vh; overflow: auto; background: var(--raised); color: var(--t1); border: var(--border-w) solid var(--line-2); border-radius: var(--r-panel); box-shadow: var(--shadow); padding: 14px 16px; font-size: 12.5px; }
+.notes h3 { margin: 0 0 6px; font-size: 14px; }
+.notes ol, .notes ul { padding-left: 18px; margin: 6px 0 10px; } .notes li { margin: 3px 0; color: var(--t2); }
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 50; padding: 9px 14px; border-radius: 999px; background: var(--t1); color: var(--bg); font-size: 12.5px; box-shadow: var(--shadow); }
+
+/* ---------- Phone ---------- */
+.mobile-only { display: none; }
+@media (max-width: 820px) {
+  .mobile-only { display: inline-flex; }
+  .app, .app.ws-open, .app.ws-open.dock-min { grid-template-columns: minmax(0,1fr); }
+  .side { position: fixed; z-index: 35; top: 0; bottom: 0; left: 0; width: min(300px, 86vw); transform: translateX(-102%); transition: transform 200ms ease-out; padding-top: env(safe-area-inset-top, 0px); box-shadow: var(--shadow); }
+  .app.side-open .side { transform: none; }
+  .app.ws-open .main, .app.ws-open.dock-min .main { grid-template-columns: minmax(0,1fr); }
+  .app.ws-open .chat { display: none; }
+  .app.ws-open.phone-chat .chat { display: flex; position: fixed; inset: 0; z-index: 30; padding-top: env(safe-area-inset-top, 0px); }
+  .app.ws-open.phone-chat.dock-min .chat > :not(.dockbar) { display: flex; }
+  .app.ws-open.phone-chat .dockbar { display: none; }
+  .wsbody { grid-template-columns: minmax(0,1fr); grid-template-rows: minmax(0,1fr) auto; }
+  .numbered { border-left: 0; border-top: var(--border-w) solid var(--line); max-height: 38vh; }
+  .docsplit, .docsplit.edit, .docsplit.preview { grid-template-columns: minmax(0,1fr); }
+  .docsplit:not(.edit):not(.preview) .preview { display: none; }
+  .wshead .path, .saved .lbl { display: none; }
+  .notesbtn { bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
+  .stage { padding: 12px; }
+}
+</style>
+
+<div class="app" id="app">
+  <aside class="side" id="side" aria-label="Recents"></aside>
+  <div class="main">
+    <section class="ws" id="ws" aria-label="Workspace"></section>
+    <section class="chat" id="chat" aria-label="Chat"></section>
+  </div>
+</div>
+<button class="notesbtn" id="notesBtn" aria-expanded="false">Draft layout · notes</button>
+<div class="notes" id="notes" hidden>
+  <h3>Draft (not yet approved by Grant)</h3>
+  <ol>
+    <li><b>Chat is home.</b> Recents on the left, the open chat on the right, like Agent Chat.</li>
+    <li><b>Snip and Editor have no page of their own.</b> They open as a workspace when you open a snip, a zip file or an agent's files: from Recents, New snip, Open zip, or an attachment in a message.</li>
+    <li><b>Workspace</b> = header (name, save state, Save, Close) + toolbar + canvas + numbered list on the right. Chat moves to a dock on the right and can be minimised. Close returns to chat; unsaved changes ask first.</li>
+    <li><b>Zips</b> appear in Recents next to chats and snips. A zip expands to its folder tree in the sidebar.</li>
+    <li><b>Agents</b> in the sidebar open their Personality and Memory files for editing.</li>
+    <li><b>Themes:</b> System, Light, Dark, Aura (14 grounds). The banner and avatars redraw from the theme. The logo is never recoloured.</li>
+  </ol>
+  <p class="hint">Example content only. Chats are from the Lydia screenshot; snips, the zip and the memory file are placeholders.</p>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const LOGO_PATH = "M0 0h32v1h-32zM0 1h32v1h-32zM0 2h32v1h-32zM0 3h21v1h-21zM22 3h5v1h-5zM29 3h1v1h-1zM31 3h1v1h-1zM1 4h1v1h-1zM4 4h26v1h-26zM31 4h1v1h-1zM1 5h1v1h-1zM3 5h24v1h-24zM28 5h1v1h-1zM30 5h2v1h-2zM1 6h2v1h-2zM4 6h18v1h-18zM23 6h4v1h-4zM28 6h1v1h-1zM0 7h1v1h-1zM2 7h2v1h-2zM5 7h2v1h-2zM8 7h8v1h-8zM17 7h1v1h-1zM19 7h6v1h-6zM26 7h5v1h-5zM2 8h1v1h-1zM4 8h16v1h-16zM21 8h3v1h-3zM25 8h5v1h-5zM0 9h1v1h-1zM5 9h10v1h-10zM16 9h5v1h-5zM23 9h1v1h-1zM25 9h1v1h-1zM28 9h2v1h-2zM0 10h1v1h-1zM2 10h5v1h-5zM8 10h13v1h-13zM22 10h4v1h-4zM28 10h3v1h-3zM3 11h1v1h-1zM5 11h2v1h-2zM8 11h5v1h-5zM14 11h3v1h-3zM18 11h8v1h-8zM27 11h2v1h-2zM31 11h1v1h-1zM2 12h1v1h-1zM5 12h3v1h-3zM9 12h3v1h-3zM13 12h1v1h-1zM15 12h9v1h-9zM25 12h1v1h-1zM28 12h1v1h-1zM6 13h1v1h-1zM8 13h7v1h-7zM16 13h3v1h-3zM20 13h5v1h-5zM27 13h1v1h-1zM8 14h4v1h-4zM15 14h1v1h-1zM17 14h5v1h-5zM31 14h1v1h-1zM3 15h1v1h-1zM6 15h2v1h-2zM10 15h4v1h-4zM15 15h7v1h-7zM23 15h2v1h-2zM26 15h1v1h-1zM28 15h1v1h-1zM4 16h1v1h-1zM6 16h1v1h-1zM10 16h2v1h-2zM13 16h1v1h-1zM15 16h4v1h-4zM21 16h3v1h-3zM29 16h2v1h-2zM6 17h1v1h-1zM8 17h1v1h-1zM11 17h1v1h-1zM13 17h2v1h-2zM17 17h1v1h-1zM19 17h3v1h-3zM25 17h1v1h-1zM28 17h1v1h-1zM30 17h1v1h-1zM2 18h1v1h-1zM13 18h3v1h-3zM18 18h7v1h-7zM26 18h1v1h-1zM0 19h1v1h-1zM5 19h1v1h-1zM7 19h1v1h-1zM9 19h1v1h-1zM12 19h1v1h-1zM15 19h2v1h-2zM18 19h1v1h-1zM21 19h1v1h-1zM23 19h1v1h-1zM25 19h2v1h-2zM28 19h1v1h-1zM30 19h2v1h-2zM2 20h2v1h-2zM6 20h2v1h-2zM10 20h5v1h-5zM18 20h2v1h-2zM21 20h4v1h-4zM28 20h1v1h-1zM2 21h1v1h-1zM4 21h1v1h-1zM7 21h1v1h-1zM12 21h1v1h-1zM15 21h1v1h-1zM21 21h1v1h-1zM26 21h1v1h-1zM1 22h1v1h-1zM3 22h1v1h-1zM5 22h1v1h-1zM8 22h1v1h-1zM13 22h1v1h-1zM17 22h1v1h-1zM19 22h2v1h-2zM22 22h1v1h-1zM24 22h1v1h-1zM29 22h1v1h-1zM7 23h1v1h-1zM10 23h1v1h-1zM15 23h1v1h-1zM20 23h3v1h-3zM31 23h1v1h-1zM2 24h1v1h-1zM12 24h2v1h-2zM23 24h1v1h-1zM7 25h1v1h-1zM10 25h1v1h-1zM19 25h1v1h-1zM21 25h3v1h-3zM25 25h2v1h-2zM30 25h2v1h-2zM3 26h3v1h-3zM9 26h1v1h-1zM11 26h2v1h-2zM14 26h1v1h-1zM16 26h1v1h-1zM18 26h1v1h-1zM1 27h1v1h-1zM3 27h2v1h-2zM7 27h1v1h-1zM10 27h3v1h-3zM15 27h1v1h-1zM17 27h2v1h-2zM22 27h1v1h-1zM25 27h1v1h-1zM28 27h1v1h-1zM30 27h2v1h-2zM1 28h2v1h-2zM6 28h3v1h-3zM12 28h7v1h-7zM20 28h2v1h-2zM24 28h6v1h-6zM0 29h2v1h-2zM3 29h1v1h-1zM5 29h2v1h-2zM9 29h1v1h-1zM13 29h2v1h-2zM16 29h1v1h-1zM18 29h1v1h-1zM20 29h1v1h-1zM23 29h1v1h-1zM25 29h2v1h-2zM29 29h3v1h-3zM1 30h1v1h-1zM15 30h1v1h-1zM22 30h5v1h-5zM30 30h1v1h-1zM1 31h1v1h-1zM11 31h4v1h-4zM30 31h2v1h-2z";
+const AURA = [{"name": "sage", "bg": "#94ac94", "hl": "#e42c04"}, {"name": "stone", "bg": "#ccc6c4", "hl": "#f4f404"}, {"name": "slate", "bg": "#5c7474", "hl": "#ecd434"}, {"name": "ash", "bg": "#848484", "hl": "#f4f404"}, {"name": "umber", "bg": "#7c6c5c", "hl": "#d4ac8c"}, {"name": "cobalt", "bg": "#345cc4", "hl": "#fcfcfc"}, {"name": "bone", "bg": "#d4d4c4", "hl": "#cc0414"}, {"name": "moss", "bg": "#748464", "hl": "#ecf484"}, {"name": "jade", "bg": "#74b494", "hl": "#447c5c"}, {"name": "linen", "bg": "#e4e4d4", "hl": "#ec4c3c"}, {"name": "fog", "bg": "#cccccc", "hl": "#ecd434"}, {"name": "olive", "bg": "#6c7464", "hl": "#ec4c1c"}, {"name": "lichen", "bg": "#9ca49c", "hl": "#0c0c0c"}, {"name": "paper", "bg": "#e4e4e4", "hl": "#fcbc5c"}];
+
+/* ---------- Icons (Lucide-style line icons, drawn inline) ---------- */
+const I = {
+  chat: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/>',
+  scissors: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/>',
+  zip: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="M10 6h1M10 9h1M10 12h1M10 15h1v2h-1z"/>',
+  folder: '<path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2z"/>',
+  file: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/>',
+  md: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="M8 17v-4l2 2 2-2v4M15 13v4l1.5-1.5M15 17l-1.5-1.5"/>',
+  image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3-3a2 2 0 0 0-2.8 0L6 21"/>',
+  chev: '<path d="m9 18 6-6-6-6"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.7-9h1.8a4.5 4.5 0 1 1 0 9z"/>',
+  cloudUp: '<path d="M12 13v8M8 17l4-4 4 4"/><path d="M20.4 16.6A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  save: '<path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7M7 3v4a1 1 0 0 0 1 1h7"/>',
+  palette: '<circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/><path d="M12 2a10 10 0 0 0 0 20 2 2 0 0 0 2-2v-.5a2 2 0 0 1 2-2h2a4 4 0 0 0 4-4C22 7 17.5 2 12 2z"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  send: '<path d="M21 3 3 10.5l7 2.5 2.5 7L21 3z"/><path d="M10 13 21 3"/>',
+  clip: '<path d="m21.4 11-8.9 8.9a5.5 5.5 0 0 1-7.8-7.8l8.9-8.9a3.7 3.7 0 0 1 5.2 5.2l-8.9 8.9a1.8 1.8 0 0 1-2.6-2.6l8.2-8.2"/>',
+  pointer: '<path d="m4 4 7 17 2.5-7.5L21 11z"/>',
+  square: '<rect x="4" y="5" width="16" height="14" rx="1.5"/>',
+  circle: '<circle cx="12" cy="12" r="8"/>',
+  arrow: '<path d="M5 19 19 5M10 5h9v9"/>',
+  callout: '<circle cx="9" cy="9" r="5"/><path d="M12.5 12.5 20 20M8 7.5 9 7v4"/>',
+  text: '<path d="M5 6V4h14v2M12 4v16M9 20h6"/>',
+  pen: '<path d="M12 20h9"/><path d="M16.4 3.6a2 2 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  redo: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',
+  copy: '<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16V5a2 2 0 0 1 2-2h11"/>',
+  crop: '<path d="M6 2v14a2 2 0 0 0 2 2h14M18 22V8a2 2 0 0 0-2-2H2"/>',
+  bold: '<path d="M7 5h6a3.5 3.5 0 0 1 0 7H7zM7 12h7a3.5 3.5 0 0 1 0 7H7z"/>',
+  h: '<path d="M6 4v16M18 4v16M6 12h12"/>',
+  list: '<path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
+  package: '<path d="m7.5 4.3 9 5.2M21 8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.7z"/><path d="M3.3 7 12 12l8.7-5M12 22V12"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  brain: '<path d="M12 5a3 3 0 1 0-5.9.8A4 4 0 0 0 4 13a4 4 0 0 0 4 6 3 3 0 0 0 4 1V5zM12 5a3 3 0 1 1 5.9.8A4 4 0 0 1 20 13a4 4 0 0 1-4 6 3 3 0 0 1-4 1"/>',
+  panelRight: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/>',
+  menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+};
+const ico = (n, cls = '') => `<svg class="ico ${cls}" viewBox="0 0 24 24" aria-hidden="true">${I[n] || ''}</svg>`;
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const logo = (cls = 'logo') => `<svg class="${cls}" viewBox="0 0 32 32" shape-rendering="crispEdges" aria-label="Collide"><defs><clipPath id="lr"><rect width="32" height="32" rx="7.2"/></clipPath></defs><path fill="#FF3D1F" clip-path="url(#lr)" d="${LOGO_PATH}"/></svg>`;
+
+/* ---------- Example data ---------- */
+const AGENTS = {
+  lydia:    { name: 'Lydia', role: 'Tester', hue: 0 },
+  hrongar:  { name: 'Hrongar', role: 'Coder', hue: 1 },
+  farengar: { name: 'Farengar', role: 'Reviewer', hue: 2 },
+  irileth:  { name: 'Irileth', role: 'Planner', hue: 3 },
+};
+const CHATS = [
+  { id: 'c-lydia', agent: 'lydia', title: 'Project Iron', meta: 'Lydia · nothing from PR #4 yet', time: '11:51', day: 'Today', saved: true },
+  { id: 'c-hrongar', agent: 'hrongar', title: 'Collide run 2', meta: 'Hrongar · T13 Electron shell', time: '09:12', day: 'Today', saved: true },
+  { id: 'c-irileth', agent: 'irileth', title: 'Unified app plan', meta: 'Irileth · questions 1–7 answered', time: 'Thu', day: 'Earlier', saved: true },
+  { id: 'c-farengar', agent: 'farengar', title: 'PR reviews', meta: 'Farengar · PR #3 review passed', time: 'Thu', day: 'Earlier', saved: false },
+];
+const SNIPS = [
+  { id: 's-line3', name: 'Line 3 conveyor guard', w: 1280, h: 720, day: 'Today', time: '10:40', saved: false, tags: ['LINE 3', 'CONVEYOR'],
+    callouts: [
+      { n: 1, x: 214, y: 118, w: 96, h: 70, type: 'Rectangle', note: 'Guard bracket cracked at the weld. Re-weld before next PM.' },
+      { n: 2, x: 404, y: 176, w: 70, h: 56, type: 'Rectangle', note: 'Belt tracking drifts toward the motor side.' },
+      { n: 3, x: 520, y: 64, w: 84, h: 40, type: 'Callout', note: 'HMI header label says M-310. Should read M-301.' },
+    ] },
+  { id: 's-hmi', name: 'HMI header grid', w: 1920, h: 1080, day: 'Today', time: '08:05', saved: true, tags: ['LINE 3'],
+    callouts: [
+      { n: 1, x: 60, y: 40, w: 160, h: 46, type: 'Rectangle', note: 'Start button sits 6 px off the header grid.' },
+      { n: 2, x: 430, y: 40, w: 150, h: 46, type: 'Rectangle', note: 'Alarm count wraps at 150% scaling.' },
+    ] },
+  { id: 's-pid', name: 'P&ID V-101 tag', w: 2400, h: 1600, day: 'Earlier', time: 'Wed', saved: true, tags: ['P&ID'],
+    callouts: [ { n: 1, x: 300, y: 150, w: 90, h: 70, type: 'Callout', note: 'Valve tag missing on the drawing.' } ] },
+];
+const P06 = `# P06 Project Workspace Spec
+
+Draft (not yet approved by Grant). Built from prototype page P06.
+
+## 1 Purpose
+
+The project workspace holds Import, Specifications, Layout, Schedule and Exports for one project.
+
+## 4 Desktop layout
+
+- Left: project sections
+- Centre: the open section
+- Right: [placeholder] session panel
+
+![Line 3 conveyor guard](images/line-3-conveyor-guard.png)
+
+## 6 States
+
+1. Empty project: "Import a drawing or a zip to start."
+2. Importing: progress per file
+3. Ready
+
+## 11 Grant's notes
+
+[placeholder]
+`;
+const ZIPS = [
+  { id: 'z-builder', name: 'builder-v0.1.zip', meta: '14 files · 2.1 MB', day: 'Today', time: '11:20', saved: true,
+    tree: { name: 'Builder v0.1', kids: [
+      { name: 'CLAUDE.md', type: 'md', text: '# Working rules\n\n- Direct, concise, structured.\n- Mark assumptions (A) and placeholders [brackets].\n' },
+      { name: 'design', kids: [
+        { name: 'specs', kids: [
+          { name: 'P06-Project-Workspace-Spec.md', type: 'md', text: P06 },
+          { name: 'P08-3D-Designer-Spec.md', type: 'md', text: '# P08 3D Designer Spec\n\n## 1 Purpose\n\n[placeholder]\n' },
+        ] },
+        { name: 'exports', kids: [ { name: 'P06.png', type: 'image' }, { name: 'P08.png', type: 'image' } ] },
+      ] },
+      { name: 'images', kids: [ { name: 'line-3-conveyor-guard.png', type: 'image' } ] },
+      { name: 'README.md', type: 'md', text: '# Builder v0.1\n\nPrototype, specs and design system.\n' },
+      { name: 'package.json', type: 'code', text: '{\n  "name": "builder",\n  "version": "0.1.0"\n}\n' },
+    ] } },
+  { id: 'z-notes', name: 'collide-run-2-notes.zip', meta: '3 files · 48 KB', day: 'Earlier', time: 'Thu', saved: true,
+    tree: { name: 'collide-run-2-notes', kids: [ { name: 'RUN2.md', type: 'md', text: '# Collide run 2 brief\n\nElectron first, then Collide Chat.\n' }, { name: 'HANDOFF.md', type: 'md', text: '# Handoff\n\n[placeholder]\n' }, { name: 'board.png', type: 'image' } ] } },
+];
+const AGENT_FILES = {
+  lydia: {
+    personality: { path: 'agents/lydia.md', text: `# Lydia, Tester
+
+## Goal
+
+Every issue has acceptance tests that prove it works the way the prototype shows, written before any code; every pull request is checked on its preview.
+
+## Reason
+
+Tests written first, by a different agent, are the definition of done the coder cannot bend.
+
+## Action
+
+1. Runs at 6pm (writing) and 5am (checking), Sonnet 5.5.
+2. 6pm: write Playwright acceptance tests for each ready-for-tests issue.
+3. 5am: run the tests against each open pull request's preview and post screenshots.
+4. Write the morning report.
+
+## Never
+
+Writes app code; changes a test to make code pass; deletes or skips a failing test.
+` },
+    memory: { path: '[server]/agents/lydia/memory.md', text: `# Lydia memory
+
+## Reports
+
+- 2026-11-13: Nightly reports go to GitHub issue #2. Agent Chat reads that issue.
+- 2026-11-14: Collide run 1 (PR #3) reported as ready for Grant.
+
+## Things to remember
+
+- Windows checks (capture, DPI, tray) are manual: Grant or Lydia. Never mark them passed from the cloud.
+- [placeholder] Add what Lydia should remember between nights.
+` },
+  },
+};
+for (const k of ['hrongar', 'farengar', 'irileth']) {
+  const a = AGENTS[k];
+  AGENT_FILES[k] = {
+    personality: { path: `agents/${k}.md`, text: `# ${a.name}, ${a.role}\n\n## Goal\n\n[placeholder]\n\n## Reason\n\n[placeholder]\n\n## Action\n\n1. [placeholder]\n\n## Never\n\n[placeholder]\n` },
+    memory: { path: `[server]/agents/${k}/memory.md`, text: `# ${a.name} memory\n\n- [placeholder]\n` },
+  };
+}
+const MESSAGES = {
+  'c-lydia': [
+    { from: 'lydia', time: '06:30', report: { status: 'Ready', title: 'Collide run 1', line: 'PR #3 · snip-markup/run-1 → development', note: 'Ready for your review and merge.' } },
+    { from: 'lydia', time: '10:41', text: '<p>Grant sent a snip for the Line 3 punch list.</p>', snip: 's-line3' },
+    { from: 'me', time: '11:51', text: '<p>im at pr 4 10 minutes ago, what did you get reported</p>' },
+    { from: 'lydia', time: '11:51', text: '<p><b>Reported so far: nothing from PR #4.</b> The newest report I have is still "Collide run 1" (2026-11-14), which covers PR #3. Nothing in it mentions #4.</p><p><b>Why #4 may not show up:</b></p><ul><li>No report has been posted for it, so a run for #4 may not have finished or posted yet.</li><li>The app may follow only the issue you set in Connect (#2).</li><li>Anything you did on #4 directly doesn\'t reach me unless it arrives as a report.</li></ul>' },
+  ],
+  'c-hrongar': [ { from: 'hrongar', time: '09:12', text: '<p>T13 started: Electron shell in <code>products/collide/app/</code>. Every existing test still passes.</p>' } ],
+  'c-irileth': [ { from: 'me', time: 'Thu', text: '<p>Name it Collide. Port 3500. Autosave on the server.</p>' }, { from: 'irileth', time: 'Thu', text: '<p>Recorded in the unified app plan. Run 2 brief is in <code>products/collide/RUN2.md</code>.</p>' } ],
+  'c-farengar': [ { from: 'farengar', time: 'Thu', report: { status: 'Review passed', title: 'PR #3 review', line: 'snip-markup/run-1 · 0 comments open', note: 'Matches SPEC.md and the design system.' } } ],
+};
+
+/* ---------- State ---------- */
+const S = {
+  theme: 'system', aura: 'sage', filter: 'all', chat: 'c-lydia', ws: null, dirty: false, dockMin: false,
+  open: { 'z-builder': true, 'z-builder/design': true, 'z-builder/design/specs': true }, tool: 'select', sel: null, color: 'accent',
+  docView: 'split', agentTab: 'personality', pop: false, picker: false, closing: false, phoneChat: false, sideOpen: false, query: '',
+};
+try { const t = localStorage.getItem('collide-proto-theme'); const a = localStorage.getItem('collide-proto-aura'); if (t) S.theme = t; if (a) S.aura = a; } catch (e) {}
+
+const $ = (s, r = document) => r.querySelector(s);
+const app = $('#app');
+const avatar = (key, cls = '') => {
+  const a = AGENTS[key];
+  if (!a) return `<span class="avatar ${cls}" style="background:var(--t1);color:var(--bg)">G</span>`;
+  // Avatars use theme tokens only: info, accent, ink, and a tone step.
+  const fills = ['var(--info)', 'var(--t1)', 'var(--t3)', 'var(--accent)'];
+  const fg = ['var(--on-info)', 'var(--bg)', 'var(--bg)', 'var(--on-accent)'];
+  return `<span class="avatar ${cls}" style="background:${fills[a.hue]};color:${fg[a.hue]}" aria-hidden="true">${a.name[0]}</span>`;
+};
+
+/* ---------- Snip image (example picture, fixed colours: it is user content) ---------- */
+function snipSVG(id, cls = 'snipthumb', overlay = false) {
+  const s = SNIPS.find((x) => x.id === id) || SNIPS[0];
+  let art = '';
+  if (s.id === 's-line3') {
+    art = `<rect width="640" height="360" fill="#2b2f33"/><rect x="0" y="0" width="640" height="34" fill="#1d2023"/>
+      <text x="14" y="22" fill="#cfd4d8" font-family="Geist Mono, monospace" font-size="13">LINE 3 · CONVEYOR C-3 · AUTO</text>
+      <rect x="520" y="70" width="80" height="26" rx="3" fill="#3a3f44"/><text x="530" y="88" fill="#e8b04a" font-family="Geist Mono, monospace" font-size="12">M-310</text>
+      <rect x="40" y="200" width="560" height="38" rx="19" fill="#4a5056"/><g fill="#6c737a">${[60,120,180,240,300,360,420,480,540,580].map((x) => `<circle cx="${x}" cy="219" r="13"/>`).join('')}</g>
+      <rect x="220" y="124" width="84" height="58" fill="none" stroke="#c9c24a" stroke-width="5"/><path d="M226 182v18M298 182v18" stroke="#c9c24a" stroke-width="5"/>
+      <rect x="410" y="150" width="58" height="50" rx="4" fill="#5d6a74"/><text x="420" y="180" fill="#dfe5ea" font-family="Geist Mono, monospace" font-size="12">M-301</text>
+      <path d="M40 270h560" stroke="#3b4146" stroke-width="8"/><text x="14" y="340" fill="#8b949b" font-family="Geist Mono, monospace" font-size="11">RATE 42 FT/MIN · 0 ALARMS</text>`;
+  } else if (s.id === 's-hmi') {
+    art = `<rect width="640" height="360" fill="#e9ecef"/><rect width="640" height="110" fill="#22313f"/>
+      <rect x="66" y="46" width="150" height="34" rx="4" fill="#2e8a5e"/><text x="110" y="68" fill="#fff" font-family="Geist, sans-serif" font-size="14">START</text>
+      <rect x="240" y="40" width="150" height="34" rx="4" fill="#a82410"/><text x="290" y="62" fill="#fff" font-family="Geist, sans-serif" font-size="14">STOP</text>
+      <rect x="436" y="44" width="140" height="34" rx="4" fill="#e3a73a"/><text x="448" y="66" fill="#22313f" font-family="Geist Mono, monospace" font-size="12">ALARMS 12 ACT…</text>
+      ${[0,1,2].map((r) => [0,1,2,3].map((c) => `<rect x="${40 + c * 145}" y="${135 + r * 72}" width="125" height="56" rx="6" fill="#fff" stroke="#c9ced3"/>`).join('')).join('')}`;
+  } else {
+    art = `<rect width="640" height="360" fill="#f6f5f0"/><g stroke="#1b1b1b" stroke-width="2" fill="none"><path d="M40 180h220M330 180h270"/><path d="M260 160l70 40v-40l-70 40z"/><circle cx="460" cy="180" r="34"/><path d="M460 146v-60h80"/></g>
+      <text x="440" y="186" font-family="Geist Mono, monospace" font-size="12" fill="#1b1b1b">T-1</text><text x="46" y="170" font-family="Geist Mono, monospace" font-size="11" fill="#1b1b1b">2"-PW-104</text>`;
+  }
+  let ov = '';
+  if (overlay) {
+    ov = s.callouts.map((c) => {
+      const on = S.sel === c.n;
+      const stroke = on ? 'var(--accent)' : '#FF3D1F';
+      return `<g data-callout="${c.n}" style="cursor:pointer"><rect x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" fill="none" stroke="${stroke}" stroke-width="${on ? 4 : 3}" ${c.type === 'Callout' ? 'rx="6"' : ''}/>
+        <circle cx="${c.x}" cy="${c.y}" r="13" style="fill:${on ? 'var(--accent)' : 'var(--info)'}"/><text x="${c.x}" y="${c.y + 4.5}" text-anchor="middle" font-family="Geist Mono, monospace" font-size="13" font-weight="600" style="fill:${on ? 'var(--on-accent)' : 'var(--on-info)'}">${c.n}</text></g>`;
+    }).join('');
+  } else {
+    ov = s.callouts.map((c) => `<rect x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" fill="none" stroke="#FF3D1F" stroke-width="4"/>`).join('');
+  }
+  return `<svg class="${cls}" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${esc(s.name)}">${art}${ov}</svg>`;
+}
+
+/* ---------- Banner: the Agent Chat pixel dissolve, redrawn from theme tokens ---------- */
+function drawBanner(cv, seed = 7) {
+  const r = cv.getBoundingClientRect();
+  if (!r.width) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+  const ctx = cv.getContext('2d');
+  const cs = getComputedStyle(document.documentElement);
+  const ink = cs.getPropertyValue('--banner-ink').trim() || '#18181D';
+  const spark = cs.getPropertyValue('--banner-spark').trim() || '#FF3D1F';
+  const ghost = cs.getPropertyValue('--canvas-dot').trim();
+  const aura = document.documentElement.dataset.appTheme === 'aura';
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  let x = seed * 9301 + 49297;
+  const rnd = () => ((x = (x * 9301 + 49297) % 233280) / 233280);
+  const cell = Math.round((aura ? 7 : 5) * dpr);
+  const cols = Math.ceil(cv.width / cell), rows = Math.ceil(cv.height / cell);
+  const solid = Math.floor(rows * (Number(cv.dataset.solid) || 0.64));
+  ctx.fillStyle = ink; ctx.fillRect(0, 0, cv.width, Math.round(solid * 0.92) * cell);
+  for (let j = 0; j < rows; j++) {
+    for (let i = 0; i < cols; i++) {
+      if (j < Math.round(solid * 0.92)) { rnd(); continue; }
+      const wave = Math.sin(i / cols * 6.28 * 1.5 + seed) * rows * 0.05;
+      const depth = (j - solid - wave) / (rows - solid);
+      const p = j < solid + wave ? 1 : Math.max(0, 1 - depth * 1.25) ** 2.2;
+      const v = rnd();
+      if (v < p) {
+        ctx.fillStyle = j > solid + wave && v < p * 0.03 ? spark : ink;
+        if (aura) { ctx.beginPath(); ctx.arc(i * cell + cell / 2, j * cell + cell / 2, cell * 0.42, 0, 6.283); ctx.fill(); }
+        else ctx.fillRect(i * cell, j * cell, cell, cell);
+      } else if (aura && ghost && v < p + 0.18) {
+        ctx.fillStyle = ghost; ctx.beginPath(); ctx.arc(i * cell + cell / 2, j * cell + cell / 2, cell * 0.16, 0, 6.283); ctx.fill();
+      }
+    }
+  }
+}
+const redrawBanners = () => document.querySelectorAll('canvas.banner').forEach((c, i) => drawBanner(c, Number(c.dataset.seed || i + 3)));
+
+/* ---------- Theme ---------- */
+function applyTheme() {
+  const root = document.documentElement;
+  if (S.theme === 'system') delete root.dataset.appTheme; else root.dataset.appTheme = S.theme;
+  if (S.theme === 'aura') root.dataset.auraTheme = S.aura; else delete root.dataset.auraTheme;
+  try { localStorage.setItem('collide-proto-theme', S.theme); localStorage.setItem('collide-proto-aura', S.aura); } catch (e) {}
+  requestAnimationFrame(redrawBanners);
+}
+
+/* ---------- Sidebar ---------- */
+function flatFiles(node, path, out = []) {
+  for (const k of node.kids || []) { const p = path + '/' + k.name; if (k.kids) flatFiles(k, p, out); else out.push({ ...k, path: p }); }
+  return out;
+}
+function treeHTML(node, path, depth) {
+  return (node.kids || []).map((k) => {
+    const p = path + '/' + k.name;
+    if (k.kids) {
+      const open = !!S.open[p];
+      return `<button class="node ${open ? 'open' : ''}" data-toggle="${esc(p)}" style="padding-left:${6 + depth * 12}px" aria-expanded="${open}">${ico('chev', 'sm chev')}${ico('folder', 'sm')}<span>${esc(k.name)}</span></button>${open ? treeHTML(k, p, depth + 1) : ''}`;
+    }
+    const active = S.ws && S.ws.kind === 'doc' && S.ws.path === p;
+    const ic = k.type === 'image' ? 'image' : k.type === 'md' ? 'md' : 'file';
+    return `<button class="node ${active ? 'active' : ''}" data-file="${esc(p)}" style="padding-left:${24 + depth * 12}px">${ico(ic, 'sm')}<span>${esc(k.name)}</span></button>`;
+  }).join('');
+}
+function cloudIcon(saved) {
+  return saved ? `<span class="cloud" title="Saved on the server">${ico('cloud', 'sm')}</span>`
+               : `<span class="cloud local" title="Only on this PC. Click to save to the server" data-push="1">${ico('cloudUp', 'sm')}</span>`;
+}
+function renderSide() {
+  const q = S.query.toLowerCase();
+  const rows = [];
+  const want = (t) => S.filter === 'all' || S.filter === t;
+  if (want('chats')) CHATS.forEach((c) => rows.push({ t: 'chat', o: c, day: c.day, key: c.title + c.meta }));
+  if (want('snips')) SNIPS.forEach((s) => rows.push({ t: 'snip', o: s, day: s.day, key: s.name }));
+  if (want('zips')) ZIPS.forEach((z) => rows.push({ t: 'zip', o: z, day: z.day, key: z.name }));
+  const shown = rows.filter((r) => !q || r.key.toLowerCase().includes(q));
+  const days = ['Today', 'Earlier'];
+  const count = (d) => shown.filter((r) => r.day === d).length;
+  const isAura = S.theme === 'aura';
+  const lab = (t, n) => isAura ? `${t} {${String(n).padStart(2, '0')}}` : t;
+  const rowHTML = (r) => {
+    const o = r.o;
+    if (r.t === 'chat') {
+      const active = !S.ws && S.chat === o.id || (S.ws && S.chat === o.id && false);
+      return `<button class="item ${S.chat === o.id && !S.ws ? 'active' : ''}" data-chat="${o.id}">${avatar(o.agent)}<span style="min-width:0"><div class="ttl">${esc(o.title)}</div><div class="meta">${esc(o.meta)}</div></span><span class="meta">${o.time}</span></button>`;
+    }
+    if (r.t === 'snip') {
+      const active = S.ws && S.ws.kind === 'snip' && S.ws.id === o.id;
+      return `<button class="item ${active ? 'active' : ''}" data-snip="${o.id}"><span class="thumb">${snipSVG(o.id)}</span><span style="min-width:0"><div class="ttl">${esc(o.name)}</div><div class="meta"><span class="mono">${o.callouts.length} callouts · ${o.w} × ${o.h}</span></div></span>${cloudIcon(o.saved)}</button>`;
+    }
+    const open = !!S.open[o.id];
+    return `<button class="item" data-zip="${o.id}" aria-expanded="${open}"><span class="thumb">${ico('package')}</span><span style="min-width:0"><div class="ttl">${esc(o.name)}</div><div class="meta"><span class="mono">${o.meta}</span></div></span><span class="cloud" style="transform:rotate(${open ? 90 : 0}deg);transition:transform 120ms">${ico('chev', 'sm')}</span></button>${open ? `<div class="tree">${treeHTML(o.tree, o.id, 0)}</div>` : ''}`;
+  };
+  const listHTML = days.map((d) => count(d) ? `<div class="sec"><span class="label">${lab(d, count(d))}</span></div>${shown.filter((r) => r.day === d).map(rowHTML).join('')}` : '').join('') || `<p class="hint" style="padding:12px 8px">Nothing matches "${esc(S.query)}".</p>`;
+  const agentHTML = Object.entries(AGENTS).map(([k, a]) => {
+    const active = S.ws && S.ws.kind === 'agent' && S.ws.id === k;
+    return `<button class="item ${active ? 'active' : ''}" data-agent="${k}">${avatar(k)}<span style="min-width:0"><div class="ttl">${a.name}</div><div class="meta">${a.role} · personality, memory</div></span><span class="cloud">${ico('brain', 'sm')}</span></button>`;
+  }).join('');
+  const f = (id, l) => `<button class="chip" data-filter="${id}" aria-pressed="${S.filter === id}">${l}</button>`;
+  const pop = S.pop ? `<div class="pop" role="dialog" aria-label="Appearance">
+      <span class="label">Theme</span>
+      <div class="seg">${['system', 'light', 'dark', 'aura'].map((t) => `<button data-theme-set="${t}" aria-pressed="${S.theme === t}">${t[0].toUpperCase() + t.slice(1)}</button>`).join('')}</div>
+      ${S.theme === 'aura' ? `<span class="label">Aura ground · ${S.aura}</span><div class="swatches">${AURA.map((a) => `<button class="sw" title="${a.name}" aria-label="${a.name}" data-aura="${a.name}" aria-pressed="${S.aura === a.name}" style="background:${a.bg};--hl:${a.hl}"></button>`).join('')}</div>` : ''}
+      <span class="hint">${S.theme === 'system' ? 'Follows Windows: Light or Dark.' : S.theme === 'aura' ? 'Aura: flat grounds, one highlight. Sage is the default.' : S.theme === 'light' ? 'Collide Light. Draft (not yet approved by Grant).' : 'Collide Dark, from the design system.'}</span>
+    </div>` : '';
+  $('#side').innerHTML = `
+    <div class="brand">${logo()}<span class="word">Collide</span><span class="mode label" title="Server mode: this PC holds the chats and markups"><span class="dot"></span>Server</span></div>
+    <div class="actions">
+      <button class="btn primary" id="newSnip">${ico('scissors')}New snip</button>
+      <select class="select" id="delay" aria-label="Snip delay"><option>No delay</option><option>3 s</option><option>5 s</option><option>10 s</option></select>
+      <div class="row3"><button class="btn" id="newChat">${ico('plus')}New chat</button><button class="btn" id="openZip">${ico('package')}Open zip</button></div>
+    </div>
+    <label class="search">${ico('search', 'sm')}<input id="q" placeholder="Search chats, snips, zips" value="${esc(S.query)}" aria-label="Search"></label>
+    <div class="filters">${f('all', 'All')}${f('chats', 'Chats')}${f('snips', 'Snips')}${f('zips', 'Zips')}</div>
+    <div class="scroll">
+      ${listHTML}
+      <div class="sec"><span class="label">${lab('Agents', 4)}</span></div>
+      ${agentHTML}
+      <div class="sec"><span class="label">Tags</span></div>
+      <div class="tags"><span class="tag">Line 3</span><span class="tag">Conveyor</span><span class="tag">P&amp;ID</span></div>
+    </div>
+    <div class="foot">${pop}
+      <button class="btn ghost" id="themeBtn" aria-expanded="${S.pop}">${ico('palette')}Appearance</button>
+      <span style="flex:1"></span>
+      <button class="btn ghost icon" title="Settings" aria-label="Settings">${ico('settings')}</button>
+    </div>`;
+  const qi = $('#q'); if (S._focusQ) { qi.focus(); qi.setSelectionRange(qi.value.length, qi.value.length); S._focusQ = false; }
+}
+
+/* ---------- Chat ---------- */
+function renderChat() {
+  const c = CHATS.find((x) => x.id === S.chat);
+  const a = c ? AGENTS[c.agent] : null;
+  const msgs = c ? (MESSAGES[c.id] || []) : [];
+  const ctx = S.ws ? (S.ws.kind === 'snip' ? SNIPS.find((s) => s.id === S.ws.id).name : S.ws.kind === 'doc' ? S.ws.name : `${AGENTS[S.ws.id].name} · ${S.agentTab}`) : null;
+  const body = c ? msgs.map((m) => {
+    if (m.from === 'me') return `<div class="msg me"><div><div class="bubble">${m.text}</div><div class="time">${m.time}</div></div></div>`;
+    const inner = m.report
+      ? `<div class="report"><span class="status">${esc(m.report.status)}</span><b>${esc(m.report.title)}</b><span class="mono" style="color:var(--t3)">${esc(m.report.line)}</span><span>${esc(m.report.note)}</span><button class="btn" style="justify-self:start;height:28px;margin-top:4px">View full report</button></div>`
+      : `${m.text}${m.snip ? `<button class="attach" data-snip="${m.snip}">${snipSVG(m.snip)}<span style="min-width:0"><b>${esc(SNIPS.find((s) => s.id === m.snip).name)}</b><div class="meta mono" style="color:var(--t3)">Open in Snip</div></span></button>` : ''}`;
+    return `<div class="msg">${avatar(m.from)}<div style="min-width:0;flex:1"><div class="sender">${AGENTS[m.from].name}</div><div class="bubble">${inner}</div><div class="time" style="text-align:left">${m.time}</div></div></div>`;
+  }).join('') : `<div class="empty">${logo()}<h2>New chat<span>Snip, open a zip, or type.</span></h2><p>Snips and zip files you open here appear in Recents on the left.</p></div>`;
+  $('#chat').innerHTML = `
+    <div class="dockbar"><button class="btn ghost icon" id="dockOpen" title="Show chat" aria-label="Show chat">${ico('chat')}</button>${a ? avatar(c.agent) : ''}</div>
+    <div class="chathead"><canvas class="banner" data-seed="${c ? c.id.length + 3 : 5}"></canvas>
+      <div class="bar">
+        <button class="hbtn mobile-only" id="sideBtn" aria-label="Recents">${ico('menu', 'sm')}</button>
+        ${a ? avatar(c.agent) : logo()}
+        <div class="who"><div class="n">${c ? esc(a.name + ' · ' + c.title) : 'New chat'}</div><div class="s">${c ? esc(a.role + ' · reports from issue #2') : 'Claude on the server PC'}</div></div>
+        
+        ${a ? `<button class="hbtn" data-agent="${c.agent}" title="Edit ${a.name}'s personality and memory">${ico('brain', 'sm')}<span>Agent files</span></button>` : ''}
+        ${S.ws ? `<button class="hbtn mobile-only" id="phoneBack" aria-label="Back to workspace">${ico('x', 'sm')}</button><button class="hbtn" id="dockMin" title="Minimise chat" aria-label="Minimise chat">${ico('panelRight', 'sm')}</button>` : ''}
+      </div>
+    </div>
+    <div class="log"><div class="log-inner">${body}</div></div>
+    <div class="composer-wrap">
+      ${ctx ? `<div class="context"><span class="ctx">${ico(S.ws.kind === 'snip' ? 'scissors' : S.ws.kind === 'doc' ? 'md' : 'brain', 'sm')}Ask about: ${esc(ctx)}</span></div>` : ''}
+      <form class="composer" id="composer">
+        <button type="button" class="btn ghost icon" title="Snip into this message" aria-label="Snip into this message" id="snipInto">${ico('scissors')}</button>
+        <button type="button" class="btn ghost icon" title="Attach a file or zip" aria-label="Attach a file or zip">${ico('clip')}</button>
+        <textarea id="input" rows="1" placeholder="${a ? 'Message ' + a.name : 'Message Claude'}" aria-label="Message"></textarea>
+        <button class="send" aria-label="Send">${ico('send')}</button>
+      </form>
+    </div>`;
+  const log = $('.log', $('#chat')); log.scrollTop = log.scrollHeight;
+}
+
+/* ---------- Workspace ---------- */
+const COLORS = [['accent', 'var(--accent)'], ['steel', '#4C87C4'], ['amber', '#E3A73A'], ['moss', '#3FAF7A'], ['ink', 'var(--t1)']];
+function headHTML(kindIcon, name, path, extra = '') {
+  return `<div class="wshead">
+    <button class="btn ghost icon mobile-only" id="sideBtn2" aria-label="Recents">${ico('menu')}</button>
+    <span class="kind">${ico(kindIcon)}</span>
+    <div style="min-width:0;display:grid"><span class="name">${esc(name)}</span><span class="path mono">${esc(path)}</span></div>
+    <span style="flex:1"></span>
+    <span class="saved ${S.dirty ? 'dirty' : ''}"><span class="d"></span><span class="lbl">${S.dirty ? 'Unsaved changes' : 'Saved on the server · autosave'}</span></span>
+    ${extra}
+    <button class="btn" id="wsSave" ${S.dirty ? '' : 'disabled'}>${ico('save')}<span>Save</span></button>
+    <button class="btn mobile-only" id="phoneChat" aria-label="Chat">${ico('chat')}</button>
+    <button class="btn" id="wsClose" title="Close and return to chat">${ico('x')}<span>Close</span></button>
+  </div>
+  ${S.closing ? `<div class="unsaved" role="alert"><span class="msgtxt">Save changes to <b>${esc(name)}</b> before closing?</span><button class="btn primary" id="saveClose">Save and close</button><button class="btn" id="discardClose">Close without saving</button><button class="btn ghost" id="cancelClose">Cancel</button></div>` : ''}`;
+}
+function renderSnipWS() {
+  const s = SNIPS.find((x) => x.id === S.ws.id);
+  const tools = [['select', 'pointer', 'Select', 'V'], ['rect', 'square', 'Rectangle', 'R'], ['ellipse', 'circle', 'Ellipse', 'O'], ['arrow', 'arrow', 'Arrow', 'A'], ['callout', 'callout', 'Callout', 'C'], ['text', 'text', 'Text', 'T'], ['pen', 'pen', 'Pen', 'P']];
+  $('#ws').innerHTML = headHTML('scissors', s.name, `Markups/${s.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/ · ${s.w} × ${s.h}`) + `
+    <div class="toolbar" role="toolbar" aria-label="Markup tools">
+      ${tools.map(([k, ic, l, key]) => `<button class="tool" data-tool="${k}" aria-pressed="${S.tool === k}" title="${l} (${key})" aria-label="${l}">${ico(ic)}</button>`).join('')}
+      <span class="vsep"></span>
+      ${COLORS.map(([k, v]) => `<button class="swatch" data-color="${k}" aria-pressed="${S.color === k}" aria-label="Colour ${k}" style="background:${v}"></button>`).join('<span style="width:4px"></span>')}
+      <span class="vsep"></span>
+      <button class="tool" title="Undo (Ctrl+Z)" aria-label="Undo" id="undo">${ico('undo')}</button><button class="tool" title="Redo" aria-label="Redo">${ico('redo')}</button>
+      <span class="vsep"></span>
+      <button class="tool" title="Canvas snip: drag a box to copy it" aria-label="Canvas snip">${ico('crop')}</button>
+      <button class="tool" id="copyImg" title="Copy image to clipboard (Ctrl+Shift+C)">${ico('copy')}<span>Copy</span></button>
+    </div>
+    <div class="wsbody">
+      <div class="stage ${S.tool === 'callout' || S.tool === 'rect' ? 'cursor-add' : ''}" id="stage">${snipSVG(s.id, 'snipfull', true)}</div>
+      <aside class="numbered" aria-label="Callouts">
+        <div class="head"><span class="label">Callouts ${S.theme === 'aura' ? `{${String(s.callouts.length).padStart(2, '0')}}` : '· ' + s.callouts.length}</span><button class="btn ghost" style="height:26px;font-size:12px" data-tool="callout">${ico('plus', 'sm')}Add</button></div>
+        <div class="list">${s.callouts.length ? s.callouts.map((c) => `<div class="el ${S.sel === c.n ? 'sel' : ''}" data-sel="${c.n}"><span class="num">${c.n}</span><div style="min-width:0"><div class="k">${c.type}</div>${S.sel === c.n ? `<textarea data-note="${c.n}" aria-label="Note for callout ${c.n}">${esc(c.note)}</textarea>` : `<div class="txt">${esc(c.note || 'No note yet.')}</div>`}</div></div>`).join('') : '<p class="hint" style="padding:8px">Draw on the image to add a callout.</p>'}</div>
+        <div class="foot2"><button class="btn" id="askSnip">${ico('chat')}Ask about this snip</button></div>
+      </aside>
+    </div>
+    <div class="statusbar"><span>${s.w} × ${s.h}</span><span>Zoom fit</span><span>${s.callouts.length} callouts</span><span style="margin-left:auto">Ctrl+Alt+S new snip</span></div>`;
+}
+function headings(text) {
+  const out = []; text.split('\n').forEach((l, i) => { const m = /^(#{1,3})\s+(.*)/.exec(l); if (m) out.push({ level: m[1].length, text: m[2], line: i }); const im = /^!\[([^\]]*)\]\(([^)]+)\)/.exec(l); if (im) out.push({ level: 9, text: im[1] || im[2], line: i, img: true }); });
+  return out;
+}
+function mdHTML(src) {
+  const inline = (s) => esc(s).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>');
+  let html = '', list = null;
+  const close = () => { if (list) { html += `</${list}>`; list = null; } };
+  for (const line of src.split('\n')) {
+    let m;
+    if ((m = /^(#{1,3})\s+(.*)/.exec(line))) { close(); html += `<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`; }
+    else if ((m = /^!\[([^\]]*)\]\(([^)]+)\)/.exec(line))) {
+      close();
+      const snip = SNIPS.find((s) => m[2].includes(s.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')));
+      html += `<figure>${snip ? snipSVG(snip.id, 'fig', true) : `<svg viewBox="0 0 640 200"><rect width="640" height="200" fill="var(--sunk)"/></svg>`}<figcaption class="mono">${esc(m[2])}</figcaption></figure>`;
+    }
+    else if ((m = /^\s*[-*]\s+(.*)/.exec(line))) { if (list !== 'ul') { close(); html += '<ul>'; list = 'ul'; } html += `<li>${inline(m[1])}</li>`; }
+    else if ((m = /^\s*\d+\.\s+(.*)/.exec(line))) { if (list !== 'ol') { close(); html += '<ol>'; list = 'ol'; } html += `<li>${inline(m[1])}</li>`; }
+    else if (line.trim() === '') close();
+    else { close(); html += `<p>${inline(line)}</p>`; }
+  }
+  close(); return html;
+}
+function renderDocWS() {
+  const w = S.ws;
+  const v = (k, l) => `<button class="tool" data-view="${k}" aria-pressed="${S.docView === k}">${l}</button>`;
+  const isMd = w.type === 'md';
+  const outline = headings(w.text);
+  $('#ws').innerHTML = headHTML(isMd ? 'md' : 'file', w.name, w.zip + w.path.replace(w.zipId, ''), `<button class="btn" id="repack" title="Build a new zip with the same folder layout">${ico('package')}<span>Repack zip</span></button>`) + `
+    <div class="toolbar" role="toolbar" aria-label="Text tools">
+      ${isMd ? `<button class="tool" data-md="## " title="Heading" aria-label="Heading">${ico('h')}</button><button class="tool" data-md="**" title="Bold" aria-label="Bold">${ico('bold')}</button><button class="tool" data-md="- " title="List" aria-label="List">${ico('list')}</button><button class="tool" data-md="[](url)" title="Link" aria-label="Link">${ico('link')}</button>
+      <span class="vsep"></span><button class="tool" id="insertSnip">${ico('scissors')}<span>Insert snip</span></button><button class="tool">${ico('image')}<span>Image</span></button>
+      <span style="flex:1"></span>${v('edit', 'Edit')}${v('split', 'Split')}${v('preview', 'Preview')}` : '<span class="hint mono" style="padding:0 6px">Plain text · tabs and line endings kept</span>'}
+    </div>
+    <div class="wsbody" style="position:relative">
+      <div class="docsplit ${isMd ? S.docView : 'edit'}" id="docsplit">
+        <textarea class="src" id="src" spellcheck="false" aria-label="${esc(w.name)}">${esc(w.text)}</textarea>
+        <div class="preview" id="preview">${isMd ? mdHTML(w.text) : ''}</div>
+      </div>
+      <aside class="numbered" aria-label="Outline">
+        <div class="head"><span class="label">Outline · ${outline.length}</span></div>
+        <div class="list">${outline.map((h, i) => `<button class="el" data-line="${h.line}"><span class="num">${i + 1}</span><div style="min-width:0"><div class="k">${h.img ? 'Image' : 'Heading ' + h.level}</div><div class="txt" style="padding-left:${h.img ? 0 : (h.level - 1) * 8}px">${esc(h.text)}</div></div></button>`).join('') || '<p class="hint" style="padding:8px">No headings in this file.</p>'}</div>
+        <div class="foot2"><button class="btn" id="askDoc">${ico('chat')}Ask about this file</button></div>
+      </aside>
+      ${S.picker ? `<div class="picker" role="dialog" aria-label="Insert snip"><span class="label">Insert snip</span>${SNIPS.map((s) => `<button class="attach" data-insert="${s.id}">${snipSVG(s.id)}<span><b>${esc(s.name)}</b><div class="meta mono" style="color:var(--t3)">${s.callouts.length} callouts · goes to images/</div></span></button>`).join('')}<label class="hint" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="withNotes" checked> Add callout notes as a numbered list</label><button class="btn ghost" id="pickClose">Cancel</button></div>` : ''}
+    </div>
+    <div class="statusbar"><span>${esc(w.zip)}</span><span>UTF-8 · LF</span><span style="margin-left:auto">${w.text.split('\n').length} lines</span></div>`;
+}
+function renderImageWS() {
+  const w = S.ws;
+  $('#ws').innerHTML = headHTML('image', w.name, w.zip + w.path.replace(w.zipId, ''), '') + `
+    <div class="toolbar"><button class="tool">${ico('scissors')}<span>Open in Snip</span></button><button class="tool">${ico('copy')}<span>Copy</span></button><span class="hint mono" style="padding:0 6px">Rename warns about .md files that link to it</span></div>
+    <div class="wsbody"><div class="stage">${snipSVG('s-line3', 'snipfull', false)}</div><aside class="numbered"><div class="head"><span class="label">Linked from · 1</span></div><div class="list"><button class="el"><span class="num">1</span><div><div class="k">Markdown</div><div class="txt">P06-Project-Workspace-Spec.md</div></div></button></div></aside></div>
+    <div class="statusbar"><span>PNG · 1280 × 720</span></div>`;
+}
+function renderAgentWS() {
+  const k = S.ws.id, a = AGENTS[k], f = AGENT_FILES[k][S.agentTab];
+  const text = S.ws.text;
+  const outline = headings(text).filter((h) => !h.img);
+  $('#ws').innerHTML = headHTML('brain', `${a.name} · ${S.agentTab === 'personality' ? 'Personality' : 'Memory'}`, f.path) + `
+    <div class="agenthero"><canvas class="banner" data-solid="0.45" data-seed="${a.hue + 11}"></canvas><div class="in">${avatar(k)}<div><h2>${a.name}</h2><div class="label" style="margin-top:6px">${a.role}</div></div><span style="flex:1"></span>
+      <div class="tabs" role="tablist"><button role="tab" data-tab="personality" aria-selected="${S.agentTab === 'personality'}">${ico('user', 'sm')} Personality</button><button role="tab" data-tab="memory" aria-selected="${S.agentTab === 'memory'}">${ico('brain', 'sm')} Memory</button></div></div></div>
+    <div class="toolbar"><button class="tool" data-md="## " aria-label="Heading">${ico('h')}</button><button class="tool" data-md="- " aria-label="List">${ico('list')}</button><button class="tool" data-md="**" aria-label="Bold">${ico('bold')}</button>
+      <span class="vsep"></span><span class="hint">${S.agentTab === 'personality' ? 'Read at the start of every run. Changes apply to the next run.' : 'What the agent keeps between runs. You can add, edit or delete lines.'}</span></div>
+    <div class="wsbody">
+      <div class="docsplit split"><textarea class="src" id="src" spellcheck="true" aria-label="${esc(f.path)}">${esc(text)}</textarea><div class="preview" id="preview">${mdHTML(text)}</div></div>
+      <aside class="numbered"><div class="head"><span class="label">Sections · ${outline.length}</span></div>
+        <div class="list">${outline.map((h, i) => `<button class="el" data-line="${h.line}"><span class="num">${i + 1}</span><div style="min-width:0"><div class="k">Heading ${h.level}</div><div class="txt">${esc(h.text)}</div></div></button>`).join('')}</div>
+        <div class="foot2"><span class="hint">Draft (not yet approved by Grant): where these files live. See notes.</span></div></aside>
+    </div>
+    <div class="statusbar"><span>${esc(f.path)}</span><span style="margin-left:auto">${text.split('\n').length} lines</span></div>`;
+  requestAnimationFrame(redrawBanners);
+}
+function renderWS() {
+  if (!S.ws) { $('#ws').innerHTML = ''; return; }
+  if (S.ws.kind === 'snip') renderSnipWS();
+  else if (S.ws.kind === 'doc') S.ws.type === 'image' ? renderImageWS() : renderDocWS();
+  else renderAgentWS();
+}
+function layout() {
+  app.classList.toggle('ws-open', !!S.ws);
+  app.classList.toggle('dock-min', !!S.ws && S.dockMin);
+  app.classList.toggle('phone-chat', S.phoneChat);
+  app.classList.toggle('side-open', S.sideOpen);
+}
+function render() { layout(); renderSide(); renderWS(); renderChat(); requestAnimationFrame(redrawBanners); }
+
+/* ---------- Actions ---------- */
+let toastT;
+function toast(t) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (el.hidden = true), 2200); }
+function openWS(ws) {
+  if (S.ws && S.dirty) { S.closing = true; S.pending = ws; render(); return; }
+  S.ws = ws; S.dirty = false; S.closing = false; S.sel = null; S.picker = false; S.sideOpen = false; S.phoneChat = false; render();
+}
+function openFile(path) {
+  const zip = ZIPS.find((z) => path.startsWith(z.id + '/'));
+  const file = flatFiles(zip.tree, zip.id).find((f) => f.path === path);
+  openWS({ kind: 'doc', type: file.type, name: file.name, path, text: file.text || '', zip: zip.name, zipId: zip.id, file });
+}
+function save() {
+  if (S.ws && S.ws.kind === 'doc' && S.ws.file) S.ws.file.text = S.ws.text;
+  if (S.ws && S.ws.kind === 'agent') AGENT_FILES[S.ws.id][S.agentTab].text = S.ws.text;
+  if (S.ws && S.ws.kind === 'snip') SNIPS.find((s) => s.id === S.ws.id).saved = true;
+  S.dirty = false; toast('Saved on the server');
+}
+function closeWS(force) {
+  if (S.dirty && !force) { S.closing = true; render(); return; }
+  const next = S.pending; S.pending = null;
+  S.ws = null; S.dirty = false; S.closing = false; S.sel = null; S.picker = false; S.phoneChat = false;
+  if (next) { S.ws = next; }
+  render();
+}
+function markDirty() {
+  if (S.dirty) return; S.dirty = true;
+  const sv = $('.saved', $('#ws')); if (sv) { sv.classList.add('dirty'); sv.querySelector('.lbl').textContent = 'Unsaved changes'; }
+  const b = $('#wsSave'); if (b) b.disabled = false;
+}
+
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('button, [data-callout], [data-sel], .cloud[data-push]');
+  if (!t) { if (S.pop && !e.target.closest('.pop')) { S.pop = false; renderSide(); } return; }
+  const d = t.dataset;
+  if (t.matches('.cloud[data-push]')) { e.stopPropagation(); const snipEl = t.closest('[data-snip]'); const s = SNIPS.find((x) => x.id === snipEl.dataset.snip); s.saved = true; renderSide(); toast('Saved to the server'); return; }
+  if (d.chat) { S.chat = d.chat; S.sideOpen = false; if (S.ws) { S.dockMin = false; S.phoneChat = true; } render(); return; }
+  if (d.snip) { openWS({ kind: 'snip', id: d.snip }); return; }
+  if (d.zip) { S.open[d.zip] = !S.open[d.zip]; renderSide(); return; }
+  if (d.toggle) { S.open[d.toggle] = !S.open[d.toggle]; renderSide(); return; }
+  if (d.file) { openFile(d.file); return; }
+  if (d.agent) { S.agentTab = 'personality'; openWS({ kind: 'agent', id: d.agent, text: AGENT_FILES[d.agent].personality.text }); return; }
+  if (d.filter) { S.filter = d.filter; renderSide(); return; }
+  if (d.themeSet) { S.theme = d.themeSet; applyTheme(); renderSide(); renderWS(); return; }
+  if (d.aura) { S.aura = d.aura; applyTheme(); renderSide(); return; }
+  if (d.tool) { S.tool = d.tool; renderWS(); return; }
+  if (d.color) { S.color = d.color; renderWS(); return; }
+  if (d.view) { S.docView = d.view; renderWS(); return; }
+  if (d.tab) { if (S.dirty) { toast('Save or close first'); return; } S.agentTab = d.tab; S.ws.text = AGENT_FILES[S.ws.id][d.tab].text; renderWS(); renderChat(); return; }
+  if (d.callout || d.sel) { S.sel = Number(d.callout || d.sel); renderWS(); const ta = $(`[data-note="${S.sel}"]`); if (ta && d.sel && !e.target.closest('textarea')) ta.focus(); return; }
+  if (d.line !== undefined) { const ta = $('#src'); if (ta) { const lines = ta.value.split('\n'); const pos = lines.slice(0, Number(d.line)).join('\n').length + (Number(d.line) ? 1 : 0); ta.focus(); ta.setSelectionRange(pos, pos + (lines[d.line] || '').length); const lh = parseFloat(getComputedStyle(ta).lineHeight) || 20; ta.scrollTop = Math.max(0, d.line * lh - 60); } return; }
+  if (d.md !== undefined) { const ta = $('#src'); if (ta) { const s = ta.selectionStart, en = ta.selectionEnd, sel = ta.value.slice(s, en); const ins = d.md === '**' ? `**${sel || 'bold'}**` : d.md === '[](url)' ? `[${sel || 'link'}](url)` : d.md + sel; ta.setRangeText(ins, s, en, 'end'); ta.dispatchEvent(new Event('input')); ta.focus(); } return; }
+  if (d.insert) {
+    const s = SNIPS.find((x) => x.id === d.insert), slug = s.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const notes = $('#withNotes') && $('#withNotes').checked ? '\n\n' + s.callouts.map((c) => `${c.n}. ${c.note}`).join('\n') : '';
+    const ta = $('#src'); const pos = ta.selectionStart; const ins = `\n![${s.name}](images/${slug}.png)${notes}\n`;
+    S.ws.text = ta.value.slice(0, pos) + ins + ta.value.slice(pos); S.picker = false; S.dirty = true; renderWS(); toast(`Copied to images/${slug}.png`); return;
+  }
+  switch (t.id) {
+    case 'themeBtn': S.pop = !S.pop; renderSide(); return;
+    case 'newSnip': { const d2 = $('#delay').value; toast(d2 === 'No delay' ? 'Drag a box on your screen. Esc cancels.' : `Snip in ${d2}`); setTimeout(() => openWS({ kind: 'snip', id: 's-line3' }), d2 === 'No delay' ? 600 : 1200); return; }
+    case 'newChat': S.chat = null; S.ws && S.dirty ? (S.closing = true) : (S.ws = null); render(); return;
+    case 'openZip': S.open['z-builder'] = true; S.filter = 'all'; renderSide(); toast('Unpacked builder-v0.1.zip on the server'); return;
+    case 'wsSave': save(); renderWS(); return;
+    case 'wsClose': closeWS(false); return;
+    case 'saveClose': save(); closeWS(true); return;
+    case 'discardClose': if (S.ws && S.ws.kind === 'doc' && S.ws.file) S.ws.text = S.ws.file.text; closeWS(true); return;
+    case 'cancelClose': S.closing = false; S.pending = null; renderWS(); return;
+    case 'dockMin': S.dockMin = true; layout(); return;
+    case 'dockOpen': S.dockMin = false; layout(); return;
+    case 'phoneChat': S.phoneChat = true; layout(); return;
+    case 'phoneBack': S.phoneChat = false; layout(); return;
+    case 'sideBtn': case 'sideBtn2': S.sideOpen = !S.sideOpen; layout(); return;
+    case 'insertSnip': S.picker = true; renderWS(); return;
+    case 'pickClose': S.picker = false; renderWS(); return;
+    case 'repack': toast(`Repacked ${S.ws.zip} · original kept`); return;
+    case 'copyImg': toast('Copied to this PC’s clipboard'); return;
+    case 'askSnip': case 'askDoc': S.dockMin = false; S.phoneChat = true; layout(); setTimeout(() => $('#input') && $('#input').focus(), 50); return;
+    case 'snipInto': toast('Snip attaches to this message'); return;
+    case 'notesBtn': { const n = $('#notes'); n.hidden = !n.hidden; t.setAttribute('aria-expanded', String(!n.hidden)); return; }
+  }
+});
+document.addEventListener('click', (e) => {
+  if (!S.sideOpen) return;
+  if (!e.target.closest('.side') && !e.target.closest('#sideBtn') && !e.target.closest('#sideBtn2')) { S.sideOpen = false; layout(); }
+}, true);
+// Add a callout by clicking the image with the Callout or Rectangle tool
+document.addEventListener('pointerdown', (e) => {
+  const svg = e.target.closest('svg.snipfull');
+  if (!svg || !S.ws || S.ws.kind !== 'snip' || !['callout', 'rect'].includes(S.tool) || e.target.closest('[data-callout]')) return;
+  const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+  const s = SNIPS.find((x) => x.id === S.ws.id);
+  const n = s.callouts.length ? Math.max(...s.callouts.map((c) => c.n)) + 1 : 1;
+  s.callouts.push({ n, x: Math.round(p.x - 40), y: Math.round(p.y - 25), w: 80, h: 50, type: S.tool === 'callout' ? 'Callout' : 'Rectangle', note: '' });
+  S.sel = n; S.dirty = true; s.saved = false; render();
+  const ta = $(`[data-note="${n}"]`); if (ta) ta.focus();
+});
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'q') { S.query = e.target.value; S._focusQ = true; renderSide(); return; }
+  if (e.target.dataset.note) { const s = SNIPS.find((x) => x.id === S.ws.id); s.callouts.find((c) => c.n === Number(e.target.dataset.note)).note = e.target.value; markDirty(); return; }
+  if (e.target.id === 'src') { S.ws.text = e.target.value; const pv = $('#preview'); if (pv && (S.ws.kind === 'agent' || S.ws.type === 'md')) pv.innerHTML = mdHTML(S.ws.text); markDirty(); return; }
+  if (e.target.id === 'input') { e.target.style.height = 'auto'; e.target.style.height = Math.min(140, e.target.scrollHeight) + 'px'; }
+});
+document.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const inp = $('#input'); const v = inp.value.trim(); if (!v || !S.chat) return;
+  (MESSAGES[S.chat] = MESSAGES[S.chat] || []).push({ from: 'me', time: 'now', text: `<p>${esc(v)}</p>` });
+  renderChat(); toast('Prototype: replies come from the claude CLI on the server');
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { if (S.picker) { S.picker = false; renderWS(); } else if (S.pop) { S.pop = false; renderSide(); } else if (S.sideOpen) { S.sideOpen = false; layout(); } }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's' && S.ws) { e.preventDefault(); save(); renderWS(); }
+  if (e.key === 'Enter' && !e.shiftKey && e.target.id === 'input') { e.preventDefault(); $('#composer').requestSubmit(); }
+  if (S.ws && S.ws.kind === 'snip' && !/TEXTAREA|INPUT|SELECT/.test(e.target.tagName) && !e.ctrlKey && !e.metaKey) {
+    const map = { v: 'select', r: 'rect', o: 'ellipse', a: 'arrow', c: 'callout', t: 'text', p: 'pen' };
+    if (map[e.key.toLowerCase()]) { S.tool = map[e.key.toLowerCase()]; renderWS(); }
+  }
+});
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => requestAnimationFrame(redrawBanners));
+new MutationObserver(() => requestAnimationFrame(redrawBanners)).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(redrawBanners, 120); });
+
+applyTheme();
+render();
+</script>
