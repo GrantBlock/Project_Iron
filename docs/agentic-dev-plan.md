@@ -29,6 +29,7 @@ Related (in `GrantBlock/designengineering-ai`, `Builder v0.1/`): `development-pa
 - [stated] 2026-11-13: Cloud sessions cannot reach Grant's PC, so the morning report goes through GitHub: Lydia comments on issue #2 "Nightly report" and Agent Chat pulls it in (Grant). Answers open question 1 (option C). Format: `docs/morning-report.md`.
 - [stated] 2026-11-13: No Agent Chat `.exe` builds unless Grant asks and approves (Grant).
 - [stated] 2026-11-09: Claude builds; Grant decides and reviews results, not code. No throwaway work.
+- [stated] 2026-11-14: Collide keyboard shortcuts (incl. Ctrl+Shift+C Copy and Ctrl+0 fit-to-window) are decided later in an accessibility spec; current bindings are provisional.
 
 ## Roles
 
