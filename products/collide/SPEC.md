@@ -177,8 +177,8 @@ Opus plans and unblocks; Sonnet does the volume. Every task passes Coder → Rev
 | --- | --- | --- | --- | --- | --- |
 | T01 | 1 | Repo scaffold: Tauri v2 + React + TS (Vite), pnpm, ESLint, Vitest, Playwright, `CLAUDE.md` | `pnpm tauri dev` opens an empty window; `pnpm test` and `cargo test` pass | — | Done |
 | T02 | 1 | Shape model: TS types + zod schema for `annotations.json` (rect, ellipse, arrow, text, callout, highlight) | Save → load round-trip unit test; invalid JSON rejected with a clear error | T01 | Done |
-| T03 | 1 | Editor canvas: image as locked background, zoom (wheel) and pan (space-drag) | Playwright loads a fixture PNG; zoom and pan do not move shapes relative to the image | T01 | In progress |
-| T04 | 1 | Drawing tools: rect, ellipse, arrow, text, numbered callout; select, move, resize (`Transformer`), delete | e2e draws one of each; resulting JSON matches expected types and bounds within ±2 px | T02, T03 | To do |
+| T03 | 1 | Editor canvas: image as locked background, zoom (wheel) and pan (space-drag) | Playwright loads a fixture PNG; zoom and pan do not move shapes relative to the image | T01 | Done |
+| T04 | 1 | Drawing tools: rect, ellipse, arrow, text, numbered callout; select, move, resize (`Transformer`), delete | e2e draws one of each; resulting JSON matches expected types and bounds within ±2 px | T02, T03 | In progress |
 | T05 | 1 | Callout notes panel + undo/redo (Ctrl+Z / Ctrl+Y, 50 steps) | Note edits persist in JSON; undo/redo e2e covers draw, move, delete, note edit | T04 | To do |
 | T06 | 1 | Save/open markup folder (`source.png`, `annotations.json`, `export.png`) via Tauri fs | Reopened markup is fully editable and identical to what was saved | T04 | To do |
 | T07 | 1 | Export flattened PNG via `stage.toDataURL()` at source resolution | Export dimensions equal the source image; snapshot test passes | T04 | To do |
