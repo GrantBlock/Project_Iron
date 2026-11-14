@@ -8,7 +8,8 @@
 <style>
   :root {
     --navy: #0b2a5b; --navy-2: #12397a; --blue: #1a6fd1; --line: #e3e5e8;
-    --text: #1f2328; --muted: #6b7280; --bubble-me: #f1f2f3; --bg: #eef1f5;
+    --text: #1f2328; --muted: #6b7280; --bubble-me: #fbf3f3; --bg: #eef1f5;
+    --ink: #12152a; --blush: #f1dede;
     --pass: #1f8a4c; --fail: #c62828; --warn: #b26a00; --info: #4682b4;
   }
   * { box-sizing: border-box; }
@@ -17,15 +18,17 @@
 
   .widget { width: 440px; max-width: 100%; height: min(820px, calc(100vh - 32px)); background: #fff; border-radius: 6px;
             box-shadow: 0 10px 40px rgba(10,30,60,.18); display: flex; flex-direction: column; overflow: hidden; position: relative; }
-  .widget.min { height: 64px; }
+  .widget.min { height: 56px; }
+  .widget.min header { padding-bottom: 0; background: var(--ink); }
   /* Desktop app window: fill the window */
   body.app { padding: 0; background: #fff; }
   body.app .widget { width: 100%; height: 100vh; border-radius: 0; box-shadow: none; }
   body.app #minBtn, body.app #closeBtn { display: none; }
 
   /* Header */
-  header { background-color: var(--navy); color: #fff; padding: 0 14px; height: 64px; display: flex; align-items: center; gap: 10px; flex-shrink: 0;
-           background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='64'%3E%3Cpath d='M0 40 Q30 20 60 40 T120 40' fill='none' stroke='%23ffffff' stroke-opacity='.07' stroke-width='10'/%3E%3Cpath d='M0 12 Q30 -8 60 12 T120 12' fill='none' stroke='%23ffffff' stroke-opacity='.05' stroke-width='10'/%3E%3C/svg%3E"); }
+  header { background: url("/banner.png") center bottom / 100% auto no-repeat, var(--ink); color: #fff; flex-shrink: 0;
+           padding: 0 14px 10%; /* 10% of width = banner's 1080x108 proportions */ }
+  header .bar { height: 56px; display: flex; align-items: center; gap: 10px; }
   .pill { background: rgba(255,255,255,.18); border: 0; color: #fff; font-size: 14px; padding: 6px 14px; border-radius: 16px; cursor: pointer; }
   .pill:hover { background: rgba(255,255,255,.28); }
   .title { flex: 1; text-align: center; line-height: 1.15; overflow: hidden; }
@@ -35,7 +38,8 @@
   .icon-btn svg { width: 22px; height: 22px; }
 
   /* Messages */
-  #log { flex: 1; overflow-y: auto; padding: 14px 12px 8px; background: #fff; }
+  #log { flex: 1; overflow-y: auto; padding: 14px 12px 8px; background: var(--blush); display: flex; flex-direction: column; }
+  #log > :first-child { margin-top: auto; } /* messages sit at the bottom; new ones push older ones up */
   .row { display: flex; gap: 10px; margin: 0 0 14px; align-items: flex-start; }
   .row.me { justify-content: flex-end; }
   .avatar { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: #fff; flex-shrink: 0;
@@ -43,7 +47,8 @@
   .avatar.report { color: #fff; background: var(--navy-2); border-color: var(--navy-2); }
   .bubble { border: 1px solid var(--line); border-radius: 4px; padding: 12px 14px; font-size: 14.5px; line-height: 1.45; max-width: 82%;
             background: #fff; word-wrap: break-word; overflow-wrap: anywhere; }
-  .row.me .bubble { background: var(--bubble-me); border-color: var(--bubble-me); }
+  .row.me .bubble { background: var(--bubble-me); border-color: #e7caca; }
+  .bubble { border-color: #ead3d3; }
   .bubble b.name { font-weight: 600; }
   .bubble p { margin: 4px 0; } .bubble ul { margin: 4px 0; padding-left: 18px; }
   .bubble code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; font-size: 12.5px; }
@@ -63,7 +68,7 @@
   .toggle { background: none; border: 0; color: var(--blue); padding: 0; cursor: pointer; font-size: 13px; margin-top: 6px; }
   .full { display: none; border-top: 1px solid var(--line); margin-top: 8px; padding-top: 6px; }
   .full.open { display: block; }
-  .typing { font-size: 13px; color: var(--muted); padding: 0 14px 6px; height: 20px; }
+  .typing { font-size: 13px; color: var(--muted); padding: 0 14px 6px; height: 20px; background: var(--blush); }
 
   /* Composer */
   .composer { border-top: 1px solid var(--line); display: flex; align-items: flex-end; gap: 10px; padding: 12px 12px 14px 14px; flex-shrink: 0; }
@@ -74,7 +79,7 @@
   .send svg { width: 24px; height: 24px; }
 
   /* Menu panel */
-  .panel { position: absolute; top: 64px; left: 0; right: 0; bottom: 0; background: #fff; transform: translateX(-100%); transition: transform .2s ease; display: flex; flex-direction: column; z-index: 5; }
+  .panel { position: absolute; top: 56px; left: 0; right: 0; bottom: 0; background: #fff; transform: translateX(-100%); transition: transform .2s ease; display: flex; flex-direction: column; z-index: 5; }
   .panel.open { transform: translateX(0); }
   .panel .tabs { display: flex; border-bottom: 1px solid var(--line); }
   .panel .tabs button { flex: 1; background: none; border: 0; padding: 12px; font-size: 14px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; }
@@ -102,12 +107,12 @@
 </head>
 <body>
 <div class="widget" id="widget">
-  <header>
+  <header><div class="bar">
     <button class="pill" id="menuBtn">Menu</button>
     <div class="title"><div class="t1">Live Chat</div><div class="t2" id="sub">Loading…</div></div>
     <button class="icon-btn" id="minBtn" title="Minimize"><svg viewBox="0 0 24 24"><path d="M5 18h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
     <button class="icon-btn" id="closeBtn" title="Close menu / clear view"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
-  </header>
+  </div></header>
 
   <div id="log"></div>
   <div class="typing" id="typing"></div>

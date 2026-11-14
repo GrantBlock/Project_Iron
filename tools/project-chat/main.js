@@ -50,9 +50,11 @@ function chatUrl() {
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 460, height: 820, minWidth: 360, minHeight: 480,
+    // Opening size is the largest it can get; no maximize or full screen
+    width: 460, height: 820, minWidth: 360, minHeight: 480, maxWidth: 460, maxHeight: 820,
+    maximizable: false, fullscreenable: false,
     title: desktop.mode === 'client' ? 'Project Chat — ' + desktop.serverUrl : 'Project Chat',
-    icon: ICON, autoHideMenuBar: true, backgroundColor: '#0b2a5b',
+    icon: ICON, autoHideMenuBar: true, backgroundColor: '#12152a',
     webPreferences: { contextIsolation: true, nodeIntegration: false }
   });
   win.setMenuBarVisibility(false);
