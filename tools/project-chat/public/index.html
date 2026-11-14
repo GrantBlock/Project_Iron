@@ -96,7 +96,7 @@
   .send svg { width: 24px; height: 24px; }
 
   /* Menu panel */
-  .panel { position: absolute; top: var(--header-h, 107px); left: 0; right: 0; bottom: 0; background: var(--blush); transform: translateX(-100%); transition: transform .2s ease; display: flex; flex-direction: column; z-index: 5; }
+  .panel { position: absolute; top: 0; padding-top: var(--header-h, 77px); /* starts under the banner so its gaps show the panel, not the chat */ left: 0; right: 0; bottom: 0; background: var(--blush); transform: translateX(-100%); transition: transform .2s ease; display: flex; flex-direction: column; z-index: 2; } /* below the header (z 3) */
   .panel.open { transform: translateX(0); }
   .panel .tabs { display: flex; border-bottom: 1px solid var(--line); }
   .panel .tabs button { flex: 1; background: none; border: 0; padding: 12px; font-size: 14px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; }
