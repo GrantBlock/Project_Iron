@@ -39,6 +39,10 @@ export interface SnipDeps {
   now: () => Date;
   /** Pause so the hidden editor is gone from the screen before capture. */
   settle: () => Promise<void>;
+  /** Snip delay chosen in the toolbar, in ms (0 = none). Read at the start of each snip. */
+  delayMs?: () => number;
+  /** Wait `ms` (the snip delay) with the editor hidden, so the user can set up the screen. */
+  wait?: (ms: number) => Promise<void>;
   /** Timeouts for the handshake only. Never for the user's crop/cancel. */
   readyTimeoutMs?: number;
   ackTimeoutMs?: number;
@@ -81,6 +85,8 @@ export function createSnipFlow(deps: SnipDeps) {
 
   async function run(invoke: NonNullable<SnipDeps["invoke"]>, snipId: number) {
     await invoke("hide_editor");
+    const delay = deps.delayMs?.() ?? 0;
+    if (delay > 0) await (deps.wait ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms))))(delay);
     await deps.settle();
     const cap = (await invoke("capture_monitor")) as CaptureInfo;
     await withTimeout(

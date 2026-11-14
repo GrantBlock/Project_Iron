@@ -19,6 +19,17 @@ Run: `cd products/collide/app && pnpm install && pnpm test && pnpm e2e --trace o
 6. **Desktop window: one border, one title.** In Tauri, the native Windows title bar is kept and the in-app frame/title row is dropped. The browser build keeps the framed look (`e2e/frame.spec.ts`).
    - Windows: `pnpm tauri dev`. One title bar, no rounded inner panel, no gap at the edges.
 
+7. **A finished snip is copied to the clipboard automatically**, like Snipping Tool. Toast: "Snip copied to clipboard". If the copy fails, the snip still opens and the toast says why (`e2e/snip.spec.ts`).
+   - Windows: Ctrl+Alt+S, drag a box, then paste straight into another app without clicking Copy.
+
+8. **Canvas snip** (button next to New snip). Drag a box over the canvas: the area (image + markups + canvas background), at source resolution, is copied to the clipboard and opened as a new markup. A W × H readout shows while dragging; Esc leaves the mode (`e2e/snip.spec.ts`).
+   - The current markup is replaced, the same as New snip, so save first if you need it.
+9. **Snip delay** (timer picker next to New snip): No delay / 3 s / 5 s / 10 s, as in Snipping Tool. The editor hides, waits the delay, then captures. Applies to Ctrl+Alt+S too (A). Remembered on this computer (`src/snip/flow.test.ts`, `e2e/snip.spec.ts`).
+   - Windows: pick 3 s, click New snip, open a menu in another app within 3 s, and check the menu is in the capture.
+
+10. **Right-drag pans the canvas** in every tool (Space + left-drag still works). A right-press never selects, moves or draws, and the browser/WebView context menu is suppressed on the canvas (`e2e/editor.spec.ts`).
+   - Windows: right-drag over a shape and over empty canvas with a mouse; also try a touchpad two-finger click.
+
 ## Known gaps / watch for
 
 - **Export still saves at the source image size**, so note boxes outside the image are cut off in Export and `export.png`. Grant hasn't decided yet whether Export should crop like Copy. Report it, don't file it as a bug.

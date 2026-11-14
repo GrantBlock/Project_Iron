@@ -5,7 +5,7 @@ import type { AnnotationsDoc, Shape } from "../model";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { GlassPanel, Toast } from "../ds";
-import { createSnipFlow } from "../snip/flow";
+import { createSnipFlow, snipName } from "../snip/flow";
 import { isTauri, SNIP_REQUEST_EVENT, tauriDeps } from "../snip/tauriDeps";
 import { Canvas, cssVar, type CanvasHandle, type LoadedImage } from "./Canvas";
 import { nextShapeId, type NewShape, type ShapePatch } from "./store";
@@ -14,8 +14,8 @@ import { useEditorStore } from "./useEditorStore";
 import { Sidebar } from "./Sidebar";
 import { StatusBar } from "./StatusBar";
 import { CalloutsPanel } from "./CalloutsPanel";
-import { Toolbar } from "./Toolbar";
-import { copyPngToClipboard, dataUrlToBlob, downloadPng, exportFileName, flatten, flattenFit, type Flattened } from "../io/flatten";
+import { SNIP_DELAYS, Toolbar } from "./Toolbar";
+import { copyPngToClipboard, dataUrlToBlob, downloadPng, exportFileName, flatten, flattenArea, flattenFit, type Flattened } from "../io/flatten";
 import { createMarkupStore, isPng, MarkupError, markupFolderName, type MarkupStore } from "../io";
 import { fitView, recentre, screenToImage, type Point, type Size, type View } from "./viewport";
 
@@ -77,6 +77,8 @@ export interface CollideHook {
   /** Flatten to a PNG at source size (no download). Resolves with the data URL and its size. */
   exportPng: () => Promise<Flattened>;
   copyFit: () => Promise<Flattened>;
+  /** What a finished snip does: open the crop, then copy it to the clipboard. */
+  openSnip: (url: string, name: string) => Promise<unknown>;
 }
 
 declare global {
@@ -97,6 +99,25 @@ export function EditorShell() {
     setViewState(update);
   }, []);
   const [tool, setTool] = useState<Tool>("select");
+  // New snip delay (s). Remembered on this computer only; storage may be unavailable, so never required.
+  const [snipDelay, setSnipDelayState] = useState<number>(() => {
+    try {
+      const v = Number(localStorage.getItem("collide.snipDelay"));
+      return (SNIP_DELAYS as readonly number[]).includes(v) ? v : 0;
+    } catch {
+      return 0;
+    }
+  });
+  const setSnipDelay = useCallback((s: number) => {
+    setSnipDelayState(s);
+    try {
+      localStorage.setItem("collide.snipDelay", String(s));
+    } catch {
+      /* not remembered; still applies this session */
+    }
+  }, []);
+  const snipDelayRef = useRef(snipDelay);
+  snipDelayRef.current = snipDelay;
   const [color, setColorState] = useState("var(--signal-500)");
   const [strokeWidth, setStrokeWidthState] = useState<number>(DEFAULT_STROKE_WIDTH);
   const sizeRef = useRef<Size>({ width: 0, height: 0 });
@@ -225,14 +246,17 @@ export function EditorShell() {
   }, [exportPng]);
 
   // Copy: the image plus every annotation (auto-cropped, canvas background outside the image) to the clipboard.
-  const onCopy = useCallback(() => {
-    void copyFit()
-      .then((f) => copyPngToClipboard(f.dataUrl))
-      .then(
-        () => setNotice({ tone: "success", title: "Copied to clipboard", description: "Paste the marked-up image into any app." }),
-        (e: unknown) => fail(e, "Copy failed"),
-      );
-  }, [copyFit, fail]);
+  const copyToClipboard = useCallback(
+    (title: string) =>
+      copyFit()
+        .then((f) => copyPngToClipboard(f.dataUrl))
+        .then(
+          () => setNotice({ tone: "success", title, description: "Paste the marked-up image into any app." }),
+          (e: unknown) => fail(e, "Copy failed"),
+        ),
+    [copyFit, fail],
+  );
+  const onCopy = useCallback(() => void copyToClipboard("Copied to clipboard"), [copyToClipboard]);
 
   const onAdd = useCallback((shape: NewShape, numbered: boolean) => dispatch({ type: "add", shape, numbered }), [dispatch]);
   const onUpdate = useCallback((id: string, patch: ShapePatch) => dispatch({ type: "update", id, patch }), [dispatch]);
@@ -304,6 +328,7 @@ export function EditorShell() {
         return;
       }
       if (e.key === "Escape") {
+        setTool((t) => (t === "canvas-snip" ? "select" : t));
         dispatch({ type: "select", id: null });
         return;
       }
@@ -315,9 +340,40 @@ export function EditorShell() {
   }, [dispatch, stateRef]);
 
   // T11: New snip button and the global hotkey (Rust emits SNIP_REQUEST_EVENT) both run the same flow.
+  // A finished snip opens in the editor and goes straight to the clipboard, like Snipping Tool.
+  // A failed copy only shows its own toast; the snip itself still counts as done.
+  const openSnip = useCallback(
+    async (url: string, name: string) => {
+      const size = await open(url, name);
+      await copyToClipboard("Snip copied to clipboard");
+      return size;
+    },
+    [open, copyToClipboard],
+  );
+  // Canvas snip: the dragged area of the canvas (image + markups) becomes a new markup and is copied.
+  const onCanvasSnip = useCallback(
+    (area: { x: number; y: number; w: number; h: number }) => {
+      setTool("select");
+      const stage = handleRef.current?.stage();
+      if (!stage) return;
+      let flat: Flattened;
+      try {
+        flat = flattenArea(stage, { x: area.x, y: area.y, width: area.w, height: area.h }, cssVar("--bg-canvas"));
+      } catch (e) {
+        fail(e, "Canvas snip failed");
+        return;
+      }
+      void openSnip(flat.dataUrl, snipName(new Date()).replace(/^snip-/, "canvas-snip-")).catch((e: unknown) => fail(e, "Canvas snip failed"));
+    },
+    [openSnip, fail],
+  );
+
+  const openSnipRef = useRef(openSnip);
+  openSnipRef.current = openSnip;
+
   const snipRef = useRef<ReturnType<typeof createSnipFlow>>({ start: async () => undefined, isBusy: () => false });
   useEffect(() => {
-    const flow = createSnipFlow(tauriDeps({ openImage: (url, name) => open(url, name), notify: setNotice }));
+    const flow = createSnipFlow(tauriDeps({ openImage: (url, name) => openSnipRef.current(url, name), notify: setNotice, delayMs: () => snipDelayRef.current * 1000 }));
     snipRef.current = flow;
     if (!isTauri()) return;
     const un = listen(SNIP_REQUEST_EVENT, () => void flow.start());
@@ -356,6 +412,7 @@ export function EditorShell() {
       getDoc: () => stateRef.current.doc,
       exportPng,
       copyFit,
+      openSnip,
       openMarkup,
       saveMarkup,
       screenToImage: (p) => screenToImage(live.current.view, p),
@@ -383,7 +440,7 @@ export function EditorShell() {
     return () => {
       delete window.__collide;
     };
-  }, [open, dispatch, stateRef, exportPng, copyFit, openMarkup, saveMarkup]);
+  }, [open, dispatch, stateRef, exportPng, copyFit, openSnip, openMarkup, saveMarkup]);
 
   // In the desktop app the OS window already has a title bar and border, so the in-app
   // frame and "Collide" title row would show twice; fill the window edge to edge instead.
@@ -429,6 +486,10 @@ export function EditorShell() {
           fileName={image?.name ?? "No image"}
           onOpenFile={() => fileRef.current?.click()}
           onNewSnip={() => void snipRef.current.start()}
+          snipDelay={snipDelay}
+          setSnipDelay={setSnipDelay}
+          onCanvasSnip={() => setTool((t) => (t === "canvas-snip" ? "select" : "canvas-snip"))}
+          canvasSnipActive={tool === "canvas-snip"}
           onExport={onExport}
           onCopy={onCopy}
           canExport={!!image}
@@ -454,6 +515,7 @@ export function EditorShell() {
             onUpdate={onUpdate}
             onRemove={onRemove}
             onSelect={onSelect}
+            onCanvasSnip={onCanvasSnip}
             handleRef={handleRef}
           />
           <CalloutsPanel

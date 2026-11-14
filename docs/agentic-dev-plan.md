@@ -34,6 +34,12 @@ Related (in `GrantBlock/designengineering-ai`, `Builder v0.1/`): `development-pa
 - [stated] 2026-11-14: Collide: a callout with an empty note still shows its number (as a chip) and arrow in the editor, Copy and Export. A "Hide #" toggle in the Callouts sidebar leaves a callout's number box and arrow out of Copy/Export (dimmed in the editor); per callout (A) (Grant).
 - [stated] 2026-11-14: Collide adds an X mark (remove) tool and filled rectangle / filled ellipse tools; fills are solid in the chosen colour; all three get numbered note boxes like the other shapes (Grant).
 - [stated] 2026-11-14: Grant asked this session to merge `claude/peaceful-babbage-04aj3j` into `development` (Collide Windows fixes, note boxes, new tools); test notes for Lydia in `products/collide/TESTER-NOTES.md` (Grant).
+- [stated] 2026-11-14: Collide copies a finished snip to the clipboard automatically, like Snipping Tool (Grant).
+- [stated] 2026-11-14: Collide adds Canvas snip (drag a box on the canvas; the area with markups is copied and opened as a new markup) and a New snip delay (No delay / 3 / 5 / 10 s, as in Snipping Tool; editor hidden during the delay; also applies to Ctrl+Alt+S (A)) (Grant).
+- [stated] 2026-11-14: Collide: right-click drag pans the canvas view (Space + left-drag still works); no context menu on the canvas (Grant).
+- [stated] 2026-11-14: One app named Collide, with sections Collide Snip and Collide Chat (Agent Chat moves in). Collide moves from Tauri to Electron + Node first, then Agent Chat becomes Collide Chat; server on port 3500 with Server/Connected modes like Agent Chat; autosave on the server; laptops keep local sessions in the left sidebar with a save-to-server icon and auto-retry; single user (Grant); AI queue 2; required access code. Run brief: `products/collide/RUN2.md` (Grant).
+- [stated] 2026-11-14: Collide adds a third section, Collide Editor: unpack a zip, open and edit its Markdown files with images, insert images from snip saves, repack the zip. Collide is a hosted chat and product editor custom built for Grant's multi-PC, multi-chat-session AI development workflow (Grant).
+- [stated] 2026-11-14: Collide Editor opens zips of any file type with a sub-folder tree (e.g. a zipped VS Code project), edits text/code and Markdown, inserts snips, repacks. Approved deps: fflate, markdown-it. Collide Editor runs before server markups and access codes (Grant).
 
 ## Roles
 

@@ -3,7 +3,7 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { Arrow, Circle, Ellipse, Group, Image as KonvaImage, Label, Layer, Rect, Shape as KonvaShape, Stage, Tag, Text, Transformer } from "react-konva";
 import Konva from "konva";
 import type { Shape } from "../model";
-import { BADGE_SIZE, isRealDrag, resizeShape, shapeFromDrag, type DrawTool, type Style } from "./geometry";
+import { BADGE_SIZE, dragBounds, isRealDrag, resizeShape, shapeFromDrag, type DrawTool, type Style } from "./geometry";
 import { hasNoteBox, layoutNotes, leader, NOTE_BADGE, NOTE_BADGE_GAP, NOTE_FONT, NOTE_MIN_W, NOTE_PAD, NOTE_W, noteSize, noteTextWidth, type Box } from "./notes";
 import type { NewShape, ShapePatch } from "./store";
 import type { Tool } from "./tools";
@@ -35,11 +35,17 @@ interface Props {
   onUpdate: (id: string, patch: ShapePatch) => void;
   onRemove: (id: string) => void;
   onSelect: (id: string | null) => void;
+  /** Canvas snip: the dragged area, in image pixels (may extend past the image). */
+  onCanvasSnip?: (area: { x: number; y: number; w: number; h: number }) => void;
   handleRef: React.MutableRefObject<CanvasHandle | null>;
 }
 
 /** Resolve a design-system CSS variable to a colour string Konva can paint. */
 export const cssVar = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+const RIGHT_BUTTON = 2;
+/** Right-button presses pan the view; they never select or deselect. */
+const isPanButton = (evt: Event) => (evt as MouseEvent).button === RIGHT_BUTTON;
 
 const isTypingTarget = (t: EventTarget | null) =>
   t instanceof HTMLElement && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
@@ -53,7 +59,8 @@ const measureText = (text: string, fontSize: number) => {
 };
 
 /** Drag tools → the shape they draw and whether it is filled. */
-const DRAG_TOOLS: Partial<Record<Tool, { shape: DrawTool; fill?: true }>> = {
+const DRAG_TOOLS: Partial<Record<Tool, { shape: DrawTool; fill?: true; snip?: true }>> = {
+  "canvas-snip": { shape: "rect", snip: true },
   rect: { shape: "rect" },
   ellipse: { shape: "ellipse" },
   "rect-fill": { shape: "rect", fill: true },
@@ -73,6 +80,8 @@ const measureNote = (text: string, width: number) =>
 interface Draft {
   tool: DrawTool;
   fill?: true;
+  /** Canvas snip selection, not a shape. */
+  snip?: true;
   a: Point;
   b: Point;
 }
@@ -248,6 +257,7 @@ function NoteBox({ shape, box, selected, interactive, onSelect, onMove, onResize
       listening={interactive}
       draggable={interactive}
       onMouseDown={(e) => {
+        if (isPanButton(e.evt)) return;
         e.cancelBubble = true;
         onSelect(shape.id);
       }}
@@ -323,6 +333,7 @@ function NoteBox({ shape, box, selected, interactive, onSelect, onMove, onResize
 function handlers(shape: Shape, onSelect?: (id: string) => void, onMoved?: (id: string, x: number, y: number) => void) {
   return {
     onMouseDown: (e: Konva.KonvaEventObject<Event>) => {
+      if (isPanButton(e.evt)) return;
       e.cancelBubble = true;
       onSelect?.(shape.id);
     },
@@ -333,7 +344,7 @@ function handlers(shape: Shape, onSelect?: (id: string) => void, onMoved?: (id: 
   };
 }
 
-export function Canvas({ image, shapes, selectedId, tool, style, view, onViewChange, onSize, onAdd, onUpdate, onRemove, onSelect, handleRef }: Props) {
+export function Canvas({ image, shapes, selectedId, tool, style, view, onViewChange, onSize, onAdd, onUpdate, onRemove, onSelect, onCanvasSnip, handleRef }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const trRef = useRef<Konva.Transformer>(null);
@@ -343,7 +354,8 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
   const [draft, setDraft] = useState<Draft | null>(null);
   const [edit, setEdit] = useState<TextEdit | null>(null);
   const spaceRef = useRef(false);
-  const panRef = useRef<{ id: number; x: number; y: number } | null>(null);
+  /** Pan in progress: pointer and view at the start. The view follows (now - start), so a dropped move event cannot lose distance. */
+  const panRef = useRef<{ id: number; x: number; y: number; view: View } | null>(null);
   const draftRef = useRef<Draft | null>(null);
   const committed = useRef(false);
   /** Live position/size while a shape or note box is being dragged, so arrows follow. */
@@ -351,8 +363,8 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
   const [noteEdit, setNoteEdit] = useState<{ id: string; value: string } | null>(null);
 
   // Latest props for window-level handlers.
-  const live = useRef({ view, tool, style, onAdd });
-  live.current = { view, tool, style, onAdd };
+  const live = useRef({ view, tool, style, onAdd, onCanvasSnip });
+  live.current = { view, tool, style, onAdd, onCanvasSnip };
 
   handleRef.current = { stage: () => stageRef.current, container: () => wrapRef.current };
 
@@ -425,24 +437,25 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
     [onViewChange],
   );
 
+  // Pan: right-drag, or Space + left-drag.
   const onPointerDownCapture = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (!spaceRef.current || e.button !== 0) return;
+    if (!(e.button === RIGHT_BUTTON || (spaceRef.current && e.button === 0))) return;
     e.preventDefault();
     e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
-    panRef.current = { id: e.pointerId, x: e.clientX, y: e.clientY };
+    panRef.current = { id: e.pointerId, x: e.clientX, y: e.clientY, view: live.current.view };
     setPanning(true);
   };
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     const p = panRef.current;
     if (!p || p.id !== e.pointerId) return;
-    const dx = e.clientX - p.x;
-    const dy = e.clientY - p.y;
-    panRef.current = { ...p, x: e.clientX, y: e.clientY };
-    onViewChange((v) => panBy(v, dx, dy));
+    const start = p.view;
+    onViewChange(() => panBy(start, e.clientX - p.x, e.clientY - p.y));
   };
   const endPan = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (panRef.current?.id !== e.pointerId) return;
+    const p = panRef.current;
+    if (p?.id !== e.pointerId) return;
+    if (e.type === "pointerup") onViewChange(() => panBy(p.view, e.clientX - p.x, e.clientY - p.y));
     panRef.current = null;
     setPanning(false);
   };
@@ -458,7 +471,7 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
     }
     const dt = DRAG_TOOLS[t];
     if (!dt) return;
-    const d: Draft = { tool: dt.shape, fill: dt.fill, a: p, b: p };
+    const d: Draft = { tool: dt.shape, fill: dt.fill, snip: dt.snip, a: p, b: p };
     draftRef.current = d;
     setDraft(d);
     const move = (ev: PointerEvent) => {
@@ -476,7 +489,8 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
       if (!cur) return;
       const b = toImage(ev.clientX, ev.clientY);
       if (ev.type === "pointerup" && isRealDrag(cur.a, b, live.current.view.scale)) {
-        live.current.onAdd(draftShapeOf({ ...cur, b }, live.current.style), true);
+        if (cur.snip) live.current.onCanvasSnip?.(dragBounds(cur.a, b));
+        else live.current.onAdd(draftShapeOf({ ...cur, b }, live.current.style), true);
       }
     };
     window.addEventListener("pointermove", move);
@@ -587,7 +601,7 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
   const editBoxPos = editBox ? imageToScreen(view, { x: editBox.x + NOTE_PAD + NOTE_BADGE + NOTE_BADGE_GAP, y: editBox.y + NOTE_PAD }) : null;
   const keepRatio = selected?.type === "text";
   const cursor = panning ? "grabbing" : spaceDown ? "grab" : tool === "select" ? "default" : "crosshair";
-  const draftShape: Shape | null = draft
+  const draftShape: Shape | null = draft && !draft.snip
     ? ({ ...draftShapeOf(draft, style), id: "draft" } as Shape)
     : null;
   const editPos = edit ? imageToScreen(view, edit.at) : null;
@@ -598,6 +612,7 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
       data-testid="canvas"
       data-tool={tool}
       onPointerDownCapture={onPointerDownCapture}
+      onContextMenu={(e) => e.preventDefault()}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endPan}
@@ -624,6 +639,7 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
           scaleY={view.scale}
           onWheel={onWheel}
           onMouseDown={(e) => {
+            if (isPanButton(e.evt)) return;
             if (tool === "select" && e.target === e.target.getStage()) onSelect(null);
           }}
           onTouchStart={(e) => {
@@ -688,6 +704,22 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
                 );
               })}
             {draftShape && <ShapeNode shape={draftShape} interactive={false} />}
+            {draft?.snip && (() => {
+              const r = dragBounds(draft.a, draft.b);
+              return (
+                <Group name="snip-selection" listening={false}>
+                  <Rect x={r.x} y={r.y} width={r.w} height={r.h} stroke={ink} strokeWidth={1 / view.scale} dash={[6 / view.scale, 4 / view.scale]} fill={cssVar("--line-1")} />
+                  <Text
+                    x={r.x}
+                    y={r.y - 18 / view.scale}
+                    text={`${Math.round(r.w)} × ${Math.round(r.h)}`}
+                    fontSize={11 / view.scale}
+                    fontFamily={cssVar("--font-mono")}
+                    fill={ink}
+                  />
+                </Group>
+              );
+            })()}
             <Transformer
               ref={trRef}
               rotateEnabled={false}
