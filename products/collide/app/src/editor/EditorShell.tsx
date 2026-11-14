@@ -1,15 +1,21 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import type { Shape } from "../model";
+import type { AnnotationsDoc, Shape } from "../model";
 import { GlassPanel } from "../ds";
-import { Canvas, type CanvasHandle, type LoadedImage } from "./Canvas";
+import { Canvas, cssVar, type CanvasHandle, type LoadedImage } from "./Canvas";
+import { nextShapeId, type NewShape, type ShapePatch } from "./store";
+import { DEFAULT_STROKE_WIDTH, TOOL_KEYS, type Tool } from "./tools";
+import { useEditorStore } from "./useEditorStore";
 import { Sidebar } from "./Sidebar";
 import { StatusBar } from "./StatusBar";
 import { Toolbar } from "./Toolbar";
 import { fitView, screenToImage, type Point, type Size, type View } from "./viewport";
 
-/** Resolve a design-system CSS variable to a colour string Konva can paint. */
-const cssVar = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+/** Resolve a swatch value ("var(--token)") to the hex string stored in the doc. */
+const resolveColor = (c: string) => {
+  const m = /^var\((--[\w-]+)\)$/.exec(c);
+  return m ? cssVar(m[1]) : c;
+};
 
 function loadImage(url: string, name: string): Promise<LoadedImage> {
   return new Promise((resolve, reject) => {
@@ -37,6 +43,8 @@ export interface CollideHook {
   /** Add a test rectangle (image pixels). Returns its id. */
   seedShape: (s?: Partial<Pick<Shape, "x" | "y" | "w" | "h">>) => string;
   getState: () => CollideTestState;
+  /** The current annotations doc (image pixels), or null before an image is open. */
+  getDoc: () => AnnotationsDoc | null;
   /** Convert a point in canvas-container coordinates to image pixels using the current view. */
   screenToImage: (p: Point) => Point;
 }
@@ -49,17 +57,18 @@ declare global {
 
 export function EditorShell() {
   const [image, setImage] = useState<LoadedImage | null>(null);
-  const [shapes, setShapes] = useState<Shape[]>([]);
+  const { state, dispatch, stateRef } = useEditorStore();
+  const shapes = useMemo(() => state.doc?.shapes ?? [], [state.doc]);
   const [view, setView] = useState<View>({ scale: 1, x: 0, y: 0 });
-  const [tool, setTool] = useState("select");
-  const [color, setColor] = useState("var(--signal-500)");
+  const [tool, setTool] = useState<Tool>("select");
+  const [color, setColorState] = useState("var(--signal-500)");
+  const [strokeWidth, setStrokeWidthState] = useState<number>(DEFAULT_STROKE_WIDTH);
   const sizeRef = useRef<Size>({ width: 0, height: 0 });
   const handleRef = useRef<CanvasHandle | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const idRef = useRef(0);
 
-  const live = useRef({ image, shapes, view });
-  live.current = { image, shapes, view };
+  const live = useRef({ image, view });
+  live.current = { image, view };
 
   const onSize = useCallback((s: Size) => {
     sizeRef.current = s;
@@ -68,11 +77,55 @@ export function EditorShell() {
   const open = useCallback(async (url: string, name: string) => {
     const img = await loadImage(url, name);
     setImage(img);
-    setShapes([]);
+    dispatch({ type: "load", width: img.width, height: img.height });
     setView(fitView(sizeRef.current, img));
-    live.current = { image: img, shapes: [], view: fitView(sizeRef.current, img) };
+    live.current = { image: img, view: fitView(sizeRef.current, img) };
     return { width: img.width, height: img.height };
-  }, []);
+  }, [dispatch]);
+
+  const onAdd = useCallback((shape: NewShape, numbered: boolean) => dispatch({ type: "add", shape, numbered }), [dispatch]);
+  const onUpdate = useCallback((id: string, patch: ShapePatch) => dispatch({ type: "update", id, patch }), [dispatch]);
+  const onRemove = useCallback((id: string) => dispatch({ type: "remove", id }), [dispatch]);
+  const onSelect = useCallback((id: string | null) => dispatch({ type: "select", id }), [dispatch]);
+
+  // Changing colour or stroke width also restyles the selected shape (not callout badges, which stay steel).
+  const selectedShape = shapes.find((s) => s.id === state.selectedId);
+  const restyle = (patch: ShapePatch) => {
+    if (selectedShape && selectedShape.type !== "callout") dispatch({ type: "update", id: selectedShape.id, patch });
+  };
+  const setColor = (c: string) => {
+    setColorState(c);
+    restyle({ stroke: resolveColor(c) });
+  };
+  const setStrokeWidth = (w: number) => {
+    setStrokeWidthState(w);
+    restyle({ strokeWidth: w });
+  };
+
+  // Tool hotkeys and Delete/Backspace.
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      const t = e.target;
+      if (t instanceof HTMLElement && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === "Delete" || e.key === "Backspace") {
+        const id = stateRef.current.selectedId;
+        if (id) {
+          e.preventDefault();
+          dispatch({ type: "remove", id });
+        }
+        return;
+      }
+      if (e.key === "Escape") {
+        dispatch({ type: "select", id: null });
+        return;
+      }
+      const next = TOOL_KEYS[e.key.toLowerCase()];
+      if (next) setTool(next);
+    };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, [dispatch, stateRef]);
 
   const onFile = (e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -84,23 +137,26 @@ export function EditorShell() {
     const hook: CollideHook = {
       openImage: (url, name) => open(url, name ?? nameFromUrl(url)),
       seedShape: (s) => {
-        const id = `test-${++idRef.current}`;
-        const shape: Shape = {
-          id,
-          type: "rect",
-          x: s?.x ?? 100,
-          y: s?.y ?? 80,
-          w: s?.w ?? 120,
-          h: s?.h ?? 60,
-          stroke: cssVar("--signal-500"),
-          strokeWidth: 2,
-        };
-        setShapes((prev) => [...prev, shape]);
+        const id = nextShapeId(stateRef.current.doc?.shapes ?? []);
+        dispatch({
+          type: "add",
+          shape: {
+            type: "rect",
+            x: s?.x ?? 100,
+            y: s?.y ?? 80,
+            w: s?.w ?? 120,
+            h: s?.h ?? 60,
+            stroke: cssVar("--signal-500"),
+            strokeWidth: 2,
+          },
+        });
         return id;
       },
+      getDoc: () => stateRef.current.doc,
       screenToImage: (p) => screenToImage(live.current.view, p),
       getState: () => {
-        const { image: img, shapes: ss } = live.current;
+        const { image: img } = live.current;
+        const ss = stateRef.current.doc?.shapes ?? [];
         const stage = handleRef.current?.stage() ?? null;
         const bg = stage?.findOne(".background") ?? null;
         const inv = bg?.getAbsoluteTransform().copy().invert();
@@ -121,7 +177,7 @@ export function EditorShell() {
     return () => {
       delete window.__collide;
     };
-  }, [open]);
+  }, [open, dispatch, stateRef]);
 
   return (
     <div
@@ -146,12 +202,28 @@ export function EditorShell() {
           setTool={setTool}
           color={color}
           setColor={setColor}
+          strokeWidth={strokeWidth}
+          setStrokeWidth={setStrokeWidth}
           fileName={image?.name ?? "No image"}
           onOpenFile={() => fileRef.current?.click()}
         />
         <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
           <Sidebar current={image && { name: image.name, meta: `${image.width} × ${image.height}` }} />
-          <Canvas image={image} shapes={shapes} view={view} onViewChange={setView} onSize={onSize} handleRef={handleRef} />
+          <Canvas
+            image={image}
+            shapes={shapes}
+            selectedId={state.selectedId}
+            tool={tool}
+            style={{ stroke: resolveColor(color), strokeWidth }}
+            view={view}
+            onViewChange={setView}
+            onSize={onSize}
+            onAdd={onAdd}
+            onUpdate={onUpdate}
+            onRemove={onRemove}
+            onSelect={onSelect}
+            handleRef={handleRef}
+          />
           <div
             data-testid="ai-pane"
             style={{ width: "var(--layout-inspector)", flex: "none", borderLeft: "1px solid var(--line-1)", boxSizing: "border-box" }}

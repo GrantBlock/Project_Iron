@@ -5,3 +5,5 @@ Things blocking progress or needing Grant's input, right now. Whoever hits one a
 | # | Raised by | Task | What's blocking | Status |
 | --- | --- | --- | --- | --- |
 | 1 | Coder (Hrongar) | T03 | Icons load from the unpkg CDN as the design system does (A). A desktop app used offline will show blank icons. Grant: bundle `lucide-static` (new dependency, needs approval in PLAN.md) or keep the CDN? | Resolved — Planner approved bundling lucide-static@0.460.0 (offline criterion) |
+| 2 | Coder (Hrongar) | T04 | Ticket says Ellipse hotkey is E; the UI kit toolbar shows O. Built with E (O not bound). Grant: confirm E, or keep the kit's O? | Resolved — Planner: follow the UI kit (O) |
+| 3 | Coder (Hrongar) | T04 | Deleting a numbered shape leaves a gap in callout numbers (1, 3, 4); new callouts continue from highest + 1 (T02 `nextCalloutNumber`). Grant: renumber on delete, or keep gaps? | Open |
