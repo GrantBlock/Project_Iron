@@ -10,7 +10,7 @@ Mirrors `SPEC.md`'s table; update the Status column here as it changes, in sync 
 
 | ID | Task | Status |
 | --- | --- | --- |
-| T01 | Repo scaffold | In progress |
+| T01 | Repo scaffold | Tested — pass |
 | T02 | Shape model | To do |
 | T03 | Editor canvas | To do |
 | T04 | Drawing tools | To do |
