@@ -1,7 +1,7 @@
 {
   "name": "project-chat",
-  "productName": "Project Chat",
-  "version": "0.3.2",
+  "productName": "Agent Chat",
+  "version": "0.3.5",
   "description": "Local AI assistant chat and nightly agent report inbox",
   "author": "Block Concepts LLC",
   "main": "main.js",
@@ -20,7 +20,7 @@
   },
   "build": {
     "appId": "com.blockconcepts.projectchat",
-    "productName": "Project Chat",
+    "productName": "Agent Chat",
     "files": [
       "main.js",
       "server.js",
@@ -34,7 +34,7 @@
       "signAndEditExecutable": false
     },
     "portable": {
-      "artifactName": "ProjectChat-${version}.exe"
+      "artifactName": "AgentChat-${version}.exe"
     },
     "directories": {
       "output": "dist"

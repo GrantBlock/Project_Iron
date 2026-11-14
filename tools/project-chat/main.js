@@ -1,12 +1,12 @@
 // Desktop wrapper. Two modes:
 //   server — runs the chat server on this PC and shows it in a window (default)
-//   client — connects to Project Chat running on another computer; no local server
+//   client — connects to Agent Chat running on another computer; no local server
 'use strict';
 const { app, BrowserWindow, Tray, Menu, shell, dialog, nativeImage, clipboard, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
-// Config + data live in %APPDATA%\Project Chat (writable, survives updates)
+// Config + data live in %APPDATA%\Project Chat (kept after the rename to Agent Chat so history carries over)
 const HOME = path.join(app.getPath('appData'), 'Project Chat');
 process.env.PROJECT_CHAT_HOME = HOME;
 const DESKTOP_CFG = path.join(HOME, 'desktop.json');
@@ -53,7 +53,7 @@ function createWindow() {
     // Opening size is the largest it can get; no maximize or full screen
     width: 460, height: 820, minWidth: 360, minHeight: 480, maxWidth: 460, maxHeight: 820,
     maximizable: false, fullscreenable: false,
-    title: desktop.mode === 'client' ? 'Project Chat — ' + desktop.serverUrl : 'Project Chat',
+    title: desktop.mode === 'client' ? 'Agent Chat — ' + desktop.serverUrl : 'Agent Chat',
     icon: ICON, autoHideMenuBar: true, backgroundColor: '#12152a',
     webPreferences: { contextIsolation: true, nodeIntegration: false }
   });
@@ -63,7 +63,7 @@ function createWindow() {
   win.webContents.on('did-fail-load', (_e, code, desc, url) => {
     if (desktop.mode === 'client' && url.startsWith(desktop.serverUrl)) {
       win.hide();
-      openSetup('Could not reach the server at ' + desktop.serverUrl + ' (' + desc + '). Check that Project Chat is running there and the port is allowed through its firewall.');
+      openSetup('Could not reach the server at ' + desktop.serverUrl + ' (' + desc + '). Check that Agent Chat is running there and the port is allowed through its firewall.');
     }
   });
   win.on('close', e => {
@@ -72,7 +72,7 @@ function createWindow() {
     // Server mode: hide to tray so other computers stay connected
     e.preventDefault(); win.hide();
     if (!app.__trayHintShown && tray && tray.displayBalloon) {
-      tray.displayBalloon({ title: 'Project Chat is still running', content: 'Right-click the tray icon and choose Quit to stop it.' });
+      tray.displayBalloon({ title: 'Agent Chat is still running', content: 'Right-click the tray icon and choose Quit to stop it.' });
       app.__trayHintShown = true;
     }
   });
@@ -83,7 +83,7 @@ function show() { if (!win) createWindow(); win.show(); win.focus(); }
 function openSetup(message) {
   if (setupWin) { setupWin.focus(); return; }
   setupWin = new BrowserWindow({
-    width: 440, height: 520, resizable: false, title: 'Project Chat — Connection',
+    width: 440, height: 520, resizable: false, title: 'Agent Chat — Connection',
     icon: ICON, autoHideMenuBar: true,
     webPreferences: { contextIsolation: true, nodeIntegration: false, preload: path.join(__dirname, 'preload.js') }
   });
@@ -115,11 +115,11 @@ ipcMain.handle('pc:save', async (_e, mode, url) => {
 // ---------- tray ----------
 function createTray() {
   tray = new Tray(nativeImage.createFromPath(ICON).resize({ width: 16, height: 16 }));
-  tray.setToolTip('Project Chat');
+  tray.setToolTip('Agent Chat');
   let items;
   if (desktop.mode === 'client') {
     items = [
-      { label: 'Open Project Chat', click: show },
+      { label: 'Open Agent Chat', click: show },
       { label: `Connected to ${desktop.serverUrl}`, enabled: false },
       { type: 'separator' },
       { label: 'Change connection…', click: () => openSetup() },
@@ -129,7 +129,7 @@ function createTray() {
   } else {
     const lan = srv.lanAddresses().map(ip => `http://${ip}:${srv.cfg.port}`);
     items = [
-      { label: 'Open Project Chat', click: show },
+      { label: 'Open Agent Chat', click: show },
       { type: 'separator' },
       ...lan.map(u => ({ label: `Copy network link  ${u}`, click: () => clipboard.writeText(u) })),
       { label: 'Copy report token', click: () => clipboard.writeText(srv.cfg.reportToken) },
@@ -150,14 +150,14 @@ app.whenReady().then(async () => {
   if (desktop.mode === 'client') {
     createTray();
     const t = await testServer(desktop.serverUrl);
-    if (t.ok) createWindow(); else openSetup(t.error + '. Check that Project Chat is running on that computer and its firewall allows the port.');
+    if (t.ok) createWindow(); else openSetup(t.error + '. Check that Agent Chat is running on that computer and its firewall allows the port.');
     return;
   }
   srv = require('./server.js');
   srv.onError = e => {
     if (e.code === 'EADDRINUSE') {
-      dialog.showErrorBox('Project Chat', `Port ${srv.cfg.port} is already in use. Close any other copy of Project Chat (including start.bat), or change "port" in:\n${srv.configPath}`);
-    } else dialog.showErrorBox('Project Chat', e.message);
+      dialog.showErrorBox('Agent Chat', `Port ${srv.cfg.port} is already in use. Close any other copy of Agent Chat or Project Chat (including start.bat), or change "port" in:\n${srv.configPath}`);
+    } else dialog.showErrorBox('Agent Chat', e.message);
     quitting = true; app.quit();
   };
   srv.onReady = () => { createTray(); createWindow(); };

@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Project Chat</title>
+<title>Agent Chat</title>
 <link rel="icon" href="/favicon.png">
 <style>
   :root {
     --navy: #0b2a5b; --navy-2: #12397a; --blue: #1a6fd1; --line: #e3e5e8;
-    --text: #1f2328; --muted: #6b7280; --bubble-me: #f0954a; --bg: #eef1f5;
+    --text: #1f2328; --muted: #6b7280; --bubble-me: var(--blue); --bg: #eef1f5;
     --ink: #12152a; --blush: #f2f3f4; /* grayish white: banner, chat and panel backgrounds */
     --pass: #1f8a4c; --fail: #c62828; --warn: #b26a00; --info: #4682b4;
   }
@@ -26,37 +26,58 @@
   body.app #minBtn, body.app #closeBtn { display: none; }
 
   /* Header */
-  header { background: url("/banner.png") center bottom / 100% auto no-repeat, var(--ink); color: #fff; flex-shrink: 0;
+  header { background: url("/banner.png") center bottom / 100% auto no-repeat, linear-gradient(var(--ink), var(--ink)) top / 100% 30px no-repeat; color: #fff; flex-shrink: 0;
            padding: 0 14px 11.111%; /* 1/9 of width = banner's 1080x120 proportions */ }
-  header .bar { height: 56px; display: flex; align-items: center; gap: 10px; }
-  .pill { background: rgba(255,255,255,.18); border: 0; color: #fff; font-size: 14px; padding: 6px 14px; border-radius: 16px; cursor: pointer; }
+  /* Header floats over the chat; messages scroll up underneath and show through the banner's gaps */
+  .widget { position: relative; }
+  header { position: absolute; top: 0; left: 0; right: 0; z-index: 3; }
+  .widget.min header { position: relative; }
+  header .bar { height: 26px; padding-top: 4px; display: flex; align-items: center; gap: 8px; }
+  header .bar .spacer { flex: 1; }
+  /* Title centered over the whole header, overlapping the banner */
+  .title { position: absolute; left: 70px; right: 70px; top: 9px; /* text top level with the Menu text; header size unchanged */ text-align: center; line-height: 1.15;
+           pointer-events: none; text-shadow: 0 1px 3px rgba(18,21,42,.85), 0 0 8px rgba(18,21,42,.6); }
+  .pill { background: rgba(255,255,255,.16); border: 0; color: #fff; font-size: 12px; padding: 3px 10px; border-radius: 12px; cursor: pointer; }
   .pill:hover { background: rgba(255,255,255,.28); }
-  .title { flex: 1; text-align: center; line-height: 1.15; overflow: hidden; }
-  .title .t1 { font-size: 19px; }
-  .title .t2 { font-size: 12px; opacity: .75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .title .t1 { font-size: 17px; }
+  .title .t2 { font-size: 12px; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .icon-btn { background: none; border: 0; color: #fff; cursor: pointer; padding: 4px; display: grid; place-items: center; }
-  .icon-btn svg { width: 22px; height: 22px; }
+  .icon-btn svg { width: 18px; height: 18px; }
 
   /* Messages */
-  #log { flex: 1; overflow-y: auto; padding: 14px 12px 8px; background: var(--blush); display: flex; flex-direction: column; }
+  #log { flex: 1; overflow-y: auto; padding: calc(var(--header-h, 77px) + 4px) 12px 8px; scroll-padding-top: var(--header-h, 77px); background: var(--blush); display: flex; flex-direction: column; }
   #log > :first-child { margin-top: auto; } /* messages sit at the bottom; new ones push older ones up */
-  .row { display: flex; gap: 10px; margin: 0 0 14px; align-items: flex-start; }
-  .row.me { justify-content: flex-end; }
   .avatar { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: #fff; flex-shrink: 0;
             display: grid; place-items: center; font-weight: 700; font-size: 14px; color: var(--navy); }
-  .avatar.report { color: #fff; background: var(--navy-2); border-color: var(--navy-2); }
-  .bubble { border: 1px solid var(--line); border-radius: 4px; padding: 12px 14px; font-size: 14.5px; line-height: 1.45; max-width: 82%;
-            background: #fff; word-wrap: break-word; overflow-wrap: anywhere; }
-  .row.me .bubble { background: var(--bubble-me); border-color: #e08436; color: var(--ink); }
-  .row.me .time { color: #5c3413; }
-  .bubble { border-color: #e1e4e8; }
-  .bubble b.name { font-weight: 600; }
+  /* Messages: name + avatar above a group, rounded borderless bubbles, time below the group */
+  .row { display: flex; flex-direction: column; align-items: flex-start; margin: 14px 0 0; }
+  .row.cont { margin-top: 6px; }
+  .row.me { align-items: flex-end; }
+  .who { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--ink); }
+  .row.me .who { flex-direction: row-reverse; }
+  .row.cont .who { display: none; }
+  .mavatar { width: 28px; height: 28px; border-radius: 50%; background: #fff; color: var(--navy); display: grid; place-items: center;
+             font-size: 11.5px; font-weight: 700; box-shadow: 0 0 0 1px #dfe2e6; flex-shrink: 0; }
+  .mavatar.report { background: var(--navy-2); color: #fff; box-shadow: none; }
+  .mavatar img, .avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+  .mavatar.pic, .avatar.pic { background: #fff; padding: 0; overflow: hidden; }
+  .pic-row { display: flex; align-items: center; gap: 10px; margin: 2px 0 6px; font-size: 13px; }
+  .pic-row .avatar { width: 44px; height: 44px; }
+  .linkbtn { background: none; border: 0; color: var(--blue); cursor: pointer; padding: 0; font-size: 13px; }
+  .row.me .mavatar { background: var(--blue); color: #fff; box-shadow: none; }
+  .bubble { background: #fff; border-radius: 12px; padding: 10px 14px; font-size: 14.5px; line-height: 1.45; max-width: 78%;
+            margin-left: 36px; box-shadow: 0 1px 1px rgba(18,21,42,.05); word-wrap: break-word; overflow-wrap: anywhere; }
+  .row.me .bubble { margin-left: 0; margin-right: 36px; background: var(--bubble-me); color: #fff; }
+  .row.me .bubble code { background: rgba(255,255,255,.18); color: #fff; }
+  .row.me .bubble a { color: #fff; }
   .bubble p { margin: 4px 0; } .bubble ul { margin: 4px 0; padding-left: 18px; }
   .bubble code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; font-size: 12.5px; }
   .bubble pre { background: #f3f4f6; padding: 8px; border-radius: 4px; overflow-x: auto; font-size: 12px; }
   .bubble h4 { margin: 8px 0 4px; font-size: 14px; }
-  .time { font-size: 11px; color: var(--muted); margin-top: 6px; }
-  .day { text-align: center; font-size: 11.5px; color: var(--muted); margin: 6px 0 14px; }
+  .time { font-size: 11px; color: #9aa0a8; margin: 5px 36px 0; }
+  .row.grouped .time { display: none; }
+  .report-kicker { font-size: 12px; color: var(--muted); }
+  .day { text-align: center; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #a2a8b0; margin: 14px 0 0; }
 
   /* Report card */
   .report-head { display: flex; align-items: center; gap: 8px; margin: 2px 0 6px; flex-wrap: wrap; }
@@ -80,7 +101,7 @@
   .send svg { width: 24px; height: 24px; }
 
   /* Menu panel */
-  .panel { position: absolute; top: var(--header-h, 107px); left: 0; right: 0; bottom: 0; background: var(--blush); transform: translateX(-100%); transition: transform .2s ease; display: flex; flex-direction: column; z-index: 5; }
+  .panel { position: absolute; top: 0; padding-top: var(--header-h, 77px); /* starts under the banner so its gaps show the panel, not the chat */ left: 0; right: 0; bottom: 0; background: var(--blush); transform: translateX(-100%); transition: transform .2s ease; display: flex; flex-direction: column; z-index: 2; } /* below the header (z 3) */
   .panel.open { transform: translateX(0); }
   .panel .tabs { display: flex; border-bottom: 1px solid var(--line); }
   .panel .tabs button { flex: 1; background: none; border: 0; padding: 12px; font-size: 14px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; }
@@ -104,14 +125,14 @@
   .muted { color: var(--muted); font-size: 13px; }
   .empty { color: var(--muted); font-size: 14px; text-align: center; margin-top: 40px; }
   .flash { animation: flash 1.4s ease; } @keyframes flash { 0% { background: #fff6d6; } 100% { background: #fff; } }
-  .row.me .bubble.flash { animation: none; }
 </style>
 </head>
 <body>
 <div class="widget" id="widget">
   <header><div class="bar">
     <button class="pill" id="menuBtn">Menu</button>
-    <div class="title"><div class="t1">Live Chat</div><div class="t2" id="sub">Loading…</div></div>
+    <div class="title"><div class="t1">Agent Chat</div><div class="t2" id="sub">Loading…</div></div>
+    <div class="spacer"></div>
     <button class="icon-btn" id="minBtn" title="Minimize"><svg viewBox="0 0 24 24"><path d="M5 18h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
     <button class="icon-btn" id="closeBtn" title="Close menu / clear view"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
   </div></header>
@@ -163,26 +184,35 @@ const initials = n => String(n || '?').split(/\s+/).map(w => w[0]).join('').slic
 const fmtTime = ts => new Date(ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 const fmtDay = ts => new Date(ts).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
 
-function renderMessage(m) {
+// The project's agent picture (stored on the server PC), or initials
+function agentPic(projectId, author) {
+  const pr = state.projects.find(p => p.id === projectId);
+  return pr && pr.avatar && String(author).toLowerCase() === String(pr.agent).toLowerCase() ? pr.avatar : '';
+}
+function avatarInner(pic, name) { return pic ? `<img src="${esc(pic)}" alt="">` : esc(initials(name)); }
+function sameGroup(a, b) {
+  return a && b && a.author === b.author && (a.role === 'user') === (b.role === 'user') &&
+    fmtDay(a.ts) === fmtDay(b.ts) && (new Date(b.ts) - new Date(a.ts)) < 5 * 60 * 1000;
+}
+function renderMessage(m, cont) {
+  const me = m.role === 'user';
   const row = document.createElement('div');
-  row.className = 'row' + (m.role === 'user' ? ' me' : '');
+  row.className = 'row' + (me ? ' me' : '') + (cont ? ' cont' : '');
   row.id = 'm-' + m.id;
-  if (m.role === 'user') {
-    row.innerHTML = `<div class="bubble">${md(m.text)}<div class="time">${fmtTime(m.ts)}</div></div>`;
-    return row;
-  }
   let inner;
   if (m.role === 'report') {
     const r = m.report, st = r.stats || {};
     const stats = Object.keys(st).length ? `<div class="stats">${Object.entries(st).map(([k, v]) => `<span><b>${esc(v)}</b> ${esc(k)}</span>`).join('')}</div>` : '';
-    inner = `<b class="name">${esc(m.author)}:</b> Nightly report for ${esc(r.runDate)}
+    inner = `<div class="report-kicker">Nightly report · ${esc(r.runDate)}</div>
       <div class="report-head"><span class="chip ${esc(r.status)}">${esc(r.status)}</span><span class="report-title">${esc(r.title)}</span></div>
       ${stats}${r.summary ? md(r.summary) : ''}
-      ${r.body || r.link ? `<button class="toggle">View full report</button><div class="full">${md(r.body)}${r.link ? `<p><a href="${esc(r.link)}" target="_blank" rel="noopener">Open link</a></p>` : ''}</div>` : ''}`;
+      ${r.body || r.link ? `<button class="toggle">View full report</button><div class="full">${md(r.body)}${r.link ? `<p><a href="${esc(r.link)}" target="_blank" rel="noopener">${/github\.com/.test(r.link) ? 'Open on GitHub' : 'Open link'}</a></p>` : ''}</div>` : ''}`;
   } else {
-    inner = `<b class="name">${esc(m.author)}:</b> ${md(m.text).replace(/^<p>/, '').replace(/<\/p>/, '')}`;
+    inner = md(m.text);
   }
-  row.innerHTML = `<div class="avatar ${m.role === 'report' ? 'report' : ''}">${esc(initials(m.author))}</div><div class="bubble">${inner}<div class="time">${fmtTime(m.ts)}</div></div>`;
+  const pic = me ? '' : agentPic(m.projectId, m.author);
+  row.innerHTML = `<div class="who"><div class="mavatar ${pic ? 'pic' : m.role === 'report' ? 'report' : ''}">${avatarInner(pic, m.author)}</div><span>${esc(m.author)}</span></div>
+    <div class="bubble">${inner}</div><div class="time">${fmtTime(m.ts)}</div>`;
   const t = row.querySelector('.toggle');
   if (t) t.onclick = () => { const f = row.querySelector('.full'); f.classList.toggle('open'); t.textContent = f.classList.contains('open') ? 'Hide full report' : 'View full report'; };
   return row;
@@ -191,11 +221,13 @@ function renderMessage(m) {
 function renderLog() {
   const log = $('#log'); log.innerHTML = '';
   if (!state.messages.length) { log.innerHTML = '<div class="empty">No messages yet.</div>'; return; }
-  let lastDay = '';
+  let prev = null;
   for (const m of state.messages) {
-    const d = fmtDay(m.ts);
-    if (d !== lastDay) { log.insertAdjacentHTML('beforeend', `<div class="day">${d}</div>`); lastDay = d; }
-    log.appendChild(renderMessage(m));
+    if (!prev || fmtDay(prev.ts) !== fmtDay(m.ts)) log.insertAdjacentHTML('beforeend', `<div class="day">${dayLabel(m.ts)}</div>`);
+    const cont = sameGroup(prev, m);
+    if (cont) document.getElementById('m-' + prev.id).classList.add('grouped');
+    log.appendChild(renderMessage(m, cont));
+    prev = m;
   }
   log.scrollTop = log.scrollHeight;
 }
@@ -203,9 +235,17 @@ function appendMessage(m) {
   const log = $('#log');
   if (log.querySelector('.empty')) log.innerHTML = '';
   const prev = state.messages[state.messages.length - 2];
-  if (!prev || fmtDay(prev.ts) !== fmtDay(m.ts)) log.insertAdjacentHTML('beforeend', `<div class="day">${fmtDay(m.ts)}</div>`);
-  log.appendChild(renderMessage(m));
+  if (!prev || fmtDay(prev.ts) !== fmtDay(m.ts)) log.insertAdjacentHTML('beforeend', `<div class="day">${dayLabel(m.ts)}</div>`);
+  const cont = sameGroup(prev, m);
+  if (cont) { const el = document.getElementById('m-' + prev.id); if (el) el.classList.add('grouped'); }
+  log.appendChild(renderMessage(m, cont));
   log.scrollTop = log.scrollHeight;
+}
+function dayLabel(ts) {
+  const d = new Date(ts), now = new Date(), y = new Date(now); y.setDate(now.getDate() - 1);
+  if (d.toDateString() === now.toDateString()) return 'Today';
+  if (d.toDateString() === y.toDateString()) return 'Yesterday';
+  return fmtDay(ts);
 }
 
 // Keep the menu panel below the full header so the banner always shows
@@ -242,10 +282,16 @@ function renderPanel() {
     for (const p of state.projects) (teams[p.team] ||= []).push(p);
     body.innerHTML = Object.entries(teams).map(([team, list]) => `<div class="team">${esc(team)}</div>` + list.map(p => `
       <div class="proj ${p.id === state.current ? 'current' : ''}" data-id="${esc(p.id)}">
-        <div class="avatar">${esc(initials(p.agent))}</div>
+        <div class="avatar ${p.avatar ? 'pic' : ''}">${avatarInner(p.avatar, p.agent)}</div>
         <div class="meta"><div class="n">${esc(p.name)}</div><div class="a">${esc(p.agent)}${p.description ? ' · ' + esc(p.description) : ''}</div></div>
         ${state.unread[p.id] ? `<span class="badge">${state.unread[p.id]}</span>` : ''}
       </div>`).join('')).join('') + `
+      ${project() ? `<div class="team">${esc(project().agent)}'s picture</div>
+      <div class="pic-row"><div class="avatar ${project().avatar ? 'pic' : ''}">${avatarInner(project().avatar, project().agent)}</div>
+        <button type="button" class="linkbtn" id="picBtn">Choose picture</button>
+        ${project().avatar ? '<button type="button" class="linkbtn" id="picDel">Remove</button>' : ''}
+        <input type="file" id="picFile" accept="image/png,image/jpeg,image/webp,image/gif" hidden></div>
+      <div class="muted">Saved only on the server PC, not in the repository.</div>` : ''}
       <form class="add" id="addForm">
         <div class="muted">Add a project</div>
         <input name="team" placeholder="Team (e.g. designengineering.ai Development Team)" required>
@@ -255,6 +301,14 @@ function renderPanel() {
         <button>Add project</button>
       </form>`;
     body.querySelectorAll('.proj').forEach(el => el.onclick = () => selectProject(el.dataset.id));
+    if ($('#picBtn')) {
+      $('#picBtn').onclick = () => $('#picFile').click();
+      $('#picFile').onchange = async e => { const f = e.target.files[0]; if (f) await setAgentPicture(f); };
+    }
+    if ($('#picDel')) $('#picDel').onclick = async () => {
+      await api(`/api/projects/${encodeURIComponent(state.current)}/avatar`, { method: 'DELETE' });
+      await loadProjects(); renderLog(); renderPanel();
+    };
     $('#addForm').onsubmit = async e => {
       e.preventDefault();
       const f = Object.fromEntries(new FormData(e.target));
@@ -282,8 +336,56 @@ function renderPanel() {
       <div class="kv"><code>POST http://${i.lan[0] || 'localhost'}:${i.port}/api/reports</code></div>
       <div class="kv">Header: <code>Authorization: Bearer &lt;reportToken from config.json&gt;</code></div>
       <div class="kv">Project id for this chat: <code>${esc(p ? p.id : '')}</code></div>
-      <div class="muted">See scripts/send-report.ps1 for a ready-made sender.</div>`;
+      <div class="muted">See scripts/send-report.ps1 for a ready-made sender.</div>
+      <div class="team">GitHub report source</div>
+      <div class="muted">For cloud agents: the app reads ${esc(p ? p.agent : 'the agent')}'s "Nightly report" comments from this issue.</div>
+      <form class="add gh" id="ghForm" style="border-top:0;margin-top:6px;padding-top:0">
+        <input name="repo" placeholder="owner/repo, e.g. GrantBlock/Project_Iron">
+        <input name="issue" placeholder="Issue number, e.g. 12" inputmode="numeric">
+        <div style="display:flex;gap:8px"><button style="flex:1">Save</button><button type="button" id="ghCheck" style="flex:1;background:#e3e7ee;color:var(--navy)">Check now</button></div>
+        <div class="muted" id="ghStatus">Loading…</div>
+      </form>`;
+    loadGithub();
   }
+}
+
+function ghStatusText(r) {
+  if (!r || !r.github) return 'Not set. Reports only arrive through the report endpoint.';
+  const st = r.status || {};
+  const when = st.lastCheck ? new Date(st.lastCheck).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'not yet';
+  return st.lastError ? `Last check ${when}: ${st.lastError}` : `Watching ${r.github.repo} #${r.github.issue}. Last check ${when}; ${st.imported || 0} imported this session. Checks every ${r.pollMinutes || 5} min.`;
+}
+async function loadGithub() {
+  const p = project(); if (!p) return;
+  const f = $('#ghForm'); if (!f) return;
+  const url = `/api/projects/${encodeURIComponent(p.id)}/github`;
+  const r = await api(url).catch(e => ({ error: e.message }));
+  if (r.github) { f.repo.value = r.github.repo; f.issue.value = r.github.issue; }
+  $('#ghStatus').textContent = r.error || ghStatusText(r);
+  f.onsubmit = async e => {
+    e.preventDefault(); $('#ghStatus').textContent = 'Saving and checking…';
+    try { const x = await api(url, { method: 'PUT', body: JSON.stringify({ repo: f.repo.value, issue: f.issue.value }) }); $('#ghStatus').textContent = ghStatusText({ ...x, pollMinutes: r.pollMinutes }); }
+    catch (err) { $('#ghStatus').textContent = err.message; }
+  };
+  $('#ghCheck').onclick = async () => {
+    $('#ghStatus').textContent = 'Checking…';
+    try { await api(url, { method: 'POST' }); const x = await api(url); $('#ghStatus').textContent = ghStatusText(x); }
+    catch (err) { $('#ghStatus').textContent = err.message; }
+  };
+}
+
+// Center-crop the chosen image to a 256 px square before upload
+async function setAgentPicture(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = bad; i.src = url; });
+    const side = Math.min(img.naturalWidth, img.naturalHeight), S = 256;
+    const c = document.createElement('canvas'); c.width = c.height = S;
+    c.getContext('2d').drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, S, S);
+    await api(`/api/projects/${encodeURIComponent(state.current)}/avatar`, { method: 'POST', body: JSON.stringify({ dataUrl: c.toDataURL('image/png') }) });
+    await loadProjects(); renderLog(); renderPanel();
+  } catch (e) { alert('Could not use that picture: ' + (e.message || 'unreadable image')); }
+  finally { URL.revokeObjectURL(url); }
 }
 
 // ---- Send chat ----
@@ -320,12 +422,11 @@ function connectEvents() {
     } else if (evt.type === 'pruned' && evt.projectId === state.current) {
       const gone = new Set(evt.ids);
       state.messages = state.messages.filter(m => !gone.has(m.id));
-      evt.ids.forEach(id => { const el = document.getElementById('m-' + id); if (el) el.remove(); });
-      document.querySelectorAll('#log .day').forEach(d => { const n = d.nextElementSibling; if (!n || n.classList.contains('day')) d.remove(); });
+      renderLog();
     } else if (evt.type === 'typing' && evt.projectId === state.current) {
       $('#typing').textContent = `${evt.author} is typing…`;
       clearTimeout(typingTimer); typingTimer = setTimeout(() => $('#typing').textContent = '', 60000);
-    } else if (evt.type === 'projects') { await loadProjects(); if ($('#panel').classList.contains('open')) renderPanel(); }
+    } else if (evt.type === 'projects') { await loadProjects(); renderLog(); if ($('#panel').classList.contains('open')) renderPanel(); }
   };
 }
 

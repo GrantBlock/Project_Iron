@@ -1,6 +1,6 @@
 # Agentic Development Plan: Project Iron
 
-Updated 2026-11-13 · Grant Block. **Draft (not yet approved by Grant)** except lines marked `[stated]`. Written for Claude in VS Code: open this file, then paste the starter prompt at the bottom.
+Updated 2026-11-13 · Grant Block. Status files: `docs/progress-tracker.md`, `docs/current-issues.md`. **Draft (not yet approved by Grant)** except lines marked `[stated]`. Written for Claude in VS Code: open this file, then paste the starter prompt at the bottom.
 
 Moved here from `GrantBlock/designengineering-ai` (`Builder v0.1/agentic-dev-plan.md`) on 2026-11-13. **Where paths point:** `agents/`, `docs/` and `.github/` are in this repository. Paths starting with `design/`, `designengineering-ai-docpack/`, and the files `CLAUDE.md` (working rules), `development-path.md`, `review-queue.md` and `AGENTS.md` are in `GrantBlock/designengineering-ai`, folder `Builder v0.1/`: the product plan, the prototype and the design system stay there.
 
@@ -21,6 +21,13 @@ Related (in `GrantBlock/designengineering-ai`, `Builder v0.1/`): `development-pa
 - [stated] 2026-11-13: Agents keep taking work each night until usage reaches 75%, leaving 25% for Grant's own work (Grant). How usage is measured is a Draft below (Usage limit).
 - [stated] 2026-11-13: Role files live in `agents/`, and GitHub labels are the hand-off between agents (Grant).
 - [stated] 2026-11-13: Do not draft the feature specs yet; Grant reviews the dev plan first (Grant).
+- [stated] 2026-11-13: Agent Chat (first named Project Chat) is the local app where Grant reads agent reports and chats with the agent, one project at a time; source in `tools/project-chat/` (Grant).
+- [stated] 2026-11-13: Agent Chat runs as a server on one PC; Grant's other computers connect to it (Grant).
+- [stated] 2026-11-13: Agent Chat AI replies run through the local `claude` CLI on Grant's Claude subscription, not a metered API key (Grant).
+- [stated] 2026-11-13: Agent Chat keeps the newest 30 messages per project (Grant).
+- [stated] 2026-11-13: Only Lydia's morning report posts into Agent Chat (Grant).
+- [stated] 2026-11-13: Cloud sessions cannot reach Grant's PC, so the morning report goes through GitHub: Lydia comments on issue #2 "Nightly report" and Agent Chat pulls it in (Grant). Answers open question 1 (option C). Format: `docs/morning-report.md`.
+- [stated] 2026-11-13: No Agent Chat `.exe` builds unless Grant asks and approves (Grant).
 - [stated] 2026-11-09: Claude builds; Grant decides and reviews results, not code. No throwaway work.
 
 ## Roles
@@ -61,7 +68,7 @@ Draft (not yet approved by Grant), 2026-11-13. Each identity becomes the top of 
   1. Runs at 6pm (writing) and 5am (checking), Sonnet 5.5.
   2. 6pm: for each `ready-for-tests` issue, read the issue, the spec and the prototype page, and write Playwright acceptance tests that replay the prototype flow on desktop and phone. Open a pull request with only the tests; when Grant merges it, label the issue `ready`.
   3. 5am: for each open pull request, run the tests against its preview URL, take desktop and phone screenshots, and post the results and screenshots on the pull request.
-  4. Then write the morning report: ready to merge, blocked, changes requested, and the night's usage. Send it the way Grant chooses (open question 3).
+  4. Then write the morning report: ready to merge, blocked, changes requested, and the night's usage. Post it as a comment on issue #2 "Nightly report" in the format in `docs/morning-report.md` ([stated] 2026-11-13).
 - **Never:** writes app code; changes a test to make code pass; deletes or skips a failing test.
 
 ### Hrongar, Coder (`coder`)
@@ -131,7 +138,7 @@ How a spec gets made: Irileth drafts it from the prototype page and the logs (tr
 | 1am | Farengar (Reviewer) | Reviews every `needs-review` pull request |
 | 3am | Hrongar (Coder) | Fixes `changes-requested` pull requests |
 | 5am | Lydia (Tester) | Checks preview URLs, posts screenshots and test results |
-| 6:30am | Lydia's report | One message: ready to merge, blocked, cost of the night |
+| 6:30am | Lydia's report | One comment on issue #2: ready to merge, blocked, cost of the night; Agent Chat pulls it in |
 
 ## Usage limit (Draft (not yet approved by Grant))
 
@@ -201,11 +208,11 @@ Gates: step 5 needs D4; step 6 needs D3; step 1 needs O1 to O3 and RQ14.
 
 ## Open questions for Grant
 
-1. Morning report: which option (see Report options)?
+1. ~~Morning report: which option?~~ Answered 2026-11-13: option C, GitHub issue #2 (see Decided so far). Still open: add the 6:30am phone notification (option A)?
 2. Confirm business hours 7am to 6pm.
 3. Are Claude Code sessions billed to a subscription plan or an Anthropic API key? This decides the usage backstop.
 
-## Report options (Draft (not yet approved by Grant))
+## Report options (C decided 2026-11-13; A open)
 
 | Option | What Grant gets | Good | Weak |
 | --- | --- | --- | --- |
@@ -215,6 +222,8 @@ Gates: step 5 needs D4; step 6 needs D3; step 1 needs O1 to O3 and RQ14.
 | D. Report file in the repository (`reports/YYYY-MM-DD.md`) | A file per night | History in VS Code | Adds commits; needs a pull request or its own branch |
 
 Recommendation: **C plus A.** Lydia posts the full report as a comment on the "Nightly report" issue and sends a short phone notification with the counts (ready to merge, blocked, usage) and the link.
+
+**Decided** ([stated] 2026-11-13): **C**, issue #2, read by Agent Chat. **A** (phone notification) is still open.
 
 ## Starter prompt for Claude in VS Code
 
