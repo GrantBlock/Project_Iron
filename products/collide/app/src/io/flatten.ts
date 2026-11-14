@@ -1,4 +1,5 @@
 import type Konva from "konva";
+import { Rect as KonvaRect } from "konva/lib/shapes/Rect";
 
 export interface Flattened {
   /** PNG data URL, exactly `width` x `height` pixels. */
@@ -27,6 +28,74 @@ export function flatten(stage: Konva.Stage, size: { width: number; height: numbe
     const dataUrl = stage.toDataURL({ x: 0, y: 0, width, height, pixelRatio: 1, mimeType: "image/png" });
     return { dataUrl, width, height };
   } finally {
+    stage.position({ x: saved.x, y: saved.y });
+    stage.scale({ x: saved.sx, y: saved.sy });
+    transformers.forEach((t, i) => t.visible(wasVisible[i]));
+    stage.batchDraw();
+  }
+}
+
+export interface Box {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** Margin around the auto-crop, in image pixels (A). */
+export const FIT_PADDING = 24;
+
+/**
+ * The smallest whole-pixel box holding the image and every annotation, plus padding.
+ * Shapes outside the image (e.g. a circle half off the top-left) are included, never cut.
+ */
+export function contentBounds(image: { width: number; height: number }, rects: Box[], padding = FIT_PADDING): Box {
+  let x0 = 0, y0 = 0, x1 = image.width, y1 = image.height;
+  let outside = false;
+  for (const r of rects) {
+    if (!(r.width >= 0 && r.height >= 0)) continue;
+    if (r.x < x0 || r.y < y0 || r.x + r.width > x1 || r.y + r.height > y1) outside = true;
+    x0 = Math.min(x0, r.x);
+    y0 = Math.min(y0, r.y);
+    x1 = Math.max(x1, r.x + r.width);
+    y1 = Math.max(y1, r.y + r.height);
+  }
+  // Pad only when something spills over the image; otherwise the copy is the plain image size.
+  const p = outside ? padding : 0;
+  x0 = Math.floor(x0 - p);
+  y0 = Math.floor(y0 - p);
+  x1 = Math.ceil(x1 + p);
+  y1 = Math.ceil(y1 + p);
+  return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+}
+
+/**
+ * Like {@link flatten}, but auto-cropped to the image plus all annotations (see
+ * {@link contentBounds}), with `background` behind anything outside the image.
+ */
+export function flattenFit(stage: Konva.Stage, size: { width: number; height: number }, background: string): Flattened & { box: Box } {
+  if (!(size.width > 0 && size.height > 0)) throw new Error("Nothing to copy: no image is open.");
+  const saved = { x: stage.x(), y: stage.y(), sx: stage.scaleX(), sy: stage.scaleY() };
+  const transformers = stage.find("Transformer");
+  const wasVisible = transformers.map((t) => t.visible());
+  const layer = stage.getLayers()[0];
+  let bg: Konva.Rect | null = null;
+  try {
+    transformers.forEach((t) => t.visible(false));
+    stage.position({ x: 0, y: 0 });
+    stage.scale({ x: 1, y: 1 });
+    // At view scale 1 and no pan, client rects are in image pixels.
+    const rects = stage.find(".shape").filter((n) => n.visible()).map((n) => n.getClientRect());
+    const box = contentBounds(size, rects);
+    if (layer) {
+      bg = new KonvaRect({ x: box.x, y: box.y, width: box.width, height: box.height, fill: background, listening: false });
+      layer.add(bg);
+      bg.moveToBottom();
+    }
+    const dataUrl = stage.toDataURL({ ...box, pixelRatio: 1, mimeType: "image/png" });
+    return { dataUrl, width: box.width, height: box.height, box };
+  } finally {
+    bg?.destroy();
     stage.position({ x: saved.x, y: saved.y });
     stage.scale({ x: saved.sx, y: saved.sy });
     transformers.forEach((t, i) => t.visible(wasVisible[i]));

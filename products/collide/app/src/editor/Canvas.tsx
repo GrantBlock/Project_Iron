@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
-import { Arrow, Circle, Ellipse, Group, Image as KonvaImage, Layer, Rect, Stage, Text, Transformer } from "react-konva";
+import { Arrow, Circle, Ellipse, Group, Image as KonvaImage, Label, Layer, Rect, Stage, Tag, Text, Transformer } from "react-konva";
 import Konva from "konva";
 import type { Shape } from "../model";
 import { BADGE_SIZE, calloutAt, DEFAULT_FONT_SIZE, isRealDrag, resizeShape, shapeFromDrag, textAt, type DrawTool, type Style } from "./geometry";
@@ -76,6 +76,24 @@ interface NodeProps {
   onEditText?: (id: string) => void;
 }
 
+/** Longest a note label grows before it wraps, in image pixels (A). */
+export const NOTE_MAX_WIDTH = 280;
+const NOTE_FONT_SIZE = 12; // (A)
+const NOTE_PAD = 6; // (A)
+
+/** A callout's note, drawn to the right of its badge so it shows in the view and in Copy. */
+function NoteLabel({ x, y, note }: { x: number; y: number; note: string }) {
+  const fontFamily = cssVar("--font-sans");
+  const natural = new Konva.Text({ text: note, fontSize: NOTE_FONT_SIZE, fontFamily }).width();
+  const width = Math.min(natural, NOTE_MAX_WIDTH - NOTE_PAD * 2);
+  return (
+    <Label name="note-label" x={x} y={y} listening={false}>
+      <Tag fill={cssVar("--surface-2")} stroke={cssVar("--line-2")} strokeWidth={1} cornerRadius={4} />
+      <Text text={note} width={Math.ceil(width) + NOTE_PAD * 2} padding={NOTE_PAD} fontSize={NOTE_FONT_SIZE} fontFamily={fontFamily} fill={cssVar("--text-1")} wrap="word" />
+    </Label>
+  );
+}
+
 function ShapeNode({ shape, interactive, hidden, onSelect, onMoved, onEditText }: NodeProps) {
   const steel = cssVar("--steel-500");
   const onInk = cssVar("--ink-50");
@@ -124,6 +142,7 @@ function ShapeNode({ shape, interactive, hidden, onSelect, onMoved, onEditText }
         <Group id={shape.id} name="shape" x={shape.x} y={shape.y} visible={!hidden} listening={interactive} draggable={interactive} {...handlers(shape, onSelect, onMoved)}>
           <Circle name="main" x={BADGE_SIZE / 2} y={BADGE_SIZE / 2} radius={BADGE_SIZE / 2} fill={steel} />
           <Text width={BADGE_SIZE} height={BADGE_SIZE} align="center" verticalAlign="middle" text={String(shape.callout)} fontSize={12} fontStyle="600" fontFamily={cssVar("--font-mono")} fill={onInk} listening={false} />
+          {shape.note?.trim() && <NoteLabel x={BADGE_SIZE + 4} y={0} note={shape.note.trim()} />}
         </Group>
       );
   }
@@ -142,6 +161,9 @@ function ShapeNode({ shape, interactive, hidden, onSelect, onMoved, onEditText }
     >
       {main}
       {shape.callout !== undefined && badge(tail.x, tail.y, shape.callout)}
+      {shape.callout !== undefined && shape.note?.trim() && (
+        <NoteLabel x={tail.x + BADGE_SIZE / 2 + 4} y={tail.y - BADGE_SIZE / 2} note={shape.note.trim()} />
+      )}
     </Group>
   );
 }

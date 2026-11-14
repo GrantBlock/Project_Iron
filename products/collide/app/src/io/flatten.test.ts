@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type Konva from "konva";
-import { copyPngToClipboard, dataUrlToBlob, exportFileName, flatten } from "./flatten";
+import { contentBounds, copyPngToClipboard, dataUrlToBlob, exportFileName, flatten } from "./flatten";
 
 function stubStage(toDataURL: () => string) {
   const st = { x: 12, y: -7, sx: 2.5, sy: 2.5 };
@@ -74,5 +74,18 @@ describe("copyPngToClipboard", () => {
 
   it("explains the fix when the clipboard API is missing", async () => {
     await expect(copyPngToClipboard(png, undefined)).rejects.toThrow(/use Export instead/);
+  });
+});
+
+describe("contentBounds", () => {
+  const img = { width: 400, height: 300 };
+  it("is the plain image when every annotation is inside it", () => {
+    expect(contentBounds(img, [{ x: 10, y: 10, width: 50, height: 50 }])).toEqual({ x: 0, y: 0, width: 400, height: 300 });
+  });
+  it("grows to hold a shape off the top-left, with padding, in whole pixels", () => {
+    expect(contentBounds(img, [{ x: -40.5, y: -10, width: 100, height: 60 }], 24)).toEqual({ x: -65, y: -34, width: 489, height: 358 });
+  });
+  it("grows to the right and bottom too", () => {
+    expect(contentBounds(img, [{ x: 350, y: 280, width: 200, height: 40 }], 10)).toEqual({ x: -10, y: -10, width: 570, height: 340 });
   });
 });

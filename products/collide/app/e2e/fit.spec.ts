@@ -57,3 +57,36 @@ test("Copy puts the flattened PNG on the clipboard", async ({ page, context }) =
   });
   expect(size).toEqual([400, 300]);
 });
+
+test("Copy auto-crops to annotations outside the image, on the canvas background", async ({ page }) => {
+  await page.evaluate(() => window.__collide!.seedShape({ x: -60, y: -40, w: 120, h: 80 }));
+  const f = (await page.evaluate(() => window.__collide!.copyFit())) as { dataUrl: string; width: number; height: number };
+  // -60-24 .. 400 (+ stroke) wide; -40-24 .. 300 tall.
+  expect(f.width).toBeGreaterThanOrEqual(400 + 60 + 24);
+  expect(f.height).toBeGreaterThanOrEqual(300 + 40 + 24);
+  const corner = await page.evaluate(async (u) => {
+    const bmp = await createImageBitmap(await (await fetch(u)).blob());
+    const c = new OffscreenCanvas(bmp.width, bmp.height).getContext("2d")!;
+    c.drawImage(bmp, 0, 0);
+    // bottom-left corner lies outside both the image and the shape
+    return Array.from(c.getImageData(1, bmp.height - 2, 1, 1).data);
+  }, f.dataUrl);
+  expect(corner).toEqual([9, 9, 11, 255]); // --bg-canvas #09090B
+  // The editor view is unchanged afterwards.
+  const s = (await page.evaluate(() => window.__collide!.getState().stage))!;
+  expect(s.scale).toBe(1);
+});
+
+test("a callout's note shows as a label on the canvas and widens the copy", async ({ page }) => {
+  await page.keyboard.press("c");
+  const box = (await page.getByTestId("canvas").boundingBox())!;
+  const s = (await page.evaluate(() => window.__collide!.getState().stage))!;
+  // Click near the image's right edge so the note label spills past it.
+  await page.mouse.click(box.x + s.x + 380, box.y + s.y + 150);
+  const before = (await page.evaluate(() => window.__collide!.copyFit())) as { width: number };
+  expect(before.width).toBe(400 + 0); // badge alone sits inside the image
+  await page.getByTestId("callout-note").first().fill("background needs blending");
+  await page.keyboard.press("Tab");
+  const f = (await page.evaluate(() => window.__collide!.copyFit())) as { width: number };
+  expect(f.width).toBeGreaterThan(400 + 24);
+});

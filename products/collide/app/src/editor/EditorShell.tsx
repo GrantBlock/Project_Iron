@@ -15,7 +15,7 @@ import { Sidebar } from "./Sidebar";
 import { StatusBar } from "./StatusBar";
 import { CalloutsPanel } from "./CalloutsPanel";
 import { Toolbar } from "./Toolbar";
-import { copyPngToClipboard, dataUrlToBlob, downloadPng, exportFileName, flatten, type Flattened } from "../io/flatten";
+import { copyPngToClipboard, dataUrlToBlob, downloadPng, exportFileName, flatten, flattenFit, type Flattened } from "../io/flatten";
 import { createMarkupStore, isPng, MarkupError, markupFolderName, type MarkupStore } from "../io";
 import { fitView, recentre, screenToImage, type Point, type Size, type View } from "./viewport";
 
@@ -76,6 +76,7 @@ export interface CollideHook {
   saveMarkup: () => Promise<string>;
   /** Flatten to a PNG at source size (no download). Resolves with the data URL and its size. */
   exportPng: () => Promise<Flattened>;
+  copyFit: () => Promise<Flattened>;
 }
 
 declare global {
@@ -147,6 +148,13 @@ export function EditorShell() {
     return showImage(img);
   }, [showImage]);
 
+  const copyFit = useCallback(async (): Promise<Flattened> => {
+    const { image: img } = live.current;
+    const stage = handleRef.current?.stage();
+    if (!img || !stage) throw new Error("Nothing to copy: no image is open.");
+    return flattenFit(stage, img, cssVar("--bg-canvas"));
+  }, []);
+
   const exportPng = useCallback(async (): Promise<Flattened> => {
     const { image: img } = live.current;
     const stage = handleRef.current?.stage();
@@ -216,15 +224,15 @@ export function EditorShell() {
     );
   }, [exportPng]);
 
-  // Copy the flattened PNG (same pixels as Export) to the system clipboard.
+  // Copy: the image plus every annotation (auto-cropped, canvas background outside the image) to the clipboard.
   const onCopy = useCallback(() => {
-    void exportPng()
+    void copyFit()
       .then((f) => copyPngToClipboard(f.dataUrl))
       .then(
         () => setNotice({ tone: "success", title: "Copied to clipboard", description: "Paste the marked-up image into any app." }),
         (e: unknown) => fail(e, "Copy failed"),
       );
-  }, [exportPng, fail]);
+  }, [copyFit, fail]);
 
   const onAdd = useCallback((shape: NewShape, numbered: boolean) => dispatch({ type: "add", shape, numbered }), [dispatch]);
   const onUpdate = useCallback((id: string, patch: ShapePatch) => dispatch({ type: "update", id, patch }), [dispatch]);
@@ -347,6 +355,7 @@ export function EditorShell() {
       },
       getDoc: () => stateRef.current.doc,
       exportPng,
+      copyFit,
       openMarkup,
       saveMarkup,
       screenToImage: (p) => screenToImage(live.current.view, p),
@@ -374,7 +383,7 @@ export function EditorShell() {
     return () => {
       delete window.__collide;
     };
-  }, [open, dispatch, stateRef, exportPng, openMarkup, saveMarkup]);
+  }, [open, dispatch, stateRef, exportPng, copyFit, openMarkup, saveMarkup]);
 
   return (
     <div
