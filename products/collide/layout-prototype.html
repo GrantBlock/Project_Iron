@@ -803,6 +803,13 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
 .snapdoc h1 { font-size: 24px; margin-top: 0; } .snapdoc h2 { font-size: 17px; } .snapdoc h3 { font-size: 14.5px; }
 .snapdoc p, .snapdoc li { color: #26262E; } .snapdoc figure { margin: 10px 0 14px; } .snapdoc figure svg { width: 100%; max-width: 520px; height: auto; display: block; } .snapdoc figcaption { color: #6D6D77; font-size: 12px; }
 @media (max-width: 820px) { .docsplit.mode-preview .preview, .docsplit.mode-code .preview { display: block !important; } .docsplit.mode-code { grid-template-columns: minmax(0, 1fr); grid-template-rows: 1fr 1fr; } }
+.switcher { border: 0; background: transparent; text-align: left; padding: 4px 8px; margin: -4px 0; border-radius: var(--r-ctl); cursor: pointer; color: inherit; }
+.switcher:hover { background: rgba(255,255,255,.08); }
+:root[data-app-theme="aura"] .switcher:hover { background: color-mix(in srgb, var(--aura-surface) 14%, transparent); }
+.switcher .n { display: flex; align-items: center; gap: 6px; }
+.switcher .chevd { display: inline-flex; transform: rotate(90deg); opacity: .8; flex: none; }
+.switcher .badge { flex: none; }
+.hpop.switch { left: 12px; right: auto; width: min(340px, calc(100% - 24px)); }
 .notes h4 { margin: 12px 0 2px; font-size: 12.5px; }
 </style>
 
@@ -819,7 +826,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
 <div class="notes" id="notes" hidden>
   <h3>Draft (not yet approved by Grant)</h3>
   <ol>
-    <li><b>Chat is home.</b> Recents on the left, the open chat on the right, like Agent Chat.</li>
+    <li><b>Chat is home, on the right.</b> The left panel holds snips, zips and agents only. Click the chat name in the chat header to change chats (projects by team, unread badges, New chat).</li>
     <li><b>Snip and Editor have no page of their own.</b> They open as a workspace when you open a snip, a zip file or an agent's files.</li>
     <li><b>Workspace</b> = header (name, save state, Save, Close) + toolbar + canvas + numbered list. Chat moves to a dock on the right. Close returns to chat; unsaved changes ask first.</li>
     <li><b>Zips</b> appear in Recents and expand to their folder tree.</li>
@@ -836,7 +843,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
     <tr><td>Open file, Open markup, Save Ctrl+S, Copy Ctrl+Shift+C, Export</td><td>Snip toolbar; Save in the header</td></tr>
     <tr><td>Select V, Rectangle R, Ellipse O, Filled rectangle, Filled ellipse, X mark X, Point P</td><td>Snip toolbar</td></tr>
     <tr><td>4 colours, stroke 2/3/5, undo/redo (50 steps), Delete</td><td>Snip toolbar, keys</td></tr>
-    <tr><td>Numbered note boxes outside the image, arrows, drag to move; empty note = number chip</td><td>Canvas</td></tr>
+    <tr><td>Numbered note boxes outside the image, arrows, drag to move; empty note = number chip</td><td>Canvas. Draft: every new box starts slightly off-line, so its arrow is angled</td></tr>
     <tr><td>Callouts panel: notes, Hide # / Show #</td><td>Numbered list on the right</td></tr>
     <tr><td>Wheel zoom, right-drag and Space-drag pan, Ctrl+0 refit, refit on resize</td><td>Canvas</td></tr>
     <tr><td>Status bar: Ctrl Alt S to snip, zoom %, W × H</td><td>Under the canvas</td></tr>
@@ -845,8 +852,8 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
   </table>
   <h4>Agent Chat 0.3.6 → here</h4>
   <table class="parity">
-    <tr><td>Projects grouped by team, unread badges, add a project</td><td>Sidebar → Chats filter; New chat</td></tr>
-    <tr><td>Reports list for the project</td><td>Chat header → Reports</td></tr>
+    <tr><td>Projects grouped by team, unread badges, add a project</td><td>Chat header → chat name → New chat</td></tr>
+    <tr><td>Reports list for the project</td><td>Report cards in the chat; type "list reports" (Reports button removed)</td></tr>
     <tr><td>Report card: Nightly report kicker, status chip, stats, summary, full report, Open on GitHub</td><td>Chat</td></tr>
     <tr><td>Day separators, grouped messages, typing, live updates, "latest" and "list reports"</td><td>Chat</td></tr>
     <tr><td>Connect: Server/Connected, Test connection, Save and restart, links, AI status, report endpoint, GitHub report source, Check now</td><td>Settings (gear, or the Server pill)</td></tr>
@@ -1074,7 +1081,7 @@ const S = {
   open: { 'z-builder': true, 'z-builder/design': true, 'z-builder/design/specs': true },
   tool: 'select', sel: null, color: SIG, sw: 3, view: null, panning: null, drag: null, hist: [], redo: [],
   docView: 'preview', dtool: 'select', dsel: null, ddrag: null, agentTab: 'personality', pop: false, picker: false, closing: false, phoneChat: false, sideOpen: false, query: '',
-  compact: false, reportsPop: false, addProject: false, typing: false, openReports: {}, pending: null, attach: null, delay: 'No delay',
+  compact: false, switchPop: false, addProject: false, typing: false, openReports: {}, pending: null, attach: null, delay: 'No delay',
   settings: { mode: 'server', server: '', repo: 'GrantBlock/Project_Iron', issue: '2', notify: true, password: '' },
 };
 try { const t = localStorage.getItem('collide-proto-theme'); const a = localStorage.getItem('collide-proto-aura'); if (t) S.theme = t; if (a) S.aura = a; S.compact = localStorage.getItem('collide-proto-compact') === '1'; } catch (e) {}
@@ -1093,7 +1100,7 @@ const avatar = (key, cls = '') => {
 /* ---------- Snip: image, shapes, note boxes (same rules as src/editor/notes.ts, scaled) ---------- */
 const IW = 640;
 const ih = (s) => Math.round(IW * s.h / s.w);
-const NOTE_W = 150, NOTE_GAP = 26, NOTE_STACK = 6, NOTE_PAD = 6, BADGE = 16, LINE = 14, CHARS = 22;
+const NOTE_W = 150, NOTE_GAP = 40, NOTE_TILT = 14, NOTE_STACK = 6, NOTE_PAD = 6, BADGE = 16, LINE = 14, CHARS = 22;
 function wrap(t) { const words = String(t).split(/\s+/).filter(Boolean); const out = []; let cur = ''; for (const w of words) { if ((cur + ' ' + w).trim().length > CHARS) { if (cur) out.push(cur); cur = w; } else cur = (cur + ' ' + w).trim(); } if (cur) out.push(cur); return out; }
 function noteBoxes(s) {
   const H = ih(s), taken = [], out = {};
@@ -1102,11 +1109,12 @@ function noteBoxes(s) {
     const w = lines.length ? NOTE_W : NOTE_PAD * 2 + BADGE;
     const h = Math.max(BADGE, lines.length * LINE) + NOTE_PAD * 2;
     const c = { x: sh.x + sh.w / 2, y: sh.y + sh.h / 2 };
-    let box;
+    let box, d = null;
     if (sh.box) box = { ...sh.box, w, h };
     else {
-      const d = [['left', c.x], ['right', IW - c.x], ['top', c.y], ['bottom', H - c.y]].reduce((a, b) => (b[1] < a[1] ? b : a))[0];
-      box = d === 'left' ? { x: -NOTE_GAP - w, y: c.y - h / 2 } : d === 'right' ? { x: IW + NOTE_GAP, y: c.y - h / 2 } : d === 'top' ? { x: c.x - w / 2, y: -NOTE_GAP - h } : { x: c.x - w / 2, y: H + NOTE_GAP };
+      d = [['left', c.x], ['right', IW - c.x], ['top', c.y], ['bottom', H - c.y]].reduce((a, b) => (b[1] < a[1] ? b : a))[0];
+      // Draft: every auto-placed box sits NOTE_TILT off the shape's centre line, so its arrow starts at a slight angle (about 20°).
+      box = d === 'left' ? { x: -NOTE_GAP - w, y: c.y - h / 2 - NOTE_TILT } : d === 'right' ? { x: IW + NOTE_GAP, y: c.y - h / 2 - NOTE_TILT } : d === 'top' ? { x: c.x - w / 2 + NOTE_TILT, y: -NOTE_GAP - h } : { x: c.x - w / 2 + NOTE_TILT, y: H + NOTE_GAP };
       box.w = w; box.h = h;
       const vert = d === 'left' || d === 'right';
       for (let i = 0; i < 40; i++) {
@@ -1117,8 +1125,19 @@ function noteBoxes(s) {
     }
     taken.push(box);
     // Arrow: from the box edge to the shape edge
-    const to = sh.type === 'point' ? { x: c.x, y: c.y } : { x: Math.min(Math.max(box.x + box.w / 2, sh.x), sh.x + sh.w), y: Math.min(Math.max(box.y + box.h / 2, sh.y), sh.y + sh.h) };
-    const from = { x: Math.min(Math.max(to.x, box.x), box.x + box.w), y: Math.min(Math.max(to.y, box.y), box.y + box.h) };
+    let to, from;
+    const pt = sh.type === 'point';
+    if (d) {
+      // Box edge facing the shape -> the shape's facing edge on its centre line: never level, always a slight angle.
+      if (d === 'left') { from = { x: box.x + box.w, y: box.y + box.h / 2 }; to = { x: pt ? c.x : sh.x, y: c.y }; }
+      else if (d === 'right') { from = { x: box.x, y: box.y + box.h / 2 }; to = { x: pt ? c.x : sh.x + sh.w, y: c.y }; }
+      else if (d === 'top') { from = { x: box.x + box.w / 2, y: box.y + box.h }; to = { x: c.x, y: pt ? c.y : sh.y }; }
+      else { from = { x: box.x + box.w / 2, y: box.y }; to = { x: c.x, y: pt ? c.y : sh.y + sh.h }; }
+      if (sh.type === 'ellipse' || sh.type === 'ellipse-fill') { const rx = sh.w / 2, ry = sh.h / 2, dx = from.x - c.x, dy = from.y - c.y, t = 1 / Math.sqrt((dx / rx) ** 2 + (dy / ry) ** 2); to = { x: c.x + dx * t, y: c.y + dy * t }; }
+    } else {
+      to = pt ? { x: c.x, y: c.y } : { x: Math.min(Math.max(box.x + box.w / 2, sh.x), sh.x + sh.w), y: Math.min(Math.max(box.y + box.h / 2, sh.y), sh.y + sh.h) };
+      from = { x: Math.min(Math.max(to.x, box.x), box.x + box.w), y: Math.min(Math.max(to.y, box.y), box.y + box.h) };
+    }
     if (sh.type === 'point') { const dx = from.x - to.x, dy = from.y - to.y, l = Math.hypot(dx, dy) || 1; to.x += dx / l * 9; to.y += dy / l * 9; }
     out[sh.n] = { box, lines, from, to };
   }
@@ -1185,7 +1204,7 @@ function snipSVG(id, cls = 'snipthumb', mode = 'thumb') {
   if (mode === 'thumb') return `<svg class="${cls}" viewBox="0 0 ${IW} ${H}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${esc(s.name)}">${artSVG(s)}${s.shapes.map((sh) => shapeSVG(sh, false)).join('')}</svg>`;
   const nb = noteBoxes(s);
   const shown = mode === 'export' ? s.shapes.filter((x) => !x.hide) : s.shapes;
-  const b = mode === 'export' ? bounds(s) : { x0: -200, y0: -80, x1: IW + 200, y1: H + 80 };
+  const b = mode === 'export' ? bounds(s) : { x0: -220, y0: -100, x1: IW + 220, y1: H + 100 };
   const m = mode === 'export' && (b.x0 < 0 || b.y0 < 0 || b.x1 > IW || b.y1 > H) ? 12 : 0;
   const vb = `${b.x0 - m} ${b.y0 - m} ${b.x1 - b.x0 + 2 * m} ${b.y1 - b.y0 + 2 * m}`;
   return `<svg class="${cls}" viewBox="${vb}" ${mode === 'full' ? `width="${b.x1 - b.x0}" height="${b.y1 - b.y0}"` : ''} role="img" aria-label="${esc(s.name)}">
@@ -1268,7 +1287,6 @@ function renderSide() {
   const q = S.query.toLowerCase();
   const rows = [];
   const want = (t) => S.filter === 'all' || S.filter === t;
-  if (want('chats')) CHATS.forEach((c) => rows.push({ t: 'chat', o: c, day: c.day, group: c.team, key: c.title + c.meta + c.team }));
   if (want('snips')) SNIPS.forEach((s) => rows.push({ t: 'snip', o: s, day: s.day, key: s.name + s.shapes.map((x) => x.note).join(' ') + s.tags.join(' ') }));
   if (want('zips')) ZIPS.forEach((z) => rows.push({ t: 'zip', o: z, day: z.day, key: z.name }));
   const shown = rows.filter((r) => !q || r.key.toLowerCase().includes(q));
@@ -1287,8 +1305,8 @@ function renderSide() {
     return `<button class="item" data-zip="${o.id}" aria-expanded="${open}"><span class="thumb">${ico('package')}</span><span style="min-width:0"><div class="ttl">${esc(o.name)}</div><div class="meta"><span class="mono">${o.meta}</span></div></span><span class="cloud" style="transform:rotate(${open ? 90 : 0}deg);transition:transform 120ms">${ico('chev', 'sm')}</span></button>${open ? `<div class="tree">${treeHTML(o.tree, o.id, 0)}</div>` : ''}`;
   };
   // Chats filter groups by team, like Agent Chat's Projects; everything else groups by day.
-  const groups = S.filter === 'chats' ? [...new Set(shown.map((r) => r.group))] : ['Today', 'Earlier'];
-  const inGroup = (r, g) => (S.filter === 'chats' ? r.group === g : r.day === g);
+  const groups = ['Today', 'Earlier'];
+  const inGroup = (r, g) => r.day === g;
   const listHTML = groups.map((g) => { const n = shown.filter((r) => inGroup(r, g)).length; return n ? `<div class="sec"><span class="label" title="${esc(g)}" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(lab(g, n))}</span></div>${shown.filter((r) => inGroup(r, g)).map(rowHTML).join('')}` : ''; }).join('') || `<p class="hint" style="padding:12px 8px">Nothing matches "${esc(S.query)}".</p>`;
   const agentHTML = Object.entries(AGENTS).map(([k, a]) => {
     const active = S.ws && S.ws.kind === 'agent' && S.ws.id === k;
@@ -1307,11 +1325,11 @@ function renderSide() {
     <div class="actions">
       <button class="btn primary" id="newSnip" title="New snip (Ctrl+Alt+S)">${ico('scissors')}New snip</button>
       <label style="display:contents"><span hidden>Snip delay</span><select class="select" id="delay" aria-label="Delay before New snip captures">${['No delay', '3 s', '5 s', '10 s'].map((d) => `<option ${S.delay === d ? 'selected' : ''}>${d}</option>`).join('')}</select></label>
-      <div class="row3"><button class="btn" id="newChat">${ico('plus')}New chat</button><button class="btn" id="openZip">${ico('package')}Open zip</button></div>
+      <button class="btn" id="openZip" style="grid-column:1 / -1">${ico('package')}Open zip</button>
     </div>
     ${S.compact && S.ws ? `<div class="held">${ico(S.ws.kind === 'snip' ? 'scissors' : S.ws.kind === 'doc' ? 'md' : S.ws.kind === 'settings' ? 'settings' : 'brain', 'sm')}<span class="t">${esc(heldName())}${S.dirty ? ' · unsaved' : ''}</span><button class="btn ghost" id="expandHeld" style="height:26px;padding:0 8px">${ico('expand', 'sm')}Expand</button></div>` : ''}
-    <label class="search">${ico('search', 'sm')}<input id="q" placeholder="Search chats, notes, zips" value="${esc(S.query)}" aria-label="Search"></label>
-    <div class="filters">${f('all', 'All')}${f('chats', unread ? `Chats ${unread}` : 'Chats')}${f('snips', 'Snips')}${f('zips', 'Zips')}</div>
+    <label class="search">${ico('search', 'sm')}<input id="q" placeholder="Search snips, notes, zips" value="${esc(S.query)}" aria-label="Search"></label>
+    <div class="filters">${f('all', 'All')}${f('snips', 'Snips')}${f('zips', 'Zips')}</div>
     <div class="scroll">
       ${listHTML}
       <div class="sec"><span class="label">${lab('Agents', 4)}</span></div>
@@ -1366,21 +1384,20 @@ function renderChat() {
     prev = m;
   });
   if (c && !msgs.length) body = '<div class="empty"><p>No messages yet.</p></div>';
-  const reports = msgs.map((m, i) => ({ m, i })).filter((x) => x.m.report);
+  const otherUnread = CHATS.filter((x) => x.id !== S.chat).reduce((n, x) => n + x.unread, 0);
   $('#chat').innerHTML = `
     <div class="dockbar"><button class="btn ghost icon" id="dockOpen" title="Show chat" aria-label="Show chat">${ico('chat')}</button>${a ? avatar(c.agent) : ''}</div>
     <div class="chathead"><canvas class="banner" data-seed="${c ? c.id.length + 3 : 5}"></canvas>
       <div class="bar">
         <button class="hbtn mobile-only" id="sideBtn" aria-label="Recents">${ico('menu', 'sm')}</button>
         ${a ? avatar(c.agent) : logo()}
-        <div class="who"><div class="n">${c ? esc(a.name + ' · ' + c.title) : 'New chat'}</div><div class="s">${c ? esc(c.team) : 'Claude on the server PC'}</div></div>
-        ${c ? `<button class="hbtn" id="reportsBtn" aria-expanded="${S.reportsPop}" title="Reports in this project">${ico('reports', 'sm')}<span>Reports ${reports.length}</span></button>` : ''}
+        <button class="who switcher" id="chatSwitch" aria-haspopup="dialog" aria-expanded="${S.switchPop}" title="Change chat"><div class="n"><span style="overflow:hidden;text-overflow:ellipsis">${c ? esc(a.name + ' · ' + c.title) : 'New chat'}</span><span class="chevd">${ico('chev', 'sm')}</span>${otherUnread ? `<span class="badge" aria-label="${otherUnread} unread in other chats">${otherUnread}</span>` : ''}</div><div class="s">${c ? esc(c.team) : 'Claude on the server PC'}</div></button>
         ${a ? `<button class="hbtn" data-agent="${c.agent}" title="Edit ${a.name}'s personality, memory and picture">${ico('brain', 'sm')}<span>Agent files</span></button>` : ''}
         ${S.ws && !S.compact ? `<button class="hbtn mobile-only" id="phoneBack" aria-label="Back to workspace">${ico('x', 'sm')}</button><button class="hbtn" id="dockMin" title="Minimise chat" aria-label="Minimise chat">${ico('panelRight', 'sm')}</button>` : ''}
         <button class="hbtn" id="compactBtn" title="${S.compact ? 'Expand the window' : 'Collapse the window to Recents and Chat'}" aria-label="${S.compact ? 'Expand window' : 'Collapse window'}" aria-pressed="${S.compact}">${ico(S.compact ? 'expand' : 'collapse', 'sm')}</button>
       </div>
     </div>
-    ${S.reportsPop && c ? `<div class="hpop" role="dialog" aria-label="Reports">${reports.length ? reports.slice().reverse().map(({ m, i }) => `<button class="rep" data-goto="${c.id}-${i}"><span style="display:flex;gap:8px;align-items:center"><span class="status ${esc(m.report.status)}">${esc(m.report.status)}</span><b>${esc(m.report.title)}</b></span><span class="meta" style="color:var(--t4);font-size:11.5px">${esc(m.report.runDate)} · ${AGENTS[m.from].name}</span></button>`).join('') : '<p class="hint" style="padding:8px">No reports yet for this project.</p>'}</div>` : ''}
+    ${S.switchPop ? `<div class="hpop switch" role="dialog" aria-label="Change chat">${[...new Set(CHATS.map((x) => x.team))].map((team) => `<div class="sec" style="padding:8px 8px 4px"><span class="label" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(team)}</span></div>${CHATS.filter((x) => x.team === team).map((x) => `<button class="item ${x.id === S.chat ? 'active' : ''}" data-chat="${x.id}">${avatar(x.agent)}<span style="min-width:0"><div class="ttl">${esc(AGENTS[x.agent].name + ' · ' + x.title)}</div><div class="meta">${esc(x.meta)}</div></span>${x.unread ? `<span class="badge" aria-label="${x.unread} unread">${x.unread}</span>` : `<span class="meta">${x.time}</span>`}</button>`).join('')}`).join('')}<button class="btn" id="newChat" style="margin-top:6px">${ico('plus')}New chat</button></div>` : ''}
     ${S.addProject ? `<form class="dialog" id="addForm" aria-label="Add a project"><span class="label">Add a project</span>
       <label class="field"><span class="hint">Team</span><input id="apTeam" value="${esc(TEAM)}" required></label>
       <label class="field"><span class="hint">Project name</span><input id="apName" placeholder="Project Iron" required></label>
@@ -1423,7 +1440,7 @@ const snipOf = () => SNIPS.find((x) => x.id === S.ws.id);
 function zoomPct() { const s = snipOf(); return Math.round(S.view.k * IW / s.w * 100); }
 function fitView() {
   const st = $('#stage'); if (!st || !S.ws || S.ws.kind !== 'snip') return;
-  const s = snipOf(), W = IW + 400, H = ih(s) + 160;
+  const s = snipOf(), W = IW + 440, H = ih(s) + 200;
   const r = st.getBoundingClientRect();
   const k = Math.min(r.width / W, r.height / H) * 0.98;
   S.view = { k, x: (r.width - W * k) / 2, y: (r.height - H * k) / 2, fit: true };
@@ -1432,7 +1449,7 @@ function fitView() {
 function applyView() {
   const z = $('#zoomer'); if (!z || !S.view) return;
   const s = snipOf();
-  z.style.width = (IW + 400) + 'px'; z.style.height = (ih(s) + 160) + 'px';
+  z.style.width = (IW + 440) + 'px'; z.style.height = (ih(s) + 200) + 'px';
   z.style.transform = `translate(${S.view.x}px, ${S.view.y}px) scale(${S.view.k})`;
   const zs = $('#zoomStat'); if (zs) zs.textContent = zoomPct() + '%';
 }
@@ -1657,11 +1674,11 @@ function render() { layout(); renderSide(); renderWS(); renderChat(); requestAni
 let toastT;
 function toast(t) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (el.hidden = true), 2600); }
 function heldName() { const w = S.ws; return w.kind === 'snip' ? snipOf().name : w.kind === 'doc' ? w.name : w.kind === 'settings' ? 'Settings' : `${AGENTS[w.id].name} · ${S.agentTab}`; }
-function setCompact(on) { S.compact = on; S.reportsPop = false; layout(); renderSide(); renderChat(); requestAnimationFrame(fitPage); if (!on && S.ws && S.ws.kind === 'snip') requestAnimationFrame(() => (S.view && !S.view.fit ? applyView() : fitView())); }
+function setCompact(on) { S.compact = on; S.switchPop = false; layout(); renderSide(); renderChat(); requestAnimationFrame(fitPage); if (!on && S.ws && S.ws.kind === 'snip') requestAnimationFrame(() => (S.view && !S.view.fit ? applyView() : fitView())); }
 function openWS(ws) {
   S.compact = false;
   if (S.ws && S.dirty) { S.closing = true; S.pending = ws; renderWS(); return; }
-  S.ws = ws; S.dirty = false; S.closing = false; S.sel = null; S.picker = false; S.sideOpen = false; S.phoneChat = false; S.hist = []; S.redo = []; S.view = null; S.dsel = null; S.dtool = 'select'; S.reportsPop = false;
+  S.ws = ws; S.dirty = false; S.closing = false; S.sel = null; S.picker = false; S.sideOpen = false; S.phoneChat = false; S.hist = []; S.redo = []; S.view = null; S.dsel = null; S.dtool = 'select'; S.switchPop = false;
   if (ws.kind === 'snip' && S.tool === 'canvas-snip') S.tool = 'select';
   render();
 }
@@ -1723,10 +1740,10 @@ function sendReply(c, text) {
 
 document.addEventListener('click', (e) => {
   const t = e.target.closest('button, .cloud[data-push], [data-sel], [data-dsel]');
-  if (!t) { let ch = false; if (S.pop && !e.target.closest('.pop')) { S.pop = false; renderSide(); } if (S.reportsPop && !e.target.closest('.hpop')) { S.reportsPop = false; ch = true; } if (ch) renderChat(); return; }
+  if (!t) { let ch = false; if (S.pop && !e.target.closest('.pop')) { S.pop = false; renderSide(); } if (S.switchPop && !e.target.closest('.hpop')) { S.switchPop = false; ch = true; } if (ch) renderChat(); return; }
   const d = t.dataset;
   if (t.matches('.cloud[data-push]')) { e.stopPropagation(); const s = SNIPS.find((x) => x.id === t.closest('[data-snip]').dataset.snip); s.saved = true; renderSide(); toast('Saved to the server'); return; }
-  if (d.chat) { S.chat = d.chat; CHATS.find((x) => x.id === d.chat).unread = 0; S.sideOpen = false; S.reportsPop = false; if (S.ws) { S.dockMin = false; S.phoneChat = true; } render(); return; }
+  if (d.chat) { S.chat = d.chat; CHATS.find((x) => x.id === d.chat).unread = 0; S.switchPop = false; S.addProject = false; renderChat(); return; }
   if (d.snip) { openWS({ kind: 'snip', id: d.snip }); return; }
   if (d.zip) { S.open[d.zip] = !S.open[d.zip]; renderSide(); return; }
   if (d.toggle) { S.open[d.toggle] = !S.open[d.toggle]; renderSide(); return; }
@@ -1745,7 +1762,7 @@ document.addEventListener('click', (e) => {
   if (d.dcolor) { S.color = d.dcolor; if (S.dsel) { S.ws.marks.find((m) => m.n === S.dsel).color = d.dcolor; markDirty(); } renderWS(); return; }
   if (d.dsel && !e.target.closest('textarea')) { S.dsel = Number(d.dsel); paintPreview(); document.querySelectorAll('#docCallouts .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.dsel) === S.dsel)); return; }
   if (d.report) { S.openReports[d.report] = !S.openReports[d.report]; renderChat(); const el = document.getElementById('rep-' + d.report); if (el) el.scrollIntoView({ block: 'nearest' }); return; }
-  if (d.goto) { S.reportsPop = false; S.openReports[d.goto] = true; renderChat(); const el = document.getElementById('rep-' + d.goto); if (el) el.scrollIntoView({ block: 'center' }); return; }
+  if (d.goto) { S.switchPop = false; S.openReports[d.goto] = true; renderChat(); const el = document.getElementById('rep-' + d.goto); if (el) el.scrollIntoView({ block: 'center' }); return; }
   if (d.gotoSet) { const el = document.getElementById('set-' + d.gotoSet); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
   if (d.copy) { toast(`${d.copy} copied`); return; }
   if (d.tab) { if (S.dirty) { toast('Save or close first'); return; } S.agentTab = d.tab; S.ws.text = AGENT_FILES[S.ws.id][d.tab].text; renderWS(); renderChat(); return; }
@@ -1764,10 +1781,10 @@ document.addEventListener('click', (e) => {
     case 'themeBtn': S.pop = !S.pop; renderSide(); return;
     case 'settingsBtn': case 'modePill': openWS({ kind: 'settings' }); return;
     case 'newSnip': { const dl = S.delay; if (dl === 'No delay') { toast('Drag a box on your screen. Esc cancels.'); setTimeout(() => newSnip(false), 700); } else { toast(`Collide hides, waits ${dl}, then captures`); setTimeout(() => newSnip(false), 1600); } return; }
-    case 'newChat': S.addProject = true; S.reportsPop = false; if (S.ws) { S.dockMin = false; S.phoneChat = true; layout(); } renderChat(); setTimeout(() => $('#apName') && $('#apName').focus(), 30); return;
+    case 'newChat': S.addProject = true; S.switchPop = false; if (S.ws) { S.dockMin = false; S.phoneChat = true; layout(); } renderChat(); setTimeout(() => $('#apName') && $('#apName').focus(), 30); return;
     case 'apCancel': S.addProject = false; renderChat(); return;
     case 'openZip': S.open['z-builder'] = true; S.filter = 'all'; renderSide(); toast('Unpacked builder-v0.1.zip on the server'); return;
-    case 'reportsBtn': S.reportsPop = !S.reportsPop; renderChat(); return;
+    case 'chatSwitch': S.switchPop = !S.switchPop; S.addProject = false; renderChat(); return;
     case 'wsSave': save(); renderWS(); renderSide(); return;
     case 'wsClose': closeWS(false); return;
     case 'saveClose': save(); closeWS(true); return;
@@ -1956,7 +1973,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (S.tool === 'canvas-snip') { S.tool = 'select'; renderWS(); return; }
     if (S.ws && S.ws.kind === 'doc' && S.dtool !== 'select') { S.dtool = 'select'; renderWS(); return; }
-    if (S.picker) { S.picker = false; renderWS(); } else if (S.addProject) { S.addProject = false; renderChat(); } else if (S.reportsPop) { S.reportsPop = false; renderChat(); } else if (S.pop) { S.pop = false; renderSide(); } else if (S.sideOpen) { S.sideOpen = false; layout(); }
+    if (S.picker) { S.picker = false; renderWS(); } else if (S.addProject) { S.addProject = false; renderChat(); } else if (S.switchPop) { S.switchPop = false; renderChat(); } else if (S.pop) { S.pop = false; renderSide(); } else if (S.sideOpen) { S.sideOpen = false; layout(); }
   }
   const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
   if (ctrl && e.altKey && k === 's') { e.preventDefault(); $('#newSnip').click(); return; }
