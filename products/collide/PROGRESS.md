@@ -2,7 +2,7 @@
 
 Live status board for `snip-markup/run-1`, kept current by the **Planner** as the run goes — this reflects right now, not history. `HANDOFF.md` (written at the end) and `reports/` are the historical record; don't duplicate their detail here.
 
-**Status:** Running · **Current task:** T05 · **Last updated:** 2026-11-14 by Planner
+**Status:** Running · **Current task:** T07 · **Last updated:** 2026-11-14 by Planner
 
 ## Task board
 
@@ -14,9 +14,9 @@ Mirrors `SPEC.md`'s table; update the Status column here as it changes, in sync 
 | T02 | Shape model | Done |
 | T03 | Editor canvas | Done |
 | T04 | Drawing tools | Done |
-| T05 | Callout notes + undo/redo | Tested — pass |
+| T05 | Callout notes + undo/redo | Done |
 | T06 | Save/open markup folder | To do |
-| T07 | Export flattened PNG | To do |
+| T07 | Export flattened PNG | In progress |
 | T08 | Rust capture_monitor | To do |
 | T09 | Rust crop_capture | To do |
 | T10 | Overlay window | To do |
