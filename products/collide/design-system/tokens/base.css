@@ -1,0 +1,5 @@
+html, body { background: var(--bg-canvas); color: var(--text-1); font-family: var(--font-sans); font-size: var(--fs-body); line-height: var(--lh-body); letter-spacing: var(--tracking-body); -webkit-font-smoothing: antialiased; }
+body { margin: 0; }
+a { color: var(--text-1); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
+a:hover { color: var(--accent-hover); text-decoration-color: currentColor; }
+::selection { background: var(--signal-a40); color: #fff; }

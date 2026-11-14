@@ -1,0 +1,33 @@
+# Collide: notes for Lydia (Tester)
+
+2026-11-14 · From Grant's session `claude/peaceful-babbage-04aj3j`, merged into `development`. These changes came from Grant testing Collide on Windows 11. What is automated is listed under each item; the **Windows** lines are what still needs a real check on Grant's PC (no Windows box in the cloud).
+
+Run: `cd products/collide/app && pnpm install && pnpm test && pnpm e2e --trace off` (Vitest 117, Playwright 39 at merge). Rust: `cd src-tauri && cargo test` (20).
+
+## What changed and how to test it
+
+1. **No ghost of the editor in snips.** `hide_editor` moves the editor off-screen before hiding it, so the Windows fade-out isn't captured; wait raised 150 → 300 ms (`src-tauri/src/snip.rs`, `src/snip/tauriDeps.ts`).
+   - Windows: Ctrl+Alt+S from another app. The capture has no half-transparent Collide in it. After the snip, the editor comes back in the same place, including when maximized.
+2. **Copy to clipboard** (button next to Export, Ctrl+Shift+C). Copies the image plus every annotation and note box, auto-cropped, with a 24 px margin on the canvas background (`#09090B`) when anything spills past the image.
+   - Automated: `e2e/fit.spec.ts`. Windows: paste into Paint / Teams / Word. Size and contents match the editor.
+3. **Canvas refits and recentres on window resize** while in fit view. After a user zoom, resizing keeps the zoom and the centred point. Ctrl+0 refits (`e2e/fit.spec.ts`).
+4. **Callout note boxes outside the image.** Every rectangle, ellipse, filled shape, X mark and point gets a numbered box on the nearest side, stacked so boxes don't overlap, with an arrow to the shape. Drag a box to move it; drag its right edge to resize it; the height fits the text. Double-click to edit on the canvas (Enter saves, Esc cancels), or type in the Callouts panel.
+   - An empty note shows as a number chip with an arrow (in Copy/Export too).
+   - **Hide #** (per callout, right sidebar) dims the box and arrow in the editor and leaves them out of Copy/Export.
+   - Automated: `src/editor/notes.test.ts`, `e2e/fit.spec.ts`.
+5. **Toolbar:** Select, Rectangle, Ellipse, Filled rectangle, Filled ellipse, X mark (X), Point (P). The Arrow, Text and Callout tools were removed. Old markups with those shapes still open and display (`e2e/tools.spec.ts`).
+6. **Desktop window: one border, one title.** In Tauri, the native Windows title bar is kept and the in-app frame/title row is dropped. The browser build keeps the framed look (`e2e/frame.spec.ts`).
+   - Windows: `pnpm tauri dev`. One title bar, no rounded inner panel, no gap at the edges.
+
+## Known gaps / watch for
+
+- **Export still saves at the source image size**, so note boxes outside the image are cut off in Export and `export.png`. Grant hasn't decided yet whether Export should crop like Copy. Report it, don't file it as a bug.
+- Auto-placed boxes keep their place in shape order. Deleting an early shape can shift the auto-placed boxes after it; boxes the user moved stay where they are.
+- All keyboard shortcuts are provisional until the accessibility spec (ISSUES #10).
+- `e2e/history.spec.ts` "row and shape selection stay in sync" failed once under a full parallel run and then passed on every rerun. Watch for flakiness.
+- The e2e desktop check (`frame.spec.ts`) uses a stub Tauri bridge. It proves the layout switch, not the real window.
+
+## Please report back (issue #2 nightly report)
+
+- Windows results for items 1, 2 and 6, with screenshots.
+- Any DPI or multi-monitor problem with the note boxes or Copy at 100% and 150% scaling.

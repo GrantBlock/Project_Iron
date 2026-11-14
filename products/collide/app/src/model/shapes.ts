@@ -1,0 +1,65 @@
+import { z } from "zod";
+
+export const SHAPE_TYPES = ["rect", "ellipse", "point", "cross", "arrow", "text", "callout", "highlight"] as const;
+export type ShapeType = (typeof SHAPE_TYPES)[number];
+
+const num = z.number().finite();
+
+const base = {
+  id: z.string().min(1),
+  page: z.number().int().min(1).optional(),
+  x: num,
+  y: num,
+  w: num.min(0),
+  h: num.min(0),
+  stroke: z.string().min(1),
+  strokeWidth: num.min(0),
+  callout: z.number().int().min(1).optional(),
+  note: z.string().optional(),
+  /** Where the user put the note box (image px, top-left + width). Absent = auto-placed. */
+  label: z.object({ x: num, y: num, w: num.positive() }).optional(),
+  /** Rect/ellipse only: solid fill in the stroke colour. */
+  fill: z.boolean().optional(),
+  /** "Hide #": the note box and arrow show dimmed in the editor and are left out of Copy/Export. */
+  hideNumber: z.boolean().optional(),
+};
+
+const simple = (type: "rect" | "ellipse" | "point" | "cross" | "highlight") =>
+  z.object({ ...base, type: z.literal(type) });
+
+export const ShapeSchema = z.discriminatedUnion("type", [
+  simple("rect"),
+  simple("ellipse"),
+  simple("highlight"),
+  // A point marker at (x, y); w and h are 0.
+  simple("point"),
+  // An X across its bounds, marking something to remove.
+  simple("cross"),
+  // Arrow end points [x1, y1, x2, y2], relative to x,y (A).
+  z.object({
+    ...base,
+    type: z.literal("arrow"),
+    points: z.tuple([num, num, num, num]),
+  }),
+  z.object({
+    ...base,
+    type: z.literal("text"),
+    text: z.string(),
+    fontSize: num.positive(),
+  }),
+  // A callout marker always carries its number.
+  z.object({ ...base, type: z.literal("callout"), callout: z.number().int().min(1) }),
+]);
+
+export const AnnotationsSchema = z.object({
+  version: z.literal(1),
+  source: z.object({
+    kind: z.literal("image"),
+    width: num.positive(),
+    height: num.positive(),
+  }),
+  shapes: z.array(ShapeSchema),
+});
+
+export type Shape = z.infer<typeof ShapeSchema>;
+export type AnnotationsDoc = z.infer<typeof AnnotationsSchema>;

@@ -16,6 +16,10 @@ Four agents build the app overnight from approved feature specs, and Grant plans
 | Path | What |
 | --- | --- |
 | `docs/agentic-dev-plan.md` | The plan: decisions, roles, agent identities, feature specs, schedule, usage limit, setup steps, Iron process |
+| `docs/morning-report.md` | Lydia's morning report: steps and the exact comment format (Draft) |
+| `docs/progress-tracker.md` | Where everything stands: setup steps, report pipeline, Agent Chat, Iron steps |
+| `docs/current-issues.md` | Open problems and decisions waiting on Grant |
+| `tools/project-chat/` | Agent Chat, the local app for agent reports and chat |
 | `agents/` | Role files, one per agent (added after Grant approves each) |
 | `CLAUDE.md` | Rules for every Claude session in this repository |
 

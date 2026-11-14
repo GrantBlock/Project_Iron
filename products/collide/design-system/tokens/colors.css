@@ -1,0 +1,89 @@
+:root {
+  /* Ink — neutral, faintly warm blacks */
+  --ink-975: #060607;
+  --ink-950: #09090B;
+  --ink-900: #0E0E11;
+  --ink-850: #131317;
+  --ink-800: #18181D;
+  --ink-750: #1E1E24;
+  --ink-700: #26262E;
+  --ink-600: #33333C;
+  --ink-500: #4B4B55;
+  --ink-400: #6D6D77;
+  --ink-300: #98989F;
+  --ink-200: #C4C3C8;
+  --ink-100: #E6E5E2;
+  --ink-50:  #F3F2EF;
+
+  /* Signal — the collision red. One per view. */
+  --signal-700: #A82410;
+  --signal-600: #D92E14;
+  --signal-500: #FF3D1F;
+  --signal-400: #FF6A4F;
+  --signal-300: #FF9C88;
+  --signal-a08: rgba(255, 61, 31, 0.08);
+  --signal-a16: rgba(255, 61, 31, 0.16);
+  --signal-a40: rgba(255, 61, 31, 0.40);
+
+  /* Ember — ambient copper light, backgrounds only */
+  --ember-900: #2A1810;
+  --ember-700: #6E3E22;
+  --ember-500: #B8693B;
+  --ember-400: #D08A5C;
+
+  /* Steel — callout markers, selection, info */
+  --steel-700: #2C5480;
+  --steel-500: #4C87C4;
+  --steel-400: #74A4D6;
+  --steel-a16: rgba(76, 135, 196, 0.16);
+
+  --moss-500: #3FAF7A;
+  --moss-a16: rgba(63, 175, 122, 0.16);
+  --amber-500: #E3A73A;
+  --amber-a16: rgba(227, 167, 58, 0.16);
+
+  /* Semantic — surfaces */
+  --bg-canvas: var(--ink-950);
+  --bg-app: var(--ink-900);
+  --surface-1: var(--ink-850);
+  --surface-2: var(--ink-800);
+  --surface-3: var(--ink-750);
+  --surface-raised: var(--ink-700);
+  --surface-inverse: var(--ink-50);
+
+  /* Semantic — glass */
+  --glass-fill: rgba(30, 30, 36, 0.52);
+  --glass-fill-strong: rgba(20, 20, 25, 0.82);
+  --glass-edge-hi: rgba(255, 255, 255, 0.18);
+  --glass-edge-lo: rgba(255, 255, 255, 0.035);
+
+  /* Semantic — lines */
+  --line-1: rgba(255, 255, 255, 0.06);
+  --line-2: rgba(255, 255, 255, 0.10);
+  --line-3: rgba(255, 255, 255, 0.16);
+  --line-strong: rgba(255, 255, 255, 0.28);
+  --line-dashed: rgba(255, 255, 255, 0.55);
+
+  /* Semantic — text */
+  --text-1: var(--ink-50);
+  --text-2: var(--ink-200);
+  --text-3: var(--ink-300);
+  --text-4: var(--ink-400); /* metadata + disabled only */
+  --text-inverse: var(--ink-950);
+  --text-on-signal: #FFFFFF;
+
+  /* Semantic — intent */
+  --accent: var(--signal-500);
+  --accent-hover: var(--signal-400);
+  --accent-press: var(--signal-600);
+  --accent-soft: var(--signal-a16);
+  --info: var(--steel-500);
+  --info-soft: var(--steel-a16);
+  --success: var(--moss-500);
+  --success-soft: var(--moss-a16);
+  --warning: var(--amber-500);
+  --warning-soft: var(--amber-a16);
+  --danger: var(--signal-500);
+  --danger-soft: var(--signal-a16);
+  --selection: var(--steel-a16);
+}
