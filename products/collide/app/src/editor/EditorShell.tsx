@@ -385,24 +385,40 @@ export function EditorShell() {
     };
   }, [open, dispatch, stateRef, exportPng, copyFit, openMarkup, saveMarkup]);
 
+  // In the desktop app the OS window already has a title bar and border, so the in-app
+  // frame and "Collide" title row would show twice; fill the window edge to edge instead.
+  const desktop = isTauri();
+
   return (
     <div
+      data-testid="app-root"
+      data-frame={desktop ? "native" : "framed"}
       style={{
         height: "100vh",
-        padding: 14,
+        padding: desktop ? 0 : 14,
         boxSizing: "border-box",
-        background: "var(--grain), var(--ambient-ember), var(--bg-canvas)",
+        background: desktop ? "var(--bg-app)" : "var(--grain), var(--ambient-ember), var(--bg-canvas)",
         display: "flex",
         flexDirection: "column",
       }}
     >
-      <GlassPanel radius="xl" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <div style={{ height: 38, flex: "none", display: "flex", alignItems: "center", gap: 12, padding: "0 14px", borderBottom: "1px solid var(--line-1)" }}>
+      <GlassPanel
+        radius="xl"
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          ...(desktop ? { borderRadius: 0, border: 0, boxShadow: "none" } : {}),
+        }}
+      >
+        {!desktop && <div data-testid="app-title" style={{ height: 38, flex: "none", display: "flex", alignItems: "center", gap: 12, padding: "0 14px", borderBottom: "1px solid var(--line-1)" }}>
           <span style={{ font: "600 15px/1 var(--font-sans)", letterSpacing: "-0.04em" }}>Collide</span>
           <span style={{ font: "500 10.5px/1 var(--font-mono)", letterSpacing: "var(--tracking-label)", textTransform: "uppercase", color: "var(--text-4)" }}>
             Snip &amp; Markup
           </span>
-        </div>
+        </div>}
         <Toolbar
           tool={tool}
           setTool={setTool}
