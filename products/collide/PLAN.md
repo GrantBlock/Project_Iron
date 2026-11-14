@@ -21,6 +21,7 @@ Beyond the Tech stack table and test tooling:
 - `@tauri-apps/plugin-global-shortcut` (+ Rust crate) — T11 global hotkey.
 - ESLint + typescript-eslint, `@vitejs/plugin-react`, `jsdom`/`@testing-library/react` — T01 tooling.
 - `konva`, `react-konva`, `xcap`, `image` — in the Tech stack table.
+- `@tauri-apps/api`, `@types/node`, `@types/react`, `@types/react-dom`, `@eslint/js`; TypeScript pinned 5.x (typescript-eslint does not support TS 7) — T01 tooling, approved 2026-11-14.
 - Fonts: Geist via Google Fonts link, as the design system's `tokens/fonts.css` does (⚠ substitute, per readme).
 
 ## Usage budget
