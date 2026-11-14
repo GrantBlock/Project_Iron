@@ -26,9 +26,7 @@
       "server.js",
       "preload.js",
       "public/**",
-      "build/icon.png",
-      "build/tray.png",
-      "build/tray@2x.png"
+      "build/icon.png"
     ],
     "win": {
       "target": "portable",
