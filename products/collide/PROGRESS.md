@@ -19,7 +19,7 @@ Mirrors `SPEC.md`'s table; update the Status column here as it changes, in sync 
 | T07 | Export flattened PNG | Done |
 | T08 | Rust capture_monitor | Done |
 | T09 | Rust crop_capture | Done |
-| T10 | Overlay window | In progress |
+| T10 | Overlay window | Tested — pass |
 | T11 | Wire-up | To do |
 | T12 | Handoff | To do |
 
