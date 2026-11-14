@@ -93,3 +93,33 @@ test("zoom clamps between 10% and 800%", async ({ page }) => {
   for (let i = 0; i < 30; i++) await page.mouse.wheel(0, 1000);
   await expect.poll(async () => (await state(page)).stage!.scale).toBeCloseTo(0.1, 6);
 });
+
+test("right-drag pans the view in any tool, over shapes too, without selecting, drawing or a context menu", async ({ page }) => {
+  await page.evaluate((u) => window.__collide!.openImage(u), FIXTURE);
+  await page.evaluate(() => window.__collide!.seedShape({ x: 100, y: 80, w: 120, h: 60 }));
+  const doc0 = (await page.evaluate(() => window.__collide!.getDoc())) as { shapes: unknown[] };
+  let menus = 0;
+  await page.exposeFunction("__menu", () => void menus++);
+  await page.evaluate(() => document.addEventListener("contextmenu", (e) => !e.defaultPrevented && (window as unknown as { __menu: () => void }).__menu()));
+
+  for (const tool of ["v", "r"]) {
+    await page.keyboard.press(tool);
+    const before = (await state(page)).stage!;
+    const area = (await page.getByTestId("canvas").boundingBox())!;
+    // Start on the shape (image px 160,110) to prove it is not grabbed or selected.
+    const sx = area.x + before.x + 160 * before.scale;
+    const sy = area.y + before.y + 110 * before.scale;
+    await page.mouse.move(sx, sy);
+    await page.mouse.down({ button: "right" });
+    await page.mouse.move(sx + 90, sy + 40, { steps: 6 });
+    await page.mouse.up({ button: "right" });
+    const after = (await state(page)).stage!;
+    expect(after.x).toBeCloseTo(before.x + 90, 0);
+    expect(after.y).toBeCloseTo(before.y + 40, 0);
+    expect(after.scale).toBe(before.scale);
+  }
+  const doc1 = (await page.evaluate(() => window.__collide!.getDoc())) as { shapes: { x: number; y: number }[] };
+  expect(doc1.shapes).toHaveLength(doc0.shapes.length); // nothing drawn
+  expect([doc1.shapes[0].x, doc1.shapes[0].y]).toEqual([100, 80]); // not moved
+  expect(menus).toBe(0);
+});

@@ -43,6 +43,10 @@ interface Props {
 /** Resolve a design-system CSS variable to a colour string Konva can paint. */
 export const cssVar = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
+const RIGHT_BUTTON = 2;
+/** Right-button presses pan the view; they never select or deselect. */
+const isPanButton = (evt: Event) => (evt as MouseEvent).button === RIGHT_BUTTON;
+
 const isTypingTarget = (t: EventTarget | null) =>
   t instanceof HTMLElement && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
 // Controls that use Space themselves (A): pan still starts, but the key is left alone.
@@ -253,6 +257,7 @@ function NoteBox({ shape, box, selected, interactive, onSelect, onMove, onResize
       listening={interactive}
       draggable={interactive}
       onMouseDown={(e) => {
+        if (isPanButton(e.evt)) return;
         e.cancelBubble = true;
         onSelect(shape.id);
       }}
@@ -328,6 +333,7 @@ function NoteBox({ shape, box, selected, interactive, onSelect, onMove, onResize
 function handlers(shape: Shape, onSelect?: (id: string) => void, onMoved?: (id: string, x: number, y: number) => void) {
   return {
     onMouseDown: (e: Konva.KonvaEventObject<Event>) => {
+      if (isPanButton(e.evt)) return;
       e.cancelBubble = true;
       onSelect?.(shape.id);
     },
@@ -430,8 +436,9 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
     [onViewChange],
   );
 
+  // Pan: right-drag, or Space + left-drag.
   const onPointerDownCapture = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (!spaceRef.current || e.button !== 0) return;
+    if (!(e.button === RIGHT_BUTTON || (spaceRef.current && e.button === 0))) return;
     e.preventDefault();
     e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -604,6 +611,7 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
       data-testid="canvas"
       data-tool={tool}
       onPointerDownCapture={onPointerDownCapture}
+      onContextMenu={(e) => e.preventDefault()}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endPan}
@@ -630,6 +638,7 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
           scaleY={view.scale}
           onWheel={onWheel}
           onMouseDown={(e) => {
+            if (isPanButton(e.evt)) return;
             if (tool === "select" && e.target === e.target.getStage()) onSelect(null);
           }}
           onTouchStart={(e) => {

@@ -27,6 +27,9 @@ Run: `cd products/collide/app && pnpm install && pnpm test && pnpm e2e --trace o
 9. **Snip delay** (timer picker next to New snip): No delay / 3 s / 5 s / 10 s, as in Snipping Tool. The editor hides, waits the delay, then captures. Applies to Ctrl+Alt+S too (A). Remembered on this computer (`src/snip/flow.test.ts`, `e2e/snip.spec.ts`).
    - Windows: pick 3 s, click New snip, open a menu in another app within 3 s, and check the menu is in the capture.
 
+10. **Right-drag pans the canvas** in every tool (Space + left-drag still works). A right-press never selects, moves or draws, and the browser/WebView context menu is suppressed on the canvas (`e2e/editor.spec.ts`).
+   - Windows: right-drag over a shape and over empty canvas with a mouse; also try a touchpad two-finger click.
+
 ## Known gaps / watch for
 
 - **Export still saves at the source image size**, so note boxes outside the image are cut off in Export and `export.png`. Grant hasn't decided yet whether Export should crop like Copy. Report it, don't file it as a bug.
