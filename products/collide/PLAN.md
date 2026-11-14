@@ -31,4 +31,4 @@ Beyond the Tech stack table and test tooling:
 
 ## Scope changes
 
-None.
+- 2026-11-14: order change only — T07 (export) runs before T06 (save/open) so T06 writes `export.png` with the real `flatten()` instead of a stub. Both depend only on T04.
