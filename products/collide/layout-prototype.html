@@ -787,6 +787,22 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
 .compact-note { position: fixed; left: calc(696px + env(safe-area-inset-left, 0px)); top: 20px; max-width: 280px; color: var(--t3); font-size: 12.5px; }
 @media (max-width: 1000px) { .compact-note { display: none; } }
 @media (max-width: 820px) { .app.compact { width: auto; box-shadow: none; border: 0; } .app.compact .ws { display: none !important; } }
+.docsplit.mode-preview { grid-template-columns: minmax(0, 1fr); }
+.docsplit.mode-code { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.docsplit.mode-preview .preview { background: var(--canvas); background-image: radial-gradient(var(--canvas-dot) 1px, transparent 1.2px); background-size: 16px 16px; padding: 22px; }
+.docsplit .page { position: relative; }
+.docsplit.mode-preview #pageWrap { margin: 0 auto; }
+.docsplit.mode-preview .page { width: 680px; transform-origin: 0 0; padding: 28px 34px 40px; background: var(--raised); border-radius: 6px; box-shadow: var(--shadow); }
+.docsplit.mode-preview .page h1 { margin-top: 0; }
+#docOverlay { position: absolute; left: 0; top: 0; width: 100%; pointer-events: none; overflow: visible; }
+#docOverlay [data-dmark] { pointer-events: all; cursor: move; }
+.preview.drawing #docOverlay { pointer-events: all; cursor: crosshair; }
+.preview.drawing #docOverlay [data-dmark] { pointer-events: none; }
+.snapdoc { padding: 28px 34px 40px; background: #FFFFFF; color: #09090B; font: 400 13.5px/1.45 'Geist', Arial, sans-serif; }
+.snapdoc h1, .snapdoc h2, .snapdoc h3 { letter-spacing: -.02em; font-weight: 600; line-height: 1.15; margin: 18px 0 8px; }
+.snapdoc h1 { font-size: 24px; margin-top: 0; } .snapdoc h2 { font-size: 17px; } .snapdoc h3 { font-size: 14.5px; }
+.snapdoc p, .snapdoc li { color: #26262E; } .snapdoc figure { margin: 10px 0 14px; } .snapdoc figure svg { width: 100%; max-width: 520px; height: auto; display: block; } .snapdoc figcaption { color: #6D6D77; font-size: 12px; }
+@media (max-width: 820px) { .docsplit.mode-preview .preview, .docsplit.mode-code .preview { display: block !important; } .docsplit.mode-code { grid-template-columns: minmax(0, 1fr); grid-template-rows: 1fr 1fr; } }
 .notes h4 { margin: 12px 0 2px; font-size: 12.5px; }
 </style>
 
@@ -807,6 +823,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
     <li><b>Snip and Editor have no page of their own.</b> They open as a workspace when you open a snip, a zip file or an agent's files.</li>
     <li><b>Workspace</b> = header (name, save state, Save, Close) + toolbar + canvas + numbered list. Chat moves to a dock on the right. Close returns to chat; unsaved changes ask first.</li>
     <li><b>Zips</b> appear in Recents and expand to their folder tree.</li>
+    <li><b>Markdown files</b> open in Preview with a Callouts list, or Code + preview. In Preview, Box (B) and Circle (C) draw numbered callouts on the page; Canvas snip saves the marked-up area as a markup (Recents → Snips) and copies it.</li>
     <li><b>Agents</b> open their Personality and Memory files, and their picture.</li>
     <li><b>Collapse</b> (chat header, or the workspace header) shrinks the whole window to Recents and Chat side by side. An open snip or file stays open and shows in the sidebar with Expand.</li>
     <li><b>Themes:</b> System, Light, Dark, Aura (14 grounds). The banner redraws from the theme. The logo is never recoloured.</li>
@@ -977,7 +994,7 @@ const ZIPS = [
       { name: 'CLAUDE.md', type: 'md', text: '# Working rules\n\n- Direct, concise, structured.\n- Mark assumptions (A) and placeholders [brackets].\n' },
       { name: 'design', kids: [
         { name: 'specs', kids: [
-          { name: 'P06-Project-Workspace-Spec.md', type: 'md', text: P06 },
+          { name: 'P06-Project-Workspace-Spec.md', type: 'md', text: P06, marks: [ { n: 1, type: 'box', x: 26, y: 132, w: 628, h: 30, color: SIG, note: 'Add Uploads to this list.' }, { n: 2, type: 'circle', x: 210, y: 236, w: 150, h: 46, color: STEEL, note: 'Name the session panel.' } ] },
           { name: 'P08-3D-Designer-Spec.md', type: 'md', text: '# P08 3D Designer Spec\n\n## 1 Purpose\n\n[placeholder]\n' },
         ] },
         { name: 'exports', kids: [ { name: 'P06.png', type: 'image' }, { name: 'P08.png', type: 'image' } ] },
@@ -1056,7 +1073,7 @@ const S = {
   theme: 'system', aura: 'sage', filter: 'all', chat: 'project-iron', ws: null, dirty: false, dockMin: false,
   open: { 'z-builder': true, 'z-builder/design': true, 'z-builder/design/specs': true },
   tool: 'select', sel: null, color: SIG, sw: 3, view: null, panning: null, drag: null, hist: [], redo: [],
-  docView: 'split', agentTab: 'personality', pop: false, picker: false, closing: false, phoneChat: false, sideOpen: false, query: '',
+  docView: 'preview', dtool: 'select', dsel: null, ddrag: null, agentTab: 'personality', pop: false, picker: false, closing: false, phoneChat: false, sideOpen: false, query: '',
   compact: false, reportsPop: false, addProject: false, typing: false, openReports: {}, pending: null, attach: null, delay: 'No delay',
   settings: { mode: 'server', server: '', repo: 'GrantBlock/Project_Iron', issue: '2', notify: true, password: '' },
 };
@@ -1115,6 +1132,7 @@ function bounds(s, withNotes = true) {
 function artSVG(s) {
   const H = ih(s);
   if (s.img) return `<image href="${s.img}" x="0" y="0" width="${IW}" height="${H}" preserveAspectRatio="none"/>`;
+  if (s.art === 'doc') { const d = s.doc, k = IW / d.w; return `<rect width="${IW}" height="${H}" fill="#FFFFFF"/><foreignObject x="0" y="0" width="${IW}" height="${H}"><div xmlns="http://www.w3.org/1999/xhtml" class="snapdoc" style="width:${d.pageW}px;transform:scale(${k}) translate(${-d.x}px,${-d.y}px);transform-origin:0 0">${d.html}</div></foreignObject>`; }
   if (s.art === 'line3') return `<rect width="640" height="360" fill="#2b2f33"/><rect width="640" height="34" fill="#1d2023"/>
       <text x="14" y="22" fill="#cfd4d8" font-family="Geist Mono, monospace" font-size="13">LINE 3 · CONVEYOR C-3 · AUTO</text>
       <rect x="520" y="70" width="80" height="26" rx="3" fill="#3a3f44"/><text x="530" y="88" fill="#e8b04a" font-family="Geist Mono, monospace" font-size="12">M-310</text>
@@ -1477,30 +1495,92 @@ function mdHTML(src) {
   }
   close(); return html;
 }
+/* Markdown editor: Preview + Callouts, or Code + Preview. Box and circle callouts are drawn on the
+   rendered page (a fixed-width page, so they stay put); Canvas snip saves a marked-up region as a markup. */
+const PAGE_W = 680;
+const DOC_TOOLS = [['select', 'pointer', 'Select', 'V'], ['box', 'square', 'Box', 'B'], ['circle', 'circle', 'Circle', 'C']];
+function docMarksSVG() {
+  const marks = S.ws.marks || [];
+  const shapes = marks.map((m) => {
+    const sel = S.dsel === m.n;
+    const g = m.type === 'box'
+      ? `<rect x="${m.x}" y="${m.y}" width="${m.w}" height="${m.h}" rx="3" fill="${m.color}" fill-opacity=".06" stroke="${m.color}" stroke-width="2.5"/>`
+      : `<ellipse cx="${m.x + m.w / 2}" cy="${m.y + m.h / 2}" rx="${m.w / 2}" ry="${m.h / 2}" fill="${m.color}" fill-opacity=".06" stroke="${m.color}" stroke-width="2.5"/>`;
+    const bx = m.type === 'box' ? m.x : m.x + m.w * 0.15, by = m.type === 'box' ? m.y : m.y + m.h * 0.15;
+    const ring = sel ? `<rect x="${m.x - 4}" y="${m.y - 4}" width="${m.w + 8}" height="${m.h + 8}" fill="none" stroke="var(--t1)" stroke-dasharray="4 3"/>` : '';
+    return `<g data-dmark="${m.n}">${g}${ring}<circle cx="${bx}" cy="${by}" r="11" fill="${m.color}"/><text x="${bx}" y="${by + 4}" text-anchor="middle" font-family="Geist Mono, monospace" font-size="11" font-weight="600" fill="${m.color === INK50 ? '#09090B' : '#fff'}">${m.n}</text></g>`;
+  }).join('');
+  return `<svg id="docOverlay" aria-hidden="true">${shapes}<g id="docLive"></g></svg>`;
+}
+function paintPreview() {
+  const pg = $('#page'); if (!pg) return;
+  pg.innerHTML = mdHTML(S.ws.text) + (S.docView === 'preview' ? docMarksSVG() : '');
+  const ov = $('#docOverlay'); if (ov) ov.setAttribute('height', pg.scrollHeight);
+  fitPage();
+}
+/** Scale the fixed-width page down to fit its pane; callouts stay in page pixels. */
+function fitPage() {
+  const pg = $('#page'), wrap = $('#pageWrap'), pv = $('#preview'); if (!pg || !wrap || !pv) return;
+  const k = Math.min(1, (pv.clientWidth - 44) / PAGE_W);
+  S.pageK = k; pg.style.transform = `scale(${k})`;
+  wrap.style.width = PAGE_W * k + 'px'; wrap.style.height = pg.offsetHeight * k + 'px';
+}
+function docCalloutsHTML() {
+  const marks = S.ws.marks || [];
+  return marks.length ? marks.map((m) => `<div class="el ${S.dsel === m.n ? 'sel' : ''}" data-dsel="${m.n}"><span class="num" style="background:${m.color};color:${m.color === INK50 ? '#09090B' : '#fff'}">${m.n}</span><div style="min-width:0"><div class="k">${m.type === 'box' ? 'Box' : 'Circle'}</div><textarea data-dnote="${m.n}" rows="2" placeholder="Add a note" aria-label="Note for callout ${m.n}">${esc(m.note)}</textarea></div></div>`).join('')
+    : '<p class="hint" style="padding:8px">Draw a box or a circle on the page to add a callout.</p>';
+}
 function renderDocWS() {
   const w = S.ws;
-  const v = (k, l) => `<button class="tool" data-view="${k}" aria-pressed="${S.docView === k}">${l}</button>`;
   const isMd = w.type === 'md';
-  const outline = headings(w.text);
-  $('#ws').innerHTML = headHTML(isMd ? 'md' : 'file', w.name, w.zip + w.path.replace(w.zipId, ''), `<button class="btn" id="repack" title="Build a new zip with the same folder layout">${ico('package')}<span>Repack zip</span></button>`) + `
-    <div class="toolbar" role="toolbar" aria-label="Text tools">
-      ${isMd ? `<button class="tool" data-md="## " title="Heading" aria-label="Heading">${ico('h')}</button><button class="tool" data-md="**" title="Bold" aria-label="Bold">${ico('bold')}</button><button class="tool" data-md="- " title="List" aria-label="List">${ico('list')}</button><button class="tool" data-md="[](url)" title="Link" aria-label="Link">${ico('link')}</button>
-      <span class="vsep"></span><button class="tool" id="insertSnip">${ico('scissors')}<span>Insert snip</span></button><button class="tool">${ico('image')}<span>Image</span></button>
-      <span style="flex:1"></span>${v('edit', 'Edit')}${v('split', 'Split')}${v('preview', 'Preview')}` : '<span class="hint mono" style="padding:0 6px">Plain text · tabs and line endings kept</span>'}
+  if (!w.marks) w.marks = clone((w.file && w.file.marks) || []);
+  const head = headHTML(isMd ? 'md' : 'file', w.name, w.zip + w.path.replace(w.zipId, ''), `<button class="btn" id="repack" title="Build a new zip with the same folder layout">${ico('package')}<span>Repack zip</span></button>`);
+  if (!isMd) {
+    $('#ws').innerHTML = head + `<div class="toolbar"><span class="hint mono" style="padding:0 6px">Plain text · tabs and line endings kept</span></div>
+      <div class="wsbody" style="grid-template-columns:minmax(0,1fr)"><div class="docsplit edit"><textarea class="src" id="src" spellcheck="false" aria-label="${esc(w.name)}">${esc(w.text)}</textarea></div></div>
+      <div class="statusbar"><span>${esc(w.zip)}</span><span>UTF-8 · LF</span><span style="margin-left:auto">${w.text.split('\n').length} lines</span></div>`;
+    return;
+  }
+  const pv = S.docView === 'preview';
+  const v = (k, l) => `<button class="tool" data-view="${k}" aria-pressed="${S.docView === k}">${l}</button>`;
+  $('#ws').innerHTML = head + `
+    <div class="toolbar" role="toolbar" aria-label="Markdown tools">
+      ${pv ? `<button class="tool" data-dtool="canvas-snip" aria-pressed="${S.dtool === 'canvas-snip'}" title="Canvas snip: drag a box over the page; saves the marked-up area as a markup and copies it (Esc cancels)" aria-label="Canvas snip">${ico('crop')}</button>
+      <span class="vsep"></span>
+      ${DOC_TOOLS.map(([k, ic, l, key]) => `<button class="tool" data-dtool="${k}" aria-pressed="${S.dtool === k}" title="${l} (${key})" aria-label="${l}">${ico(ic)}</button>`).join('')}
+      <span class="vsep"></span>
+      ${COLORS.map(([c, l]) => `<button class="swatch" data-dcolor="${c}" aria-pressed="${S.color === c}" aria-label="Colour ${l}" style="background:${c}"></button>`).join('<span style="width:4px"></span>')}`
+      : `<button class="tool" data-md="## " title="Heading" aria-label="Heading">${ico('h')}</button><button class="tool" data-md="**" title="Bold" aria-label="Bold">${ico('bold')}</button><button class="tool" data-md="- " title="List" aria-label="List">${ico('list')}</button><button class="tool" data-md="[](url)" title="Link" aria-label="Link">${ico('link')}</button>`}
+      <span class="vsep"></span><button class="tool" id="insertSnip">${ico('scissors')}<span>Insert snip</span></button>
+      <span style="flex:1 1 0;min-width:4px"></span>${v('preview', 'Preview')}${v('code', 'Code + preview')}
     </div>
-    <div class="wsbody" style="position:relative">
-      <div class="docsplit ${isMd ? S.docView : 'edit'}" id="docsplit">
-        <textarea class="src" id="src" spellcheck="false" aria-label="${esc(w.name)}">${esc(w.text)}</textarea>
-        <div class="preview" id="preview">${isMd ? mdHTML(w.text) : ''}</div>
+    <div class="wsbody" style="position:relative;${pv ? '' : 'grid-template-columns:minmax(0,1fr)'}">
+      <div class="docsplit mode-${S.docView}" id="docsplit">
+        ${pv ? '' : `<textarea class="src" id="src" spellcheck="false" aria-label="${esc(w.name)}">${esc(w.text)}</textarea>`}
+        <div class="preview ${pv && S.dtool !== 'select' ? 'drawing' : ''}" id="preview">${pv ? '<div id="pageWrap"><div class="page" id="page"></div></div>' : '<div class="page" id="page"></div>'}</div>
       </div>
-      <aside class="numbered" aria-label="Outline">
-        <div class="head"><span class="label">Outline · ${outline.length}</span></div>
-        <div class="list">${outline.map((h, i) => `<button class="el" data-line="${h.line}"><span class="num">${i + 1}</span><div style="min-width:0"><div class="k">${h.img ? 'Image' : 'Heading ' + h.level}</div><div class="txt" style="padding-left:${h.img ? 0 : (h.level - 1) * 8}px">${esc(h.text)}</div></div></button>`).join('') || '<p class="hint" style="padding:8px">No headings in this file.</p>'}</div>
+      ${pv ? `<aside class="numbered" aria-label="Callouts">
+        <div class="head"><span class="label">Callouts ${S.theme === 'aura' ? `{${String(w.marks.length).padStart(2, '0')}}` : '· ' + w.marks.length}</span></div>
+        <div class="list" id="docCallouts">${docCalloutsHTML()}</div>
         <div class="foot2"><button class="btn" id="askDoc">${ico('chat')}Ask about this file</button></div>
-      </aside>
+      </aside>` : ''}
       ${S.picker ? `<div class="picker" role="dialog" aria-label="Insert snip"><span class="label">Insert snip</span>${SNIPS.map((s) => `<button class="attach" data-insert="${s.id}">${snipSVG(s.id)}<span><b>${esc(s.name)}</b><div class="meta mono" style="color:var(--t3)">${s.shapes.length} callouts · export.png → images/</div></span></button>`).join('')}<label class="hint" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="withNotes" checked> Add callout notes as a numbered list</label><button class="btn ghost" id="pickClose">Cancel</button></div>` : ''}
     </div>
-    <div class="statusbar"><span>${esc(w.zip)}</span><span>UTF-8 · LF</span><span style="margin-left:auto">${w.text.split('\n').length} lines</span></div>`;
+    <div class="statusbar"><span>${esc(w.zip)}</span><span>UTF-8 · LF</span>${pv ? `<span>${w.marks.length} callouts · page ${PAGE_W} px</span>` : ''}<span style="margin-left:auto">${w.text.split('\n').length} lines</span></div>`;
+  paintPreview();
+}
+function pagePoint(e) { const pg = $('#page'), r = pg.getBoundingClientRect(), k = S.pageK || 1; return { x: (e.clientX - r.left) / k, y: (e.clientY - r.top) / k }; }
+function saveDocMarkup(rg) {
+  const w = S.ws, pg = $('#page');
+  const html = mdHTML(w.text);
+  const now = new Date(), t = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const f = IW / rg.w;
+  const shapes = (w.marks || []).filter((m) => m.x < rg.x + rg.w && m.x + m.w > rg.x && m.y < rg.y + rg.h && m.y + m.h > rg.y).map((m) => ({
+    n: m.n, type: m.type === 'box' ? 'rect' : 'ellipse', x: Math.round((m.x - rg.x) * f), y: Math.round((m.y - rg.y) * f), w: Math.round(m.w * f), h: Math.round(m.h * f), color: m.color, sw: 3, note: m.note,
+  }));
+  const s = { id: 's-' + Date.now(), art: 'doc', doc: { html, x: rg.x, y: rg.y, w: rg.w, pageW: pg.clientWidth }, name: `${w.name.replace(/\.md$/, '')} · ${t}`, w: Math.round(rg.w * 2), h: Math.round(rg.h * 2), day: 'Today', time: t, saved: S.settings.mode === 'server', tags: [], shapes };
+  SNIPS.unshift(s); renderSide();
+  toast(`Saved to Markups/${slug(s.name)}/ · ${s.w} × ${s.h} · copied to clipboard`);
 }
 function renderImageWS() {
   const w = S.ws;
@@ -1577,11 +1657,11 @@ function render() { layout(); renderSide(); renderWS(); renderChat(); requestAni
 let toastT;
 function toast(t) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (el.hidden = true), 2600); }
 function heldName() { const w = S.ws; return w.kind === 'snip' ? snipOf().name : w.kind === 'doc' ? w.name : w.kind === 'settings' ? 'Settings' : `${AGENTS[w.id].name} · ${S.agentTab}`; }
-function setCompact(on) { S.compact = on; S.reportsPop = false; layout(); renderSide(); renderChat(); if (!on && S.ws && S.ws.kind === 'snip') requestAnimationFrame(() => (S.view && !S.view.fit ? applyView() : fitView())); }
+function setCompact(on) { S.compact = on; S.reportsPop = false; layout(); renderSide(); renderChat(); requestAnimationFrame(fitPage); if (!on && S.ws && S.ws.kind === 'snip') requestAnimationFrame(() => (S.view && !S.view.fit ? applyView() : fitView())); }
 function openWS(ws) {
   S.compact = false;
   if (S.ws && S.dirty) { S.closing = true; S.pending = ws; renderWS(); return; }
-  S.ws = ws; S.dirty = false; S.closing = false; S.sel = null; S.picker = false; S.sideOpen = false; S.phoneChat = false; S.hist = []; S.redo = []; S.view = null; S.reportsPop = false;
+  S.ws = ws; S.dirty = false; S.closing = false; S.sel = null; S.picker = false; S.sideOpen = false; S.phoneChat = false; S.hist = []; S.redo = []; S.view = null; S.dsel = null; S.dtool = 'select'; S.reportsPop = false;
   if (ws.kind === 'snip' && S.tool === 'canvas-snip') S.tool = 'select';
   render();
 }
@@ -1592,7 +1672,7 @@ function openFile(path) {
 }
 function save() {
   if (!S.ws) return;
-  if (S.ws.kind === 'doc' && S.ws.file) S.ws.file.text = S.ws.text;
+  if (S.ws.kind === 'doc' && S.ws.file) { S.ws.file.text = S.ws.text; S.ws.file.marks = clone(S.ws.marks || []); }
   if (S.ws.kind === 'agent') AGENT_FILES[S.ws.id][S.agentTab].text = S.ws.text;
   if (S.ws.kind === 'snip') { snipOf().saved = S.settings.mode === 'server'; }
   S.dirty = false; S.closing = false;
@@ -1642,7 +1722,7 @@ function sendReply(c, text) {
 }
 
 document.addEventListener('click', (e) => {
-  const t = e.target.closest('button, .cloud[data-push], [data-sel]');
+  const t = e.target.closest('button, .cloud[data-push], [data-sel], [data-dsel]');
   if (!t) { let ch = false; if (S.pop && !e.target.closest('.pop')) { S.pop = false; renderSide(); } if (S.reportsPop && !e.target.closest('.hpop')) { S.reportsPop = false; ch = true; } if (ch) renderChat(); return; }
   const d = t.dataset;
   if (t.matches('.cloud[data-push]')) { e.stopPropagation(); const s = SNIPS.find((x) => x.id === t.closest('[data-snip]').dataset.snip); s.saved = true; renderSide(); toast('Saved to the server'); return; }
@@ -1660,7 +1740,10 @@ document.addEventListener('click', (e) => {
   if (d.color) { S.color = d.color; if (S.sel) { pushHist(); snipOf().shapes.find((x) => x.n === S.sel).color = d.color; snipChanged(); } else renderWS(); return; }
   if (d.sw) { S.sw = Number(d.sw); if (S.sel) { pushHist(); snipOf().shapes.find((x) => x.n === S.sel).sw = S.sw; snipChanged(); } else renderWS(); return; }
   if (d.hide) { e.stopPropagation(); pushHist(); const sh = snipOf().shapes.find((x) => x.n === Number(d.hide)); sh.hide = !sh.hide; snipChanged(); return; }
-  if (d.view) { S.docView = d.view; renderWS(); return; }
+  if (d.view) { S.docView = d.view; S.dtool = 'select'; renderWS(); return; }
+  if (d.dtool) { S.dtool = d.dtool; if (d.dtool === 'canvas-snip') toast('Drag a box over the page. Esc cancels.'); renderWS(); return; }
+  if (d.dcolor) { S.color = d.dcolor; if (S.dsel) { S.ws.marks.find((m) => m.n === S.dsel).color = d.dcolor; markDirty(); } renderWS(); return; }
+  if (d.dsel && !e.target.closest('textarea')) { S.dsel = Number(d.dsel); paintPreview(); document.querySelectorAll('#docCallouts .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.dsel) === S.dsel)); return; }
   if (d.report) { S.openReports[d.report] = !S.openReports[d.report]; renderChat(); const el = document.getElementById('rep-' + d.report); if (el) el.scrollIntoView({ block: 'nearest' }); return; }
   if (d.goto) { S.reportsPop = false; S.openReports[d.goto] = true; renderChat(); const el = document.getElementById('rep-' + d.goto); if (el) el.scrollIntoView({ block: 'center' }); return; }
   if (d.gotoSet) { const el = document.getElementById('set-' + d.gotoSet); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
@@ -1690,8 +1773,8 @@ document.addEventListener('click', (e) => {
     case 'saveClose': save(); closeWS(true); return;
     case 'discardClose': if (S.ws && S.ws.kind === 'snip' && S.hist.length) snipOf().shapes = S.hist[0]; closeWS(true); return;
     case 'cancelClose': S.closing = false; S.pending = null; renderWS(); return;
-    case 'dockMin': S.dockMin = true; layout(); requestAnimationFrame(() => S.view && S.view.fit && fitView()); return;
-    case 'dockOpen': S.dockMin = false; layout(); requestAnimationFrame(() => S.view && S.view.fit && fitView()); return;
+    case 'dockMin': S.dockMin = true; layout(); requestAnimationFrame(() => { if (S.view && S.view.fit) fitView(); fitPage(); }); return;
+    case 'dockOpen': S.dockMin = false; layout(); requestAnimationFrame(() => { if (S.view && S.view.fit) fitView(); fitPage(); }); return;
     case 'phoneChat': S.phoneChat = true; layout(); return;
     case 'phoneBack': S.phoneChat = false; layout(); return;
     case 'sideBtn': case 'sideBtn2': S.sideOpen = !S.sideOpen; layout(); return;
@@ -1737,6 +1820,46 @@ document.addEventListener('change', (e) => {
 
 /* ---------- Canvas: draw, select, move, note boxes, zoom, pan, canvas snip ---------- */
 function toImage(e) { const svg = $('#zoomer svg'); const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
+
+/* Markdown page: draw, select and move callouts; canvas snip */
+document.addEventListener('pointerdown', (e) => {
+  if (!S.ws || S.ws.kind !== 'doc' || S.docView !== 'preview' || e.button !== 0) return;
+  const pg = e.target.closest('#page'); if (!pg) return;
+  const p = pagePoint(e);
+  if (S.dtool === 'select') {
+    const mk = e.target.closest('[data-dmark]'); const n = mk ? Number(mk.dataset.dmark) : null;
+    if (n === null) { if (S.dsel) { S.dsel = null; paintPreview(); document.querySelectorAll('#docCallouts .el').forEach((el) => el.classList.remove('sel')); } return; }
+    S.dsel = n; const m = S.ws.marks.find((x) => x.n === n); S.ddrag = { kind: 'move', n, p0: p, orig: { x: m.x, y: m.y }, moved: false };
+    paintPreview(); document.querySelectorAll('#docCallouts .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.dsel) === n)); e.preventDefault(); return;
+  }
+  e.preventDefault();
+  S.ddrag = { kind: S.dtool === 'canvas-snip' ? 'csnip' : 'draw', p0: p, p1: p };
+});
+document.addEventListener('pointermove', (e) => {
+  const dr = S.ddrag; if (!dr) return;
+  const p = pagePoint(e);
+  if (dr.kind === 'move') { const m = S.ws.marks.find((x) => x.n === dr.n); m.x = Math.round(dr.orig.x + p.x - dr.p0.x); m.y = Math.round(dr.orig.y + p.y - dr.p0.y); dr.moved = true; paintPreview(); return; }
+  dr.p1 = p;
+  const x = Math.min(dr.p0.x, p.x), y = Math.min(dr.p0.y, p.y), w = Math.abs(p.x - dr.p0.x), h = Math.abs(p.y - dr.p0.y);
+  const live = $('#docLive'); if (!live) return;
+  if (dr.kind === 'csnip') {
+    live.innerHTML = `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="rgba(76,135,196,.08)" stroke="var(--t1)" stroke-dasharray="5 4"/>`;
+    let ro = $('#readout'); if (!ro) { ro = document.createElement('div'); ro.id = 'readout'; ro.className = 'readout'; document.body.appendChild(ro); ro.style.position = 'fixed'; }
+    ro.style.left = (e.clientX + 12) + 'px'; ro.style.top = (e.clientY + 12) + 'px'; ro.textContent = `${Math.round(w * 2)} × ${Math.round(h * 2)}`;
+  } else live.innerHTML = S.dtool === 'box' ? `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="none" stroke="${S.color}" stroke-width="2.5"/>` : `<ellipse cx="${x + w / 2}" cy="${y + h / 2}" rx="${w / 2}" ry="${h / 2}" fill="none" stroke="${S.color}" stroke-width="2.5"/>`;
+});
+document.addEventListener('pointerup', () => {
+  const dr = S.ddrag; if (!dr) return; S.ddrag = null;
+  const ro = $('#readout'); if (ro) ro.remove();
+  if (dr.kind === 'move') { if (dr.moved) markDirty(); return; }
+  let x = Math.min(dr.p0.x, dr.p1.x), y = Math.min(dr.p0.y, dr.p1.y), w = Math.abs(dr.p1.x - dr.p0.x), h = Math.abs(dr.p1.y - dr.p0.y);
+  if (dr.kind === 'csnip') { if (w > 8 && h > 8) saveDocMarkup({ x, y, w, h }); paintPreview(); return; }
+  if (w < 10 || h < 10) { w = S.dtool === 'box' ? 140 : 90; h = S.dtool === 'box' ? 40 : 60; x -= w / 2; y -= h / 2; }
+  const marks = S.ws.marks; const n = marks.length ? Math.max(...marks.map((m) => m.n)) + 1 : 1;
+  marks.push({ n, type: S.dtool, x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h), color: S.color, note: '' });
+  S.dsel = n; markDirty(); renderWS();
+  const ta = $(`[data-dnote="${n}"]`); if (ta) ta.focus();
+});
 let spaceDown = false;
 document.addEventListener('contextmenu', (e) => { if (e.target.closest('#stage')) e.preventDefault(); });
 document.addEventListener('pointerdown', (e) => {
@@ -1804,8 +1927,9 @@ document.addEventListener('dblclick', (e) => {
 });
 document.addEventListener('input', (e) => {
   if (e.target.id === 'q') { S.query = e.target.value; S._focusQ = true; renderSide(); return; }
+  if (e.target.dataset.dnote) { S.ws.marks.find((m) => m.n === Number(e.target.dataset.dnote)).note = e.target.value; markDirty(); return; }
   if (e.target.dataset.note) { const sh = snipOf().shapes.find((c) => c.n === Number(e.target.dataset.note)); sh.note = e.target.value; markDirty(); snipOf().saved = false; redrawStage(); return; }
-  if (e.target.id === 'src') { S.ws.text = e.target.value; const pv = $('#preview'); if (pv && (S.ws.kind === 'agent' || S.ws.type === 'md')) pv.innerHTML = mdHTML(S.ws.text); markDirty(); return; }
+  if (e.target.id === 'src') { S.ws.text = e.target.value; const pv = $('#preview'); if (pv && S.ws.kind === 'agent') pv.innerHTML = mdHTML(S.ws.text); else if (S.ws.type === 'md') paintPreview(); markDirty(); return; }
   if (e.target.id === 'srvAddr') { S.settings.server = e.target.value; return; }
   if (e.target.id === 'ghRepo') { S.settings.repo = e.target.value; return; }
   if (e.target.id === 'ghIssue') { S.settings.issue = e.target.value; return; }
@@ -1831,12 +1955,17 @@ document.addEventListener('keydown', (e) => {
   if (e.key === ' ' && !typing) { spaceDown = true; if (e.target.closest && !e.target.closest('button')) e.preventDefault(); }
   if (e.key === 'Escape') {
     if (S.tool === 'canvas-snip') { S.tool = 'select'; renderWS(); return; }
+    if (S.ws && S.ws.kind === 'doc' && S.dtool !== 'select') { S.dtool = 'select'; renderWS(); return; }
     if (S.picker) { S.picker = false; renderWS(); } else if (S.addProject) { S.addProject = false; renderChat(); } else if (S.reportsPop) { S.reportsPop = false; renderChat(); } else if (S.pop) { S.pop = false; renderSide(); } else if (S.sideOpen) { S.sideOpen = false; layout(); }
   }
   const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
   if (ctrl && e.altKey && k === 's') { e.preventDefault(); $('#newSnip').click(); return; }
   if (ctrl && k === 's' && S.ws) { e.preventDefault(); if (S.dirty) { save(); renderWS(); renderSide(); } return; }
   if (e.key === 'Enter' && !e.shiftKey && e.target.id === 'input') { e.preventDefault(); $('#composer').requestSubmit(); return; }
+  if (S.ws && S.ws.kind === 'doc' && S.docView === 'preview' && !typing) {
+    if ((e.key === 'Delete' || e.key === 'Backspace') && S.dsel) { S.ws.marks = S.ws.marks.filter((m) => m.n !== S.dsel); S.dsel = null; markDirty(); renderWS(); return; }
+    const dm = { v: 'select', b: 'box', c: 'circle' }; if (!ctrl && dm[k]) { S.dtool = dm[k]; renderWS(); return; }
+  }
   if (!S.ws || S.ws.kind !== 'snip' || typing) return;
   if (ctrl && e.shiftKey && k === 'c') { e.preventDefault(); copyToast('Copied'); return; }
   if (ctrl && k === 'z') { e.preventDefault(); $('#undo').click(); return; }
@@ -1849,7 +1978,7 @@ document.addEventListener('keydown', (e) => {
 document.addEventListener('keyup', (e) => { if (e.key === ' ') spaceDown = false; });
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => requestAnimationFrame(redrawBanners));
 new MutationObserver(() => requestAnimationFrame(redrawBanners)).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { redrawBanners(); if (S.view && S.view.fit) fitView(); }, 120); });
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { redrawBanners(); if (S.view && S.view.fit) fitView(); fitPage(); }, 120); });
 
 applyTheme();
 render();
