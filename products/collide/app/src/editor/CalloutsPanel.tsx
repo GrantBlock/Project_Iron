@@ -6,6 +6,7 @@ const NOTE_IDLE_MS = 500;
 const TYPE_LABEL: Record<Shape["type"], string> = {
   rect: "Rectangle",
   ellipse: "Ellipse",
+  point: "Point",
   arrow: "Arrow",
   text: "Text",
   callout: "Callout",

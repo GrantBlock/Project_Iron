@@ -77,16 +77,63 @@ test("Copy auto-crops to annotations outside the image, on the canvas background
   expect(s.scale).toBe(1);
 });
 
-test("a callout's note shows as a label on the canvas and widens the copy", async ({ page }) => {
-  await page.keyboard.press("c");
+async function toPage(page: import("@playwright/test").Page, ix: number, iy: number) {
   const box = (await page.getByTestId("canvas").boundingBox())!;
-  const s = (await page.evaluate(() => window.__collide!.getState().stage))!;
-  // Click near the image's right edge so the note label spills past it.
-  await page.mouse.click(box.x + s.x + 380, box.y + s.y + 150);
-  const before = (await page.evaluate(() => window.__collide!.copyFit())) as { width: number };
-  expect(before.width).toBe(400 + 0); // badge alone sits inside the image
+  const s = await stage(page);
+  return { x: box.x + s.x + ix * s.scale, y: box.y + s.y + iy * s.scale };
+}
+const doc = (page: import("@playwright/test").Page) =>
+  page.evaluate(() => window.__collide!.getDoc()) as Promise<{ shapes: { note?: string; label?: { x: number; y: number; w: number } }[] }>;
+
+test("a point gets a note box outside the image; Copy leaves out an empty box and includes a filled one", async ({ page }) => {
+  await page.keyboard.press("p");
+  const pt = await toPage(page, 380, 150);
+  await page.mouse.click(pt.x, pt.y);
+  // Empty note: box shows in the editor only, so Copy is the plain image.
+  expect(((await page.evaluate(() => window.__collide!.copyFit())) as { width: number }).width).toBe(400);
   await page.getByTestId("callout-note").first().fill("background needs blending");
   await page.keyboard.press("Tab");
-  const f = (await page.evaluate(() => window.__collide!.copyFit())) as { width: number };
-  expect(f.width).toBeGreaterThan(400 + 24);
+  // Box sits right of the image (nearest side), so Copy grows to the right only.
+  const f = (await page.evaluate(() => window.__collide!.copyFit())) as { width: number; height: number };
+  expect(f.width).toBeGreaterThan(400 + 40 + 200);
+  expect(f.height).toBe(300 + 2 * 24);
+});
+
+test("double-click edits a note on the canvas; drag moves the box and its right edge resizes it", async ({ page }) => {
+  await page.keyboard.press("r");
+  const a = await toPage(page, 10, 120);
+  const b = await toPage(page, 60, 160);
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.move(b.x, b.y, { steps: 5 });
+  await page.mouse.up();
+  await page.keyboard.press("v");
+  // Auto-placed left of the image: x = -40 - 200 .. -40, centred on y = 140.
+  const inBox = await toPage(page, -140, 140);
+  await page.mouse.dblclick(inBox.x, inBox.y);
+  await page.getByTestId("note-editor").fill("Check the header colour against the brand palette");
+  await page.keyboard.press("Enter");
+  expect((await doc(page)).shapes[0].note).toBe("Check the header colour against the brand palette");
+
+  // Move the box up by 60.
+  await page.mouse.move(inBox.x, inBox.y);
+  await page.mouse.down();
+  await page.mouse.move(inBox.x, inBox.y - 30, { steps: 4 });
+  await page.mouse.move(inBox.x, inBox.y - 60, { steps: 4 });
+  await page.mouse.up();
+  const moved = (await doc(page)).shapes[0].label!;
+  expect(Math.abs(moved.x - -240)).toBeLessThanOrEqual(2);
+  expect(moved.w).toBe(200);
+
+  // Resize: drag the right edge 80 px left; the box gets narrower (height re-fits).
+  const s = await stage(page);
+  const edge = await toPage(page, moved.x + moved.w - 1, moved.y + 10);
+  await page.mouse.move(edge.x, edge.y);
+  await page.mouse.down();
+  await page.mouse.move(edge.x - 40 * s.scale, edge.y, { steps: 4 });
+  await page.mouse.move(edge.x - 80 * s.scale, edge.y, { steps: 4 });
+  await page.mouse.up();
+  const resized = (await doc(page)).shapes[0].label!;
+  expect(Math.abs(resized.w - 120)).toBeLessThanOrEqual(3);
+  expect(resized.x).toBe(moved.x);
 });

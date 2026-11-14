@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const SHAPE_TYPES = ["rect", "ellipse", "arrow", "text", "callout", "highlight"] as const;
+export const SHAPE_TYPES = ["rect", "ellipse", "point", "arrow", "text", "callout", "highlight"] as const;
 export type ShapeType = (typeof SHAPE_TYPES)[number];
 
 const num = z.number().finite();
@@ -16,15 +16,19 @@ const base = {
   strokeWidth: num.min(0),
   callout: z.number().int().min(1).optional(),
   note: z.string().optional(),
+  /** Where the user put the note box (image px, top-left + width). Absent = auto-placed. */
+  label: z.object({ x: num, y: num, w: num.positive() }).optional(),
 };
 
-const simple = (type: "rect" | "ellipse" | "highlight") =>
+const simple = (type: "rect" | "ellipse" | "point" | "highlight") =>
   z.object({ ...base, type: z.literal(type) });
 
 export const ShapeSchema = z.discriminatedUnion("type", [
   simple("rect"),
   simple("ellipse"),
   simple("highlight"),
+  // A point marker at (x, y); w and h are 0.
+  simple("point"),
   // Arrow end points [x1, y1, x2, y2], relative to x,y (A).
   z.object({
     ...base,

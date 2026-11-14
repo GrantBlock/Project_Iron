@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { Arrow, Circle, Ellipse, Group, Image as KonvaImage, Label, Layer, Rect, Stage, Tag, Text, Transformer } from "react-konva";
 import Konva from "konva";
 import type { Shape } from "../model";
-import { BADGE_SIZE, calloutAt, DEFAULT_FONT_SIZE, isRealDrag, resizeShape, shapeFromDrag, textAt, type DrawTool, type Style } from "./geometry";
+import { BADGE_SIZE, isRealDrag, resizeShape, shapeFromDrag, type DrawTool, type Style } from "./geometry";
+import { hasNoteBox, layoutNotes, leader, NOTE_BADGE, NOTE_BADGE_GAP, NOTE_FONT, NOTE_MIN_W, NOTE_PAD, noteHeight, noteTextWidth, type Box } from "./notes";
 import type { NewShape, ShapePatch } from "./store";
 import type { Tool } from "./tools";
 import { imageToScreen, panBy, screenToImage, wheelFactor, zoomAt, type Point, type Size, type View } from "./viewport";
@@ -51,7 +52,14 @@ const measureText = (text: string, fontSize: number) => {
   return { w: t.width(), h: t.height() };
 };
 
-const isDrawTool = (t: Tool): t is DrawTool => t === "rect" || t === "ellipse" || t === "arrow";
+const isDrawTool = (t: Tool): t is DrawTool & Tool => t === "rect" || t === "ellipse";
+
+/** Shown in an empty note box in the editor (left out of Copy/Export). */
+export const NOTE_PLACEHOLDER = "Describe…";
+
+/** Height of `text` wrapped to `width` at the note font size. */
+const measureNote = (text: string, width: number) =>
+  new Konva.Text({ text: text || " ", fontSize: NOTE_FONT, fontFamily: cssVar("--font-sans"), width, wrap: "word", lineHeight: 1.25 }).height();
 
 interface Draft {
   tool: DrawTool;
@@ -74,27 +82,28 @@ interface NodeProps {
   onSelect?: (id: string) => void;
   onMoved?: (id: string, x: number, y: number) => void;
   onEditText?: (id: string) => void;
+  onDragMove?: (id: string, x: number, y: number) => void;
 }
 
 /** Longest a note label grows before it wraps, in image pixels (A). */
 export const NOTE_MAX_WIDTH = 280;
 const NOTE_FONT_SIZE = 12; // (A)
-const NOTE_PAD = 6; // (A)
+const LABEL_PAD = 6; // (A) legacy callout badge labels
 
 /** A callout's note, drawn to the right of its badge so it shows in the view and in Copy. */
 function NoteLabel({ x, y, note }: { x: number; y: number; note: string }) {
   const fontFamily = cssVar("--font-sans");
   const natural = new Konva.Text({ text: note, fontSize: NOTE_FONT_SIZE, fontFamily }).width();
-  const width = Math.min(natural, NOTE_MAX_WIDTH - NOTE_PAD * 2);
+  const width = Math.min(natural, NOTE_MAX_WIDTH - LABEL_PAD * 2);
   return (
     <Label name="note-label" x={x} y={y} listening={false}>
       <Tag fill={cssVar("--surface-2")} stroke={cssVar("--line-2")} strokeWidth={1} cornerRadius={4} />
-      <Text text={note} width={Math.ceil(width) + NOTE_PAD * 2} padding={NOTE_PAD} fontSize={NOTE_FONT_SIZE} fontFamily={fontFamily} fill={cssVar("--text-1")} wrap="word" />
+      <Text text={note} width={Math.ceil(width) + LABEL_PAD * 2} padding={LABEL_PAD} fontSize={NOTE_FONT_SIZE} fontFamily={fontFamily} fill={cssVar("--text-1")} wrap="word" />
     </Label>
   );
 }
 
-function ShapeNode({ shape, interactive, hidden, onSelect, onMoved, onEditText }: NodeProps) {
+function ShapeNode({ shape, interactive, hidden, onSelect, onMoved, onEditText, onDragMove }: NodeProps) {
   const steel = cssVar("--steel-500");
   const onInk = cssVar("--ink-50");
   const badge = (cx: number, cy: number, n: number) => (
@@ -115,6 +124,11 @@ function ShapeNode({ shape, interactive, hidden, onSelect, onMoved, onEditText }
         <Ellipse name="main" x={shape.w / 2} y={shape.h / 2} radiusX={shape.w / 2} radiusY={shape.h / 2} stroke={shape.stroke} strokeWidth={shape.strokeWidth} fill="transparent" />
       );
       break;
+    case "point": {
+      const r = Math.max(4, shape.strokeWidth * 1.5);
+      main = <Circle name="main" radius={r} fill={shape.stroke} stroke={cssVar("--ink-950")} strokeWidth={1.5} hitStrokeWidth={12} />;
+      break;
+    }
     case "arrow": {
       const len = Math.max(12, shape.strokeWidth * 4);
       tail = { x: shape.points[0], y: shape.points[1] };
@@ -158,11 +172,115 @@ function ShapeNode({ shape, interactive, hidden, onSelect, onMoved, onEditText }
       onDblClick={() => shape.type === "text" && onEditText?.(shape.id)}
       onDblTap={() => shape.type === "text" && onEditText?.(shape.id)}
       {...handlers(shape, onSelect, onMoved)}
+      onDragMove={(e: Konva.KonvaEventObject<DragEvent>) => {
+        if (e.target === e.currentTarget) onDragMove?.(shape.id, e.target.x(), e.target.y());
+      }}
     >
       {main}
-      {shape.callout !== undefined && badge(tail.x, tail.y, shape.callout)}
-      {shape.callout !== undefined && shape.note?.trim() && (
+      {shape.callout !== undefined && !hasNoteBox(shape) && badge(tail.x, tail.y, shape.callout)}
+      {shape.callout !== undefined && !hasNoteBox(shape) && shape.note?.trim() && (
         <NoteLabel x={tail.x + BADGE_SIZE / 2 + 4} y={tail.y - BADGE_SIZE / 2} note={shape.note.trim()} />
+      )}
+    </Group>
+  );
+}
+
+interface NoteBoxProps {
+  shape: Shape;
+  box: Box;
+  selected: boolean;
+  interactive: boolean;
+  onSelect: (id: string) => void;
+  onMove: (id: string, x: number, y: number, done: boolean) => void;
+  onResize: (id: string, w: number, done: boolean) => void;
+  onEdit: (id: string) => void;
+}
+
+/** A numbered note box (auto-fit height, drag to move, drag the right edge to resize). */
+function NoteBox({ shape, box, selected, interactive, onSelect, onMove, onResize, onEdit }: NoteBoxProps) {
+  const note = shape.note?.trim() ?? "";
+  const empty = note === "";
+  const fontFamily = cssVar("--font-sans");
+  const textX = NOTE_PAD + NOTE_BADGE + NOTE_BADGE_GAP;
+  const setCursor = (e: Konva.KonvaEventObject<MouseEvent>, c: string) => {
+    const el = e.target.getStage()?.container();
+    if (el) el.style.cursor = c;
+  };
+  return (
+    <Group
+      name={empty ? "note-box note-empty" : "note-box"}
+      x={box.x}
+      y={box.y}
+      listening={interactive}
+      draggable={interactive}
+      onMouseDown={(e) => {
+        e.cancelBubble = true;
+        onSelect(shape.id);
+      }}
+      onTap={() => onSelect(shape.id)}
+      onDblClick={() => onEdit(shape.id)}
+      onDblTap={() => onEdit(shape.id)}
+      onDragMove={(e) => e.target === e.currentTarget && onMove(shape.id, e.target.x(), e.target.y(), false)}
+      onDragEnd={(e) => e.target === e.currentTarget && onMove(shape.id, e.target.x(), e.target.y(), true)}
+    >
+      <Rect
+        width={box.w}
+        height={box.h}
+        fill={cssVar("--surface-2")}
+        stroke={selected ? shape.stroke : cssVar("--line-2")}
+        strokeWidth={1}
+        cornerRadius={4}
+      />
+      <Circle x={NOTE_PAD + NOTE_BADGE / 2} y={NOTE_PAD + NOTE_BADGE / 2} radius={NOTE_BADGE / 2} fill={cssVar("--steel-500")} listening={false} />
+      <Text
+        x={NOTE_PAD}
+        y={NOTE_PAD}
+        width={NOTE_BADGE}
+        height={NOTE_BADGE}
+        align="center"
+        verticalAlign="middle"
+        text={String(shape.callout)}
+        fontSize={10}
+        fontStyle="600"
+        fontFamily={cssVar("--font-mono")}
+        fill={cssVar("--ink-50")}
+        listening={false}
+      />
+      <Text
+        name="note-text"
+        x={textX}
+        y={NOTE_PAD + Math.max(0, (NOTE_BADGE - NOTE_FONT * 1.25) / 2)}
+        width={noteTextWidth(box.w)}
+        text={empty ? NOTE_PLACEHOLDER : note}
+        fontSize={NOTE_FONT}
+        lineHeight={1.25}
+        fontFamily={fontFamily}
+        fill={cssVar(empty ? "--text-4" : "--text-1")}
+        wrap="word"
+        listening={false}
+      />
+      {interactive && (
+        <Rect
+          name="note-resize"
+          x={box.w - 4}
+          y={0}
+          width={8}
+          height={box.h}
+          fill="transparent"
+          draggable
+          onMouseEnter={(e) => setCursor(e, "ew-resize")}
+          onMouseLeave={(e) => setCursor(e, "")}
+          onDragMove={(e) => {
+            e.cancelBubble = true;
+            const w = Math.max(NOTE_MIN_W, e.target.x() + 4);
+            e.target.position({ x: w - 4, y: 0 });
+            onResize(shape.id, w, false);
+          }}
+          onDragEnd={(e) => {
+            e.cancelBubble = true;
+            onResize(shape.id, Math.max(NOTE_MIN_W, e.target.x() + 4), true);
+          }}
+        />
       )}
     </Group>
   );
@@ -194,6 +312,9 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
   const panRef = useRef<{ id: number; x: number; y: number } | null>(null);
   const draftRef = useRef<Draft | null>(null);
   const committed = useRef(false);
+  /** Live position/size while a shape or note box is being dragged, so arrows follow. */
+  const [moving, setMoving] = useState<{ id: string; shape?: Point; box?: Point; w?: number } | null>(null);
+  const [noteEdit, setNoteEdit] = useState<{ id: string; value: string } | null>(null);
 
   // Latest props for window-level handlers.
   const live = useRef({ view, tool, style, onAdd });
@@ -297,8 +418,8 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
     if (e.button !== 0 || !image || edit) return;
     const t = live.current.tool;
     const p = toImage(e.clientX, e.clientY);
-    if (t === "callout") {
-      live.current.onAdd(calloutAt(p, live.current.style), true);
+    if (t === "point") {
+      live.current.onAdd({ type: "point", x: p.x, y: p.y, w: 0, h: 0, ...live.current.style }, true);
       return;
     }
     if (!isDrawTool(t)) return;
@@ -328,13 +449,6 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
     window.addEventListener("pointercancel", up);
   };
 
-  // Text tool: a click opens the editor (on click, so the textarea keeps focus).
-  const onClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (live.current.tool !== "text" || !image || edit || spaceRef.current || e.button !== 0) return;
-    committed.current = false;
-    setEdit({ id: null, at: toImage(e.clientX, e.clientY), value: "", fontSize: DEFAULT_FONT_SIZE, color: style.stroke });
-  };
-
   const editText = (id: string) => {
     const s = shapes.find((x) => x.id === id);
     committed.current = false;
@@ -350,8 +464,6 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
     if (cur.id) {
       if (!text) onRemove(cur.id);
       else onUpdate(cur.id, { text, ...measureText(text, cur.fontSize) });
-    } else if (text) {
-      onAdd(textAt(cur.at, text, measureText(text, cur.fontSize), { stroke: cur.color, strokeWidth: style.strokeWidth }, cur.fontSize), false);
     }
   };
 
@@ -380,9 +492,68 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
 
   const sel = (id: string) => onSelect(id);
   const ink = cssVar("--ink-50");
-  const canResize = selected && selected.type !== "callout";
+  const canResize = selected && selected.type !== "callout" && selected.type !== "point";
+
+  // Shapes as drawn right now (a shape being dragged moves its arrow live).
+  const liveShapes = useMemo(
+    () => shapes.map((s) => (moving?.shape && moving.id === s.id ? { ...s, x: moving.shape.x, y: moving.shape.y } : s)),
+    [shapes, moving],
+  );
+  const notes = useMemo(() => {
+    if (!image) return new Map<string, Box>();
+    const boxes = layoutNotes(liveShapes, image, measureNote, NOTE_PLACEHOLDER);
+    if (moving && (moving.box || moving.w)) {
+      const b = boxes.get(moving.id);
+      const s = liveShapes.find((x) => x.id === moving.id);
+      if (b && s) {
+        const w = moving.w ?? b.w;
+        const h = noteHeight(measureNote(s.note?.trim() || NOTE_PLACEHOLDER, noteTextWidth(w)));
+        boxes.set(moving.id, { ...b, ...(moving.box ?? {}), w, h });
+      }
+    }
+    return boxes;
+  }, [liveShapes, image, moving]);
+
+  const onShapeDragMove = (id: string, x: number, y: number) => {
+    // A rect/ellipse/point node sits at (x, y); an ellipse's Group is at its top-left too.
+    setMoving({ id, shape: { x, y } });
+  };
+  const onBoxMove = (id: string, x: number, y: number, done: boolean) => {
+    const b = notes.get(id);
+    if (!b) return;
+    if (done) {
+      setMoving(null);
+      onUpdate(id, { label: { x, y, w: b.w } });
+    } else setMoving({ id, box: { x, y } });
+  };
+  const onBoxResize = (id: string, w: number, done: boolean) => {
+    const b = notes.get(id);
+    if (!b) return;
+    if (done) {
+      setMoving(null);
+      onUpdate(id, { label: { x: b.x, y: b.y, w } });
+    } else setMoving({ id, w });
+  };
+  const noteDone = useRef(false);
+  const editNote = (id: string) => {
+    const s = shapes.find((x) => x.id === id);
+    if (!s) return;
+    noteDone.current = false;
+    onSelect(id);
+    setNoteEdit({ id, value: s.note ?? "" });
+  };
+  /** Save the typed note (null = cancel). */
+  const commitNote = (value: string | null) => {
+    if (noteDone.current) return;
+    noteDone.current = true;
+    const cur = noteEdit;
+    setNoteEdit(null);
+    if (cur && value !== null && value.trim() !== (shapes.find((x) => x.id === cur.id)?.note ?? "").trim()) onUpdate(cur.id, { note: value.trim() });
+  };
+  const editBox = noteEdit ? notes.get(noteEdit.id) : undefined;
+  const editBoxPos = editBox ? imageToScreen(view, { x: editBox.x + NOTE_PAD + NOTE_BADGE + NOTE_BADGE_GAP, y: editBox.y + NOTE_PAD }) : null;
   const keepRatio = selected?.type === "text";
-  const cursor = panning ? "grabbing" : spaceDown ? "grab" : tool === "select" ? "default" : tool === "text" ? "text" : "crosshair";
+  const cursor = panning ? "grabbing" : spaceDown ? "grab" : tool === "select" ? "default" : "crosshair";
   const draftShape: Shape | null = draft
     ? ({ ...shapeFromDrag(draft.tool, draft.a, draft.b, style), id: "draft" } as Shape)
     : null;
@@ -398,7 +569,6 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
       onPointerMove={onPointerMove}
       onPointerUp={endPan}
       onPointerCancel={endPan}
-      onClick={onClick}
       style={{
         position: "relative",
         flex: 1,
@@ -437,10 +607,53 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
                   interactive={tool === "select"}
                   hidden={edit?.id === s.id}
                   onSelect={sel}
-                  onMoved={(id, x, y) => onUpdate(id, { x, y })}
+                  onMoved={(id, x, y) => {
+                    setMoving(null);
+                    onUpdate(id, { x, y });
+                  }}
+                  onDragMove={onShapeDragMove}
                   onEditText={editText}
                 />
               ))}
+            {image &&
+              liveShapes.map((s) => {
+                const box = notes.get(s.id);
+                const pts = box && leader(s, box);
+                if (!box || !pts) return null;
+                const empty = !s.note?.trim();
+                return (
+                  <Arrow
+                    key={`leader-${s.id}`}
+                    name={empty ? "note-leader note-empty" : "note-leader"}
+                    points={pts}
+                    stroke={s.stroke}
+                    fill={s.stroke}
+                    strokeWidth={1.5}
+                    pointerLength={8}
+                    pointerWidth={8}
+                    lineCap="round"
+                    listening={false}
+                  />
+                );
+              })}
+            {image &&
+              liveShapes.map((s) => {
+                const box = notes.get(s.id);
+                if (!box) return null;
+                return (
+                  <NoteBox
+                    key={`note-${s.id}`}
+                    shape={s}
+                    box={box}
+                    selected={s.id === selectedId}
+                    interactive={tool === "select" && noteEdit?.id !== s.id}
+                    onSelect={sel}
+                    onMove={onBoxMove}
+                    onResize={onBoxResize}
+                    onEdit={editNote}
+                  />
+                );
+              })}
             {draftShape && <ShapeNode shape={draftShape} interactive={false} />}
             <Transformer
               ref={trRef}
@@ -503,6 +716,41 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
             color: edit.color,
             font: `400 ${edit.fontSize * view.scale}px/1.2 var(--font-sans)`,
             transformOrigin: "top left",
+          }}
+        />
+      )}
+      {noteEdit && editBox && editBoxPos && (
+        <textarea
+          data-testid="note-editor"
+          autoFocus
+          value={noteEdit.value}
+          placeholder={NOTE_PLACEHOLDER}
+          aria-label="Callout note"
+          onChange={(e) => setNoteEdit({ ...noteEdit, value: e.target.value })}
+          onPointerDown={(e) => e.stopPropagation()}
+          onBlur={(e) => commitNote(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              commitNote(noteEdit.value);
+            } else if (e.key === "Escape") commitNote(null);
+          }}
+          style={{
+            position: "absolute",
+            left: editBoxPos.x,
+            top: editBoxPos.y,
+            width: noteTextWidth(editBox.w) * view.scale,
+            height: Math.max(editBox.h - NOTE_PAD * 2, NOTE_BADGE) * view.scale,
+            margin: 0,
+            padding: 0,
+            border: 0,
+            outline: `1px dashed ${ink}`,
+            outlineOffset: 2,
+            resize: "none",
+            overflow: "hidden",
+            background: "var(--surface-2)",
+            color: "var(--text-1)",
+            font: `400 ${NOTE_FONT * view.scale}px/1.25 var(--font-sans)`,
           }}
         />
       )}

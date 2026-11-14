@@ -14,11 +14,14 @@ export interface Flattened {
  * Transformer, no branding. The stage's view and the Transformer's visibility are
  * restored before returning (the work is synchronous, so nothing repaints in between).
  */
+/** Editor-only nodes left out of every export: the Transformer and empty note boxes (with their arrows). */
+const editorOnly = (stage: Konva.Stage) => [...stage.find("Transformer"), ...stage.find(".note-empty")];
+
 export function flatten(stage: Konva.Stage, size: { width: number; height: number }): Flattened {
   const { width, height } = size;
   if (!(width > 0 && height > 0)) throw new Error("Nothing to export: no image is open.");
   const saved = { x: stage.x(), y: stage.y(), sx: stage.scaleX(), sy: stage.scaleY() };
-  const transformers = stage.find("Transformer");
+  const transformers = editorOnly(stage);
   const wasVisible = transformers.map((t) => t.visible());
   try {
     transformers.forEach((t) => t.visible(false));
@@ -76,7 +79,7 @@ export function contentBounds(image: { width: number; height: number }, rects: B
 export function flattenFit(stage: Konva.Stage, size: { width: number; height: number }, background: string): Flattened & { box: Box } {
   if (!(size.width > 0 && size.height > 0)) throw new Error("Nothing to copy: no image is open.");
   const saved = { x: stage.x(), y: stage.y(), sx: stage.scaleX(), sy: stage.scaleY() };
-  const transformers = stage.find("Transformer");
+  const transformers = editorOnly(stage);
   const wasVisible = transformers.map((t) => t.visible());
   const layer = stage.getLayers()[0];
   let bg: Konva.Rect | null = null;
@@ -85,7 +88,9 @@ export function flattenFit(stage: Konva.Stage, size: { width: number; height: nu
     stage.position({ x: 0, y: 0 });
     stage.scale({ x: 1, y: 1 });
     // At view scale 1 and no pan, client rects are in image pixels.
-    const rects = stage.find(".shape").filter((n) => n.visible()).map((n) => n.getClientRect());
+    const rects = [...stage.find(".shape"), ...stage.find(".note-box"), ...stage.find(".note-leader")]
+      .filter((n) => n.isVisible())
+      .map((n) => n.getClientRect());
     const box = contentBounds(size, rects);
     if (layer) {
       bg = new KonvaRect({ x: box.x, y: box.y, width: box.width, height: box.height, fill: background, listening: false });

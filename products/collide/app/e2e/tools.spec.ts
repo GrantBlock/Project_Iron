@@ -66,40 +66,24 @@ test("draws one of each tool; the doc has the expected types and bounds (100% an
   await page.mouse.wheel(0, -400);
   await expect.poll(async () => ((await page.evaluate(() => window.__collide!.getState())) as { stage: { scale: number } }).stage.scale).toBeGreaterThan(1.3);
 
-  await page.keyboard.press("a");
-  await drag(page, [60, 200], [160, 250]);
-
-  await page.keyboard.press("t");
-  const at = await toPage(page, 200, 40);
-  await page.mouse.click(at.x, at.y);
-  await page.getByTestId("text-editor").fill("Check this");
-  await page.keyboard.press("Enter");
-
-  await page.keyboard.press("c");
-  const c = await toPage(page, 330, 60);
-  await page.mouse.click(c.x, c.y);
+  await page.keyboard.press("p");
+  const pt = await toPage(page, 330, 60);
+  await page.mouse.click(pt.x, pt.y);
 
   const doc = await getDoc(page);
   expect(doc.version).toBe(1);
   expect(doc.source).toEqual({ kind: "image", width: 400, height: 300 });
-  expect(doc.shapes.map((s) => s.type)).toEqual(["rect", "ellipse", "arrow", "text", "callout"]);
-  const [rect, ellipse, arrow, text, callout] = doc.shapes;
+  expect(doc.shapes.map((s) => s.type)).toEqual(["rect", "ellipse", "point"]);
+  const [rect, ellipse, point] = doc.shapes;
 
   for (const [k, v] of Object.entries({ x: 40, y: 30, w: 100, h: 60 })) near(rect[k as "x"], v, `rect.${k}`);
   for (const [k, v] of Object.entries({ x: 220, y: 150, w: 80, h: 50 })) near(ellipse[k as "x"], v, `ellipse.${k}`);
-  for (const [k, v] of Object.entries({ x: 60, y: 200, w: 100, h: 50 })) near(arrow[k as "x"], v, `arrow.${k}`);
-  arrow.points!.forEach((p, i) => near(p, [0, 0, 100, 50][i], `arrow.points[${i}]`));
-  near(text.x, 200, "text.x");
-  near(text.y, 40, "text.y");
-  expect(text.text).toBe("Check this");
-  expect(text.w).toBeGreaterThan(20);
-  expect(text.h).toBeGreaterThan(8);
-  near(callout.x + callout.w / 2, 330, "callout centre x");
-  near(callout.y + callout.h / 2, 60, "callout centre y");
+  near(point.x, 330, "point.x");
+  near(point.y, 60, "point.y");
 
-  // Numbering: rect/ellipse/arrow/callout are numbered in order; text is not.
-  expect(doc.shapes.map((s) => s.callout)).toEqual([1, 2, 3, undefined, 4]);
-  expect(new Set(doc.shapes.map((s) => s.id)).size).toBe(5);
+  // Every shape is numbered in order.
+  expect(doc.shapes.map((s) => s.callout)).toEqual([1, 2, 3]);
+  expect(new Set(doc.shapes.map((s) => s.id)).size).toBe(3);
   for (const s of doc.shapes) expect(s.stroke).toMatch(/^#[0-9a-f]{6}$/i);
 });
 
@@ -142,7 +126,7 @@ test("select, move, resize with a Transformer handle, and delete", async ({ page
 });
 
 test("clicking empty canvas deselects; Backspace deletes a selected shape", async ({ page }) => {
-  await page.keyboard.press("c");
+  await page.keyboard.press("p");
   const p = await toPage(page, 100, 100);
   await page.mouse.click(p.x, p.y);
   await page.keyboard.press("v");

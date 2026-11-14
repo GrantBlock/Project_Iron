@@ -16,6 +16,7 @@ export type ShapePatch = Partial<{
   stroke: string;
   strokeWidth: number;
   note: string;
+  label: { x: number; y: number; w: number };
   text: string;
   fontSize: number;
   points: [number, number, number, number];
