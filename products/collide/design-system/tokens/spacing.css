@@ -1,0 +1,27 @@
+:root {
+  --space-0: 0px;
+  --space-px: 1px;
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-14: 56px;
+  --space-18: 72px;
+  --space-24: 96px;
+
+  --control-h-sm: 28px;
+  --control-h-md: 34px;
+  --control-h-lg: 42px;
+
+  --layout-sidebar: 232px;
+  --layout-inspector: 296px;
+  --layout-toolbar: 48px;
+  --layout-statusbar: 28px;
+  --layout-gutter: 12px;
+}

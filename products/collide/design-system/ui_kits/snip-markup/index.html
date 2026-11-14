@@ -1,0 +1,94 @@
+<!-- @dsCard group="Snip & Markup" viewport="1280x800" name="Editor" subtitle="Three-pane editor with capture overlay" -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Collide — Snip & Markup</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../styles.css">
+<style>@keyframes spin{to{transform:rotate(360deg)}} html,body,#root{height:100%}</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
+<script src="../../_ds_bundle.js" onerror="this.remove()"></script>
+<script src="../../tools/ds-loader.js"></script>
+</head><body><div id="root"></div>
+<script type="text/babel" src="Toolbar.jsx"></script>
+<script type="text/babel" src="Sidebar.jsx"></script>
+<script type="text/babel" src="Canvas.jsx"></script>
+<script type="text/babel" src="Inspector.jsx"></script>
+<script type="text/babel" src="CaptureOverlay.jsx"></script>
+<script type="text/babel">
+const meta = f => () => f.marks.length + (f.marks.length === 1 ? ' callout' : ' callouts');
+const mk = (id, name, label, dims, marks) => { const f = { id, name, label, dims, marks }; f.meta = meta(f); return f; };
+const seed = [
+  mk(1, 'conveyor-hmi-panel.png', 'Conveyor HMI panel', '1224 × 800', [
+    { type: 'ellipse', x0: 70, y0: 150, x1: 250, y1: 230, color: 'var(--signal-500)', n: 1, note: 'Button misaligned with header grid' },
+    { type: 'rect', x0: 330, y0: 250, x1: 480, y1: 320, color: 'var(--steel-500)', n: 2, note: 'Guard bracket missing weld' }]),
+  mk(2, 'pump-skid-P&ID.pdf', 'Pump skid P&ID · p.1', '2550 × 3300', []),
+  mk(3, 'line-3-guard-photo.png', 'Line 3 guard photo', '4032 × 3024', [{ type: 'arrow', x0: 120, y0: 90, x1: 260, y1: 190, color: 'var(--signal-500)', n: 1, note: 'Loose fastener' }]),
+];
+function WinButtons() {
+  const { Icon } = window.DS;
+  const [h, setH] = React.useState(null);
+  return <div style={{ display: 'flex', alignSelf: 'stretch' }}>
+    {[['min','minus','Minimize'],['max','square','Maximize'],['close','x','Close']].map(([k, ic, l]) => <button key={k} aria-label={l} title={l} onMouseEnter={() => setH(k)} onMouseLeave={() => setH(null)}
+      style={{ width: 46, height: '100%', display: 'grid', placeItems: 'center', border: 0, padding: 0, cursor: 'default', background: h === k ? (k === 'close' ? '#C42B1C' : 'rgba(255,255,255,0.06)') : 'transparent', color: h === k ? 'var(--text-1)' : 'var(--text-2)', borderTopRightRadius: k === 'close' ? 19 : 0, transition: 'background var(--dur-1)' }}>
+      <Icon name={ic} size={k === 'max' ? 11 : 14} />
+    </button>)}
+  </div>;
+}
+function App({ DS }) {
+  window.DS = DS;
+  const { GlassPanel, Kbd, Dialog, Button, Toast, Checkbox, Tabs } = DS;
+  const [files, setFiles] = React.useState(seed);
+  const [cur, setCur] = React.useState(1);
+  const [tool, setTool] = React.useState('ellipse');
+  const [color, setColor] = React.useState('var(--signal-500)');
+  const [query, setQuery] = React.useState('');
+  const [capture, setCapture] = React.useState(false);
+  const [exp, setExp] = React.useState(false);
+  const [fmt, setFmt] = React.useState('PNG');
+  const [toast, setToast] = React.useState(null);
+  const [model, setModel] = React.useState('Claude');
+  const [thinking, setThinking] = React.useState(false);
+  const [chats, setChats] = React.useState({ 1: [{ me: true, text: 'add these notes\n1. Button misaligned with header grid\n2. Guard bracket missing weld' }, { text: 'Done — added 2 notes to the image: 1) Button misaligned with header grid, 2) Guard bracket missing weld. They’re pinned next to each callout.' }] });
+  const file = files.find(f => f.id === cur);
+  const update = fn => setFiles(fs => fs.map(f => { if (f.id !== cur) return f; const n = { ...f, marks: fn(f.marks) }; n.meta = meta(n); return n; }));
+  const flash = t => { setToast(t); clearTimeout(window.__tt); window.__tt = setTimeout(() => setToast(null), 3600); };
+  React.useEffect(() => { const k = e => { if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 's') { e.preventDefault(); setCapture(true); } const map = { v: 'select', r: 'rect', o: 'ellipse', a: 'arrow', t: 'text' }; if (!e.ctrlKey && document.activeElement.tagName !== 'INPUT' && map[e.key]) setTool(map[e.key]); }; window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k); }, []);
+  const send = t => {
+    setChats(c => ({ ...c, [cur]: [...(c[cur] || []), { me: true, text: t }] })); setThinking(true);
+    const notes = file.marks.map((m, i) => (i + 1) + ') ' + (m.note || 'untitled callout').replace(/^./, s => s.toLowerCase())).join(', ');
+    setTimeout(() => { setThinking(false); setChats(c => ({ ...c, [cur]: [...(c[cur] || []), { text: file.marks.length ? file.marks.length + ' item' + (file.marks.length > 1 ? 's' : '') + ' — ' + notes + '.' : 'No callouts yet. Draw on the image first.' }] })); }, 1100);
+  };
+  const onCapture = (w, h) => { setCapture(false); const id = Date.now(); setFiles(fs => [mk(id, 'snip-' + String(fs.length + 1).padStart(3, '0') + '.png', 'New capture', w + ' × ' + h, []), ...fs]); setCur(id); setTool('rect'); flash({ tone: 'success', title: 'Captured ' + w + ' × ' + h, description: 'Saved to Recent' }); };
+  return <div style={{ height: '100%', padding: 14, boxSizing: 'border-box', background: 'var(--grain), var(--ambient-ember), var(--bg-canvas)', display: 'flex', flexDirection: 'column', gap: 10, minWidth: 1100 }}>
+    <GlassPanel radius="xl" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ height: 38, display: 'flex', alignItems: 'center', gap: 12, padding: '0 0 0 14px', borderBottom: '1px solid var(--line-1)' }}>
+        <span style={{ font: '600 15px/1 var(--font-sans)', letterSpacing: '-0.04em' }}>Collide</span>
+        <span style={{ font: '500 10.5px/1 var(--font-mono)', letterSpacing: 'var(--tracking-label)', textTransform: 'uppercase', color: 'var(--text-4)' }}>Snip & Markup</span>
+        <span style={{ flex: 1 }} />
+        <WinButtons />
+      </div>
+      <Toolbar tool={tool} setTool={setTool} color={color} setColor={setColor} onSnip={() => setCapture(true)} onExport={() => setExp(true)} fileName={file.name} />
+      <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
+        <Sidebar files={files} current={cur} setCurrent={setCur} query={query} setQuery={setQuery} />
+        <Canvas file={file} tool={tool} color={color} onAdd={d => update(ms => [...ms, { ...d, n: ms.length + 1, note: '' }])} />
+        <Inspector file={file} messages={chats[cur] || []} onSend={send} thinking={thinking} model={model} setModel={setModel} onEditCallout={(i, v) => update(ms => ms.map((m, j) => j === i ? { ...m, note: v } : m))} />
+      </div>
+      <div style={{ height: 28, display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', borderTop: '1px solid var(--line-1)', font: '400 11px/1 var(--font-mono)', color: 'var(--text-3)' }}>
+        <Kbd>Ctrl</Kbd><Kbd>Alt</Kbd><Kbd>S</Kbd><span style={{ marginLeft: 4 }}>to snip</span>
+        <span style={{ flex: 1 }} />
+        <span>{files.reduce((a, f) => a + f.marks.length, 0)} markups in this project</span>
+        <span style={{ width: 1, height: 12, background: 'var(--line-2)', margin: '0 8px' }} />
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 6, height: 6, borderRadius: 999, background: model === 'Claude' ? 'var(--steel-500)' : 'var(--moss-500)' }} />{model}</span>
+      </div>
+    </GlassPanel>
+    {capture && <CaptureOverlay onCancel={() => setCapture(false)} onCapture={onCapture} />}
+    <Dialog open={exp} onClose={() => setExp(false)} title="Export markup" description={file.name + ' · ' + file.marks.length + ' callouts flattened onto the image.'}
+      footer={<><Button variant="ghost" onClick={() => setExp(false)}>Cancel</Button><Button variant="primary" icon="download" onClick={() => { setExp(false); flash({ tone: 'success', title: 'Exported ' + fmt, description: file.name.replace(/\.[a-z]+$/, '') + '-markup.' + fmt.toLowerCase(), action: 'Show' }); }}>Export {fmt}</Button></>}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}><Tabs items={['PNG','PDF','Markdown']} value={fmt} onChange={setFmt} /><Checkbox checked label="Include callout list" /><Checkbox label="Attach original image" /></div>
+    </Dialog>
+    {toast && <div style={{ position: 'fixed', right: 28, bottom: 56, zIndex: 150 }}><Toast {...toast} onClose={() => setToast(null)} /></div>}
+  </div>;
+}
+loadCollide('../../').then(DS => ReactDOM.createRoot(document.getElementById('root')).render(<App DS={DS} />));
+</script></body></html>

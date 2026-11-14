@@ -1,0 +1,414 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Snip &amp; Markup Concept</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /*
+    Layout: a single still frame — the Phase 1 editor window (three panes:
+    Library, Canvas, AI side panel) as the main subject, with a smaller
+    "Step 1 — Capture" card beside it showing the snip overlay moment that
+    happens just before the editor opens. Dark theme only: this depicts a
+    dark desktop app, so it commits to one look rather than following the
+    viewer's OS theme.
+  */
+  :root {
+    --bc-surface: #0b0c0e;
+    --bc-surface-raised: #16191d;
+    --bc-hairline: #282a2d;
+    --bc-ink: #f2f3f4;
+    --bc-muted: #a3a9b0;
+    --bc-steel-blue: #4682b4;
+    --bc-steel-blue-text: #7faad0;
+    --bc-steel-blue-tint: #16283a;
+    --bc-on-steel-blue: #ffffff;
+    --bc-placeholder: #15181c;
+    --bc-placeholder-alt: #111316;
+    --bc-placeholder-text: #7d848c;
+    color-scheme: dark;
+    font-family: "Overpass", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bc-surface);
+    color: var(--bc-ink);
+    padding-block: 48px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    min-height: 100%;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+  .eyebrow {
+    font-family: "Overpass Mono", ui-monospace, Consolas, "Courier New", monospace;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--bc-steel-blue-text);
+  }
+  h1 {
+    margin: 2px 0 0;
+    font-size: clamp(26px, 4vw, 38px);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  .sub {
+    margin: 2px 0 0;
+    color: var(--bc-muted);
+    font-size: 15px;
+    max-width: 62ch;
+  }
+
+  .frames {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 860px) {
+    .frames { grid-template-columns: 1fr; }
+  }
+
+  .frame-label {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .frame-label .num {
+    font-family: "Overpass Mono", ui-monospace, Consolas, "Courier New", monospace;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    color: var(--bc-steel-blue-text);
+    border: 1px solid var(--bc-hairline);
+    border-radius: 2px;
+    padding: 2px 6px;
+  }
+  .frame-label .name { font-size: 13px; color: var(--bc-muted); }
+
+  /* ---- window chrome shared by both mockups ---- */
+  .window {
+    background: var(--bc-surface-raised);
+    border: 1px solid var(--bc-hairline);
+    border-radius: 4px;
+    overflow: hidden;
+    min-width: 0;
+  }
+  .titlebar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--bc-surface);
+    border-bottom: 1px solid var(--bc-hairline);
+  }
+  .titlebar .mark {
+    width: 16px; height: 16px;
+    border-radius: 2px;
+    background: var(--bc-steel-blue);
+    flex-shrink: 0;
+  }
+  .titlebar .name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--bc-ink);
+    letter-spacing: 0.01em;
+  }
+  .titlebar .winctl {
+    margin-left: auto;
+    display: flex;
+    gap: 6px;
+  }
+  .titlebar .winctl span {
+    width: 11px; height: 11px;
+    border-radius: 2px;
+    background: var(--bc-hairline);
+    display: block;
+  }
+
+  /* ---- main editor mockup ---- */
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--bc-hairline);
+    background: var(--bc-surface-raised);
+  }
+  .tbtn {
+    width: 30px; height: 30px;
+    border-radius: 2px;
+    border: 1px solid transparent;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .tbtn svg { width: 15px; height: 15px; stroke: var(--bc-muted); fill: none; stroke-width: 1.6; }
+  .tbtn.active { background: var(--bc-steel-blue-tint); border-color: var(--bc-steel-blue); }
+  .tbtn.active svg { stroke: var(--bc-steel-blue-text); }
+  .tsep { width: 1px; align-self: stretch; margin: 2px 4px; background: var(--bc-hairline); flex-shrink: 0; }
+  .swatch { width: 16px; height: 16px; border-radius: 50%; background: #e0574a; border: 2px solid var(--bc-surface); box-shadow: 0 0 0 1px var(--bc-hairline); }
+
+  .body3 {
+    display: grid;
+    grid-template-columns: 148px 1fr 220px;
+  }
+  @media (max-width: 620px) {
+    .body3 { grid-template-columns: 1fr; }
+    .lib { order: 2; }
+    .canvas-pane { order: 1; }
+    .ai { order: 3; }
+  }
+
+  .pane-title {
+    font-family: "Overpass Mono", ui-monospace, Consolas, "Courier New", monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--bc-muted);
+    padding: 10px 12px 6px;
+  }
+
+  /* library */
+  .lib { border-right: 1px solid var(--bc-hairline); min-width: 0; }
+  .lib-search {
+    margin: 0 10px 8px;
+    font-size: 11px;
+    color: var(--bc-placeholder-text);
+    border: 1px solid var(--bc-hairline);
+    border-radius: 2px;
+    padding: 5px 7px;
+    font-family: "Overpass Mono", ui-monospace, Consolas, "Courier New", monospace;
+  }
+  .lib-item {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 6px 10px;
+    cursor: default;
+  }
+  .lib-item.sel { background: var(--bc-steel-blue-tint); }
+  .lib-thumb { width: 28px; height: 22px; border-radius: 2px; background: linear-gradient(135deg, var(--bc-placeholder) 0 50%, var(--bc-placeholder-alt) 50%); flex-shrink: 0; }
+  .lib-name { font-size: 11.5px; color: var(--bc-ink); line-height: 1.25; }
+  .lib-meta { font-size: 10px; color: var(--bc-muted); }
+  .tags { display: flex; flex-wrap: wrap; gap: 5px; padding: 4px 10px 12px; }
+  .tag { font-family: "Overpass Mono", ui-monospace, Consolas, "Courier New", monospace; font-size: 9.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--bc-steel-blue-text); border: 1px solid var(--bc-hairline); border-radius: 2px; padding: 2px 6px; }
+
+  /* canvas */
+  .canvas-pane { padding: 14px; min-width: 0; display: flex; flex-direction: column; }
+  .canvas-box {
+    position: relative;
+    flex: 1;
+    min-height: 260px;
+    border-radius: 2px;
+    overflow: hidden;
+    background:
+      repeating-linear-gradient(135deg, var(--bc-placeholder) 0 14px, var(--bc-placeholder-alt) 14px 28px);
+  }
+  .canvas-cap {
+    position: absolute; left: 10px; bottom: 8px;
+    font-family: "Overpass Mono", ui-monospace, Consolas, "Courier New", monospace;
+    font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--bc-placeholder-text);
+  }
+  .shape-ellipse {
+    position: absolute; top: 28%; left: 18%; width: 120px; height: 56px;
+    border: 2.5px solid #e0574a; border-radius: 50%;
+  }
+  .shape-rect {
+    position: absolute; top: 58%; left: 54%; width: 96px; height: 44px;
+    border: 2.5px solid var(--bc-steel-blue-text); border-radius: 2px;
+  }
+  .callout {
+    position: absolute;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--bc-steel-blue);
+    color: var(--bc-on-steel-blue);
+    font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    font-family: "Overpass Mono", ui-monospace, Consolas, "Courier New", monospace;
+  }
+  .callout.c1 { top: calc(28% - 10px); left: calc(18% + 128px); }
+  .callout.c2 { top: calc(58% - 10px); left: calc(54% + 104px); }
+
+  /* ai panel */
+  .ai { border-left: 1px solid var(--bc-hairline); display: flex; flex-direction: column; min-width: 0; }
+  .callout-row { display: flex; gap: 7px; padding: 6px 10px; align-items: flex-start; }
+  .callout-row .badge { width: 16px; height: 16px; border-radius: 50%; background: var(--bc-steel-blue); color: var(--bc-on-steel-blue); font-size: 9.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; font-family: "Overpass Mono", ui-monospace, Consolas, "Courier New", monospace; }
+  .callout-row .note { font-size: 11.5px; color: var(--bc-ink); line-height: 1.35; }
+  .quick-asks { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 10px; }
+  .qa-btn { font-size: 10.5px; color: var(--bc-steel-blue-text); border: 1px solid var(--bc-hairline); border-radius: 2px; padding: 4px 8px; background: transparent; }
+  .chat { border-top: 1px solid var(--bc-hairline); padding: 10px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .bubble { font-size: 11.5px; line-height: 1.4; border-radius: 4px; padding: 7px 9px; max-width: 92%; }
+  .bubble.user { align-self: flex-end; background: var(--bc-steel-blue-tint); color: var(--bc-ink); }
+  .bubble.ai { align-self: flex-start; background: var(--bc-surface); border: 1px solid var(--bc-hairline); color: var(--bc-ink); }
+  .model-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-top: 1px solid var(--bc-hairline); font-family: "Overpass Mono", ui-monospace, Consolas, "Courier New", monospace; font-size: 9.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--bc-muted); }
+  .model-pill { color: var(--bc-steel-blue-text); border: 1px solid var(--bc-hairline); border-radius: 2px; padding: 2px 6px; }
+
+  .statusbar {
+    display: flex; justify-content: space-between;
+    padding: 6px 12px;
+    border-top: 1px solid var(--bc-hairline);
+    font-family: "Overpass Mono", ui-monospace, Consolas, "Courier New", monospace;
+    font-size: 10px; letter-spacing: 0.04em;
+    color: var(--bc-muted);
+  }
+
+  /* ---- capture overlay mockup (secondary, smaller) ---- */
+  .overlay-stage {
+    position: relative;
+    min-height: 260px;
+    background: repeating-linear-gradient(135deg, var(--bc-placeholder) 0 14px, var(--bc-placeholder-alt) 14px 28px);
+    overflow: hidden;
+  }
+  .overlay-dim { position: absolute; inset: 0; background: rgba(0,0,0,0.5); }
+  .overlay-box {
+    position: absolute; top: 32%; left: 20%; width: 58%; height: 34%;
+    border: 1.5px dashed var(--bc-steel-blue-text);
+    background: rgba(0,0,0,0);
+    box-shadow: 0 0 0 999px rgba(0,0,0,0.5);
+    filter: brightness(1.9);
+  }
+  .overlay-readout {
+    position: absolute; top: calc(32% - 22px); left: 20%;
+    font-family: "Overpass Mono", ui-monospace, Consolas, "Courier New", monospace;
+    font-size: 10.5px; color: var(--bc-ink);
+    background: var(--bc-steel-blue); border-radius: 2px; padding: 2px 6px;
+  }
+  .overlay-hint {
+    position: absolute; bottom: 10px; left: 10px;
+    font-family: "Overpass Mono", ui-monospace, Consolas, "Courier New", monospace;
+    font-size: 9.5px; letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--bc-placeholder-text);
+  }
+
+  .foot {
+    font-size: 12.5px;
+    color: var(--bc-muted);
+    max-width: 72ch;
+  }
+  .foot b { color: var(--bc-ink); font-weight: 600; }
+</style>
+
+<div class="page">
+  <div>
+    <div class="eyebrow">Concept · Snip &amp; Markup Tool</div>
+    <h1>Phase 1 editor, before any code exists</h1>
+    <p class="sub">What the spec's three-pane layout looks like in the Block Concepts dark theme — the snip overlay (step 2) on the left, the editor and AI side panel (steps 3–5) on the right.</p>
+  </div>
+
+  <div class="frames">
+    <!-- main editor mockup -->
+    <div>
+      <div class="frame-label"><span class="num">03–05</span><span class="name">Annotate, save, ask the AI</span></div>
+      <div class="window">
+        <div class="titlebar">
+          <span class="mark"></span>
+          <span class="name">Snip &amp; Markup — conveyor-hmi-panel.png</span>
+          <span class="winctl"><span></span><span></span><span></span></span>
+        </div>
+        <div class="toolbar">
+          <button class="tbtn" title="New snip"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M12 9v6M9 12h6"/></svg></button>
+          <button class="tbtn" title="Open PDF"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg></button>
+          <div class="tsep"></div>
+          <button class="tbtn" title="Box"><svg viewBox="0 0 24 24"><rect x="5" y="6" width="14" height="12" rx="1"/></svg></button>
+          <button class="tbtn active" title="Ellipse"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8" ry="6"/></svg></button>
+          <button class="tbtn" title="Arrow"><svg viewBox="0 0 24 24"><path d="M5 19 19 5M19 5h-7M19 5v7"/></svg></button>
+          <button class="tbtn" title="Text"><svg viewBox="0 0 24 24"><path d="M5 5h14M12 5v14"/></svg></button>
+          <button class="tbtn" title="Callout"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M10 9h.01M14 9h.01M9 15c1 1 5 1 6 0"/></svg></button>
+          <div class="tsep"></div>
+          <span class="swatch" title="Stroke color"></span>
+          <div class="tsep"></div>
+          <button class="tbtn" title="Save"><svg viewBox="0 0 24 24"><path d="M5 5h11l3 3v11H5z"/><path d="M8 5v5h8V5M8 19v-5h8v5"/></svg></button>
+          <button class="tbtn" title="Export"><svg viewBox="0 0 24 24"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 17v3h14v-3"/></svg></button>
+        </div>
+        <div class="body3">
+          <div class="lib">
+            <div class="pane-title">Recent</div>
+            <div class="lib-search">Search notes…</div>
+            <div class="lib-item sel">
+              <span class="lib-thumb"></span>
+              <span><span class="lib-name">conveyor-hmi-panel.png</span><br><span class="lib-meta">2 callouts</span></span>
+            </div>
+            <div class="lib-item">
+              <span class="lib-thumb"></span>
+              <span><span class="lib-name">pump-skid-P&amp;ID.pdf</span><br><span class="lib-meta">4 pages</span></span>
+            </div>
+            <div class="lib-item">
+              <span class="lib-thumb"></span>
+              <span><span class="lib-name">line-3-guard-photo.png</span><br><span class="lib-meta">1 callout</span></span>
+            </div>
+            <div class="pane-title">Tags</div>
+            <div class="tags">
+              <span class="tag">Line 3</span>
+              <span class="tag">Conveyor</span>
+              <span class="tag">P&amp;ID</span>
+            </div>
+          </div>
+          <div class="canvas-pane">
+            <div class="canvas-box">
+              <span class="canvas-cap">Image · Conveyor HMI panel</span>
+              <div class="shape-ellipse"></div>
+              <div class="callout c1">1</div>
+              <div class="shape-rect"></div>
+              <div class="callout c2">2</div>
+            </div>
+          </div>
+          <div class="ai">
+            <div class="pane-title">Callouts</div>
+            <div class="callout-row"><span class="badge">1</span><span class="note">Button misaligned with header grid</span></div>
+            <div class="callout-row"><span class="badge">2</span><span class="note">Guard bracket missing weld</span></div>
+            <div class="quick-asks">
+              <span class="qa-btn">Punch list</span>
+              <span class="qa-btn">Change request</span>
+              <span class="qa-btn">Layout suggestions</span>
+            </div>
+            <div class="chat">
+              <div class="bubble user">Turn these into a punch list for the electrician.</div>
+              <div class="bubble ai">2 items — 1) re-align HMI button to header grid, 2) re-weld guard bracket before next PM.</div>
+            </div>
+            <div class="model-row"><span>Model</span><span class="model-pill">Claude</span></div>
+          </div>
+        </div>
+        <div class="statusbar">
+          <span>Ctrl+Alt+S to snip</span>
+          <span>3 markups in this project</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- capture overlay mockup -->
+    <div>
+      <div class="frame-label"><span class="num">01–02</span><span class="name">Snip &amp; drag</span></div>
+      <div class="window">
+        <div class="titlebar">
+          <span class="mark"></span>
+          <span class="name">Capture overlay</span>
+          <span class="winctl"><span></span></span>
+        </div>
+        <div class="overlay-stage">
+          <div class="overlay-dim"></div>
+          <div class="overlay-box"></div>
+          <div class="overlay-readout">612 × 340</div>
+          <div class="overlay-hint">Esc to cancel · release to crop</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="foot"><b>Not yet decided:</b> capturing one monitor vs. all of them, the default AI (offline Ollama or Claude), and whether exports carry Block Concepts branding — all open questions in the spec, left out of this concept on purpose.</p>
+</div>
