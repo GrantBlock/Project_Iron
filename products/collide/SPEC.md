@@ -180,9 +180,9 @@ Opus plans and unblocks; Sonnet does the volume. Every task passes Coder → Rev
 | T03 | 1 | Editor canvas: image as locked background, zoom (wheel) and pan (space-drag) | Playwright loads a fixture PNG; zoom and pan do not move shapes relative to the image | T01 | Done |
 | T04 | 1 | Drawing tools: rect, ellipse, arrow, text, numbered callout; select, move, resize (`Transformer`), delete | e2e draws one of each; resulting JSON matches expected types and bounds within ±2 px | T02, T03 | Done |
 | T05 | 1 | Callout notes panel + undo/redo (Ctrl+Z / Ctrl+Y, 50 steps) | Note edits persist in JSON; undo/redo e2e covers draw, move, delete, note edit | T04 | Done |
-| T06 | 1 | Save/open markup folder (`source.png`, `annotations.json`, `export.png`) via Tauri fs | Reopened markup is fully editable and identical to what was saved | T04 | In progress |
+| T06 | 1 | Save/open markup folder (`source.png`, `annotations.json`, `export.png`) via Tauri fs | Reopened markup is fully editable and identical to what was saved | T04 | Done |
 | T07 | 1 | Export flattened PNG via `stage.toDataURL()` at source resolution | Export dimensions equal the source image; snapshot test passes | T04 | Done |
-| T08 | 2 | Rust `capture_monitor`: `xcap` capture of the monitor under the cursor, held in app state | Returns PNG with monitor dimensions; error path tested when capture fails | T01 | To do |
+| T08 | 2 | Rust `capture_monitor`: `xcap` capture of the monitor under the cursor, held in app state | Returns PNG with monitor dimensions; error path tested when capture fails | T01 | In progress |
 | T09 | 2 | Rust `crop_capture(x, y, w, h, scale)` with scale factor and monitor offset | Unit tests at 100/125/150/200% scaling, negative monitor origins, and zero-size boxes | T08 | To do |
 | T10 | 2 | Overlay window: transparent, fullscreen, topmost, dimmed frozen frame, drag box, `W × H` readout, Esc cancels | Overlay page runs in a browser with a fixture image; e2e drags in all 4 directions and gets a normalized box | T08 | To do |
 | T11 | 2 | Wire-up: New button + `Ctrl+Alt+S` → overlay → crop → editor opens with the crop | Automated: command chain integration test. Manual: Grant on Windows | T05–T07, T09, T10 | To do |
