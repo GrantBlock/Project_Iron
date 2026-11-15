@@ -72,6 +72,15 @@ after installing the CLI). Add the CLI's install folder to the **System** PATH (
 just your user PATH) and restart Project Chat, or run `start.bat` instead of the
 `.exe`.
 
+## Workspace layout (0.4)
+
+- **Header:** title at the top, **Menu** on the right (Projects, Reports, Connect).
+- **Sidebar:** **New chat**; the agent's **chat history** (Nightly reports pinned, then chats by day; ✕ deletes a chat); **Files**; the agent's files (personality, skills, memory), collapsed by default.
+- **Files:** set the **Project folder** in Menu → Projects. Explorer lists it (folders open, .. goes up); **Open folder** and **PowerShell** open Windows Explorer or a PowerShell window there on the server PC (from the server PC only).
+- **Editor:** .md, .markdown and .txt files and the agent's files. **Edit** (source) or **Preview** (click any line to edit it). Tools: **Heading** (H1–H6), **List** (`- `), **Table**, **Label** (`**…:** `: type, then → or `:` or click Label again to leave the marks), **Num list** (`1. `). **Save** or Ctrl+S; a backup is kept before every save.
+- **Full / half height** and **collapse** on both Explorer and the editor.
+- **Read this file** shares the open file with the agent; it can then answer about it and edit it (with **Undo**). **What do I run?** answers with a command you can copy or paste into PowerShell.
+
 ## The agent's tools and files
 
 **Read-only tools.** When the agent answers in the chat it runs the `claude` CLI with read-only tools and `--permission-mode dontAsk`, so anything not on this list is refused without asking:

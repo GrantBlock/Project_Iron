@@ -2,7 +2,7 @@
 //   server — runs the chat server on this PC and shows it in a window (default)
 //   client — connects to Agent Chat running on another computer; no local server
 'use strict';
-const { app, BrowserWindow, Tray, Menu, shell, dialog, nativeImage, clipboard, ipcMain } = require('electron');
+const { app, BrowserWindow, Tray, Menu, shell, dialog, nativeImage, clipboard, ipcMain, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -48,10 +48,14 @@ function chatUrl() {
     : `http://localhost:${srv.cfg.port}/?app=1`;
 }
 
+function winSize() {
+  const wa = screen.getPrimaryDisplay().workAreaSize;
+  return { w: Math.min(1360, wa.width - 40), h: Math.min(860, wa.height - 40) };
+}
 function createWindow() {
   win = new BrowserWindow({
-    // Opening size is the largest it can get; no maximize or full screen
-    width: 460, height: 820, minWidth: 360, minHeight: 480, maxWidth: 460, maxHeight: 820,
+    // Opening size is the largest it can get (fits the screen); no maximize or full screen
+    width: winSize().w, height: winSize().h, minWidth: 720, minHeight: 560, maxWidth: winSize().w, maxHeight: winSize().h,
     maximizable: false, fullscreenable: false,
     title: desktop.mode === 'client' ? 'Agent Chat — ' + desktop.serverUrl : 'Agent Chat',
     icon: ICON, autoHideMenuBar: true, backgroundColor: '#12152a',
