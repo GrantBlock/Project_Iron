@@ -1,8 +1,11 @@
-// `pnpm electron:dev`: starts the Vite dev server, then opens it in Electron.
+// `pnpm electron:dev`: builds the main-process bundle (dist-electron/native.cjs),
+// starts the Vite dev server, then opens it in Electron.
 // Closing the window stops the server. Extra arguments go to Electron.
 import { spawn } from "node:child_process";
 import electronPath from "electron";
-import { createServer } from "vite";
+import { build, createServer } from "vite";
+
+await build({ configFile: "vite.electron.config.ts", logLevel: "warn" });
 
 const server = await createServer();
 await server.listen();
