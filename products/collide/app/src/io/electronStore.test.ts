@@ -41,11 +41,13 @@ function bridge() {
     showOpenDialog: async () => (picked === null ? { canceled: true, filePaths: [] } : { canceled: false, filePaths: [picked] }),
   });
   const overIpc = async <T>(run: () => T | Promise<T>): Promise<T> => {
+    let message: string;
     try {
       return await run();
     } catch (e) {
-      throw new Error((e as Error).message);
+      message = (e as Error).message; // only the text crosses the bridge, never the typed error
     }
+    throw new Error(message);
   };
   const markups: CollideBridge["markups"] = {
     save: (folderName, files) => overIpc(() => main.save(folderName, files)),
