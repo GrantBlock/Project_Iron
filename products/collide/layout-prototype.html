@@ -831,6 +831,21 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
 .blank { position: relative; }
 .blank .menu { position: absolute; left: 12px; top: calc(12px + env(safe-area-inset-top, 0px)); }
 .chat { display: none !important; }
+.auragrp { display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 6px; border-radius: 999px; border: var(--border-w) solid var(--line-2); }
+.annsel { height: 24px; font-size: 11.5px; padding: 0 4px; border-radius: 999px; }
+.el.ccard { grid-template-columns: 16px minmax(0, 1fr); gap: 8px; padding: 8px 9px 8px 4px; }
+.el.ccard.dropping { box-shadow: inset 0 2px 0 var(--accent); }
+.grip { display: grid; place-items: center; align-self: stretch; color: var(--t4); cursor: grab; border-radius: 4px; }
+.grip:hover { background: var(--hover); color: var(--t1); }
+.typesel { height: 24px; border-radius: var(--r-ctl); border: var(--border-w) solid var(--line-2); background: var(--sunk); color: var(--t1); font: 500 11px var(--font-label); letter-spacing: calc(var(--label-track) * .6); text-transform: var(--label-case); padding: 0 4px; min-width: 0; }
+.tog { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 6px; border: 0; background: transparent; color: var(--t2); position: relative; }
+.tog:hover { background: var(--hover); }
+.tog[data-tog^="hide"][aria-pressed="true"] { color: var(--t4); }
+.tog[data-tog^="hide"][aria-pressed="true"]::after { content: ""; position: absolute; left: 4px; right: 4px; top: 50%; height: 1.5px; background: currentColor; transform: rotate(-45deg); }
+.tog[data-tog^="fill"][aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+:root[data-app-theme="aura"] .tog[data-tog^="fill"][aria-pressed="true"] { background: var(--aura-ink); color: var(--aura-surface); }
+.alpha { display: grid; grid-template-columns: auto minmax(0, 1fr) 34px; align-items: center; gap: 8px; font-size: 11.5px; color: var(--t3); }
+.alpha input { width: 100%; accent-color: var(--accent); }
 .notes h4 { margin: 12px 0 2px; font-size: 12.5px; }
 </style>
 
@@ -857,15 +872,15 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
   <table class="parity">
     <tr><td>New snip, Ctrl+Alt+S, delay 0/3/5/10 s</td><td>Sidebar, top; blank canvas</td></tr>
     <tr><td>Snip copied to clipboard automatically</td><td>Toast after New snip</td></tr>
-    <tr><td>Canvas snip with W × H readout, Esc leaves</td><td>Snip toolbar, first button</td></tr>
-    <tr><td>Open file, Open markup, Save Ctrl+S, Copy Ctrl+Shift+C, Export</td><td>Snip toolbar; Save in the header</td></tr>
-    <tr><td>Select V, Rectangle R, Ellipse O, Filled rectangle, Filled ellipse, X mark X, Point P</td><td>Snip toolbar</td></tr>
-    <tr><td>4 colours, stroke 2/3/5, undo/redo (50 steps), Delete</td><td>Snip toolbar, keys</td></tr>
+    <tr><td>Canvas snip with W × H readout, Esc leaves</td><td><b>Removed from the Snip toolbar</b> (Grant 2026-11-15). Stays in the Markdown editor.</td></tr>
+    <tr><td>Open file, Open markup, Save Ctrl+S, Copy Ctrl+Shift+C, Export</td><td>Open file → sidebar <b>Open</b> (zip, markup or image); <b>Add snip</b> with Current / Behind adds a snip to the open markup; Open markup, Copy, Export in the toolbar; Save in the header</td></tr>
+    <tr><td>Select V, Rectangle R, Ellipse O, Filled rectangle, Filled ellipse, X mark X, Point P</td><td>Snip toolbar without the filled tools; <b>shading is a toggle in the callout card</b>; type can be changed in the card</td></tr>
+    <tr><td>4 colours, stroke 2/3/5, undo/redo (50 steps), Delete</td><td>4 colours from the chosen <b>Aura theme</b> (Highlight, Ink, Deep, Light); the theme also styles the note bubbles</td></tr>
     <tr><td>Numbered note boxes outside the image, arrows, drag to move; empty note = number chip</td><td>Canvas. Draft: every new box starts slightly off-line, so its arrow is angled</td></tr>
-    <tr><td>Callouts panel: notes, Hide # / Show #</td><td>Numbered list on the right</td></tr>
+    <tr><td>Callouts panel: notes, Hide # / Show #</td><td><b>Callout card:</b> number and type; hide text, hide bubble (was Hide #), hide shape; shading; drag the grip to reorder (renumbers); transparency</td></tr>
     <tr><td>Wheel zoom, right-drag and Space-drag pan, Ctrl+0 refit, refit on resize</td><td>Canvas</td></tr>
     <tr><td>Status bar: Ctrl Alt S to snip, zoom %, W × H</td><td>Under the canvas</td></tr>
-    <tr><td>Search, Recent, Tags</td><td>Sidebar</td></tr>
+    <tr><td>Search, Recent, Tags</td><td>Sidebar: New snip, Add snip, Open, Search (the All / Snips / Zips chips are gone)</td></tr>
     <tr><td>Editor hides without a ghost; one title bar</td><td>Desktop shell (not shown here)</td></tr>
   </table>
   <p class="hint">Example content only: snips and the zip are placeholders. The Zip editor is not built yet.</p>
@@ -874,7 +889,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
 
 <script>
 const LOGO_PATH = "M0 0h32v1h-32zM0 1h32v1h-32zM0 2h32v1h-32zM0 3h21v1h-21zM22 3h5v1h-5zM29 3h1v1h-1zM31 3h1v1h-1zM1 4h1v1h-1zM4 4h26v1h-26zM31 4h1v1h-1zM1 5h1v1h-1zM3 5h24v1h-24zM28 5h1v1h-1zM30 5h2v1h-2zM1 6h2v1h-2zM4 6h18v1h-18zM23 6h4v1h-4zM28 6h1v1h-1zM0 7h1v1h-1zM2 7h2v1h-2zM5 7h2v1h-2zM8 7h8v1h-8zM17 7h1v1h-1zM19 7h6v1h-6zM26 7h5v1h-5zM2 8h1v1h-1zM4 8h16v1h-16zM21 8h3v1h-3zM25 8h5v1h-5zM0 9h1v1h-1zM5 9h10v1h-10zM16 9h5v1h-5zM23 9h1v1h-1zM25 9h1v1h-1zM28 9h2v1h-2zM0 10h1v1h-1zM2 10h5v1h-5zM8 10h13v1h-13zM22 10h4v1h-4zM28 10h3v1h-3zM3 11h1v1h-1zM5 11h2v1h-2zM8 11h5v1h-5zM14 11h3v1h-3zM18 11h8v1h-8zM27 11h2v1h-2zM31 11h1v1h-1zM2 12h1v1h-1zM5 12h3v1h-3zM9 12h3v1h-3zM13 12h1v1h-1zM15 12h9v1h-9zM25 12h1v1h-1zM28 12h1v1h-1zM6 13h1v1h-1zM8 13h7v1h-7zM16 13h3v1h-3zM20 13h5v1h-5zM27 13h1v1h-1zM8 14h4v1h-4zM15 14h1v1h-1zM17 14h5v1h-5zM31 14h1v1h-1zM3 15h1v1h-1zM6 15h2v1h-2zM10 15h4v1h-4zM15 15h7v1h-7zM23 15h2v1h-2zM26 15h1v1h-1zM28 15h1v1h-1zM4 16h1v1h-1zM6 16h1v1h-1zM10 16h2v1h-2zM13 16h1v1h-1zM15 16h4v1h-4zM21 16h3v1h-3zM29 16h2v1h-2zM6 17h1v1h-1zM8 17h1v1h-1zM11 17h1v1h-1zM13 17h2v1h-2zM17 17h1v1h-1zM19 17h3v1h-3zM25 17h1v1h-1zM28 17h1v1h-1zM30 17h1v1h-1zM2 18h1v1h-1zM13 18h3v1h-3zM18 18h7v1h-7zM26 18h1v1h-1zM0 19h1v1h-1zM5 19h1v1h-1zM7 19h1v1h-1zM9 19h1v1h-1zM12 19h1v1h-1zM15 19h2v1h-2zM18 19h1v1h-1zM21 19h1v1h-1zM23 19h1v1h-1zM25 19h2v1h-2zM28 19h1v1h-1zM30 19h2v1h-2zM2 20h2v1h-2zM6 20h2v1h-2zM10 20h5v1h-5zM18 20h2v1h-2zM21 20h4v1h-4zM28 20h1v1h-1zM2 21h1v1h-1zM4 21h1v1h-1zM7 21h1v1h-1zM12 21h1v1h-1zM15 21h1v1h-1zM21 21h1v1h-1zM26 21h1v1h-1zM1 22h1v1h-1zM3 22h1v1h-1zM5 22h1v1h-1zM8 22h1v1h-1zM13 22h1v1h-1zM17 22h1v1h-1zM19 22h2v1h-2zM22 22h1v1h-1zM24 22h1v1h-1zM29 22h1v1h-1zM7 23h1v1h-1zM10 23h1v1h-1zM15 23h1v1h-1zM20 23h3v1h-3zM31 23h1v1h-1zM2 24h1v1h-1zM12 24h2v1h-2zM23 24h1v1h-1zM7 25h1v1h-1zM10 25h1v1h-1zM19 25h1v1h-1zM21 25h3v1h-3zM25 25h2v1h-2zM30 25h2v1h-2zM3 26h3v1h-3zM9 26h1v1h-1zM11 26h2v1h-2zM14 26h1v1h-1zM16 26h1v1h-1zM18 26h1v1h-1zM1 27h1v1h-1zM3 27h2v1h-2zM7 27h1v1h-1zM10 27h3v1h-3zM15 27h1v1h-1zM17 27h2v1h-2zM22 27h1v1h-1zM25 27h1v1h-1zM28 27h1v1h-1zM30 27h2v1h-2zM1 28h2v1h-2zM6 28h3v1h-3zM12 28h7v1h-7zM20 28h2v1h-2zM24 28h6v1h-6zM0 29h2v1h-2zM3 29h1v1h-1zM5 29h2v1h-2zM9 29h1v1h-1zM13 29h2v1h-2zM16 29h1v1h-1zM18 29h1v1h-1zM20 29h1v1h-1zM23 29h1v1h-1zM25 29h2v1h-2zM29 29h3v1h-3zM1 30h1v1h-1zM15 30h1v1h-1zM22 30h5v1h-5zM30 30h1v1h-1zM1 31h1v1h-1zM11 31h4v1h-4zM30 31h2v1h-2z";
-const AURA = [{"name": "sage", "bg": "#94ac94", "hl": "#e42c04"}, {"name": "stone", "bg": "#ccc6c4", "hl": "#f4f404"}, {"name": "slate", "bg": "#5c7474", "hl": "#ecd434"}, {"name": "ash", "bg": "#848484", "hl": "#f4f404"}, {"name": "umber", "bg": "#7c6c5c", "hl": "#d4ac8c"}, {"name": "cobalt", "bg": "#345cc4", "hl": "#fcfcfc"}, {"name": "bone", "bg": "#d4d4c4", "hl": "#cc0414"}, {"name": "moss", "bg": "#748464", "hl": "#ecf484"}, {"name": "jade", "bg": "#74b494", "hl": "#447c5c"}, {"name": "linen", "bg": "#e4e4d4", "hl": "#ec4c3c"}, {"name": "fog", "bg": "#cccccc", "hl": "#ecd434"}, {"name": "olive", "bg": "#6c7464", "hl": "#ec4c1c"}, {"name": "lichen", "bg": "#9ca49c", "hl": "#0c0c0c"}, {"name": "paper", "bg": "#e4e4e4", "hl": "#fcbc5c"}];
+const AURA = [{"name": "sage", "bg": "#94ac94", "hl": "#e42c04", "ink": "#0b0b0a", "deep": "#657565", "tile": "#aec0ae", "f1": "#b4c5b4", "t1": "#0b0b0a", "o1": "#798d79", "hlf": "#e42c04", "onhl": "#f4f1ea"}, {"name": "stone", "bg": "#ccc6c4", "hl": "#f4f404", "ink": "#0b0b0a", "deep": "#8b8785", "tile": "#e8e5e4", "f1": "#e6e3e2", "t1": "#0b0b0a", "o1": "#a7a2a1", "hlf": "#f4f404", "onhl": "#0b0b0a"}, {"name": "slate", "bg": "#5c7474", "hl": "#ecd434", "ink": "#0b0b0a", "deep": "#3f4f4f", "tile": "#839595", "f1": "#8d9e9e", "t1": "#0b0b0a", "o1": "#4b5f5f", "hlf": "#ecd434", "onhl": "#0b0b0a"}, {"name": "ash", "bg": "#848484", "hl": "#f4f404", "ink": "#0b0b0a", "deep": "#5a5a5a", "tile": "#a2a2a2", "f1": "#a9a9a9", "t1": "#0b0b0a", "o1": "#6c6c6c", "hlf": "#f4f404", "onhl": "#0b0b0a"}, {"name": "umber", "bg": "#7c6c5c", "hl": "#d4ac8c", "ink": "#0b0b0a", "deep": "#54493f", "tile": "#9b8f83", "f1": "#a3988d", "t1": "#0b0b0a", "o1": "#66594b", "hlf": "#d4ac8c", "onhl": "#0b0b0a"}, {"name": "cobalt", "bg": "#345cc4", "hl": "#fcfcfc", "ink": "#0b0b0a", "deep": "#233f85", "tile": "#6583d2", "f1": "#718dd6", "t1": "#0b0b0a", "o1": "#2b4ba1", "hlf": "#ecd434", "onhl": "#0b0b0a"}, {"name": "bone", "bg": "#d4d4c4", "hl": "#cc0414", "ink": "#0b0b0a", "deep": "#909085", "tile": "#ecece4", "f1": "#eaeae2", "t1": "#0b0b0a", "o1": "#aeaea1", "hlf": "#cc0414", "onhl": "#fcfcfc"}, {"name": "moss", "bg": "#748464", "hl": "#ecf484", "ink": "#0b0b0a", "deep": "#4f5a44", "tile": "#95a289", "f1": "#9ea993", "t1": "#0b0b0a", "o1": "#5f6c52", "hlf": "#ecf484", "onhl": "#0b0b0a"}, {"name": "jade", "bg": "#74b494", "hl": "#447c5c", "ink": "#0b0b0a", "deep": "#4f7a65", "tile": "#95c6ae", "f1": "#9ecbb4", "t1": "#0b0b0a", "o1": "#5f9479", "hlf": "#ecf484", "onhl": "#0b0b0a"}, {"name": "linen", "bg": "#e4e4d4", "hl": "#ec4c3c", "ink": "#0b0b0a", "deep": "#9b9b90", "tile": "#f3f3ec", "f1": "#f2f2ea", "t1": "#0b0b0a", "o1": "#bbbbae", "hlf": "#ec4c3c", "onhl": "#0b0b0a"}, {"name": "fog", "bg": "#cccccc", "hl": "#ecd434", "ink": "#0b0b0a", "deep": "#8b8b8b", "tile": "#e8e8e8", "f1": "#e6e6e6", "t1": "#0b0b0a", "o1": "#a7a7a7", "hlf": "#ecd434", "onhl": "#0b0b0a"}, {"name": "olive", "bg": "#6c7464", "hl": "#ec4c1c", "ink": "#0b0b0a", "deep": "#494f44", "tile": "#8f9589", "f1": "#989e93", "t1": "#0b0b0a", "o1": "#595f52", "hlf": "#ec4c1c", "onhl": "#0b0b0a"}, {"name": "lichen", "bg": "#9ca49c", "hl": "#0c0c0c", "ink": "#0b0b0a", "deep": "#6a706a", "tile": "#b4bab4", "f1": "#babfba", "t1": "#0b0b0a", "o1": "#808680", "hlf": "#f45c04", "onhl": "#0b0b0a"}, {"name": "paper", "bg": "#e4e4e4", "hl": "#fcbc5c", "ink": "#0b0b0a", "deep": "#9b9b9b", "tile": "#f3f3f3", "f1": "#f2f2f2", "t1": "#0b0b0a", "o1": "#bbbbbb", "hlf": "#fcbc5c", "onhl": "#0b0b0a"}];
 
 const I = {
   chat: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/>',
@@ -947,23 +962,30 @@ const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g
 const clone = (o) => JSON.parse(JSON.stringify(o));
 
 /* ---------- Example data ---------- */
-const TYPE_LABEL = { rect: 'Rectangle', ellipse: 'Ellipse', 'rect-fill': 'Filled rectangle', 'ellipse-fill': 'Filled ellipse', cross: 'X mark', point: 'Point' };
+const TYPE_LABEL = { rect: 'Rectangle', ellipse: 'Ellipse', 'rect-fill': 'Rectangle', 'ellipse-fill': 'Ellipse', cross: 'X mark', point: 'Point' };
+const SHAPE_TYPES = ['rect', 'ellipse', 'cross', 'point'];
 const SIG = '#FF3D1F', STEEL = '#4C87C4', AMBER = '#E3A73A', INK50 = '#F3F2EF';
+/* Annotations and note bubbles use an Aura theme (Grant 2026-11-15). Colours are stored as roles, so changing the theme recolours the markup. */
+const ROLES = [['hl', 'Highlight'], ['ink', 'Ink'], ['deep', 'Deep'], ['tile', 'Light']];
+const auraOf = (name) => AURA.find((a) => a.name === name) || AURA[0];
+function pal(s) { const a = auraOf(s.style || 'sage'); return { hl: a.hlf, ink: a.ink, deep: a.deep, tile: a.tile, bg: a.bg, f1: a.f1, t1: a.t1, o1: a.o1 }; }
+const col = (sh, s) => (sh.color && sh.color[0] === '#' ? sh.color : pal(s)[sh.color] || pal(s).hl);
+function onColor(hex) { const h = hex.replace('#', ''); const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255); return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.55 ? '#0b0b0a' : '#fcfcfc'; }
 const SNIPS = [
   { id: 's-line3', art: 'line3', name: 'Line 3 conveyor guard', w: 1280, h: 720, day: 'Today', time: '10:40', saved: false, tags: ['LINE 3', 'CONVEYOR'],
     shapes: [
-      { n: 1, type: 'rect', x: 214, y: 118, w: 96, h: 74, color: SIG, sw: 3, note: 'Guard bracket cracked at the weld. Re-weld before next PM.' },
-      { n: 2, type: 'ellipse', x: 398, y: 142, w: 82, h: 66, color: SIG, sw: 3, note: 'Belt tracking drifts toward the motor side.' },
-      { n: 3, type: 'rect-fill', x: 514, y: 66, w: 92, h: 34, color: AMBER, sw: 3, note: 'HMI label reads M-310. Should read M-301.' },
-      { n: 4, type: 'point', x: 300, y: 262, w: 0, h: 0, color: STEEL, sw: 3, note: '' },
+      { n: 1, type: 'rect', x: 214, y: 118, w: 96, h: 74, color: 'hl', sw: 3, note: 'Guard bracket cracked at the weld. Re-weld before next PM.' },
+      { n: 2, type: 'ellipse', x: 398, y: 142, w: 82, h: 66, color: 'hl', sw: 3, note: 'Belt tracking drifts toward the motor side.' },
+      { n: 3, type: 'rect', fill: true, x: 514, y: 66, w: 92, h: 34, color: 'deep', sw: 3, note: 'HMI label reads M-310. Should read M-301.' },
+      { n: 4, type: 'point', x: 300, y: 262, w: 0, h: 0, color: 'ink', sw: 3, note: '' },
     ] },
   { id: 's-hmi', art: 'hmi', name: 'HMI header grid', w: 1920, h: 1080, day: 'Today', time: '08:05', saved: true, tags: ['LINE 3'],
     shapes: [
-      { n: 1, type: 'rect', x: 60, y: 40, w: 160, h: 46, color: SIG, sw: 3, note: 'Start button sits 6 px off the header grid.' },
-      { n: 2, type: 'cross', x: 444, y: 40, w: 30, h: 30, color: SIG, sw: 3, note: 'Alarm count wraps at 150% scaling.', hide: true },
+      { n: 1, type: 'rect', x: 60, y: 40, w: 160, h: 46, color: 'hl', sw: 3, note: 'Start button sits 6 px off the header grid.' },
+      { n: 2, type: 'cross', x: 444, y: 40, w: 30, h: 30, color: 'hl', sw: 3, note: 'Alarm count wraps at 150% scaling.', hideBubble: true },
     ] },
   { id: 's-pid', art: 'pid', name: 'P&ID V-101 tag', w: 2400, h: 1350, day: 'Earlier', time: 'Wed', saved: true, tags: ['P&ID'],
-    shapes: [ { n: 1, type: 'ellipse-fill', x: 250, y: 140, w: 92, h: 76, color: STEEL, sw: 3, note: 'Valve tag missing on the drawing.' } ] },
+    shapes: [ { n: 1, type: 'ellipse', fill: true, x: 250, y: 140, w: 92, h: 76, color: 'deep', sw: 3, note: 'Valve tag missing on the drawing.' } ] },
 ];
 const P06 = `# P06 Project Workspace Spec
 
@@ -1013,7 +1035,7 @@ const ZIPS = [
 const S = {
   theme: 'system', aura: 'sage', filter: 'all', chat: 'project-iron', ws: null, dirty: false, dockMin: false,
   open: { 'z-builder': true, 'z-builder/design': true, 'z-builder/design/specs': true },
-  tool: 'select', sel: null, color: SIG, sw: 3, view: null, panning: null, drag: null, hist: [], redo: [],
+  tool: 'select', sel: null, color: SIG, role: 'hl', addMode: 'Current', sw: 3, view: null, panning: null, drag: null, hist: [], redo: [],
   docView: 'preview', dtool: 'select', dsel: null, ddrag: null, pop: false, picker: false, closing: false, sideOpen: false, query: '',
   compact: false, winMax: true, pending: null, delay: 'No delay',
   settings: { keep: '', mode: 'server', server: '', repo: 'GrantBlock/Project_Iron', issue: '2', notify: true, password: '' },
@@ -1030,7 +1052,7 @@ function wrap(t) { const words = String(t).split(/\s+/).filter(Boolean); const o
 function noteBoxes(s) {
   const H = ih(s), taken = [], out = {};
   for (const sh of s.shapes) {
-    const lines = sh.note ? wrap(sh.note) : [];
+    const lines = sh.note && !sh.hideText ? wrap(sh.note) : [];
     const w = lines.length ? NOTE_W : NOTE_PAD * 2 + BADGE;
     const h = Math.max(BADGE, lines.length * LINE) + NOTE_PAD * 2;
     const c = { x: sh.x + sh.w / 2, y: sh.y + sh.h / 2 };
@@ -1070,7 +1092,7 @@ function noteBoxes(s) {
 }
 function bounds(s, withNotes = true) {
   let x0 = 0, y0 = 0, x1 = IW, y1 = ih(s);
-  if (withNotes) { const nb = noteBoxes(s); for (const sh of s.shapes) { if (sh.hide) continue; const b = nb[sh.n].box; x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.w); y1 = Math.max(y1, b.y + b.h); } }
+  if (withNotes) { const nb = noteBoxes(s); for (const sh of s.shapes) { if (sh.hideBubble) continue; const b = nb[sh.n].box; x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.w); y1 = Math.max(y1, b.y + b.h); } }
   return { x0, y0, x1, y1 };
 }
 function artSVG(s) {
@@ -1092,51 +1114,56 @@ function artSVG(s) {
   return `<rect width="640" height="360" fill="#f6f5f0"/><g stroke="#1b1b1b" stroke-width="2" fill="none"><path d="M40 180h220M330 180h270"/><path d="M260 160l70 40v-40l-70 40z"/><circle cx="460" cy="180" r="34"/><path d="M460 146v-60h80"/></g>
       <text x="440" y="186" font-family="Geist Mono, monospace" font-size="12" fill="#1b1b1b">T-1</text><text x="46" y="170" font-family="Geist Mono, monospace" font-size="11" fill="#1b1b1b">2"-PW-104</text>`;
 }
-function shapeSVG(sh, sel) {
-  const st = `stroke="${sh.color}" stroke-width="${sh.sw}"`;
-  const fill = sh.type.endsWith('-fill') ? `fill="${sh.color}" fill-opacity=".3"` : 'fill="none"';
+function shapeSVG(sh, sel, s, mode = 'full') {
+  const c = col(sh, s), alpha = sh.alpha ?? 1;
+  const st = `stroke="${c}" stroke-width="${sh.sw}"`;
+  const filled = sh.fill || sh.type.endsWith('-fill');
+  const fill = filled ? `fill="${c}" fill-opacity=".3"` : 'fill="none"';
+  const type = sh.type.replace('-fill', '');
   let g = '';
-  if (sh.type === 'rect' || sh.type === 'rect-fill') g = `<rect x="${sh.x}" y="${sh.y}" width="${sh.w}" height="${sh.h}" ${fill} ${st}/>`;
-  else if (sh.type === 'ellipse' || sh.type === 'ellipse-fill') g = `<ellipse cx="${sh.x + sh.w / 2}" cy="${sh.y + sh.h / 2}" rx="${sh.w / 2}" ry="${sh.h / 2}" ${fill} ${st}/>`;
-  else if (sh.type === 'cross') g = `<path d="M${sh.x} ${sh.y}l${sh.w} ${sh.h}M${sh.x + sh.w} ${sh.y}l${-sh.w} ${sh.h}" ${st} stroke-linecap="round"/>`;
-  else g = `<circle cx="${sh.x}" cy="${sh.y}" r="${3 + sh.sw}" fill="${sh.color}" stroke="#fff" stroke-width="1.5"/>`;
-  const hit = sh.type === 'point' ? `<circle cx="${sh.x}" cy="${sh.y}" r="12" fill="transparent"/>` : `<rect x="${sh.x - 4}" y="${sh.y - 4}" width="${sh.w + 8}" height="${sh.h + 8}" fill="transparent"/>`;
+  if (type === 'rect') g = `<rect x="${sh.x}" y="${sh.y}" width="${sh.w}" height="${sh.h}" ${fill} ${st}/>`;
+  else if (type === 'ellipse') g = `<ellipse cx="${sh.x + sh.w / 2}" cy="${sh.y + sh.h / 2}" rx="${sh.w / 2}" ry="${sh.h / 2}" ${fill} ${st}/>`;
+  else if (type === 'cross') g = `<path d="M${sh.x} ${sh.y}l${sh.w} ${sh.h}M${sh.x + sh.w} ${sh.y}l${-sh.w} ${sh.h}" ${st} stroke-linecap="round"/>`;
+  else g = `<circle cx="${sh.x}" cy="${sh.y}" r="${3 + sh.sw}" fill="${c}" stroke="${pal(s).f1}" stroke-width="1.5"/>`;
+  const hit = type === 'point' ? `<circle cx="${sh.x}" cy="${sh.y}" r="12" fill="transparent"/>` : `<rect x="${sh.x - 4}" y="${sh.y - 4}" width="${sh.w + 8}" height="${sh.h + 8}" fill="transparent"/>`;
   let selg = '';
   if (sel) {
-    const b = sh.type === 'point' ? { x: sh.x - 10, y: sh.y - 10, w: 20, h: 20 } : { x: sh.x - 3, y: sh.y - 3, w: sh.w + 6, h: sh.h + 6 };
+    const b = type === 'point' ? { x: sh.x - 10, y: sh.y - 10, w: 20, h: 20 } : { x: sh.x - 3, y: sh.y - 3, w: sh.w + 6, h: sh.h + 6 };
     selg = `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="none" stroke="#fff" stroke-dasharray="4 3" stroke-width="1"/>` +
       [[b.x, b.y], [b.x + b.w, b.y], [b.x, b.y + b.h], [b.x + b.w, b.y + b.h]].map(([x, y]) => `<rect x="${x - 3}" y="${y - 3}" width="6" height="6" fill="#fff" stroke="#09090B"/>`).join('');
   }
-  return `<g data-shape="${sh.n}" style="cursor:${S.tool === 'select' ? 'move' : 'inherit'}">${g}${hit}${selg}</g>`;
+  const op = alpha * (sh.hideShape && mode === 'full' ? 0.25 : 1);
+  return `<g data-shape="${sh.n}" style="cursor:${S.tool === 'select' ? 'move' : 'inherit'}"><g opacity="${op}">${g}</g>${hit}${selg}</g>`;
 }
-function noteSVG(sh, nb, sel) {
+function noteSVG(sh, nb, sel, s) {
   const { box, lines, from, to } = nb;
-  const op = sh.hide ? 0.35 : 1;
-  const text = lines.map((l, i) => `<text x="${box.x + NOTE_PAD + BADGE + 6}" y="${box.y + NOTE_PAD + 11 + i * LINE}" font-family="Geist, sans-serif" font-size="11.5" fill="#09090B">${esc(l)}</text>`).join('');
+  const P = pal(s), c = col(sh, s);
+  const op = sh.hideBubble ? 0.3 : 1;
+  const text = lines.map((l, i) => `<text x="${box.x + NOTE_PAD + BADGE + 6}" y="${box.y + NOTE_PAD + 11 + i * LINE}" font-family="Helvetica Neue, Arimo, Arial, sans-serif" font-size="11.5" fill="${P.t1}">${esc(l)}</text>`).join('');
   return `<g data-box="${sh.n}" opacity="${op}" style="cursor:move">
-    <line x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" stroke="${sh.color}" stroke-width="2" marker-end="url(#ah-${slug(sh.color)})"/>
-    <rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" rx="5" fill="#FFFFFF" stroke="${sel ? '#09090B' : sh.color}" stroke-width="${sel ? 2 : 1.5}"/>
-    <circle cx="${box.x + NOTE_PAD + BADGE / 2}" cy="${box.y + NOTE_PAD + BADGE / 2}" r="${BADGE / 2}" fill="${sh.color}"/>
-    <text x="${box.x + NOTE_PAD + BADGE / 2}" y="${box.y + NOTE_PAD + BADGE / 2 + 4}" text-anchor="middle" font-family="Geist Mono, monospace" font-size="10.5" font-weight="600" fill="#fff">${sh.n}</text>${text}</g>`;
+    <line x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" stroke="${c}" stroke-width="2" marker-end="url(#ah-${slug(c)})"/>
+    <rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}" rx="${lines.length ? 9 : box.h / 2}" fill="${P.f1}" stroke="${sel ? P.t1 : P.o1}" stroke-width="${sel ? 2 : 1.2}"/>
+    <circle cx="${box.x + NOTE_PAD + BADGE / 2}" cy="${box.y + NOTE_PAD + BADGE / 2}" r="${BADGE / 2}" fill="${c}"/>
+    <text x="${box.x + NOTE_PAD + BADGE / 2}" y="${box.y + NOTE_PAD + BADGE / 2 + 4}" text-anchor="middle" font-family="Geist Mono, monospace" font-size="10.5" font-weight="600" fill="${onColor(c)}">${sh.n}</text>${text}</g>`;
 }
 function markers(s) {
-  return [...new Set(s.shapes.map((x) => x.color))].map((c) => `<marker id="ah-${slug(c)}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="${c}"/></marker>`).join('');
+  return [...new Set(s.shapes.map((x) => col(x, s)))].map((c) => `<marker id="ah-${slug(c)}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="${c}"/></marker>`).join('');
 }
 /** mode: 'thumb' (image + shapes) | 'full' (editor, interactive) | 'export' (what Copy produces) */
 function snipSVG(id, cls = 'snipthumb', mode = 'thumb') {
   const s = SNIPS.find((x) => x.id === id) || SNIPS[0];
   const H = ih(s);
-  if (mode === 'thumb') return `<svg class="${cls}" viewBox="0 0 ${IW} ${H}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${esc(s.name)}">${artSVG(s)}${s.shapes.map((sh) => shapeSVG(sh, false)).join('')}</svg>`;
+  if (mode === 'thumb') return `<svg class="${cls}" viewBox="0 0 ${IW} ${H}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${esc(s.name)}">${artSVG(s)}${s.shapes.filter((sh) => !sh.hideShape).map((sh) => shapeSVG(sh, false, s, 'thumb')).join('')}</svg>`;
   const nb = noteBoxes(s);
-  const shown = mode === 'export' ? s.shapes.filter((x) => !x.hide) : s.shapes;
+  const shown = s.shapes;
   const b = mode === 'export' ? bounds(s) : { x0: -220, y0: -100, x1: IW + 220, y1: H + 100 };
   const m = mode === 'export' && (b.x0 < 0 || b.y0 < 0 || b.x1 > IW || b.y1 > H) ? 12 : 0;
   const vb = `${b.x0 - m} ${b.y0 - m} ${b.x1 - b.x0 + 2 * m} ${b.y1 - b.y0 + 2 * m}`;
   return `<svg class="${cls}" viewBox="${vb}" ${mode === 'full' ? `width="${b.x1 - b.x0}" height="${b.y1 - b.y0}"` : ''} role="img" aria-label="${esc(s.name)}">
-    <defs>${markers(s)}</defs>${mode === 'export' && m ? `<rect x="${b.x0 - m}" y="${b.y0 - m}" width="${b.x1 - b.x0 + 2 * m}" height="${b.y1 - b.y0 + 2 * m}" fill="#09090B"/>` : ''}
+    <defs>${markers(s)}</defs>${mode === 'export' && m ? `<rect x="${b.x0 - m}" y="${b.y0 - m}" width="${b.x1 - b.x0 + 2 * m}" height="${b.y1 - b.y0 + 2 * m}" fill="${pal(s).bg}"/>` : ''}
     <g data-image="1">${artSVG(s)}</g>
-    ${shown.map((sh) => shapeSVG(sh, mode === 'full' && S.sel === sh.n)).join('')}
-    ${shown.map((sh) => noteSVG(sh, nb[sh.n], mode === 'full' && S.sel === sh.n)).join('')}
+    ${shown.filter((sh) => mode === 'full' || !sh.hideShape).map((sh) => shapeSVG(sh, mode === 'full' && S.sel === sh.n, s, mode)).join('')}
+    ${shown.filter((sh) => mode === 'full' || !sh.hideBubble).map((sh) => noteSVG(sh, nb[sh.n], mode === 'full' && S.sel === sh.n, s)).join('')}
     <g id="liveRect"></g></svg>`;
 }
 
@@ -1242,10 +1269,11 @@ function renderSide() {
     <div class="actions">
       <button class="btn primary" id="newSnip" title="New snip (Ctrl+Alt+S)">${ico('scissors')}New snip</button>
       <label style="display:contents"><span hidden>Snip delay</span><select class="select" id="delay" aria-label="Delay before New snip captures">${['No delay', '3 s', '5 s', '10 s'].map((d) => `<option ${S.delay === d ? 'selected' : ''}>${d}</option>`).join('')}</select></label>
-      <button class="btn" id="openZip" style="grid-column:1 / -1">${ico('package')}Open zip</button>
+      <button class="btn" id="addSnip" title="Snip and add it to the open markup">${ico('plus')}Add snip</button>
+      <select class="select" id="addMode" aria-label="Where Add snip puts the new snip" title="Current: on top of the open markup. Behind: behind it.">${['Current', 'Behind'].map((m) => `<option ${S.addMode === m ? 'selected' : ''}>${m}</option>`).join('')}</select>
+      <button class="btn" id="openZip" style="grid-column:1 / -1" title="Open a zip file or a saved markup">${ico('folderOpen')}Open</button>
     </div>
-    <label class="search">${ico('search', 'sm')}<input id="q" placeholder="Search snips, notes, zips" value="${esc(S.query)}" aria-label="Search"></label>
-    <div class="filters">${f('all', 'All')}${f('snips', 'Snips')}${f('zips', 'Zips')}</div>
+    <label class="search">${ico('search', 'sm')}<input id="q" placeholder="Search" value="${esc(S.query)}" aria-label="Search"></label>
     <div class="scroll">
       ${listHTML}
       <div class="sec"><span class="label">Tags</span></div>
@@ -1295,15 +1323,13 @@ function applyView() {
 function redrawStage() { const z = $('#zoomer'); if (z) { z.innerHTML = snipSVG(S.ws.id, 'snipfull', 'full'); } }
 function renderSnipWS() {
   const s = snipOf();
-  const tools = [['select', 'pointer', 'Select', 'V'], ['rect', 'square', 'Rectangle', 'R'], ['ellipse', 'circle', 'Ellipse', 'O'], ['rect-fill', 'squareFill', 'Filled rectangle', ''], ['ellipse-fill', 'circleFill', 'Filled ellipse', ''], ['cross', 'cross', 'X mark', 'X'], ['point', 'dot', 'Point', 'P']];
+  const tools = [['select', 'pointer', 'Select', 'V'], ['rect', 'square', 'Rectangle', 'R'], ['ellipse', 'circle', 'Ellipse', 'O'], ['cross', 'cross', 'X mark', 'X'], ['point', 'dot', 'Point', 'P']];
   $('#ws').innerHTML = headHTML('scissors', s.name, storePath(`Markups/${slug(s.name)}/`)) + `
     <div class="toolbar" role="toolbar" aria-label="Markup tools">
-      <button class="tool" data-tool="canvas-snip" aria-pressed="${S.tool === 'canvas-snip'}" title="Canvas snip: drag a box on the canvas; copies it and opens it as a new markup (Esc cancels)" aria-label="Canvas snip">${ico('crop')}</button>
-      <button class="tool" id="openFile" title="Open file" aria-label="Open file">${ico('fileUp')}</button>
-      <span class="vsep"></span>
       ${tools.map(([k, ic, l, key]) => `<button class="tool" data-tool="${k}" aria-pressed="${S.tool === k}" title="${l}${key ? ` (${key})` : ''}" aria-label="${l}">${ico(ic)}</button>`).join('')}
       <span class="vsep"></span>
-      ${COLORS.map(([v, l]) => `<button class="swatch" data-color="${v}" aria-pressed="${S.color === v}" aria-label="Colour ${l}" style="background:${v}"></button>`).join('<span style="width:4px"></span>')}
+      <span class="auragrp" title="Annotation colours and note bubbles from an Aura theme">${ROLES.map(([r, l]) => `<button class="swatch" data-role="${r}" aria-pressed="${S.role === r}" aria-label="Colour ${l}" title="${l}" style="background:${pal(s)[r]}"></button>`).join('')}
+      <select class="select annsel" id="annTheme" aria-label="Aura theme for annotations">${AURA.map((a) => `<option ${(s.style || 'sage') === a.name ? 'selected' : ''}>${a.name}</option>`).join('')}</select></span>
       <span class="vsep"></span>
       <span role="group" aria-label="Stroke width" style="display:flex;gap:2px">${[2, 3, 5].map((w) => `<button class="stroke" data-sw="${w}" aria-pressed="${S.sw === w}" aria-label="Stroke ${w}"><span style="height:${w}px"></span></button>`).join('')}</span>
       <span style="flex:1 1 0;min-width:4px"></span>
@@ -1325,7 +1351,24 @@ function renderSnipWS() {
   if (S.view && S.view.id === s.id && !S.view.fit) applyView(); else requestAnimationFrame(() => { fitView(); if (S.view) S.view.id = s.id; });
 }
 function calloutsHTML(s) {
-  return s.shapes.length ? s.shapes.map((c) => `<div class="el ${S.sel === c.n ? 'sel' : ''} ${c.hide ? 'dim' : ''}" data-sel="${c.n}"><span class="num" style="background:${c.color};color:${c.color === INK50 ? '#09090B' : '#fff'}">${c.n}</span><div style="min-width:0"><div class="row"><span class="k">${TYPE_LABEL[c.type]}</span><button class="hidebtn" data-hide="${c.n}" aria-pressed="${!!c.hide}" title="${c.hide ? 'Number and arrow are hidden from Copy and Export' : 'Hide this number and arrow from Copy and Export'}">${c.hide ? 'Show #' : 'Hide #'}</button></div><textarea data-note="${c.n}" rows="2" placeholder="Add a note" aria-label="Note for callout ${c.n}">${esc(c.note)}</textarea></div></div>`).join('') : '<p class="hint" style="padding:8px">Draw on the image to add a callout.</p>';
+  if (!s.shapes.length) return '<p class="hint" style="padding:8px">Draw on the image to add a callout.</p>';
+  const tog = (f, n, ic, on, off, pressed) => `<button class="tog" data-tog="${f}:${n}" aria-pressed="${pressed}" title="${pressed ? on : off}" aria-label="${pressed ? on : off}">${ico(ic, 'sm')}</button>`;
+  return s.shapes.map((c) => {
+    const k = col(c, s), filled = c.fill || c.type.endsWith('-fill'), type = c.type.replace('-fill', '');
+    return `<div class="el ccard ${S.sel === c.n ? 'sel' : ''}" data-sel="${c.n}" data-drop="${c.n}">
+      <span class="grip" draggable="true" data-grip="${c.n}" title="Drag to reorder" aria-label="Reorder callout ${c.n}">${ico('menu', 'sm')}</span>
+      <div style="min-width:0;display:grid;gap:6px">
+        <div class="row"><span class="num" style="background:${k};color:${onColor(k)}">${c.n}</span>
+          <select class="typesel" data-type="${c.n}" aria-label="Type of callout ${c.n}">${SHAPE_TYPES.map((t) => `<option value="${t}" ${t === type ? 'selected' : ''}>${TYPE_LABEL[t]}</option>`).join('')}</select>
+          <span style="flex:1"></span>
+          ${type === 'rect' || type === 'ellipse' ? tog('fill', c.n, 'squareFill', 'Shaded: click to remove the shading', 'Not shaded: click to shade the shape', !!filled) : ''}
+          ${tog('hideText', c.n, 'text', 'Text hidden: click to show', 'Hide the note text (keeps the number)', !!c.hideText)}
+          ${tog('hideBubble', c.n, 'chat', 'Bubble hidden: click to show', 'Hide the bubble and arrow (Copy and Export too)', !!c.hideBubble)}
+          ${tog('hideShape', c.n, 'square', 'Shape hidden: click to show', 'Hide the shape (Copy and Export too)', !!c.hideShape)}</div>
+        <textarea data-note="${c.n}" rows="2" placeholder="Add a note" aria-label="Note for callout ${c.n}">${esc(c.note)}</textarea>
+        <label class="alpha"><span>Transparency</span><input type="range" min="0" max="90" step="5" value="${Math.round((1 - (c.alpha ?? 1)) * 100)}" data-alpha="${c.n}" aria-label="Transparency of callout ${c.n}"><span class="mono" data-alpha-out="${c.n}">${Math.round((1 - (c.alpha ?? 1)) * 100)}%</span></label>
+      </div></div>`;
+  }).join('');
 }
 function headings(text) {
   const out = []; text.split('\n').forEach((l, i) => { const m = /^(#{1,3})\s+(.*)/.exec(l); if (m) out.push({ level: m[1].length, text: m[2], line: i }); const im = /^!\[([^\]]*)\]\(([^)]+)\)/.exec(l); if (im) out.push({ level: 9, text: im[1] || im[2], line: i, img: true }); });
@@ -1559,16 +1602,16 @@ document.addEventListener('click', (e) => {
   if (d.themeSet) { S.theme = d.themeSet; applyTheme(); renderSide(); if (S.ws && S.ws.kind === 'snip') renderSnipWS(); return; }
   if (d.aura) { S.aura = d.aura; applyTheme(); renderSide(); return; }
   if (d.tool) { S.tool = d.tool; if (d.tool === 'canvas-snip') toast('Drag a box on the canvas. Esc leaves.'); renderWS(); return; }
-  if (d.color) { S.color = d.color; if (S.sel) { pushHist(); snipOf().shapes.find((x) => x.n === S.sel).color = d.color; snipChanged(); } else renderWS(); return; }
+  if (d.role) { S.role = d.role; if (S.sel) { pushHist(); snipOf().shapes.find((x) => x.n === S.sel).color = d.role; snipChanged(); } else renderWS(); return; }
+  if (d.tog) { e.stopPropagation(); const [f, n] = d.tog.split(':'); pushHist(); const sh = snipOf().shapes.find((x) => x.n === Number(n)); if (f === 'fill') { const was = sh.fill || sh.type.endsWith('-fill'); sh.type = sh.type.replace('-fill', ''); sh.fill = !was; } else sh[f] = !sh[f]; snipChanged(); return; }
   if (d.sw) { S.sw = Number(d.sw); if (S.sel) { pushHist(); snipOf().shapes.find((x) => x.n === S.sel).sw = S.sw; snipChanged(); } else renderWS(); return; }
-  if (d.hide) { e.stopPropagation(); pushHist(); const sh = snipOf().shapes.find((x) => x.n === Number(d.hide)); sh.hide = !sh.hide; snipChanged(); return; }
   if (d.view) { S.docView = d.view; S.dtool = 'select'; renderWS(); return; }
   if (d.dtool) { S.dtool = d.dtool; if (d.dtool === 'canvas-snip') toast('Drag a box over the page. Esc cancels.'); renderWS(); return; }
   if (d.dcolor) { S.color = d.dcolor; if (S.dsel) { S.ws.marks.find((m) => m.n === S.dsel).color = d.dcolor; markDirty(); } renderWS(); return; }
   if (d.dsel && !e.target.closest('textarea')) { S.dsel = Number(d.dsel); paintPreview(); document.querySelectorAll('#docCallouts .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.dsel) === S.dsel)); return; }
   if (d.gotoSet) { const el = document.getElementById('set-' + d.gotoSet); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
   if (d.copy) { toast(`${d.copy} copied`); return; }
-  if (d.sel && !e.target.closest('textarea, .hidebtn')) { S.sel = Number(d.sel); redrawStage(); document.querySelectorAll('#calloutList .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.sel) === S.sel)); return; }
+  if (d.sel && !e.target.closest('textarea, .hidebtn, .tog, select, input, .grip')) { S.sel = Number(d.sel); redrawStage(); document.querySelectorAll('#calloutList .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.sel) === S.sel)); return; }
   if (d.line !== undefined) { const ta = $('#src'); if (ta) { const lines = ta.value.split('\n'); const pos = lines.slice(0, Number(d.line)).join('\n').length + (Number(d.line) ? 1 : 0); ta.focus(); ta.setSelectionRange(pos, pos + (lines[d.line] || '').length); const lh = parseFloat(getComputedStyle(ta).lineHeight) || 20; ta.scrollTop = Math.max(0, d.line * lh - 60); } return; }
   if (d.md !== undefined) { const ta = $('#src'); if (ta) { const s = ta.selectionStart, en = ta.selectionEnd, sel = ta.value.slice(s, en); const ins = d.md === '**' ? `**${sel || 'bold'}**` : d.md === '[](url)' ? `[${sel || 'link'}](url)` : d.md + sel; ta.setRangeText(ins, s, en, 'end'); ta.dispatchEvent(new Event('input', { bubbles: true })); ta.focus(); } return; }
   if (d.insert) {
@@ -1586,7 +1629,8 @@ document.addEventListener('click', (e) => {
     case 'settingsBtn': case 'modePill': openWS({ kind: 'settings' }); return;
     case 'blankSnip': $('#newSnip').click(); return;
     case 'newSnip': { const dl = S.delay; if (dl === 'No delay') { toast('Drag a box on your screen. Esc cancels.'); setTimeout(() => newSnip(false), 700); } else { toast(`Collide hides, waits ${dl}, then captures`); setTimeout(() => newSnip(false), 1600); } return; }
-    case 'openZip': S.open['z-builder'] = true; S.filter = 'all'; renderSide(); toast('Unpacked builder-v0.1.zip on the server'); return;
+    case 'openZip': S.open['z-builder'] = true; S.filter = 'all'; renderSide(); toast('Open: a zip file or a saved markup · builder-v0.1.zip unpacked on the server'); return;
+    case 'addSnip': { if (!S.ws || S.ws.kind !== 'snip') { $('#newSnip').click(); return; } toast(S.addMode === 'Behind' ? `Snip added behind ${snipOf().name} (Draft: what Behind means is a question for Grant)` : `Snip added on top of ${snipOf().name}`); return; }
     case 'wsSave': save(); renderWS(); renderSide(); return;
     case 'wsClose': closeWS(false); return;
     case 'saveClose': save(); closeWS(true); return;
@@ -1614,6 +1658,10 @@ document.addEventListener('click', (e) => {
 document.addEventListener('change', (e) => {
   const t = e.target;
   if (t.id === 'delay') { S.delay = t.value; return; }
+  if (t.id === 'addMode') { S.addMode = t.value; return; }
+  if (t.id === 'annTheme') { pushHist(); snipOf().style = t.value; snipChanged(); renderSide(); return; }
+  if (t.dataset && t.dataset.type) { pushHist(); const sh = snipOf().shapes.find((x) => x.n === Number(t.dataset.type)); const was = sh.fill || sh.type.endsWith('-fill'); sh.type = t.value; sh.fill = was && (t.value === 'rect' || t.value === 'ellipse'); if (t.value === 'point') { sh.x += sh.w / 2; sh.y += sh.h / 2; sh.w = 0; sh.h = 0; } else if (!sh.w) { sh.x -= 40; sh.y -= 25; sh.w = 80; sh.h = 50; } snipChanged(); return; }
+  if (t.dataset && t.dataset.alpha) { snipChanged(); return; }
   if (t.name === 'mode') { S.settings.mode = t.value; renderWS(); return; }
   if (t.id === 'imgFile' && t.files && t.files[0]) {
     const file = t.files[0], r = new FileReader();
@@ -1623,6 +1671,19 @@ document.addEventListener('change', (e) => {
     r.readAsDataURL(file); t.value = '';
   }
 });
+
+/* ---------- Callout cards: drag the grip to reorder; numbers follow the new order ---------- */
+document.addEventListener('dragstart', (e) => { const g = e.target.closest && e.target.closest('[data-grip]'); if (!g) return; S.dragN = Number(g.dataset.grip); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', String(S.dragN)); } catch (x) {} });
+document.addEventListener('dragover', (e) => { const el = e.target.closest && e.target.closest('[data-drop]'); if (el && S.dragN) { e.preventDefault(); document.querySelectorAll('.ccard').forEach((c) => c.classList.toggle('dropping', c === el)); } });
+document.addEventListener('drop', (e) => {
+  const el = e.target.closest && e.target.closest('[data-drop]'); if (!el || !S.dragN) return; e.preventDefault();
+  const s = snipOf(), from = s.shapes.findIndex((x) => x.n === S.dragN), to = s.shapes.findIndex((x) => x.n === Number(el.dataset.drop));
+  S.dragN = null; if (from < 0 || to < 0 || from === to) { renderWS(); return; }
+  pushHist(); const selShape = s.shapes.find((x) => x.n === S.sel);
+  const [m] = s.shapes.splice(from, 1); s.shapes.splice(to, 0, m); s.shapes.forEach((x, i) => (x.n = i + 1));
+  S.sel = selShape ? selShape.n : null; snipChanged(); toast('Callouts renumbered');
+});
+document.addEventListener('dragend', () => { S.dragN = null; document.querySelectorAll('.ccard').forEach((c) => c.classList.remove('dropping')); });
 
 /* ---------- Canvas: draw, select, move, note boxes, zoom, pan, canvas snip ---------- */
 function toImage(e) { const svg = $('#zoomer svg'); const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
@@ -1687,7 +1748,7 @@ document.addEventListener('pointerdown', (e) => {
   // Drawing tools
   pushHist();
   const n = s.shapes.length ? Math.max(...s.shapes.map((c) => c.n)) + 1 : 1;
-  const sh = { n, type: S.tool, x: Math.round(p.x), y: Math.round(p.y), w: 0, h: 0, color: S.color, sw: S.sw, note: '' };
+  const sh = { n, type: S.tool, x: Math.round(p.x), y: Math.round(p.y), w: 0, h: 0, color: S.role, sw: S.sw, note: '' };
   s.shapes.push(sh); S.sel = n;
   if (S.tool === 'point') { snipChanged(); const ta = $(`[data-note="${n}"]`); if (ta) ta.focus(); return; }
   S.drag = { kind: 'draw', n, p0: p }; stage.setPointerCapture(e.pointerId); redrawStage();
@@ -1712,6 +1773,7 @@ document.addEventListener('pointermove', (e) => {
   redrawStage();
 });
 document.addEventListener('pointerup', () => {
+  S._alphaHist = false;
   if (S.panning) { S.panning = null; const st = $('#stage'); if (st) st.classList.remove('panning'); return; }
   if (!S.drag) return;
   const dr = S.drag; S.drag = null;
@@ -1732,6 +1794,7 @@ document.addEventListener('dblclick', (e) => {
   const n = Number(el.dataset.box || el.dataset.shape); S.sel = n; const ta = $(`[data-note="${n}"]`); if (ta) { ta.focus(); ta.select(); }
 });
 document.addEventListener('input', (e) => {
+  if (e.target.dataset && e.target.dataset.alpha) { const sh = snipOf().shapes.find((x) => x.n === Number(e.target.dataset.alpha)); if (!S._alphaHist) { pushHist(); S._alphaHist = true; } sh.alpha = 1 - Number(e.target.value) / 100; const o = $(`[data-alpha-out="${sh.n}"]`); if (o) o.textContent = e.target.value + '%'; markDirty(); redrawStage(); return; }
   if (e.target.id === 'q') { S.query = e.target.value; S._focusQ = true; renderSide(); return; }
   if (e.target.dataset.dnote) { S.ws.marks.find((m) => m.n === Number(e.target.dataset.dnote)).note = e.target.value; markDirty(); return; }
   if (e.target.dataset.note) { const sh = snipOf().shapes.find((c) => c.n === Number(e.target.dataset.note)); sh.note = e.target.value; markDirty(); snipOf().saved = false; redrawStage(); return; }
