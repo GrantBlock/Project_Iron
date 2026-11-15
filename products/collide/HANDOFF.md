@@ -15,7 +15,7 @@
 | T15 | Snip choreography, settings | Done (Vitest 286, Playwright 45, Electron e2e 13 ×2; TESTER-NOTES 1, 7, 9, real hotkey, overlay DPI: manual Grant/Lydia) | n/a (Phase E) |
 | T16 | Local markup storage | Done (Vitest 319, Playwright 45, Electron e2e 15 ×2; real folder dialog, OneDrive/UNC Documents: manual Grant/Lydia) | n/a (Phase E) |
 | T17 | Remove Tauri | Done (Vitest 319, Playwright 45 (2 of 3 full runs green, see ISSUES 16), Electron e2e 15; no Rust; Reviewer doc fixes applied by Planner) | n/a (Phase E) |
-| T30 | Reference harness | To do | |
+| T30 | Reference harness | Done (hook in prototype + app; `pnpm ref`; Vitest 327, Playwright 45, Electron e2e 15) | 15 specs: prototype 15/15 ✓ · app 0/15 (expected before T31) |
 | T31 | Layout shell | To do | |
 | T32 | Markup engine | To do | |
 | T33 | Images on canvas | To do | |

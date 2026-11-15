@@ -16,6 +16,7 @@ import { SNIP_DELAYS, Toolbar } from "./Toolbar";
 import { copyPngToClipboard, dataUrlToBlob, downloadPng, exportFileName, flatten, flattenArea, flattenFit, type Flattened } from "../io/flatten";
 import { createMarkupStore, isPng, MarkupError, markupFolderName, type MarkupStore } from "../io";
 import { fitView, recentre, screenToImage, type Point, type Size, type View } from "./viewport";
+import { refState, type RefState } from "./refState";
 
 /** Resolve a swatch value ("var(--token)") to the hex string stored in the doc. */
 const resolveColor = (c: string) => {
@@ -59,6 +60,8 @@ export interface CollideTestState {
 }
 
 export interface CollideHook {
+  /** The reference test hook (RUN3 T30): read-only, a fresh plain JSON object. The prototype has the same call. */
+  state: () => RefState;
   /** Load an image from a URL, fit it to the canvas and clear shapes. Resolves with its size. */
   openImage: (url: string, name?: string) => Promise<{ width: number; height: number }>;
   /** Add a test rectangle (image pixels). Returns its id. */
@@ -118,6 +121,9 @@ export function EditorShell() {
   snipDelayRef.current = snipDelay;
   const [color, setColorState] = useState("var(--signal-500)");
   const [strokeWidth, setStrokeWidthState] = useState<number>(DEFAULT_STROKE_WIDTH);
+  // What the reference test hook reads, as of the last render.
+  const ui = useRef({ tool, color, strokeWidth });
+  ui.current = { tool, color, strokeWidth };
   const sizeRef = useRef<Size>({ width: 0, height: 0 });
   const handleRef = useRef<CanvasHandle | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -391,6 +397,16 @@ export function EditorShell() {
 
   useEffect(() => {
     const hook: CollideHook = {
+      state: () =>
+        refState({
+          image: live.current.image,
+          shapes: stateRef.current.doc?.shapes ?? [],
+          selectedId: stateRef.current.selectedId,
+          ...ui.current,
+          scale: live.current.view.scale,
+          fitted: fittedRef.current,
+          snipDelay: snipDelayRef.current,
+        }),
       openImage: (url, name) => open(url, name ?? nameFromUrl(url)),
       seedShape: (s) => {
         const id = nextShapeId(stateRef.current.doc?.shapes ?? []);
