@@ -935,7 +935,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
     <li><b>Home is a blank canvas</b> with Recents on the left: snips, zip files and their folder trees, tags. Hover a snip or zip and click the bin (or press Delete) to delete it; a splash screen asks first.</li>
     <li><b>Tabs on the canvas</b> (Grant 2026-11-15): each open snip, file or Settings is a tab with a dot: amber = changed, green = saved. Each keeps its own undo and zoom. Ctrl+W or × closes, Ctrl+Tab switches, middle-click closes.</li>
     <li><b>Closing with unsaved changes</b> shows a splash screen: Save and close, Close without saving, Cancel.</li>
-    <li><b>Markdown files:</b> Edit (Markdown with a live preview) or Preview (mark up), switched in the header; "● unsaved" beside the name; Save; full width (square) hides the sidebar and callouts; ^ hides the toolbar. Edit toolbar: Heading ▾, List, Table, Label, Num list, Bold, Link, Insert snip; tables show in the preview. The markup toolbar uses the Snip layout: Select, Box, Circle, Line, X mark, Point, 4 colours, stroke 2/3/5; on the right undo/redo, Insert snip, Canvas snip, Copy PNG and Export (saves the visible page as a markup). Resize handles and Delete work as in Snip. <b>Copy PNG</b> copies the visible page with its callouts; Canvas snip saves a marked-up area as a markup. Both stay inside the visible area.</li>
+    <li><b>Markdown files:</b> Edit (Markdown with a live preview) or Preview (mark up), switched in the header; "● unsaved" beside the name; Save; full width (square) hides the sidebar and callouts; ^ hides the toolbar. Edit toolbar: Heading ▾, List, Table, Label, Num list, Bold, Link, Insert snip; tables show in the preview. The markup toolbar uses the Snip layout: Select, Box, Circle, Line, X mark, Point, 4 colours, stroke 2/3/5; on the right undo/redo, Insert snip, Copy PNG and Export (saves the visible page as a markup). Canvas snip is removed. Resize handles and Delete work as in Snip. <b>Copy PNG</b> copies the visible page with its callouts; Canvas snip saves a marked-up area as a markup. Both stay inside the visible area.</li>
     <li><b>Collapse</b> moves Recents to the right. Windowed: the window shrinks to Recents; a new or opened snip adds a canvas and fits to it. Maximized: blank canvas. Try both with the "Prototype · window" switch.</li>
     <li><b>Storage on the server PC</b>, with automatic deletion after [number of files]. Settings → Storage.</li>
     <li><b>Themes:</b> Dark, Light, Aura for the whole app. The logo is never recoloured.</li>
@@ -944,8 +944,8 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
   <table class="parity">
     <tr><td>New snip, Ctrl+Alt+S, delay 0/3/5/10 s</td><td>Sidebar, top; blank canvas</td></tr>
     <tr><td>Snip copied to clipboard automatically</td><td>Toast after New snip</td></tr>
-    <tr><td>Canvas snip with W × H readout, Esc leaves</td><td><b>Removed from the Snip toolbar</b> (Grant 2026-11-15). Stays in the Markdown editor.</td></tr>
-    <tr><td>Open file, Open markup, Save Ctrl+S, Copy Ctrl+Shift+C, Export</td><td>Open file → sidebar <b>Open</b> (zip, markup or image); <b>Add snip</b> adds a capture beside the image and the canvas grows: Current = the program that is open, Behind = Collide hides and you snip the screen behind (like New snip); select it to move it or resize it from a corner (aspect locked); Open markup, Copy, Export in the toolbar; Save in the header</td></tr>
+    <tr><td>Canvas snip with W × H readout, Esc leaves</td><td><b>Removed</b> from the Snip toolbar and the Markdown editor (Grant 2026-11-15). In Markdown, Export saves the visible marked-up page</td></tr>
+    <tr><td>Open file, Open markup, Save Ctrl+S, Copy Ctrl+Shift+C, Export</td><td>Open file and Open markup → sidebar <b>Open</b> (zip, markup or image), the toolbar folder button is removed; <b>Add snip</b> adds a capture beside the image and the canvas grows: Current = the program that is open, Behind = Collide hides and you snip the screen behind (like New snip); select it to move it or resize it from a corner (aspect locked); Open markup, Copy, Export in the toolbar; Save in the header</td></tr>
     <tr><td>Select V, Rectangle R, Ellipse O, Filled rectangle, Filled ellipse, X mark X, Point P</td><td>Snip toolbar without the filled tools; <b>shading is a toggle in the callout card</b>; type can be changed in the card</td></tr>
     <tr><td>Print area</td><td>Dashed frame with corner marks and its size: the image, added images, shapes and shown bubbles, plus a 12 px margin when anything goes past the image (was 24 px). Notes can go anywhere, also over the frame; it follows them. Copy takes it; Fit (Ctrl+0) zooms to it</td></tr>
     <tr><td>Bubble stacking</td><td>When bubbles would overlap, one sits to the right, bottom, top or left of the other (closest free spot off the image). Drop a bubble near another and it snaps beside it</td></tr>
@@ -1503,7 +1503,6 @@ function renderSnipWS() {
       <button class="tool" id="undo" title="Undo (Ctrl+Z)" aria-label="Undo" ${S.hist.length ? '' : 'disabled style="opacity:.4"'}>${ico('undo')}</button>
       <button class="tool" id="redoBtn" title="Redo (Ctrl+Y)" aria-label="Redo" ${S.redo.length ? '' : 'disabled style="opacity:.4"'}>${ico('redo')}</button>
       <span class="vsep"></span>
-      <button class="tool" id="openMarkup" title="Open markup" aria-label="Open markup">${ico('folderOpen')}</button>
       <button class="tool" id="copyImg" title="Copy image to clipboard (Ctrl+Shift+C)" aria-label="Copy to clipboard">${ico('copy')}</button>
       <button class="btn" id="exportBtn" style="height:28px">${ico('share', 'sm')}Export</button>
     </div>
@@ -1638,7 +1637,6 @@ function renderDocWS() {
       <button class="tool" id="docRedo" title="Redo (Ctrl+Y)" aria-label="Redo" ${(S.dredo || []).length ? '' : 'disabled style="opacity:.4"'}>${ico('redo')}</button>
       <span class="vsep"></span>
       <button class="tool" id="insertSnip" title="Insert snip: a saved markup goes into images/ with a link at the cursor" aria-label="Insert snip">${ico('image')}</button>
-      <button class="tool" data-dtool="canvas-snip" aria-pressed="${S.dtool === 'canvas-snip'}" title="Canvas snip: drag a box over the visible page; saves the marked-up area as a markup and copies it (Esc cancels)" aria-label="Canvas snip">${ico('crop')}</button>
       <button class="tool" id="docCopy" title="Copy the visible page with its callouts as a PNG (Ctrl+Shift+C)" aria-label="Copy PNG">${ico('copy')}</button>
       <button class="btn" id="docExport" style="height:28px" title="Save the visible marked-up page as a markup PNG">${ico('share', 'sm')}Export</button>`
       : `<label class="tbtn hsel">${ico('h', 'sm')}<select id="mdHeading" aria-label="Heading"><option value="">Heading</option><option value="0">Normal text</option><option value="1">Heading 1</option><option value="2">Heading 2</option><option value="3">Heading 3</option></select></label>
@@ -1870,7 +1868,7 @@ function mdLinePrefix(prefix, heading) {
   const strip = (l) => l.replace(/^(#{1,6}\s+|[-*]\s+|\d+\.\s+|\*\*[^*]+:\*\*\s*)/, '');
   const all = !heading && prefix && lines.every((l) => l.startsWith(prefix) || (prefix === '1. ' && /^\d+\.\s/.test(l)));
   const out = lines.map((l, i) => (all ? strip(l) : (prefix === '1. ' ? `${i + 1}. ` : prefix) + strip(l))).join('\n');
-  ta.setRangeText(out, a, b, 'select'); ta.dispatchEvent(new Event('input', { bubbles: true })); ta.focus();
+  ta.setRangeText(out, a, b, 'end'); ta.dispatchEvent(new Event('input', { bubbles: true })); ta.focus();
 }
 function pushDocHist() { S.dhist = S.dhist || []; S.dhist.push(clone(S.ws.marks)); if (S.dhist.length > 50) S.dhist.shift(); S.dredo = []; }
 function pushHist() { const s = snipOf(); S.hist.push(clone(s.shapes)); if (S.hist.length > 50) S.hist.shift(); S.redo = []; }
@@ -1918,7 +1916,7 @@ document.addEventListener('click', (e) => {
   if (d.sel && !e.target.closest('textarea, .hidebtn, .tog, select, input, .grip')) { S.selByDraw = false; S.sel = Number(d.sel); redrawStage(); document.querySelectorAll('#calloutList .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.sel) === S.sel)); return; }
   if (d.line !== undefined) { const ta = $('#src'); if (ta) { const lines = ta.value.split('\n'); const pos = lines.slice(0, Number(d.line)).join('\n').length + (Number(d.line) ? 1 : 0); ta.focus(); ta.setSelectionRange(pos, pos + (lines[d.line] || '').length); const lh = parseFloat(getComputedStyle(ta).lineHeight) || 20; ta.scrollTop = Math.max(0, d.line * lh - 60); } return; }
   if (d.mdline !== undefined) { mdLinePrefix(d.mdline); return; }
-  if (d.md !== undefined) { const ta = $('#src'); if (ta) { const s = ta.selectionStart, en = ta.selectionEnd, sel = ta.value.slice(s, en); const ins = d.md === '**' ? `**${sel || 'bold'}**` : d.md === '[](url)' ? `[${sel || 'link'}](url)` : d.md + sel; ta.setRangeText(ins, s, en, 'end'); ta.dispatchEvent(new Event('input', { bubbles: true })); ta.focus(); } return; }
+  if (d.md !== undefined) { const ta = $('#src'); if (ta) { const s = ta.selectionStart, en = ta.selectionEnd, sel = ta.value.slice(s, en); const ins = d.md === '**' ? `**${sel}**` : d.md === '[](url)' ? `[${sel || 'link'}](url)` : d.md + sel; ta.setRangeText(ins, s, en, 'end'); if (d.md === '**' && !sel) ta.setSelectionRange(s + 2, s + 2); ta.dispatchEvent(new Event('input', { bubbles: true })); ta.focus(); } return; }
   if (d.insert) {
     const s = SNIPS.find((x) => x.id === d.insert), sl = slug(s.name);
     const notes = $('#withNotes') && $('#withNotes').checked ? '\n\n' + s.shapes.filter((c) => c.note).map((c) => `${c.n}. ${c.note}`).join('\n') : '';
