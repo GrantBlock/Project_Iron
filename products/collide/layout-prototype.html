@@ -950,7 +950,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
     <li><b>Tabs on the canvas</b> (Grant 2026-11-15): each open snip, file or Settings is a tab with a dot: amber = changed, green = saved. Each keeps its own undo and zoom. Ctrl+W or × closes, Ctrl+Tab switches, middle-click closes.</li>
     <li><b>Closing with unsaved changes</b> shows a splash screen: Save and close, Close without saving, Cancel.</li>
     <li><b>Markdown markup = image markup</b> (Grant 2026-11-15): the same tools, note bubbles with angled leaders (outside the page, stacking and snapping), and the same callout cards. New tools go to both.</li>
-    <li><b>Markdown files:</b> Edit (Markdown with a live preview) or Preview (mark up), switched in the header; "● unsaved" beside the name; Save; full width (square) hides the sidebar and callouts; ^ hides the toolbar. Edit toolbar: Heading ▾, List, Table, Label, Num list, Bold, Link, Insert snip; tables show in the preview. The markup toolbar uses the Snip layout: Select, Box, Circle, Line, X mark, Point, 4 colours, stroke 2/3/5; on the right undo/redo, Insert snip, Copy PNG and Export (saves the visible page as a markup). Canvas snip is removed. Resize handles and Delete work as in Snip. <b>Copy PNG</b> copies the visible page with its callouts; Canvas snip saves a marked-up area as a markup. Both stay inside the visible area.</li>
+    <li><b>Markdown files:</b> Edit (Markdown with a live preview) or Preview (mark up), switched in the header; "● unsaved" beside the name; Save; full width (square) hides the sidebar and callouts; ^ hides the toolbar. Edit toolbar: Heading ▾, List, Table, Label, Num list, Bold, Link, Insert snip; tables show in the preview. The markup toolbar uses the Snip layout: Select, Box, Circle, Line, X mark, Point, 4 colours, stroke 2/3/5; Insert image sits with the tools; on the right, like the image editor: undo/redo, Copy and Export (saves the visible page as a markup). Canvas snip is removed. Resize handles and Delete work as in Snip. <b>Copy PNG</b> copies the visible page with its callouts; Canvas snip saves a marked-up area as a markup. Both stay inside the visible area.</li>
     <li><b>Collapse</b> moves Recents to the right. Windowed: the window shrinks to Recents; a new or opened snip adds a canvas and fits to it. Maximized: blank canvas. Try both with the "Prototype · window" switch.</li>
     <li><b>Storage on the server PC</b>, with automatic deletion after [number of files]. Settings → Storage.</li>
     <li><b>Themes:</b> Dark, Light, Aura for the whole app. The logo is never recoloured.</li>
@@ -1692,6 +1692,7 @@ function renderDocWS() {
   $('#ws').innerHTML = head + `
     <div class="toolbar" role="toolbar" aria-label="Markdown tools" ${S.hideTools ? 'hidden' : ''}>
       ${pv ? `${DOC_TOOLS.map(([k, ic, l, key]) => `<button class="tool" data-dtool="${k}" aria-pressed="${S.dtool === k}" title="${l} (${key})" aria-label="${l}">${ico(ic)}</button>`).join('')}
+      <button class="tool" id="insertSnip" title="Insert image: a saved markup goes into images/ with a link in the file" aria-label="Insert image">${ico('image')}</button>
       <span class="vsep"></span>
       <span class="matgrp" role="group" aria-label="Colour for the next shape">${ROLES.map(([r, l]) => `<button class="swatch mat" data-dcolor="${r}" aria-pressed="${S.dcolor === r}" aria-label="${l}" title="${l}" style="background:${swatchBG(r)}"></button>`).join('')}</span>
       <span class="vsep"></span>
@@ -1700,7 +1701,6 @@ function renderDocWS() {
       <button class="tool" id="docUndo" title="Undo (Ctrl+Z)" aria-label="Undo" ${(S.dhist || []).length ? '' : 'disabled style="opacity:.4"'}>${ico('undo')}</button>
       <button class="tool" id="docRedo" title="Redo (Ctrl+Y)" aria-label="Redo" ${(S.dredo || []).length ? '' : 'disabled style="opacity:.4"'}>${ico('redo')}</button>
       <span class="vsep"></span>
-      <button class="tool" id="insertSnip" title="Insert snip: a saved markup goes into images/ with a link at the cursor" aria-label="Insert snip">${ico('image')}</button>
       <button class="tool" id="docCopy" title="Copy the visible page with its callouts as a PNG (Ctrl+Shift+C)" aria-label="Copy PNG">${ico('copy')}</button>
       <button class="btn" id="docExport" style="height:28px" title="Save the visible marked-up page as a markup PNG">${ico('share', 'sm')}Export</button>`
       : `<label class="tbtn hsel">${ico('h', 'sm')}<select id="mdHeading" aria-label="Heading"><option value="">Heading</option><option value="0">Normal text</option><option value="1">Heading 1</option><option value="2">Heading 2</option><option value="3">Heading 3</option></select></label>
@@ -1987,8 +1987,9 @@ document.addEventListener('click', (e) => {
   if (d.insert) {
     const s = SNIPS.find((x) => x.id === d.insert), sl = slug(s.name);
     const notes = $('#withNotes') && $('#withNotes').checked ? '\n\n' + [...s.shapes].reverse().filter((c) => isCallout(c) && c.note).map((c) => `${calloutNo(s, c.n)}. ${c.note}`).join('\n') : '';
-    const ta = $('#src'); const pos = ta.selectionStart; const ins = `\n![${s.name}](images/${sl}.png)${notes}\n`;
-    S.ws.text = ta.value.slice(0, pos) + ins + ta.value.slice(pos); S.picker = false; S.dirty = true; renderWS(); toast(`Copied export.png to images/${sl}.png`); return;
+    const ta = $('#src'), ins = `\n![${s.name}](images/${sl}.png)${notes}\n`;
+    // Edit: at the cursor. Preview: at the end of the file.
+    if (ta) { const pos = ta.selectionStart; S.ws.text = ta.value.slice(0, pos) + ins + ta.value.slice(pos); } else S.ws.text = S.ws.text.replace(/\s*$/, '\n') + ins; S.picker = false; S.dirty = true; renderWS(); toast(`Copied export.png to images/${sl}.png`); return;
   }
   switch (t.id) {
     case 'compactBtn': case 'compactBtn2': setCompact(!S.compact); return;
