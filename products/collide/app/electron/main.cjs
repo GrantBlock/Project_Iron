@@ -3,13 +3,14 @@
 // (contextIsolation on, sandbox on, no Node in the page).
 // T14: the `window.collide` bridge (electron/preload.cjs). Capture and crop.
 // T15: the snip's window moves, the overlay window, settings.json and the global
-// hotkey, copyImage. Storage arrives in T16.
+// hotkey, copyImage.
+// T16: markup folders under Documents/Collide/Markups and the Open folder dialog.
 // This file only creates windows and passes Electron's modules on: the logic
 // lives in src/native/ and src/snip/crop.ts (TypeScript, unit-tested) and is
 // bundled to dist-electron/native.cjs by `pnpm build:electron`.
 "use strict";
 
-const { app, BrowserWindow, Menu, clipboard, desktopCapturer, globalShortcut, ipcMain, nativeImage, net, protocol } = require("electron");
+const { app, BrowserWindow, Menu, clipboard, desktopCapturer, dialog, globalShortcut, ipcMain, nativeImage, net, protocol } = require("electron");
 const fs = require("node:fs");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
@@ -166,6 +167,13 @@ app.whenReady().then(() => {
     }),
     copyImage: (png) => native.copyImage(png, { imageFromPng: decodePng, writeImage: (image) => clipboard.writeImage(image) }),
     settingsStatus: () => settingsStatus,
+    // Files only under Documents/Collide/Markups: src/native/markups.ts checks every path.
+    markups: native.createMarkups({
+      fs,
+      path,
+      documents: () => app.getPath("documents"),
+      showOpenDialog: (options) => (editor && !editor.isDestroyed() ? dialog.showOpenDialog(editor, options) : dialog.showOpenDialog(options)),
+    }),
     capturer: fakeCapture
       ? native.fakeCapturer({
           screen,

@@ -4,7 +4,6 @@
 //
 // A sandboxed preload can only require "electron", so the channel names are
 // repeated here; src/native/preload.test.ts checks them against bridge.ts.
-// The markups methods reach main-process stubs until T16; everything else is real.
 "use strict";
 
 const { contextBridge, ipcRenderer } = require("electron");

@@ -1,6 +1,7 @@
 // T14: the type of `window.collide`, the only thing the Electron preload
 // (electron/preload.cjs) exposes to the page, and the IPC channel names behind it.
-// T15: the snip, the overlay page and the settings warning use it. Markups follow in T16.
+// T15: the snip, the overlay page and the settings warning use it.
+// T16: markups (src/native/markups.ts in the main process, src/io/electronStore.ts in the page).
 
 import type { LogicalRect } from "../snip/crop";
 import type { CaptureInfo, CropInfo } from "../snip/flow";
@@ -36,26 +37,6 @@ export type InvokeMethod = keyof typeof INVOKE_CHANNELS;
 export const OVERLAY_EVENT_CHANNEL = "collide:overlay-event";
 export const SNIP_REQUEST_CHANNEL = "collide:snip-request";
 
-/** Implemented: capture and crop (T14), the window moves, copyImage and settingsStatus (T15). Every other invoke method is a typed stub that rejects until its task lands. */
-export const IMPLEMENTED: readonly InvokeMethod[] = [
-  "captureMonitor",
-  "cropCapture",
-  "hideEditor",
-  "showEditor",
-  "showOverlay",
-  "hideOverlay",
-  "copyImage",
-  "settingsStatus",
-];
-
-/** Which task fills in each stub. */
-export const STUB_TASK: Record<Extract<InvokeMethod, `markups.${string}`>, "T16"> = {
-  "markups.save": "T16",
-  "markups.open": "T16",
-  "markups.pick": "T16",
-  "markups.list": "T16",
-};
-
 /** What every invoke channel answers; the preload turns `ok: false` into a rejected promise with `error` as its message. */
 export type IpcReply<T = unknown> = { ok: true; value: T } | { ok: false; error: string };
 
@@ -82,6 +63,9 @@ export interface MarkupFiles {
   exportPng: Uint8Array;
 }
 
+/** What opening a markup reads: `export.png` is written by Save and never read back. */
+export type OpenedMarkupFiles = Omit<MarkupFiles, "exportPng">;
+
 export interface CollideBridge {
   /** Capture the display under the cursor at full physical size; the main process holds the frame for the crop. */
   captureMonitor(): Promise<CaptureInfo>;
@@ -100,11 +84,15 @@ export interface CollideBridge {
   settingsStatus(): Promise<SettingsStatus | null>;
   /** Call `cb` when the global shortcut asks for a snip Returns the unsubscribe function. */
   onSnipRequest(cb: () => void): () => void;
-  /** Markup folders under Documents/Collide/Markups. Stubs until T16. */
+  /** Markup folders under Documents/Collide/Markups. The main process refuses any path outside that folder. */
   markups: {
+    /** Write the three files into `folderName` (one folder name) under Markups. Resolves with the folder's path. */
     save(folderName: string, files: MarkupFiles): Promise<string>;
-    open(folder: string): Promise<MarkupFiles>;
+    /** Read a markup folder inside Markups (a path from save, pick or list). */
+    open(folder: string): Promise<OpenedMarkupFiles>;
+    /** Show the folder dialog, starting in Markups. Null if cancelled; rejects for a folder outside Markups. */
     pick(): Promise<string | null>;
+    /** The folders directly inside Markups (full paths). */
     list(): Promise<string[]>;
   };
   /** The overlay events: sent to every Collide window, the sender included (as Tauri's emit/listen did). */
