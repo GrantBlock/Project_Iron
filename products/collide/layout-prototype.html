@@ -904,8 +904,9 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
     <tr><td>New snip, Ctrl+Alt+S, delay 0/3/5/10 s</td><td>Sidebar, top; blank canvas</td></tr>
     <tr><td>Snip copied to clipboard automatically</td><td>Toast after New snip</td></tr>
     <tr><td>Canvas snip with W × H readout, Esc leaves</td><td><b>Removed from the Snip toolbar</b> (Grant 2026-11-15). Stays in the Markdown editor.</td></tr>
-    <tr><td>Open file, Open markup, Save Ctrl+S, Copy Ctrl+Shift+C, Export</td><td>Open file → sidebar <b>Open</b> (zip, markup or image); <b>Add snip</b> adds a capture to the open canvas: Current = the program that is open, Behind = Collide hides and you snip the screen behind (like New snip); drag it with Select; Open markup, Copy, Export in the toolbar; Save in the header</td></tr>
+    <tr><td>Open file, Open markup, Save Ctrl+S, Copy Ctrl+Shift+C, Export</td><td>Open file → sidebar <b>Open</b> (zip, markup or image); <b>Add snip</b> adds a capture beside the image and the canvas grows: Current = the program that is open, Behind = Collide hides and you snip the screen behind (like New snip); select it to move it or resize it from a corner (aspect locked); Open markup, Copy, Export in the toolbar; Save in the header</td></tr>
     <tr><td>Select V, Rectangle R, Ellipse O, Filled rectangle, Filled ellipse, X mark X, Point P</td><td>Snip toolbar without the filled tools; <b>shading is a toggle in the callout card</b>; type can be changed in the card</td></tr>
+    <tr><td>Resize shapes</td><td>8 handles on a selected shape (corners and edges), sized for the zoom; Shift on a corner keeps the aspect. Added images: corner handles, aspect always locked</td></tr>
     <tr><td>4 colours, stroke 2/3/5, undo/redo (50 steps), Delete</td><td>4 colours from the chosen <b>Aura theme</b> (Highlight, Ink, Deep, Light); the theme also styles the note bubbles</td></tr>
     <tr><td>Numbered note boxes outside the image, arrows, drag to move; empty note = number chip</td><td>Canvas. Draft: every new box starts slightly off-line, so its arrow is angled</td></tr>
     <tr><td>Callouts panel: notes, Hide # / Show #</td><td><b>Callout card:</b> number and type; hide text, hide bubble (was Hide #), hide outline (keeps the fill); <b>Fill %</b> (0 % = no fill) replaces shading and transparency; drag the grip to reorder (renumbers)</td></tr>
@@ -1166,7 +1167,7 @@ function shapeSVG(sh, sel, s, mode = 'full') {
   if (sel) {
     const b = type === 'point' ? { x: sh.x - 10, y: sh.y - 10, w: 20, h: 20 } : { x: sh.x - 3, y: sh.y - 3, w: sh.w + 6, h: sh.h + 6 };
     selg = `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="none" stroke="#fff" stroke-dasharray="4 3" stroke-width="1"/>` +
-      [[b.x, b.y], [b.x + b.w, b.y], [b.x, b.y + b.h], [b.x + b.w, b.y + b.h]].map(([x, y]) => `<rect x="${x - 3}" y="${y - 3}" width="6" height="6" fill="#fff" stroke="#09090B"/>`).join('');
+      (type === 'point' ? '' : handlesSVG({ x: sh.x, y: sh.y, w: sh.w, h: sh.h }, HANDLE_DIRS, `data-hs="${sh.n}"`));
   }
   if (sh.hideOutline && mode !== 'full' && (type === 'cross' || type === 'point')) g = '';
   return `<g data-shape="${sh.n}" style="cursor:${S.tool === 'select' ? 'move' : 'inherit'}">${g}${hit}${selg}</g>`;
@@ -1186,12 +1187,19 @@ function markers(s) {
   return [...new Set(s.shapes.map((x) => col(x, s)))].map((c) => `<marker id="ah-${slug(c)}" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="${c}"/></marker>`).join('');
 }
 /* Images added with Add snip sit on the canvas over the first image; drag them with Select. */
+const HANDLE_DIRS = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
+/** Handles at a box: all 8 for shapes, corners only for images (aspect locked). Sized for the current zoom. */
+function handlesSVG(b, dirs, attr) {
+  const hs = 10 / ((S.view && S.view.k) || 1);
+  const pos = { nw: [b.x, b.y], n: [b.x + b.w / 2, b.y], ne: [b.x + b.w, b.y], e: [b.x + b.w, b.y + b.h / 2], se: [b.x + b.w, b.y + b.h], s: [b.x + b.w / 2, b.y + b.h], sw: [b.x, b.y + b.h], w: [b.x, b.y + b.h / 2] };
+  return dirs.map((d) => `<rect ${attr} data-h="${d}" x="${pos[d][0] - hs / 2}" y="${pos[d][1] - hs / 2}" width="${hs}" height="${hs}" rx="${hs * 0.2}" fill="#fff" stroke="#09090B" stroke-width="${hs * 0.12}" style="cursor:${d}-resize"/>`).join('');
+}
 function layersSVG(s, mode) {
   return (s.images || []).map((im, i) => {
     const a = { art: im.art, w: 1280, h: 720 };
     const sel = mode === 'full' && S.selImg === i;
     return `<g data-img="${i}" style="cursor:${S.tool === 'select' ? 'move' : 'inherit'}"><svg x="${im.x}" y="${im.y}" width="${im.w}" height="${im.h}" viewBox="0 0 ${IW} 360" preserveAspectRatio="none">${artSVG(a)}</svg>
-      <rect x="${im.x}" y="${im.y}" width="${im.w}" height="${im.h}" fill="none" stroke="${sel ? '#fff' : 'rgba(0,0,0,.35)'}" stroke-width="${sel ? 1.5 : 1}" ${sel ? 'stroke-dasharray="4 3"' : ''}/></g>`;
+      <rect x="${im.x}" y="${im.y}" width="${im.w}" height="${im.h}" fill="none" stroke="${sel ? '#fff' : 'rgba(0,0,0,.35)'}" stroke-width="${sel ? 1.5 : 1}" ${sel ? 'stroke-dasharray="4 3"' : ''}/>${sel ? handlesSVG(im, ['nw', 'ne', 'se', 'sw'], `data-hi="${i}"`) : ''}</g>`;
   }).join('');
 }
 /** mode: 'thumb' (image + shapes) | 'full' (editor, interactive) | 'export' (what Copy produces) */
@@ -1201,7 +1209,7 @@ function snipSVG(id, cls = 'snipthumb', mode = 'thumb') {
   if (mode === 'thumb') return `<svg class="${cls}" viewBox="0 0 ${IW} ${H}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${esc(s.name)}">${artSVG(s)}${layersSVG(s, 'thumb')}${s.shapes.map((sh) => shapeSVG(sh, false, s, 'thumb')).join('')}</svg>`;
   const nb = noteBoxes(s);
   const shown = s.shapes;
-  const b = mode === 'export' ? bounds(s) : { x0: -220, y0: -100, x1: IW + 220, y1: H + 100 };
+  const b = mode === 'export' ? bounds(s) : (S.cbox && S.ws && S.ws.id === s.id ? S.cbox : canvasBox(s));
   const m = mode === 'export' && (b.x0 < 0 || b.y0 < 0 || b.x1 > IW || b.y1 > H) ? 12 : 0;
   const vb = `${b.x0 - m} ${b.y0 - m} ${b.x1 - b.x0 + 2 * m} ${b.y1 - b.y0 + 2 * m}`;
   return `<svg class="${cls}" viewBox="${vb}" ${mode === 'full' ? `width="${b.x1 - b.x0}" height="${b.y1 - b.y0}"` : ''} role="img" aria-label="${esc(s.name)}">
@@ -1349,9 +1357,23 @@ function headHTML(kindIcon, name, path, extra = '', saveLabel) {
 }
 const snipOf = () => SNIPS.find((x) => x.id === S.ws.id);
 function zoomPct() { const s = snipOf(); return Math.round(S.view.k * IW / s.w * 100); }
+/** The editable area: the first image plus any added images, with room around them for note boxes. */
+function canvasBox(s) {
+  let x0 = 0, y0 = 0, x1 = IW, y1 = ih(s);
+  for (const im of s.images || []) { x0 = Math.min(x0, im.x); y0 = Math.min(y0, im.y); x1 = Math.max(x1, im.x + im.w); y1 = Math.max(y1, im.y + im.h); }
+  return { x0: x0 - 220, y0: y0 - 100, x1: x1 + 220, y1: y1 + 100 };
+}
+/** Recompute the canvas size (not while dragging) and keep the content where it is on screen. */
+function syncBox(s) {
+  if (S.drag && S.cbox) return;
+  const nb = canvasBox(s);
+  if (S.view && S.cbox) { S.view.x += (nb.x0 - S.cbox.x0) * S.view.k; S.view.y += (nb.y0 - S.cbox.y0) * S.view.k; }
+  S.cbox = nb;
+}
 function fitView() {
   const st = $('#stage'); if (!st || !S.ws || S.ws.kind !== 'snip') return;
-  const s = snipOf(), W = IW + 440, H = ih(s) + 200;
+  const s = snipOf(); S.cbox = canvasBox(s);
+  const W = S.cbox.x1 - S.cbox.x0, H = S.cbox.y1 - S.cbox.y0;
   const r = st.getBoundingClientRect();
   const k = Math.min(r.width / W, r.height / H) * 0.98;
   S.view = { k, x: (r.width - W * k) / 2, y: (r.height - H * k) / 2, fit: true };
@@ -1359,14 +1381,14 @@ function fitView() {
 }
 function applyView() {
   const z = $('#zoomer'); if (!z || !S.view) return;
-  const s = snipOf();
-  z.style.width = (IW + 440) + 'px'; z.style.height = (ih(s) + 200) + 'px';
+  const s = snipOf(); if (!S.cbox) S.cbox = canvasBox(s);
+  z.style.width = (S.cbox.x1 - S.cbox.x0) + 'px'; z.style.height = (S.cbox.y1 - S.cbox.y0) + 'px';
   z.style.transform = `translate(${S.view.x}px, ${S.view.y}px) scale(${S.view.k})`;
   const zs = $('#zoomStat'); if (zs) zs.textContent = zoomPct() + '%';
 }
-function redrawStage() { const z = $('#zoomer'); if (z) { z.innerHTML = snipSVG(S.ws.id, 'snipfull', 'full'); } }
+function redrawStage() { const z = $('#zoomer'); if (z) { const s = snipOf(); const before = S.cbox; syncBox(s); z.innerHTML = snipSVG(S.ws.id, 'snipfull', 'full'); if (before !== S.cbox) applyView(); } }
 function renderSnipWS() {
-  const s = snipOf();
+  const s = snipOf(); syncBox(s);
   const tools = [['select', 'pointer', 'Select', 'V'], ['rect', 'square', 'Rectangle', 'R'], ['ellipse', 'circle', 'Ellipse', 'O'], ['cross', 'cross', 'X mark', 'X'], ['point', 'dot', 'Point', 'P']];
   $('#ws').innerHTML = headHTML('scissors', s.name, storePath(`Markups/${slug(s.name)}/`)) + `
     <div class="toolbar" role="toolbar" aria-label="Markup tools">
@@ -1587,12 +1609,12 @@ let toastT;
 function toast(t) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (el.hidden = true), 2600); }
 function setCompact(on) { S.compact = on; layout(); renderSide(); renderWS(); requestAnimationFrame(() => { fitPage(); if (S.ws && S.ws.kind === 'snip') fitView(); }); }
 /* Tabs on the canvas (Grant 2026-11-15): each open item keeps its own changes, undo history and view. */
-const TAB_FIELDS = ['dirty', 'hist', 'redo', 'view', 'sel', 'dsel', 'selImg'];
+const TAB_FIELDS = ['dirty', 'hist', 'redo', 'view', 'sel', 'dsel', 'selImg', 'cbox'];
 const tabKey = (ws) => (ws.kind === 'snip' ? 'snip:' + ws.id : ws.kind === 'doc' ? 'doc:' + ws.path : ws.kind);
 function stash() { const t = S.tabs[S.active]; if (!t) return; t.ws = S.ws; TAB_FIELDS.forEach((f) => (t[f] = S[f])); }
 function load(i) {
   S.active = i; const t = S.tabs[i];
-  if (!t) { S.ws = null; S.dirty = false; S.hist = []; S.redo = []; S.view = null; S.sel = null; S.dsel = null; return; }
+  if (!t) { S.ws = null; S.dirty = false; S.hist = []; S.redo = []; S.view = null; S.sel = null; S.dsel = null; S.cbox = null; return; }
   S.ws = t.ws; TAB_FIELDS.forEach((f) => (S[f] = t[f]));
   S.picker = false; S.dtool = 'select'; if (S.tool === 'canvas-snip') S.tool = 'select';
 }
@@ -1600,7 +1622,7 @@ function openWS(ws) {
   stash();
   const i = S.tabs.findIndex((t) => tabKey(t.ws) === tabKey(ws));
   if (i >= 0) load(i);
-  else { S.tabs.push({ ws, dirty: false, hist: [], redo: [], view: null, sel: null, dsel: null }); load(S.tabs.length - 1); }
+  else { S.tabs.push({ ws, dirty: false, hist: [], redo: [], view: null, sel: null, dsel: null, selImg: null, cbox: null }); load(S.tabs.length - 1); }
   S.sideOpen = false; render();
 }
 function tabName(ws) { return ws.kind === 'snip' ? (SNIPS.find((x) => x.id === ws.id) || {}).name || 'Snip' : ws.kind === 'doc' ? ws.name : 'Settings'; }
@@ -1729,9 +1751,10 @@ document.addEventListener('click', (e) => {
       toast(behind ? 'Collide hides, then drag a box on the screen behind it. Esc cancels.' : 'Captured the program that is open');
       setTimeout(() => {
         const s = snipOf(); pushHist(); s.images = s.images || [];
-        const n = s.images.length, H = ih(s);
-        s.images.push({ art: behind ? 'pid' : 'hmi', x: Math.round(IW * 0.5 + n * 18), y: Math.round(H * 0.4 + n * 18), w: Math.round(IW * 0.42), h: Math.round(IW * 0.42 * 360 / 640) });
-        S.selImg = s.images.length - 1; snipChanged(); toast(behind ? 'Snip from behind added to this canvas · copied to clipboard' : 'Screenshot added to this canvas · copied to clipboard');
+        const H = ih(s), right = Math.max(IW, ...s.images.map((im) => im.x + im.w));
+        // Beside the content: same height as the first image, aspect kept; the canvas grows to fit.
+        s.images.push({ art: behind ? 'pid' : 'hmi', x: right + 24, y: 0, w: Math.round(H * 640 / 360), h: H });
+        S.selImg = s.images.length - 1; snipChanged(); toast(behind ? 'Snip from behind added beside the image · copied to clipboard' : 'Screenshot added beside the image · copied to clipboard'); requestAnimationFrame(fitView);
       }, behind ? 900 : 300);
       return;
     }
@@ -1844,6 +1867,12 @@ document.addEventListener('pointerdown', (e) => {
   const p = toImage(e), s = snipOf();
   if (S.tool === 'canvas-snip') { S.drag = { kind: 'csnip', x0: p.x, y0: p.y, x1: p.x, y1: p.y }; stage.setPointerCapture(e.pointerId); return; }
   if (S.tool === 'select') {
+    const hEl = e.target.closest('[data-h]');
+    if (hEl) {
+      const isImg = hEl.dataset.hi !== undefined, t = isImg ? s.images[Number(hEl.dataset.hi)] : s.shapes.find((x) => x.n === Number(hEl.dataset.hs));
+      pushHist(); S.drag = { kind: 'resize', dir: hEl.dataset.h, img: isImg, i: Number(hEl.dataset.hi), n: Number(hEl.dataset.hs), p0: p, orig: { x: t.x, y: t.y, w: t.w, h: t.h }, moved: false };
+      stage.setPointerCapture(e.pointerId); e.preventDefault(); return;
+    }
     const imgEl = e.target.closest('[data-img]');
     const boxEl = e.target.closest('[data-box]'), shEl = e.target.closest('[data-shape]');
     if (imgEl && !boxEl && !shEl) { const i = Number(imgEl.dataset.img), im = s.images[i]; S.selImg = i; S.sel = null; pushHist(); S.drag = { kind: 'img', i, p0: p, orig: { x: im.x, y: im.y }, moved: false }; stage.setPointerCapture(e.pointerId); redrawStage(); return; }
@@ -1877,6 +1906,27 @@ document.addEventListener('pointermove', (e) => {
   const dx = p.x - S.drag.p0.x, dy = p.y - S.drag.p0.y;
   if (S.drag.kind === 'draw') { sh.x = Math.round(Math.min(S.drag.p0.x, p.x)); sh.y = Math.round(Math.min(S.drag.p0.y, p.y)); sh.w = Math.round(Math.abs(dx)); sh.h = Math.round(Math.abs(dy)); }
   else if (S.drag.kind === 'move') { sh.x = Math.round(S.drag.orig.x + dx); sh.y = Math.round(S.drag.orig.y + dy); S.drag.moved = true; }
+  else if (S.drag.kind === 'resize') {
+    const o = S.drag.orig, dir = S.drag.dir; S.drag.moved = true;
+    if (S.drag.img) {
+      // Images: corners only, aspect locked, the opposite corner stays put.
+      const im = s.images[S.drag.i];
+      const wx = dir.includes('e') ? o.w + dx : o.w - dx, hy = dir.includes('s') ? o.h + dy : o.h - dy;
+      const k = Math.max(40 / o.w, Math.abs(wx / o.w - 1) > Math.abs(hy / o.h - 1) ? wx / o.w : hy / o.h);
+      im.w = Math.round(o.w * k); im.h = Math.round(o.h * k);
+      im.x = dir.includes('w') ? o.x + o.w - im.w : o.x; im.y = dir.includes('n') ? o.y + o.h - im.h : o.y;
+    } else {
+      // Shapes: free resize from any edge or corner; Shift keeps the aspect; dragging past the far edge flips.
+      let x = o.x, y = o.y, w = o.w, h = o.h;
+      if (dir.includes('w')) { x = o.x + dx; w = o.w - dx; }
+      if (dir.includes('e')) w = o.w + dx;
+      if (dir.includes('n')) { y = o.y + dy; h = o.h - dy; }
+      if (dir.includes('s')) h = o.h + dy;
+      if (e.shiftKey && dir.length === 2 && o.w && o.h) { const k = Math.max(Math.abs(w) / o.w, Math.abs(h) / o.h); const nw = o.w * k * Math.sign(w || 1), nh = o.h * k * Math.sign(h || 1); if (dir.includes('w')) x = o.x + o.w - nw; if (dir.includes('n')) y = o.y + o.h - nh; w = nw; h = nh; }
+      if (w < 0) { x += w; w = -w; } if (h < 0) { y += h; h = -h; }
+      Object.assign(sh, { x: Math.round(x), y: Math.round(y), w: Math.max(4, Math.round(w)), h: Math.max(4, Math.round(h)) });
+    }
+  }
   else if (S.drag.kind === 'img') { const im = s.images[S.drag.i]; im.x = Math.round(S.drag.orig.x + dx); im.y = Math.round(S.drag.orig.y + dy); S.drag.moved = true; }
   else if (S.drag.kind === 'box') { sh.box = { x: Math.round(S.drag.box0.x + dx), y: Math.round(S.drag.box0.y + dy) }; S.drag.moved = true; }
   redrawStage();
@@ -1887,7 +1937,7 @@ document.addEventListener('pointerup', () => {
   if (!S.drag) return;
   const dr = S.drag; S.drag = null;
   if (dr.kind === 'csnip') { const ro = $('#readout'); if (ro) ro.remove(); const w = Math.abs(dr.x1 - dr.x0), h = Math.abs(dr.y1 - dr.y0); if (w > 6 && h > 6) newSnip(true); else $('#liveRect').innerHTML = ''; return; }
-  if (dr.kind === 'img') { if (dr.moved) snipChanged(); else S.hist.pop(); return; }
+  if (dr.kind === 'img' || dr.kind === 'resize') { if (dr.moved) snipChanged(); else S.hist.pop(); return; }
   const s = snipOf(), sh = s.shapes.find((x) => x.n === dr.n);
   if (dr.kind === 'draw') { if (sh.w < 8 || sh.h < 8) { sh.w = sh.type === 'cross' ? 28 : 80; sh.h = sh.type === 'cross' ? 28 : 50; sh.x -= sh.w / 2; sh.y -= sh.h / 2; } snipChanged(); const ta = $(`[data-note="${dr.n}"]`); if (ta) ta.focus(); return; }
   if (dr.moved) snipChanged(); else S.hist.pop();
