@@ -813,6 +813,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
 #docOverlay { position: absolute; left: 0; top: 0; width: 100%; pointer-events: none; overflow: visible; }
 #docOverlay [data-shape], #docOverlay [data-box] { pointer-events: all; }
 .preview.drawing #docOverlay { pointer-events: all; cursor: crosshair; }
+.preview.drawing, .preview.drawing .page { cursor: crosshair; }
 .preview.drawing #docOverlay [data-shape], .preview.drawing #docOverlay [data-box] { pointer-events: none; }
 .typesel.static { display: inline-flex; align-items: center; padding: 0 8px; }
 .preview.erasing #docOverlay [data-shape] { cursor: cell; }
@@ -2140,7 +2141,8 @@ function finishDraw(F, sh) {
 }
 document.addEventListener('pointerdown', (e) => {
   const F = surf(); if (!F) return;
-  const root = e.target.closest(F.kind === 'snip' ? '#stage' : '#page'); if (!root) return;
+  // Markdown: the whole preview pane counts, so a shape can start in the margin beside the page (Grant 2026-11-15).
+  const root = e.target.closest(F.kind === 'snip' ? '#stage' : '#preview'); if (!root) return;
   if (F.kind === 'snip') {
     if (!S.view) return;
     if (e.button === 2 || (e.button === 0 && spaceDown) || e.button === 1) {
