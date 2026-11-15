@@ -967,7 +967,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
     <tr><td>Zoom the Markdown page</td><td>Ctrl + mouse wheel (around the cursor), Ctrl + = / −, Ctrl+0 fits; the zoom % is in the status bar</td></tr>
     <tr><td>Esc</td><td>Returns to the Select tool in Snip and in the Markdown page (also leaves a note box you are typing in). A click outside the canvas or page (not the toolbar) does the same</td></tr>
     <tr><td>Pen, Highlighter, Eraser</td><td>Both editors (N, H, E). Strokes and added images are in the list without a number or bubble. The eraser removes a whole pen or highlighter stroke and leaves shapes and images alone</td></tr>
-    <tr><td>Order</td><td>The list runs front to back; drag a grip to bring an item forward or send it back. Callout numbers follow that order (front-most = 1)</td></tr>
+    <tr><td>Order</td><td>The list runs front to back; drag a grip to bring an item forward or send it back. Callout numbers count from the back: a new callout takes the next number and the others keep theirs</td></tr>
     <tr><td>Collide file (.collide)</td><td>Save as .collide (toolbar, before Copy) in Snip and Markdown: the sources in their own formats plus every shape, bubble, note and the order, so it reopens editable. Open opens .collide files. Package layout is Draft: manifest.json, sources/, preview.png</td></tr>
     <tr><td>Paste an image (Ctrl+V)</td><td>Snip: added beside the image like Add snip. Markdown: saved to the zip's images/ and linked at the cursor (end of file in Preview). Nothing open: opens as a new snip. Text pastes are unchanged</td></tr>
     <tr><td>Line tool</td><td>Snip and Markdown toolbars (L); drag its ends to change it; arrows point to its middle</td></tr>
@@ -1078,8 +1078,9 @@ const TOOL_KEYS_ALL = { v: 'select', r: 'rect', o: 'ellipse', l: 'line', x: 'cro
 TYPE_LABEL.pen = 'Pen'; TYPE_LABEL.hl = 'Highlighter'; TYPE_LABEL.image = 'Image';
 /* Pens, highlighters and added images sit in the list without a number or bubble (Grant 2026-11-15). */
 const isCallout = (sh) => !['pen', 'hl', 'image'].includes(sh.type);
-/** Display number: front to back (the front-most numbered callout is 1). The shape's n stays its id. */
-function calloutNo(s, id) { let k = 0; for (let i = s.shapes.length - 1; i >= 0; i--) { const x = s.shapes[i]; if (!isCallout(x)) continue; k++; if (x.n === id) return k; } return ''; }
+/** Display number (Grant 2026-11-15): counted from the back, so a new callout (drawn in front) takes the next number
+    and existing numbers don't change. Reordering still renumbers. The shape's n stays its id. */
+function calloutNo(s, id) { let k = 0; for (const x of s.shapes) { if (!isCallout(x)) continue; k++; if (x.n === id) return k; } return ''; }
 const nextId = (s) => (s.shapes.length ? Math.max(...s.shapes.map((c) => c.n)) + 1 : 1);
 TYPE_LABEL.line = 'Line';
 const SIG = '#FF3D1F', STEEL = '#4C87C4', AMBER = '#E3A73A', INK50 = '#F3F2EF';
@@ -1584,7 +1585,7 @@ function calloutsHTML(s) {
     }
     const no = calloutNo(s, c.n);
     return `<div class="el ccard ${selN === c.n ? 'sel' : ''}" data-sel="${c.n}" data-drop="${c.n}">
-      <span class="grip" draggable="true" data-grip="${c.n}" title="Drag to move it forward or back (numbers follow front to back)" aria-label="Reorder callout ${no}">${ico('menu', 'sm')}</span>
+      <span class="grip" draggable="true" data-grip="${c.n}" title="Drag to move it forward or back (numbers count from the back)" aria-label="Reorder callout ${no}">${ico('menu', 'sm')}</span>
       <div style="min-width:0;display:grid;gap:6px">
         <div class="row"><span class="num" style="background:${k};color:${onColor(k)}">${no}</span>
           ${SHAPE_TYPES.includes(type) ? `<select class="typesel" data-type="${c.n}" aria-label="Type of callout ${c.n}">${SHAPE_TYPES.map((t) => `<option value="${t}" ${t === type ? 'selected' : ''}>${TYPE_LABEL[t]}</option>`).join('')}</select>` : `<span class="typesel static">${TYPE_LABEL[type]}</span>`}
@@ -2144,7 +2145,7 @@ document.addEventListener('drop', (e) => {
   S.dragN = null; if (from < 0 || to < 0 || from === to) { renderWS(); return; }
   F.hist(); const selShape = s.shapes.find((x) => x.n === S[F.selKey]);
   const [m] = s.shapes.splice(from, 1); s.shapes.splice(to, 0, m);
-  S[F.selKey] = selShape ? selShape.n : null; F.commit(); toast('Order changed · numbers follow front to back');
+  S[F.selKey] = selShape ? selShape.n : null; F.commit(); toast('Order changed · numbers count from the back');
 });
 document.addEventListener('dragend', () => { S.dragN = null; document.querySelectorAll('.ccard').forEach((c) => c.classList.remove('dropping')); });
 

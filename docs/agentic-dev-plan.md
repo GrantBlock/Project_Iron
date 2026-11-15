@@ -56,6 +56,7 @@ Related (in `GrantBlock/designengineering-ai`, `Builder v0.1/`): `development-pa
 - [stated] 2026-11-15: An eraser for pen and highlighter removes the whole stroke and leaves shapes alone (Grant).
 - [stated] 2026-11-15: In the Markdown markup, shapes can start in the margin beside the page, and Ctrl + mouse wheel zooms the page (Grant).
 - [stated] 2026-11-15: The canvas can be saved as its own file type, a Collide file with the extension `.collide`, holding the source files and the markup so it reopens editable (Grant). Package layout is Draft (not yet approved by Grant): manifest.json, sources/, preview.png.
+- [stated] 2026-11-15: Collide callout numbers count up as callouts are added (counted from the back), so existing numbers stay (Grant). Replaces "numbers follow front-to-back order" above for the direction.
 - [stated] 2026-11-15: The Snip canvas shows a print area marker; notes may go over it. Autofit works with the annotations on a tighter margin (Grant).
 - [stated] 2026-11-15: Annotation bubbles can stack to the right, top, bottom or left of another bubble (Grant).
 - [stated] 2026-11-15: Collide's scroll bars follow the theme. With a drawing tool on, a click outside the view area goes back to the Select tool (Grant).
@@ -183,6 +184,34 @@ How a spec gets made: Irileth drafts it from the prototype page and the logs (tr
 | 3am | Hrongar (Coder) | Fixes `changes-requested` pull requests |
 | 5am | Lydia (Tester) | Checks preview URLs, posts screenshots and test results |
 | 6:30am | Lydia's report | One comment on issue #2: ready to merge, blocked, cost of the night; Agent Chat pulls it in |
+
+## Scheduled run: Collide prototype to Electron/Node (Draft (not yet approved by Grant))
+
+Grant asked (2026-11-15) for a scheduled run that turns the Collide prototype into the real app on Electron/Node and tests the app against the prototype. Brief: `products/collide/RUN3.md`. Reference: `products/collide/layout-prototype.html` (live copy: the Collide Layout Prototype artifact). Seed checks: `products/collide/prototype-checks/`.
+
+**Order.** Run 2 first (`products/collide/RUN2.md`: the straight move from Tauri/Rust to Electron/Node, no behaviour change). When Grant merges it, Run 3 starts: the prototype's layout and features on that Electron/Node base.
+
+**How "tested against the prototype" works.**
+1. Lydia writes each acceptance spec from the prototype, using only visible UI and one shared read-only test hook (`window.__collide.state()`) that the prototype and the app both provide.
+2. Every spec runs against the prototype first. It must pass there; that proves the spec describes the prototype.
+3. The same spec then runs against the app. App failures are the coder's work list; prototype failures are bad specs.
+4. Screenshots (desktop and phone, Dark / Light / Aura) of the app are compared with the prototype's; differences go in the morning report for Grant.
+5. Nobody changes the prototype to make a spec pass, and no spec is weakened or skipped.
+
+**Schedule (each night until the Run 3 board is done; Central time; uses the nightly windows above).**
+
+| Time | Role | Run 3 work |
+| --- | --- | --- |
+| 6pm | Lydia (Tester) | Turns the next `prototype-checks/` scripts into reference specs (T30) and confirms they pass on the prototype |
+| 8pm | Hrongar (Coder) | Builds the next Run 3 task on `collide/run-3` until its reference specs pass on the app, or usage reaches 75% |
+| 1am | Farengar (Reviewer) | Reviews the night's task branches against the prototype, the specs and the design system |
+| 3am | Hrongar (Coder) | Fixes review comments |
+| 5am | Lydia (Tester) | Runs every reference spec on both, takes the screenshot comparison, updates `TESTER-NOTES.md` |
+| 6:30am | Lydia's report | Per task: specs passing on prototype / app, screenshot differences, blocked items, usage |
+
+**Done when** every reference spec passes on the app, the screenshot differences are accepted by Grant, and the one pull request from `collide/run-3` into `development` is open for Grant to merge.
+
+**Before it can be scheduled:** Grant approves `RUN3.md` and this section, answers its questions (storage, `.collide` layout, screenshot tolerance, Export), merges Run 2, and says which nights it runs. Then the scheduled tasks are created (one per role and time above), each pointing to its role file and `RUN3.md`.
 
 ## Usage limit (Draft (not yet approved by Grant))
 
