@@ -1,23 +1,10 @@
-import { _electron as electron, expect, test, type ElectronApplication } from "@playwright/test";
-import { fileURLToPath } from "node:url";
-
-const appDir = fileURLToPath(new URL("..", import.meta.url));
-
-// Chromium's own sandbox can't start as root on Linux (the cloud box, some CI).
-// This only affects how the test launches Electron; the page sandbox setting is asserted below.
-const rootOnLinux = process.platform === "linux" && process.getuid?.() === 0;
-
-function launch(devUrl?: string): Promise<ElectronApplication> {
-  const env: Record<string, string> = {};
-  for (const [key, value] of Object.entries(process.env)) {
-    if (value !== undefined && key !== "COLLIDE_DEV_URL") env[key] = value;
-  }
-  if (devUrl) env.COLLIDE_DEV_URL = devUrl;
-  return electron.launch({ args: [appDir, ...(rootOnLinux ? ["--no-sandbox"] : [])], env });
-}
+import { expect, test } from "@playwright/test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { launch } from "./launch";
 
 test("Electron opens the editor from the Vite build", async () => {
-  const app = await launch();
+  const { app, close } = await launch();
   try {
     const page = await app.firstWindow();
     await expect(page).toHaveTitle("Collide");
@@ -27,12 +14,12 @@ test("Electron opens the editor from the Vite build", async () => {
     await expect(page.getByTestId("canvas")).toBeVisible();
     expect(await app.windows()).toHaveLength(1);
   } finally {
-    await app.close();
+    await close();
   }
 });
 
 test("Electron opens the editor from the Vite dev server", async () => {
-  const app = await launch("http://localhost:1420/");
+  const { app, close } = await launch({ devUrl: "http://localhost:1420/" });
   try {
     const page = await app.firstWindow();
     await expect(page).toHaveTitle("Collide");
@@ -40,7 +27,7 @@ test("Electron opens the editor from the Vite dev server", async () => {
     await expect(page.getByTestId("toolbar")).toBeVisible();
     await expect(page.getByTestId("canvas")).toBeVisible();
   } finally {
-    await app.close();
+    await close();
   }
 });
 
@@ -60,7 +47,7 @@ const BRIDGE_KEYS = [
 ];
 
 test("the page is isolated: window.collide has exactly the bridge, no Node, sandbox on", async () => {
-  const app = await launch();
+  const { app, close } = await launch();
   try {
     const page = await app.firstWindow();
     await expect(page.getByTestId("canvas")).toBeVisible();
@@ -130,12 +117,12 @@ test("the page is isolated: window.collide has exactly the bridge, no Node, sand
       nodeIntegration: false,
     });
   } finally {
-    await app.close();
+    await close();
   }
 });
 
 test("capture and crop through the bridge: real screen frame, real nativeImage crop, typed errors", async () => {
-  const app = await launch();
+  const { app, close } = await launch();
   try {
     const page = await app.firstWindow();
     await expect(page.getByTestId("canvas")).toBeVisible();
@@ -202,12 +189,12 @@ test("capture and crop through the bridge: real screen frame, real nativeImage c
     expect(result.outside).toBe("The selection is outside the captured screen — drag a box over the screen and release again.");
     expect(result.invalid).toBe("The selection or display scale is not a valid number — start a new snip.");
   } finally {
-    await app.close();
+    await close();
   }
 });
 
-test("bridge stubs say which task fills them in; overlay events round-trip", async () => {
-  const app = await launch();
+test("bridge: the T16 stubs say which task fills them in; settings, copyImage and overlay events answer", async () => {
+  const { app, userData, close } = await launch();
   try {
     const page = await app.firstWindow();
     await expect(page.getByTestId("canvas")).toBeVisible();
@@ -230,10 +217,9 @@ test("bridge stubs say which task fills them in; overlay events round-trip", asy
       }
       const offSnip = collide.onSnipRequest(() => undefined);
       return {
-        hideEditor: await message(collide.hideEditor()),
-        showOverlay: await message(collide.showOverlay({ x: 0, y: 0, width: 10, height: 10 })),
+        showOverlay: await message(collide.showOverlay({ x: 0, y: 0, width: 0, height: 10 })),
         copyImage: await message(collide.copyImage("data:image/png;base64,AAAA")),
-        settingsStatus: await message(collide.settingsStatus()),
+        settingsStatus: await collide.settingsStatus(),
         markupsList: await message(collide.markups.list()),
         ping: await ping,
         unknownEvent,
@@ -241,23 +227,28 @@ test("bridge stubs say which task fills them in; overlay events round-trip", asy
       };
     });
     expect(result).toEqual({
-      hideEditor: "hideEditor is not available in this build yet — it arrives with T15.",
-      showOverlay: "showOverlay is not available in this build yet — it arrives with T15.",
-      copyImage: "copyImage is not available in this build yet — it arrives with T15.",
-      settingsStatus: "settingsStatus is not available in this build yet — it arrives with T15.",
+      showOverlay: "The overlay position is not valid — start a new snip.",
+      copyImage: "The image to copy is not a PNG — try Copy again, or use Export instead.",
+      settingsStatus: { hotkey: "Ctrl+Alt+S", warning: null },
       markupsList: "markups.list is not available in this build yet — it arrives with T16.",
       ping: { snipId: 7 },
       unknownEvent: "Unknown overlay event: collide:capture-monitor",
       offSnip: "function",
     });
+
+    // A first start writes settings.json with the default hotkey into the user-data folder.
+    expect(await app.evaluate(({ app: electronApp }) => electronApp.getPath("userData"))).toBe(userData);
+    expect(readFileSync(join(userData, "settings.json"), "utf8")).toBe('{\n  "hotkey": "Ctrl+Alt+S"\n}\n');
+    // Nothing above opened the overlay window: it appears with the first snip.
+    expect(await app.windows()).toHaveLength(1);
   } finally {
-    await app.close();
+    await close();
   }
 });
 
 test("the shell stays on the app: other dev URLs ignored, no navigation away, no new windows", async () => {
   // COLLIDE_DEV_URL is honoured only for http on this machine.
-  const app = await launch("https://example.com/");
+  const { app, close } = await launch({ devUrl: "https://example.com/" });
   try {
     const page = await app.firstWindow();
     expect(page.url()).toBe("collide://app/");
@@ -281,6 +272,6 @@ test("the shell stays on the app: other dev URLs ignored, no navigation away, no
     expect(shell).toEqual({ windows: 1, url: "collide://app/", loading: false });
     expect(await app.windows()).toHaveLength(1);
   } finally {
-    await app.close();
+    await close();
   }
 });

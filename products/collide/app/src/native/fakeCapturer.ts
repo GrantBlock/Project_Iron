@@ -25,10 +25,14 @@ export function fakeColorAt(x: number, y: number, width: number, height: number)
 /** The pattern as opaque BGRA bytes, the layout `nativeImage.createFromBitmap` takes. */
 export function fakeBitmap(width: number, height: number): Uint8Array {
   const data = new Uint8Array(width * height * 4);
+  let i = 0;
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      const [r, g, b] = fakeColorAt(x, y, width, height);
-      data.set([b, g, r, 255], (y * width + x) * 4);
+      const rgb = fakeColorAt(x, y, width, height);
+      data[i++] = rgb[2];
+      data[i++] = rgb[1];
+      data[i++] = rgb[0];
+      data[i++] = 255;
     }
   }
   return data;

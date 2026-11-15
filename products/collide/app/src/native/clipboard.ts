@@ -12,6 +12,7 @@ export interface ClipboardDeps<Image extends { isEmpty(): boolean }> {
 }
 
 const detailOf = (e: unknown) => (e instanceof Error ? e.message : String(e));
+const writeFailed = (e: unknown) => new Error(`Could not write to the clipboard (${detailOf(e)}) — try Copy again, or use Export instead.`);
 const NOT_A_PNG = "The image to copy is not a PNG — try Copy again, or use Export instead.";
 
 /** Put a PNG data URL (`data:image/png;base64,...`, what the editor's Copy produces) on the clipboard as an image. */
@@ -28,6 +29,6 @@ export function copyImage<Image extends { isEmpty(): boolean }>(png: unknown, de
   try {
     deps.writeImage(image);
   } catch (e) {
-    throw new Error(`Could not write to the clipboard (${detailOf(e)}) — try Copy again, or use Export instead.`);
+    throw writeFailed(e);
   }
 }
