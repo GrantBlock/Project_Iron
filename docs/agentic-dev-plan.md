@@ -59,6 +59,7 @@ Related (in `GrantBlock/designengineering-ai`, `Builder v0.1/`): `development-pa
 - [stated] 2026-11-15: Collide callout numbers count up as callouts are added (counted from the back), so existing numbers stay (Grant). Replaces "numbers follow front-to-back order" above for the direction.
 - [stated] 2026-11-15: PDF is in Collide's scope for the scheduled run (RUN3 task T38), kept to the smallest version (Grant).
 - [stated] 2026-11-15: T38 scope approved: a PDF works the same as the other formats: open, mark up, save in a `.collide`, export in its own format (PDF), Copy as PNG; no text editing, forms or OCR (Grant).
+- [stated] 2026-11-15: Collide Run 2 (Tauri/Rust to Electron/Node) and Run 3 (build the prototype, tested against it, with PDF) are one run, scheduled at 2:45 AM Central (Grant).
 - [stated] 2026-11-15: The Snip canvas shows a print area marker; notes may go over it. Autofit works with the annotations on a tighter margin (Grant).
 - [stated] 2026-11-15: Annotation bubbles can stack to the right, top, bottom or left of another bubble (Grant).
 - [stated] 2026-11-15: Collide's scroll bars follow the theme. With a drawing tool on, a click outside the view area goes back to the Select tool (Grant).
@@ -191,7 +192,7 @@ How a spec gets made: Irileth drafts it from the prototype page and the logs (tr
 
 Grant asked (2026-11-15) for a scheduled run that turns the Collide prototype into the real app on Electron/Node and tests the app against the prototype. Brief: `products/collide/RUN3.md`. Reference: `products/collide/layout-prototype.html` (live copy: the Collide Layout Prototype artifact). Seed checks: `products/collide/prototype-checks/`.
 
-**Order.** Run 2 first (`products/collide/RUN2.md`: the straight move from Tauri/Rust to Electron/Node, no behaviour change). When Grant merges it, Run 3 starts: the prototype's layout and features on that Electron/Node base.
+**One run at 2:45 AM Central** (Grant 2026-11-15). Phase E first (`products/collide/RUN2.md` T13–T17: straight move from Tauri/Rust to Electron/Node, no behaviour change), then the prototype's layout and features on that base (T30 onward in `RUN3.md`). One integration branch `collide/run`, one pull request into `development`.
 
 **How "tested against the prototype" works.**
 1. Lydia writes each acceptance spec from the prototype, using only visible UI and one shared read-only test hook (`window.__collide.state()`) that the prototype and the app both provide.

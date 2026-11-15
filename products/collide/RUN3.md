@@ -1,5 +1,7 @@
 # Collide — Run 3 brief: build the prototype on Electron/Node, tested against it
 
+> **One run (Grant 2026-11-15):** Run 2 and Run 3 are the same run, scheduled for **2:45 AM Central**. Phase E first: `RUN2.md` tasks T13–T17 (straight move from Tauri/Rust to Electron/Node, no behaviour change, all existing tests green). Then this board, T30 onward, on that base. One integration branch `collide/run`, cut from `claude/modest-euler-bucvr2` (it holds `development` plus both briefs and the prototype). One pull request into `development`; `RUN2.md`'s T18 handoff is folded into T37. Open questions below are not answered yet: use the (A) defaults, mark them in `ISSUES.md`, and keep going.
+
 Draft (not yet approved by Grant), 2026-11-15. Grant asked for a scheduled run that turns `layout-prototype.html` into the real app on Electron/Node and tests the app against the prototype. Nothing here runs until Grant approves this brief and the schedule in `../../docs/agentic-dev-plan.md` (Scheduled run: Collide prototype).
 
 The Planner reads this file, `SPEC.md` (team, task loop, rules), `RUN2.md`, `HANDOFF.md`, `TESTER-NOTES.md`, the decisions dated 2026-11-15 in `../../docs/agentic-dev-plan.md`, and opens `layout-prototype.html` (its **Draft layout · notes** panel lists every behaviour).
@@ -14,14 +16,14 @@ The Planner reads this file, `SPEC.md` (team, task loop, rules), `RUN2.md`, `HAN
 
 ## Depends on
 
-- **Run 2 must be merged first** (`RUN2.md`: the straight move from Tauri/Rust to Electron/Node). Run 3 builds on its Electron shell, preload bridge and Node main process.
+- **Phase E of the same run** (`RUN2.md` T13–T17) comes first; T30 starts once Phase E is Done.
 - Answers from Grant before the first night (see Questions).
 
 ## Task board
 
 | ID | Task | Acceptance check | Depends on |
 | --- | --- | --- | --- |
-| T30 | Reference harness: add `window.__collide.state()` to the prototype (read-only, no behaviour change) and to the app; a Playwright project that runs each spec against `file://…/layout-prototype.html` and against the app (Electron via Playwright's Electron support; the Vite build in Chromium for UI-only specs). Turn every `prototype-checks/` script into an asserting spec. | Every spec passes on the prototype; the harness reports per spec: prototype ✓ / app ✓ ✗ | Run 2 merged |
+| T30 | Reference harness: add `window.__collide.state()` to the prototype (read-only, no behaviour change) and to the app; a Playwright project that runs each spec against `file://…/layout-prototype.html` and against the app (Electron via Playwright's Electron support; the Vite build in Chromium for UI-only specs). Turn every `prototype-checks/` script into an asserting spec. | Every spec passes on the prototype; the harness reports per spec: prototype ✓ / app ✓ ✗ | T17 |
 | T31 | Layout shell: sidebar (New snip + delay toggle, Add snip + Current/Behind toggle, Open, Search, Recents, tags), blank canvas home, tabs with changed/saved dot, close splash, delete with splash, collapse (windowed and maximized), themes Dark/Light/Aura, themed scroll bars, settings (storage, this computer, links, access password). | Shell specs pass on both | T30 |
 | T32 | Markup engine (one engine for Snip and Markdown): tools Select, Rectangle, Ellipse, Line, X mark, Point, Pen, Highlighter, Eraser; 4 material colours and stroke, remembered per editor; colour deselects after a draw; resize handles (Shift keeps aspect); Esc and click-outside to Select; note bubbles with angled leaders, stacking and snapping; callout cards (type, hide text/bubble/outline, Fill %, grip reorder); front-to-back list; numbers count from the back; print area with tight margin; undo/redo; Copy. | Engine specs pass on both, in Snip | T31 |
 | T33 | Images on the canvas: Add snip (Current: the open program; Behind: like New snip) and paste place images beside the base image, the canvas grows; images move, resize with aspect locked, reorder, delete. | Image and paste specs pass | T32 |
@@ -43,7 +45,7 @@ T30–T34 are **must**; T35, T36 and T38 run if usage remains; T37 always runs l
 
 ## Branches
 
-Integration branch `collide/run-3`, cut from `development` after Run 2 is merged; task branches `task/Txx-<slug>`; one pull request from `collide/run-3` into `development`. Grant merges.
+Integration branch `collide/run`, cut from `claude/modest-euler-bucvr2`; task branches `task/Txx-<slug>`; one pull request from `collide/run` into `development`. Grant merges.
 
 ## Questions for Grant before the first night
 
