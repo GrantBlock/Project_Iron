@@ -48,7 +48,7 @@ REF_SHOTS=0 pnpm ref:prototype # skip the screenshots
 
 The run ends with one line per spec, `prototype ✓/✗ · app ✓/✗`, and the totals; the same is written to `app/reference-out/report.json`. Screenshots go to `app/reference-out/screens/<prototype|app>/<spec>/<name>-<theme>-<size>.png` (`reference-out/` is not committed). The exit code is not 0 while any spec fails on either one.
 
-Status: `tabs-and-close-splash` is converted and is the example. The other 14 scripts are still to convert.
+Status: all 15 scripts are converted (`tabs-and-close-splash` is the example); every spec passes on the prototype.
 
 ### Writing a spec
 
