@@ -14,5 +14,5 @@
     "noEmit": true,
     "types": ["vite/client"]
   },
-  "include": ["src", "vite.config.ts", "vite.electron.config.ts", "vitest.config.ts", "playwright.config.ts", "playwright.electron.config.ts", "e2e", "e2e-electron", "eslint.config.js"]
+  "include": ["src", "vite.config.ts", "vite.electron.config.ts", "vitest.config.ts", "playwright.config.ts", "playwright.electron.config.ts", "e2e", "e2e-electron", "reference", "eslint.config.js"]
 }

@@ -5,3 +5,4 @@ release
 target
 test-results
 playwright-report
+reference-out
