@@ -86,7 +86,7 @@ It cannot edit files or run anything else. When a file should change, it shows t
 
 **Agent files.** Each project's agent has `personality.md`, `skills.md` and `memory.md` in `%APPDATA%\\Project Chat\\data\\agents\\<project>\\` (only on the server PC, never in the repository). They are created with short defaults, read before every reply, and edited with `GET`/`PUT /api/projects/<id>/agent-files/<name>`.
 
-**Open file.** The chat request can carry the file open in the editor (`context: {file, content}`); the agent sees it with the message.
+**Read this file / write.** The chat request can share one file (`context: {file, path}` for a file in the project folder, or `{agentFile: "memory"}` for an agent file). The agent reads it from disk with that message and may rewrite **only that file**, only when asked, by replying with the whole new file between `<<<WRITE` and `WRITE>>>` lines. Allowed: `.md`, `.markdown`, `.txt` inside the project folder, and the agent's own files; anything else is refused. Before every write the old version is copied to `data\\backups\\<project>\\`, and the chat shows "Edited <file> · Undo" (`POST /api/projects/<id>/undo/<messageId>`).
 
 ## GitHub report source (cloud agents)
 
