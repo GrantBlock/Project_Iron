@@ -3,6 +3,7 @@
 ## Run session 1
 
 - Start (UTC): 2026-11-15T15:38Z · Planner (Irileth). Stop starting new tasks at 19:53Z (4 h 15 min).
+- Usage: the 5-hour limit hit at about 16:30Z during T15 (Grant: resets 12:40 Central = 18:40Z); work resumed 18:41Z. The T15 Coder was resumed, not restarted. New cut-off for starting tasks: 22:55Z (4 h 15 min after the resume).
 - Merged at start (CLAUDE.md step 1): `claude/intelligent-brown-2hlzyu` (Agent Chat 0.4.x, `tools/project-chat/` only).
 
 ### Board
@@ -11,7 +12,7 @@
 | --- | --- | --- | --- |
 | T13 | Electron shell | Done (Vitest 119, Playwright 45, Electron smoke 3; Windows exe check: manual Grant/Lydia) | n/a (Phase E) |
 | T14 | Bridge, capture, crop | Done (Vitest 219, Playwright 45, Electron e2e 6; capture at 100–200% and second monitor: manual Grant/Lydia) | n/a (Phase E) |
-| T15 | Snip choreography, settings | To do | — |
+| T15 | Snip choreography, settings | Done (Vitest 286, Playwright 45, Electron e2e 13 ×2; TESTER-NOTES 1, 7, 9, real hotkey, overlay DPI: manual Grant/Lydia) | n/a (Phase E) |
 | T16 | Local markup storage | To do | — |
 | T17 | Remove Tauri | To do | — |
 | T30 | Reference harness | To do | |

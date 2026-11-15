@@ -13,7 +13,7 @@ Tauri v2 + React 18 + TypeScript (strict) + Vite. Package manager: pnpm. Run all
 - `pnpm lint` — ESLint (flat config, typescript-eslint)
 - `pnpm test` — Vitest (jsdom), files `src/**/*.test.ts(x)`
 - `pnpm e2e` — Playwright, chromium only, starts the dev server; uses `/opt/pw-browsers/chromium` if present. Do not run `playwright install` in the cloud box.
-- `pnpm e2e:electron` — build + Electron shell smoke test (`e2e-electron/`); on Linux run `xvfb-run -a pnpm e2e:electron`
+- `pnpm e2e:electron` — build + Electron e2e (`e2e-electron/`: shell, bridge, and the snip with a fake capture); on Linux run `xvfb-run -a pnpm e2e:electron`. Each test starts the app with its own empty user-data folder. `COLLIDE_FAKE_CAPTURE=1` (ignored by a packaged app) swaps the screen grab for a fixed four-colour frame
 - `cd src-tauri && cargo test` — Rust tests
 
 ## Linux prerequisites
@@ -23,7 +23,8 @@ Tauri v2 + React 18 + TypeScript (strict) + Vite. Package manager: pnpm. Run all
 - `src/` — React frontend (`main.tsx` imports `../../design-system/styles.css`)
 - `e2e/` — Playwright specs
 - `electron/` — Electron shell: `main.cjs` (thin: windows, protocol, wiring), `preload.cjs` (`window.collide`; self-contained, a sandboxed preload can only require `electron`), `icons/` (same files as `src-tauri/icons/`)
-- `src/native/` — main-process logic in TypeScript, unit-tested with fakes (Electron modules are passed in, never imported): capture, IPC table, shell guards; `bridge.ts` is the type of `window.collide`
+- `src/native/` — main-process logic in TypeScript, unit-tested with fakes (Electron modules are passed in, never imported): capture, IPC table, shell guards, the snip's window moves (`windows.ts`), `settings.json` and the global hotkey (`settings.ts`; the file is in Electron's user-data folder), `copyImage` (`clipboard.ts`); `bridge.ts` is the type of `window.collide`
+- `src/snip/electronDeps.ts` — the snip flow's wiring to `window.collide`; `isDesktop()` is true in the Electron app
 - `src-tauri/` — Rust shell (`lib.rs` has `run()`), `tauri.conf.json`, `icons/` (generated from `../design-system/assets/logo/`)
 - `../design-system/` — tokens and components (source of truth)
 

@@ -7,14 +7,22 @@ test("browser build keeps the framed look with its title row", async ({ page }) 
 });
 
 test("desktop app: no second border or title inside the native Windows frame", async ({ page }) => {
-  // Minimal stand-in for the Tauri bridge so the app takes its desktop path.
+  // Minimal stand-in for the Electron preload bridge (`window.collide`) so the app takes its desktop path.
   await page.addInitScript(() => {
-    (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = {
-      invoke: async () => 0,
-      transformCallback: () => 0,
-      metadata: { currentWindow: { label: "main" }, currentWebview: { windowLabel: "main", label: "main" } },
+    const never = () => new Promise<never>(() => undefined);
+    (window as unknown as Record<string, unknown>).collide = {
+      captureMonitor: never,
+      cropCapture: never,
+      hideEditor: never,
+      showEditor: never,
+      showOverlay: never,
+      hideOverlay: never,
+      copyImage: never,
+      settingsStatus: async () => null,
+      onSnipRequest: () => () => undefined,
+      markups: { save: never, open: never, pick: never, list: never },
+      overlay: { emit: () => undefined, on: () => () => undefined },
     };
-    (window as unknown as Record<string, unknown>).__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: () => undefined };
   });
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/");

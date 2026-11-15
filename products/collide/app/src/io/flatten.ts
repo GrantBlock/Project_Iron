@@ -170,10 +170,30 @@ export function downloadPng(dataUrl: string, fileName: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/** Put a PNG data URL on the system clipboard as an image (WebView2/WebKit async Clipboard API). */
-export async function copyPngToClipboard(dataUrl: string, clipboard: Clipboard | undefined = globalThis.navigator?.clipboard): Promise<void> {
-  if (!clipboard?.write || typeof ClipboardItem === "undefined") {
-    throw new Error("This window cannot write images to the clipboard — use Export instead.");
+/** The desktop shell's own clipboard write (`window.collide.copyImage`), when the page runs in the Collide app. */
+type NativeCopy = (dataUrl: string) => Promise<void>;
+const nativeCopy = (): NativeCopy | undefined => {
+  const bridge = typeof window === "undefined" ? undefined : window.collide;
+  return bridge ? (png) => bridge.copyImage(png) : undefined;
+};
+
+/**
+ * Put a PNG data URL on the system clipboard as an image (async Clipboard API).
+ * In the desktop app, if the web clipboard refuses (e.g. the window is not focused
+ * yet right after a snip), the shell writes the image instead.
+ */
+export async function copyPngToClipboard(
+  dataUrl: string,
+  clipboard: Clipboard | undefined = globalThis.navigator?.clipboard,
+  native: NativeCopy | undefined = nativeCopy(),
+): Promise<void> {
+  try {
+    if (!clipboard?.write || typeof ClipboardItem === "undefined") {
+      throw new Error("This window cannot write images to the clipboard — use Export instead.");
+    }
+    await clipboard.write([new ClipboardItem({ "image/png": dataUrlToBlob(dataUrl) })]);
+  } catch (e) {
+    if (!native) throw e;
+    await native(dataUrl);
   }
-  await clipboard.write([new ClipboardItem({ "image/png": dataUrlToBlob(dataUrl) })]);
 }

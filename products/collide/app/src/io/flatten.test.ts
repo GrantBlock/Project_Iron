@@ -75,6 +75,44 @@ describe("copyPngToClipboard", () => {
   it("explains the fix when the clipboard API is missing", async () => {
     await expect(copyPngToClipboard(png, undefined)).rejects.toThrow(/use Export instead/);
   });
+
+  it("desktop app: when the web clipboard refuses, the shell writes the same PNG instead", async () => {
+    vi.stubGlobal("ClipboardItem", FakeItem);
+    const write = vi.fn().mockRejectedValue(new Error("Document is not focused."));
+    const native = vi.fn().mockResolvedValue(undefined);
+    await copyPngToClipboard(png, { write } as unknown as Clipboard, native);
+    expect(write).toHaveBeenCalledTimes(1);
+    expect(native.mock.calls).toEqual([[png]]);
+    // No web clipboard at all: the shell is used too.
+    await copyPngToClipboard(png, undefined, native);
+    expect(native).toHaveBeenCalledTimes(2);
+    vi.unstubAllGlobals();
+  });
+
+  it("desktop app: the shell is not used when the web clipboard works", async () => {
+    vi.stubGlobal("ClipboardItem", FakeItem);
+    const write = vi.fn().mockResolvedValue(undefined);
+    const native = vi.fn();
+    await copyPngToClipboard(png, { write } as unknown as Clipboard, native);
+    expect(native).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it("desktop app: if the shell cannot write either, its cause and fix are what the toast gets", async () => {
+    const native = vi.fn().mockRejectedValue(new Error("Could not write to the clipboard (locked) — try Copy again, or use Export instead."));
+    await expect(copyPngToClipboard(png, undefined, native)).rejects.toThrow("Could not write to the clipboard (locked)");
+  });
+
+  it("uses window.collide.copyImage by default when the bridge is on the page", async () => {
+    const copyImage = vi.fn().mockResolvedValue(undefined);
+    window.collide = { copyImage } as unknown as Window["collide"];
+    try {
+      await copyPngToClipboard(png, undefined);
+      expect(copyImage.mock.calls).toEqual([[png]]);
+    } finally {
+      delete window.collide;
+    }
+  });
 });
 
 describe("contentBounds", () => {

@@ -1,13 +1,16 @@
 // Collide — Electron main process.
 // T13: shell. Opens the editor in a native-frame window with a locked-down page
 // (contextIsolation on, sandbox on, no Node in the page).
-// T14: the `window.collide` bridge (electron/preload.cjs). Capture and crop are
-// real; the logic lives in src/native/ and src/snip/crop.ts (TypeScript, unit-
-// tested) and is bundled to dist-electron/native.cjs by `pnpm build:electron`.
-// Window choreography, settings and clipboard arrive in T15, storage in T16.
+// T14: the `window.collide` bridge (electron/preload.cjs). Capture and crop.
+// T15: the snip's window moves, the overlay window, settings.json and the global
+// hotkey, copyImage. Storage arrives in T16.
+// This file only creates windows and passes Electron's modules on: the logic
+// lives in src/native/ and src/snip/crop.ts (TypeScript, unit-tested) and is
+// bundled to dist-electron/native.cjs by `pnpm build:electron`.
 "use strict";
 
-const { app, BrowserWindow, Menu, desktopCapturer, ipcMain, nativeImage, net, protocol } = require("electron");
+const { app, BrowserWindow, Menu, clipboard, desktopCapturer, globalShortcut, ipcMain, nativeImage, net, protocol } = require("electron");
+const fs = require("node:fs");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 
@@ -49,24 +52,82 @@ async function serveDist(request) {
 
 const isAppUrl = (url) => native.sameOrigin(url, startUrl);
 
+// Test only: `COLLIDE_FAKE_CAPTURE=1` swaps the screen grab for a fixed pattern
+// (src/native/fakeCapturer.ts) so the snip can run end to end without a real
+// screen. A packaged app never reads it.
+const fakeCapture = !app.isPackaged && process.env.COLLIDE_FAKE_CAPTURE === "1";
+
+const webPreferences = {
+  preload: path.join(__dirname, "preload.cjs"),
+  contextIsolation: true,
+  sandbox: true,
+  nodeIntegration: false,
+};
+
+let editor = null;
+/** { window, loaded } once a snip has needed it. */
+let overlay = null;
+let quitting = false;
+/** What loading settings.json and registering the hotkey gave (the page reads it at startup). */
+let settingsStatus = null;
+
 function createEditorWindow() {
   const win = new BrowserWindow({
-    title: "Collide",
+    title: native.APP_NAME,
     width: 1280,
     height: 800,
     show: false,
     icon: path.join(__dirname, "icons", "icon.png"),
-    webPreferences: {
-      preload: path.join(__dirname, "preload.cjs"),
-      contextIsolation: true,
-      sandbox: true,
-      nodeIntegration: false,
-    },
+    webPreferences,
   });
 
   win.once("ready-to-show", () => win.show());
+  win.on("closed", () => {
+    editor = null;
+    // The overlay is never the last window: without the editor there is nothing to snip for.
+    if (overlay && !overlay.window.isDestroyed()) overlay.window.destroy();
+  });
   void win.loadURL(startUrl);
   return win;
+}
+
+// The capture overlay, as the Tauri shell configured it: transparent, frameless,
+// always on top, not in the taskbar, hidden until a snip shows it. Not OS-
+// fullscreen: that would pick the monitor the window is on, not the captured one.
+function createOverlayWindow() {
+  const win = new BrowserWindow({
+    title: "Collide overlay",
+    show: false,
+    transparent: true,
+    frame: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    fullscreenable: false,
+    hasShadow: false,
+    // The page decodes and shows the frozen frame while the window is still hidden.
+    webPreferences: { ...webPreferences, backgroundThrottling: false },
+  });
+  const loaded = new Promise((resolve) => {
+    win.webContents.once("did-finish-load", resolve);
+    win.webContents.once("did-fail-load", resolve);
+    win.once("closed", resolve);
+  });
+  // Alt+F4 on the overlay must not strand a snip with the editor hidden: Esc cancels instead.
+  win.on("close", (event) => {
+    if (!quitting && editor && !editor.isDestroyed()) event.preventDefault();
+  });
+  win.on("closed", () => {
+    if (overlay && overlay.window === win) overlay = null;
+  });
+  void win.loadURL(new URL("overlay.html", startUrl).toString());
+  return { window: win, loaded };
+}
+
+function broadcast(channel, ...args) {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) win.webContents.send(channel, ...args);
+  }
 }
 
 // Every page, present and future, stays on the app: no pop-ups, no webviews,
@@ -88,22 +149,42 @@ app.whenReady().then(() => {
   protocol.handle(SCHEME, serveDist);
   // `screen` can only be used once the app is ready.
   const { screen } = require("electron");
+  const decodePng = (png) => nativeImage.createFromBuffer(Buffer.from(png.buffer, png.byteOffset, png.byteLength));
   native.registerBridge({
     ipcMain,
     screen,
     desktopCapturer,
-    decodePng: (png) => nativeImage.createFromBuffer(Buffer.from(png.buffer, png.byteOffset, png.byteLength)),
+    decodePng,
     isTrusted: isAppUrl,
-    broadcast: (channel, ...args) => {
-      for (const win of BrowserWindow.getAllWindows()) {
-        if (!win.isDestroyed()) win.webContents.send(channel, ...args);
-      }
-    },
+    broadcast,
+    windows: native.createChoreography({
+      editor: () => editor,
+      overlay: () => {
+        if (!overlay || overlay.window.isDestroyed()) overlay = createOverlayWindow();
+        return overlay;
+      },
+    }),
+    copyImage: (png) => native.copyImage(png, { imageFromPng: decodePng, writeImage: (image) => clipboard.writeImage(image) }),
+    settingsStatus: () => settingsStatus,
+    capturer: fakeCapture
+      ? native.fakeCapturer({
+          screen,
+          createBitmap: (bgra, size) => nativeImage.createFromBitmap(Buffer.from(bgra.buffer, bgra.byteOffset, bgra.byteLength), size),
+        })
+      : undefined,
   });
+  // settings.json sits in the user-data folder; the hotkey in it (default Ctrl+Alt+S) asks the editor for a snip.
+  settingsStatus = native.setupHotkey(app.getPath("userData"), { fs, path, mac: process.platform === "darwin" }, globalShortcut, () =>
+    broadcast(native.SNIP_REQUEST_CHANNEL),
+  );
   // Same as the Tauri window: the native frame only, no menu bar.
   // Dev keeps Electron's default menu for reload and DevTools.
   if (app.isPackaged) Menu.setApplicationMenu(null);
-  createEditorWindow();
+  editor = createEditorWindow();
 });
 
+app.on("before-quit", () => {
+  quitting = true;
+});
+app.on("will-quit", () => globalShortcut.unregisterAll());
 app.on("window-all-closed", () => app.quit());

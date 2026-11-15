@@ -4,8 +4,7 @@
 //
 // A sandboxed preload can only require "electron", so the channel names are
 // repeated here; src/native/preload.test.ts checks them against bridge.ts.
-// Real in T14: captureMonitor, cropCapture, the overlay events, onSnipRequest's
-// subscription. The other methods reach main-process stubs until T15 / T16.
+// The markups methods reach main-process stubs until T16; everything else is real.
 "use strict";
 
 const { contextBridge, ipcRenderer } = require("electron");

@@ -2,11 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { flushSync } from "react-dom";
 import type { AnnotationsDoc, Shape } from "../model";
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { GlassPanel, Toast } from "../ds";
 import { createSnipFlow, snipName } from "../snip/flow";
-import { isTauri, SNIP_REQUEST_EVENT, tauriDeps } from "../snip/tauriDeps";
+import { electronDeps, isDesktop } from "../snip/electronDeps";
 import { Canvas, cssVar, type CanvasHandle, type LoadedImage } from "./Canvas";
 import { nextShapeId, type NewShape, type ShapePatch } from "./store";
 import { DEFAULT_STROKE_WIDTH, TOOL_KEYS, type Tool } from "./tools";
@@ -339,7 +337,7 @@ export function EditorShell() {
     return () => window.removeEventListener("keydown", key);
   }, [dispatch, stateRef]);
 
-  // T11: New snip button and the global hotkey (Rust emits SNIP_REQUEST_EVENT) both run the same flow.
+  // T11: New snip button and the global hotkey (the shell sends a snip request) both run the same flow.
   // A finished snip opens in the editor and goes straight to the clipboard, like Snipping Tool.
   // A failed copy only shows its own toast; the snip itself still counts as done.
   const openSnip = useCallback(
@@ -373,15 +371,16 @@ export function EditorShell() {
 
   const snipRef = useRef<ReturnType<typeof createSnipFlow>>({ start: async () => undefined, isBusy: () => false });
   useEffect(() => {
-    const flow = createSnipFlow(tauriDeps({ openImage: (url, name) => openSnipRef.current(url, name), notify: setNotice, delayMs: () => snipDelayRef.current * 1000 }));
+    const flow = createSnipFlow(electronDeps({ openImage: (url, name) => openSnipRef.current(url, name), notify: setNotice, delayMs: () => snipDelayRef.current * 1000 }));
     snipRef.current = flow;
-    if (!isTauri()) return;
-    const un = listen(SNIP_REQUEST_EVENT, () => void flow.start());
-    void invoke("get_settings_status").then((s) => {
-      const warning = (s as { warning?: string | null } | null)?.warning;
+    const bridge = window.collide;
+    if (!bridge) return;
+    const off = bridge.onSnipRequest(() => void flow.start());
+    void bridge.settingsStatus().then((s) => {
+      const warning = s?.warning;
       if (warning) setNotice({ tone: "error", title: "Hotkey setting not used", description: warning });
     }, () => undefined);
-    return () => void un.then((f) => f());
+    return off;
   }, [open]);
 
   const onFile = (e: ChangeEvent<HTMLInputElement>) => {
@@ -444,7 +443,7 @@ export function EditorShell() {
 
   // In the desktop app the OS window already has a title bar and border, so the in-app
   // frame and "Collide" title row would show twice; fill the window edge to edge instead.
-  const desktop = isTauri();
+  const desktop = isDesktop();
 
   return (
     <div

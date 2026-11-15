@@ -3,4 +3,8 @@
 // main.cjs passes them in.
 export { registerBridge } from "./ipc";
 export { SNIP_REQUEST_CHANNEL } from "./bridge";
-export { devServerUrl, distFile, sameOrigin } from "./shell";
+export { APP_NAME, devServerUrl, distFile, sameOrigin } from "./shell";
+export { createChoreography } from "./windows";
+export { setupHotkey } from "./settings";
+export { copyImage } from "./clipboard";
+export { fakeCapturer } from "./fakeCapturer";
