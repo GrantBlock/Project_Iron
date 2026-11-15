@@ -778,12 +778,12 @@ button { cursor: pointer; }
    Windowed: the window shrinks to the two panels; an open or new snip adds a canvas on the left and fits it.
    Maximized: the window stays full size and a blank canvas fills the left. */
 body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
-.app.compact { grid-template-columns: 276px 400px; width: 676px; max-width: 100%; margin-left: auto; box-shadow: var(--shadow); border-left: var(--border-w) solid var(--line-2); }
+.app.compact { grid-template-columns: 276px; width: 276px; max-width: 100%; margin-left: auto; box-shadow: var(--shadow); border-left: var(--border-w) solid var(--line-2); }
 .app.compact .main { display: contents; }
 .app.compact .side { grid-column: 1; grid-row: 1; }
 .app.compact .chat { grid-column: 2; grid-row: 1; display: flex !important; border-left: var(--border-w) solid var(--line); }
 .app.compact .ws { display: none !important; }
-.app.compact.with-canvas { grid-template-columns: minmax(0, 1fr) 276px 400px; width: min(100%, 1296px); }
+.app.compact.with-canvas { grid-template-columns: minmax(0, 1fr) 276px; width: min(100%, 1000px); }
 .app.compact.with-canvas.maxed { width: 100%; box-shadow: none; border: 0; }
 .app.compact.with-canvas .ws { display: flex !important; grid-column: 1; grid-row: 1; min-width: 0; }
 .app.compact.with-canvas .side { grid-column: 2; }
@@ -797,7 +797,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
 .blank .in b { color: var(--t1); font-size: 15px; }
 .blank svg.logo { width: 40px; height: 40px; }
 .agenthero { height: 156px !important; }
-.compact-note { position: fixed; right: calc(696px + env(safe-area-inset-right, 0px)); top: 20px; max-width: 300px; color: var(--t3); font-size: 12.5px; text-align: right; }
+.compact-note { position: fixed; right: calc(296px + env(safe-area-inset-right, 0px)); top: 20px; max-width: 300px; color: var(--t3); font-size: 12.5px; text-align: right; }
 .winctl { position: fixed; z-index: 41; left: calc(14px + env(safe-area-inset-left, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 6px; padding: 4px 4px 4px 10px; border-radius: 999px; background: var(--raised); border: 1px dashed var(--line-2); box-shadow: var(--shadow); font: 500 11px var(--font-mono); color: var(--t3); }
 .winctl button { height: 24px; padding: 0 9px; border-radius: 999px; border: 0; background: transparent; color: var(--t2); font: inherit; }
 .winctl button[aria-pressed="true"] { background: var(--t1); color: var(--bg); }
@@ -826,6 +826,11 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
 .switcher .chevd { display: inline-flex; transform: rotate(90deg); opacity: .8; flex: none; }
 .switcher .badge { flex: none; }
 .hpop.switch { left: 12px; right: auto; width: min(340px, calc(100% - 24px)); }
+.app .ws { display: flex; }
+.app .main, .app.ws-open .main, .app.ws-open.dock-min .main { grid-template-columns: minmax(0, 1fr); }
+.blank { position: relative; }
+.blank .menu { position: absolute; left: 12px; top: calc(12px + env(safe-area-inset-top, 0px)); }
+.chat { display: none !important; }
 .notes h4 { margin: 12px 0 2px; font-size: 12.5px; }
 </style>
 
@@ -833,28 +838,24 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
   <aside class="side" id="side" aria-label="Recents"></aside>
   <div class="main">
     <section class="ws" id="ws" aria-label="Workspace"></section>
-    <section class="chat" id="chat" aria-label="Chat"></section>
-  </div>
+      </div>
 </div>
-<input type="file" id="picFile" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
 <input type="file" id="imgFile" accept="image/png,image/jpeg,image/webp" hidden>
 <button class="notesbtn" id="notesBtn" aria-expanded="false">Draft layout · notes</button>
 <div class="notes" id="notes" hidden>
-  <h3>Draft (not yet approved by Grant)</h3>
+  <h3>Collide: Snip and Zip editor</h3>
   <ol>
-    <li><b>Chat is home, on the right.</b> The left panel holds snips, zips and agents only. Click the chat name in the chat header to change chats (projects by team, unread badges, New chat).</li>
-    <li><b>Snip and Editor have no page of their own.</b> They open as a workspace when you open a snip, a zip file or an agent's files.</li>
-    <li><b>Workspace</b> = header (name, save state, Save, Close) + toolbar + canvas + numbered list. Chat moves to a dock on the right. Close returns to chat; unsaved changes ask first.</li>
-    <li><b>Zips</b> appear in Recents and expand to their folder tree.</li>
-    <li><b>Markdown files</b> open in Preview with a Callouts list, or Code + preview. In Preview, Box (B) and Circle (C) draw numbered callouts on the page; Canvas snip saves the marked-up area as a markup (Recents → Snips) and copies it.</li>
-    <li><b>Roles</b> (Planner, Coder, Reviewer, Tester) belong to the project, such as Project Iron, and have no personality. Each has a Role file and a Memory file, edited in the app. The chat name and picture are labels only.</li>
-    <li><b>Storage:</b> everything goes in the project's <code>Collide/</code> folder, or in Collide's storage on the server until it is deleted automatically after [number of files]. Settings → Storage.</li>
-    <li><b>Collapse</b> moves Recents and Chat to the right. Windowed: the window shrinks to those two panels; a new or opened snip adds a canvas on the left and fits to it. Maximized: the window stays full size with a blank canvas on the left. Expand returns to the full layout. Use the "Prototype · window" switch to try both.</li>
-    <li><b>Themes:</b> System, Light, Dark, Aura (14 grounds). The banner redraws from the theme. The logo is never recoloured.</li>
+    <li><b>No chat in Collide</b> (Grant 2026-11-15). Agents are worked on separately; Agent Chat (<code>tools/project-chat</code>) stays its own app.</li>
+    <li><b>Home is a blank canvas</b> with Recents on the left: snips, zip files and their folder trees, tags.</li>
+    <li><b>One open item</b> (snip, file or Settings) fills the canvas: header (name, save state, Save, Close), toolbar, canvas, numbered list.</li>
+    <li><b>Markdown files:</b> Preview with Callouts, or Code + preview. Box and Circle callouts on the page; Canvas snip saves the marked-up area as a markup.</li>
+    <li><b>Collapse</b> moves Recents to the right. Windowed: the window shrinks to Recents; a new or opened snip adds a canvas and fits to it. Maximized: blank canvas. Try both with the "Prototype · window" switch.</li>
+    <li><b>Storage on the server PC</b>, with automatic deletion after [number of files]. Settings → Storage.</li>
+    <li><b>Themes:</b> Dark, Light, Aura for the whole app. The logo is never recoloured.</li>
   </ol>
   <h4>Collide Snip today (TESTER-NOTES 1–10, run 1) → here</h4>
   <table class="parity">
-    <tr><td>New snip, Ctrl+Alt+S, delay 0/3/5/10 s</td><td>Sidebar, top</td></tr>
+    <tr><td>New snip, Ctrl+Alt+S, delay 0/3/5/10 s</td><td>Sidebar, top; blank canvas</td></tr>
     <tr><td>Snip copied to clipboard automatically</td><td>Toast after New snip</td></tr>
     <tr><td>Canvas snip with W × H readout, Esc leaves</td><td>Snip toolbar, first button</td></tr>
     <tr><td>Open file, Open markup, Save Ctrl+S, Copy Ctrl+Shift+C, Export</td><td>Snip toolbar; Save in the header</td></tr>
@@ -867,18 +868,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
     <tr><td>Search, Recent, Tags</td><td>Sidebar</td></tr>
     <tr><td>Editor hides without a ghost; one title bar</td><td>Desktop shell (not shown here)</td></tr>
   </table>
-  <h4>Agent Chat 0.3.6 → here</h4>
-  <table class="parity">
-    <tr><td>Projects grouped by team, unread badges, add a project</td><td>Chat header → chat name → New chat</td></tr>
-    <tr><td>Reports list for the project</td><td>Report cards in the chat; type "list reports" (Reports button removed)</td></tr>
-    <tr><td>Report card: Nightly report kicker, status chip, stats, summary, full report, Open on GitHub</td><td>Chat</td></tr>
-    <tr><td>Day separators, grouped messages, typing, live updates, "latest" and "list reports"</td><td>Chat</td></tr>
-    <tr><td>Connect: Server/Connected, Test connection, Save and restart, links, AI status, report endpoint, GitHub report source, Check now</td><td>Settings (gear, or the Server pill)</td></tr>
-    <tr><td>Agent picture, stored only on the server PC</td><td>Role files → Choose picture (chat label only)</td></tr>
-    <tr><td>Desktop notifications for reports; access password</td><td>Settings</td></tr>
-    <tr><td>Tray, close to tray, minimise, copy link and token</td><td>Desktop shell; copy buttons in Settings</td></tr>
-  </table>
-  <p class="hint">Example content only. Chats are from the Lydia screenshot; snips, the zip and the memory file are placeholders. Collide Editor (zip) is run 2 T25–T28 and not built yet.</p>
+  <p class="hint">Example content only: snips and the zip are placeholders. The Zip editor is not built yet.</p>
 </div>
 <div class="toast" id="toast" hidden role="status"></div>
 
@@ -950,28 +940,13 @@ Object.assign(I, {
 const ico = (n, cls = '') => `<svg class="ico ${cls}" viewBox="0 0 24 24" aria-hidden="true">${I[n] || ''}</svg>`;
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const logo = (cls = 'logo') => `<svg class="${cls}" viewBox="0 0 32 32" shape-rendering="crispEdges" aria-label="Collide"><defs><clipPath id="lr"><rect width="32" height="32" rx="7.2"/></clipPath></defs><path fill="#FF3D1F" clip-path="url(#lr)" d="${LOGO_PATH}"/></svg>`;
-const PROJECT = 'Project Iron';
-/** Where Collide keeps things (Grant 2026-11-15): the project's Collide folder, or the server app's own storage until auto-deleted. */
-const storeRoot = () => (S.settings.storage === 'project' ? `${PROJECT}/Collide` : '[server app storage]');
+/** Server-based storage (Grant 2026-11-15): everything lives on the server PC (A: %APPDATA%\Collide). */
+const storeRoot = () => 'Server: Collide';
 const storePath = (rel) => `${storeRoot()}/${rel}`;
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const clone = (o) => JSON.parse(JSON.stringify(o));
 
 /* ---------- Example data ---------- */
-const AGENTS = {
-  lydia:    { name: 'Lydia', role: 'Tester', hue: 0, pic: '' },
-  hrongar:  { name: 'Hrongar', role: 'Coder', hue: 1, pic: '' },
-  farengar: { name: 'Farengar', role: 'Reviewer', hue: 2, pic: '' },
-  irileth:  { name: 'Irileth', role: 'Planner', hue: 3, pic: '' },
-};
-const TEAM = 'designengineering.ai Development Team';
-// Agent Chat: one chat per project, each with its agent, grouped by team.
-const CHATS = [
-  { id: 'project-iron', agent: 'lydia', title: 'Project Iron', team: TEAM, desc: 'nightly reports', meta: 'Lydia · nothing from PR #4 yet', time: '11:51', day: 'Today', unread: 0 },
-  { id: 'collide-run-2', agent: 'hrongar', title: 'Collide run 2', team: TEAM, desc: 'coder', meta: 'Hrongar · T13 Electron shell', time: '09:12', day: 'Today', unread: 2 },
-  { id: 'planning', agent: 'irileth', title: 'Planning', team: 'Block Concepts', desc: 'planner chat', meta: 'Irileth · run 2 brief written', time: 'Thu', day: 'Earlier', unread: 0 },
-  { id: 'reviews', agent: 'farengar', title: 'PR reviews', team: TEAM, desc: 'reviewer', meta: 'Farengar · PR #3 review passed', time: 'Thu', day: 'Earlier', unread: 1 },
-];
 const TYPE_LABEL = { rect: 'Rectangle', ellipse: 'Ellipse', 'rect-fill': 'Filled rectangle', 'ellipse-fill': 'Filled ellipse', cross: 'X mark', point: 'Point' };
 const SIG = '#FF3D1F', STEEL = '#4C87C4', AMBER = '#E3A73A', INK50 = '#F3F2EF';
 const SNIPS = [
@@ -1034,90 +1009,19 @@ const ZIPS = [
   { id: 'z-notes', name: 'collide-run-2-notes.zip', meta: '3 files · 48 KB', day: 'Earlier', time: 'Thu',
     tree: { name: 'collide-run-2-notes', kids: [ { name: 'RUN2.md', type: 'md', text: '# Collide run 2 brief\n\nElectron first, then Collide Chat.\n' }, { name: 'HANDOFF.md', type: 'md', text: '# Handoff\n\n[placeholder]\n' }, { name: 'board.png', type: 'image' } ] } },
 ];
-const AGENT_FILES = {
-  lydia: {
-    personality: { path: 'roles/tester/role.md', text: `# Tester · Project Iron
-
-## Goal
-
-Every issue has acceptance tests that prove it works the way the prototype shows, written before any code; every pull request is checked on its preview.
-
-## Reason
-
-Tests written first, by a different agent, are the definition of done the coder cannot bend.
-
-## Action
-
-1. Runs at 6pm (writing) and 5am (checking), Sonnet 5.5.
-2. 6pm: write Playwright acceptance tests for each ready-for-tests issue.
-3. 5am: run the tests against each open pull request's preview and post screenshots.
-4. Write the morning report.
-
-## Never
-
-Writes app code; changes a test to make code pass; deletes or skips a failing test.
-` },
-    memory: { path: 'roles/tester/memory.md', text: `# Tester memory · Project Iron
-
-## Reports
-
-- 2026-11-13: Nightly reports go to GitHub issue #2. Agent Chat reads that issue.
-- 2026-11-14: Collide run 1 (PR #3) reported as ready for Grant.
-
-## Things to remember
-
-- Windows checks (capture, DPI, tray) are manual: Grant or Lydia. Never mark them passed from the cloud.
-- [placeholder] Add what Lydia should remember between nights.
-` },
-  },
-};
-for (const k of ['hrongar', 'farengar', 'irileth']) {
-  const a = AGENTS[k];
-  AGENT_FILES[k] = {
-    personality: { path: `roles/${a.role.toLowerCase()}/role.md`, text: `# ${a.role} · Project Iron\n\n## Goal\n\n[placeholder]\n\n## Reason\n\n[placeholder]\n\n## Action\n\n1. [placeholder]\n\n## Never\n\n[placeholder]\n` },
-    memory: { path: `roles/${a.role.toLowerCase()}/memory.md`, text: `# ${a.role} memory · Project Iron\n\n- [placeholder]\n` },
-  };
-}
-const RUN1 = { status: 'pass', title: 'Collide run 1', runDate: '2026-11-14', stats: { 'Ready to merge': 1, Blocked: 0, 'Changes requested': 0 },
-  summary: 'PR #3, `snip-markup/run-1` → `development`, ready for your review and merge.',
-  body: '## Ready to merge\n- PR #3 Snip & Markup run 1 (T01–T12)\n## Manual checks\n- Windows: Ctrl+Alt+S capture, 150% scaling, second monitor',
-  link: 'https://github.com/GrantBlock/Project_Iron/issues/2' };
-const MESSAGES = {
-  'project-iron': [
-    { from: 'lydia', day: 'Yesterday', time: '06:30', report: { status: 'info', title: 'Test report', runDate: '2026-11-13', stats: {}, summary: 'Manual format check, not a real run.', body: '', link: '' } },
-    { from: 'lydia', day: 'Today', time: '06:30', report: RUN1 },
-    { from: 'lydia', day: 'Today', time: '10:41', text: '<p>Grant sent a snip for the Line 3 punch list.</p>', snip: 's-line3' },
-    { from: 'me', day: 'Today', time: '11:51', text: '<p>im at pr 4 10 minutes ago, what did you get reported</p>' },
-    { from: 'lydia', day: 'Today', time: '11:51', text: '<p><b>Reported so far: nothing from PR #4.</b> The newest report I have is still "Collide run 1" (2026-11-14), which covers PR #3. Nothing in it mentions #4.</p><p><b>What I have:</b></p><ul><li>Test report (manual format check, not a real run).</li><li>Collide run 1: PR #3, <code>snip-markup/run-1</code> → <code>development</code>, ready for your review and merge.</li></ul>' },
-    { from: 'lydia', day: 'Today', time: '11:51', text: '<p><b>Why #4 may not show up:</b></p><ul><li>No report has been posted for it, so a run for #4 may not have finished or posted yet.</li><li>The app may follow only the issue you set in Connect (#2). It may not pick up a different PR or issue.</li><li>Anything you did on #4 directly, like comments, pushes or reviews, doesn\'t reach me unless it arrives as a report.</li></ul>' },
-  ],
-  'collide-run-2': [ { from: 'hrongar', day: 'Today', time: '09:12', text: '<p>T13 started: Electron shell in <code>products/collide/app/</code>.</p>' }, { from: 'hrongar', day: 'Today', time: '09:13', text: '<p>Every existing test still passes.</p>' } ],
-  'planning': [ { from: 'me', day: 'Thu', time: 'Thu', text: '<p>Name it Collide. Port 3500. Autosave on the server.</p>' }, { from: 'irileth', day: 'Thu', time: 'Thu', text: '<p>Recorded in the unified app plan. Run 2 brief is in <code>products/collide/RUN2.md</code>.</p>' } ],
-  'reviews': [ { from: 'farengar', day: 'Thu', time: 'Thu', report: { status: 'pass', title: 'PR #3 review', runDate: '2026-11-13', stats: { Comments: 0 }, summary: 'Matches SPEC.md and the design system.', body: '', link: '' } } ],
-};
-
 /* ---------- State ---------- */
 const S = {
   theme: 'system', aura: 'sage', filter: 'all', chat: 'project-iron', ws: null, dirty: false, dockMin: false,
   open: { 'z-builder': true, 'z-builder/design': true, 'z-builder/design/specs': true },
   tool: 'select', sel: null, color: SIG, sw: 3, view: null, panning: null, drag: null, hist: [], redo: [],
-  docView: 'preview', dtool: 'select', dsel: null, ddrag: null, agentTab: 'personality', pop: false, picker: false, closing: false, phoneChat: false, sideOpen: false, query: '',
-  compact: false, winMax: true, switchPop: false, addProject: false, typing: false, openReports: {}, pending: null, attach: null, delay: 'No delay',
-  settings: { storage: 'project', keep: '', mode: 'server', server: '', repo: 'GrantBlock/Project_Iron', issue: '2', notify: true, password: '' },
+  docView: 'preview', dtool: 'select', dsel: null, ddrag: null, pop: false, picker: false, closing: false, sideOpen: false, query: '',
+  compact: false, winMax: true, pending: null, delay: 'No delay',
+  settings: { keep: '', mode: 'server', server: '', repo: 'GrantBlock/Project_Iron', issue: '2', notify: true, password: '' },
 };
 try { const t = localStorage.getItem('collide-proto-theme'); const a = localStorage.getItem('collide-proto-aura'); if (t) S.theme = t; if (a) S.aura = a; S.compact = localStorage.getItem('collide-proto-compact') === '1'; S.winMax = localStorage.getItem('collide-proto-winmax') !== '0'; } catch (e) {}
 
 const $ = (s, r = document) => r.querySelector(s);
 const app = $('#app');
-const avatar = (key, cls = '') => {
-  const a = AGENTS[key];
-  if (!a) return `<span class="avatar ${cls}" style="background:var(--t1);color:var(--bg)">G</span>`;
-  if (a.pic) return `<span class="avatar ${cls}" aria-hidden="true"><img src="${a.pic}" alt=""></span>`;
-  const fills = ['var(--info)', 'var(--t1)', 'var(--t3)', 'var(--accent)'];
-  const fg = ['var(--on-info)', 'var(--bg)', 'var(--bg)', 'var(--on-accent)'];
-  return `<span class="avatar ${cls}" style="background:${fills[a.hue]};color:${fg[a.hue]}" aria-hidden="true">${a.name[0]}</span>`;
-};
-
 /* ---------- Snip: image, shapes, note boxes (same rules as src/editor/notes.ts, scaled) ---------- */
 const IW = 640;
 const ih = (s) => Math.round(IW * s.h / s.w);
@@ -1315,9 +1219,6 @@ function renderSide() {
   const lab = (t, n) => isAura ? `${t} {${String(n).padStart(2, '0')}}` : t;
   const rowHTML = (r) => {
     const o = r.o;
-    if (r.t === 'chat') {
-      return `<button class="item ${S.chat === o.id && !S.ws ? 'active' : ''}" data-chat="${o.id}">${avatar(o.agent)}<span style="min-width:0"><div class="ttl">${esc(o.title)}</div><div class="meta">${esc(o.meta)}</div></span>${o.unread ? `<span class="badge" aria-label="${o.unread} unread">${o.unread}</span>` : `<span class="meta">${o.time}</span>`}</button>`;
-    }
     if (r.t === 'snip') {
       const active = S.ws && S.ws.kind === 'snip' && S.ws.id === o.id;
       return `<button class="item ${active ? 'active' : ''}" data-snip="${o.id}"><span class="thumb">${snipSVG(o.id)}</span><span style="min-width:0"><div class="ttl">${esc(o.name)}</div><div class="meta"><span class="mono">${o.shapes.length} callouts · ${o.w} × ${o.h}</span></div></span>${cloudIcon(o.saved)}</button>`;
@@ -1329,12 +1230,7 @@ function renderSide() {
   const groups = ['Today', 'Earlier'];
   const inGroup = (r, g) => r.day === g;
   const listHTML = groups.map((g) => { const n = shown.filter((r) => inGroup(r, g)).length; return n ? `<div class="sec"><span class="label" title="${esc(g)}" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(lab(g, n))}</span></div>${shown.filter((r) => inGroup(r, g)).map(rowHTML).join('')}` : ''; }).join('') || `<p class="hint" style="padding:12px 8px">Nothing matches "${esc(S.query)}".</p>`;
-  const agentHTML = Object.entries(AGENTS).map(([k, a]) => {
-    const active = S.ws && S.ws.kind === 'agent' && S.ws.id === k;
-    return `<button class="item ${active ? 'active' : ''}" data-agent="${k}"><span class="thumb">${ico('user')}</span><span style="min-width:0"><div class="ttl">${a.role}</div><div class="meta">Role, memory · chat: ${a.name}</div></span><span class="cloud">${ico('brain', 'sm')}</span></button>`;
-  }).join('');
   const f = (id, l) => `<button class="chip" data-filter="${id}" aria-pressed="${S.filter === id}">${l}</button>`;
-  const unread = CHATS.reduce((a, c) => a + c.unread, 0);
   const pop = S.pop ? `<div class="pop" role="dialog" aria-label="Appearance">
       <span class="label">Theme</span>
       <div class="seg">${['system', 'light', 'dark', 'aura'].map((t) => `<button data-theme-set="${t}" aria-pressed="${S.theme === t}">${t[0].toUpperCase() + t.slice(1)}</button>`).join('')}</div>
@@ -1342,19 +1238,16 @@ function renderSide() {
       <span class="hint">${S.theme === 'system' ? 'Follows Windows: Light or Dark.' : S.theme === 'aura' ? 'Aura: flat grounds, one highlight. Sage is the default.' : S.theme === 'light' ? 'Collide Light. Draft (not yet approved by Grant).' : 'Collide Dark, from the design system.'}</span>
     </div>` : '';
   $('#side').innerHTML = `
-    <div class="brand">${logo()}<span class="word">Collide</span><button class="mode label" id="modePill" style="border:0" title="${S.settings.mode === 'server' ? 'Server: this PC keeps the chats and markups and receives reports' : 'Connected to the server PC'}"><span class="dot"></span>${S.settings.mode === 'server' ? 'Server' : 'Connected'}</button></div>
+    <div class="brand">${logo()}<span class="word">Collide</span><button class="mode label" id="modePill" style="border:0;margin-left:auto" title="${S.settings.mode === 'server' ? 'Server: this PC stores the snips, markups and zips' : 'Connected to the server PC'}"><span class="dot"></span>${S.settings.mode === 'server' ? 'Server' : 'Connected'}</button><button class="btn ghost icon" id="compactBtn" style="width:28px;height:28px" title="${S.compact ? 'Expand the window' : 'Collapse: Recents moves to the right'}" aria-label="${S.compact ? 'Expand window' : 'Collapse window'}">${ico(S.compact ? 'expand' : 'collapse', 'sm')}</button></div>
     <div class="actions">
       <button class="btn primary" id="newSnip" title="New snip (Ctrl+Alt+S)">${ico('scissors')}New snip</button>
       <label style="display:contents"><span hidden>Snip delay</span><select class="select" id="delay" aria-label="Delay before New snip captures">${['No delay', '3 s', '5 s', '10 s'].map((d) => `<option ${S.delay === d ? 'selected' : ''}>${d}</option>`).join('')}</select></label>
       <button class="btn" id="openZip" style="grid-column:1 / -1">${ico('package')}Open zip</button>
     </div>
-    ${false ? `<div class="held">${ico(S.ws.kind === 'snip' ? 'scissors' : S.ws.kind === 'doc' ? 'md' : S.ws.kind === 'settings' ? 'settings' : 'brain', 'sm')}<span class="t">${esc(heldName())}${S.dirty ? ' · unsaved' : ''}</span><button class="btn ghost" id="expandHeld" style="height:26px;padding:0 8px">${ico('expand', 'sm')}Expand</button></div>` : ''}
     <label class="search">${ico('search', 'sm')}<input id="q" placeholder="Search snips, notes, zips" value="${esc(S.query)}" aria-label="Search"></label>
     <div class="filters">${f('all', 'All')}${f('snips', 'Snips')}${f('zips', 'Zips')}</div>
     <div class="scroll">
       ${listHTML}
-      <div class="sec"><span class="label" title="Agent roles in ${PROJECT}">${lab(`${PROJECT} roles`, 4)}</span></div>
-      ${agentHTML}
       <div class="sec"><span class="label">Tags</span></div>
       <div class="tags">${['Line 3', 'Conveyor', 'P&ID'].map((t) => `<button class="tag" data-tag="${esc(t)}">${esc(t)}</button>`).join('')}</div>
     </div>
@@ -1364,80 +1257,6 @@ function renderSide() {
       <button class="btn ghost icon" id="settingsBtn" title="Settings and Connect" aria-label="Settings and Connect">${ico('settings')}</button>
     </div>`;
   const qi = $('#q'); if (S._focusQ) { qi.focus(); qi.setSelectionRange(qi.value.length, qi.value.length); S._focusQ = false; }
-}
-
-/* ---------- Chat ---------- */
-function mdLite(src) { return esc(src).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>'); }
-function fullReportHTML(body) {
-  let out = '', list = false;
-  for (const line of String(body).split('\n')) {
-    const li = /^\s*[-*]\s+(.*)/.exec(line), h = /^#{1,6}\s+(.*)/.exec(line);
-    if (li) { if (!list) { out += '<ul>'; list = true; } out += `<li>${mdLite(li[1])}</li>`; continue; }
-    if (list) { out += '</ul>'; list = false; }
-    if (h) out += `<h4>${mdLite(h[1])}</h4>`; else if (line.trim()) out += `<p>${mdLite(line)}</p>`;
-  }
-  return out + (list ? '</ul>' : '');
-}
-function reportHTML(r, key) {
-  const open = !!S.openReports[key];
-  const st = Object.entries(r.stats || {});
-  return `<div class="report" id="rep-${key}"><span class="kicker">Nightly report · ${esc(r.runDate)}</span>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="status ${esc(r.status)}">${esc(r.status)}</span><b>${esc(r.title)}</b></div>
-    ${st.length ? `<div class="stats">${st.map(([k, v]) => `<span><b>${esc(v)}</b> ${esc(k)}</span>`).join('')}</div>` : ''}
-    ${r.summary ? `<span>${mdLite(r.summary)}</span>` : ''}
-    ${r.body || r.link ? `<button class="linkbtn" data-report="${key}" aria-expanded="${open}">${open ? 'Hide full report' : 'View full report'}</button>${open ? `<div class="full">${fullReportHTML(r.body)}${r.link ? `<p><a href="${esc(r.link)}" target="_blank" rel="noopener">Open on GitHub</a></p>` : ''}</div>` : ''}` : ''}</div>`;
-}
-function renderChat() {
-  const c = CHATS.find((x) => x.id === S.chat);
-  const a = c ? AGENTS[c.agent] : null;
-  const msgs = c ? (MESSAGES[c.id] || []) : [];
-  const ctx = S.ws ? (S.ws.kind === 'snip' ? SNIPS.find((s) => s.id === S.ws.id).name : S.ws.kind === 'doc' ? S.ws.name : S.ws.kind === 'settings' ? 'Settings' : `${AGENTS[S.ws.id].role} · ${S.agentTab === 'personality' ? 'role' : 'memory'}`) : null;
-  let prev = null, body = '';
-  msgs.forEach((m, i) => {
-    if (!prev || prev.day !== m.day) body += `<div class="day">${esc(m.day)}</div>`;
-    const grouped = prev && prev.from === m.from && prev.day === m.day && prev.time === m.time && !m.report && !prev.report;
-    if (m.from === 'me') body += `<div class="msg me ${grouped ? 'grouped' : ''}"><div><div class="bubble">${m.text}${m.snip ? `<button class="attach" data-snip="${m.snip}">${snipSVG(m.snip)}<span><b>${esc(SNIPS.find((s) => s.id === m.snip).name)}</b></span></button>` : ''}</div><div class="time">${m.time}</div></div></div>`;
-    else {
-      const inner = m.report ? reportHTML(m.report, `${c.id}-${i}`)
-        : `${m.text}${m.snip ? `<button class="attach" data-snip="${m.snip}">${snipSVG(m.snip)}<span style="min-width:0"><b>${esc(SNIPS.find((s) => s.id === m.snip).name)}</b><div class="meta mono" style="color:var(--t3)">Open in Snip</div></span></button>` : ''}`;
-      body += `<div class="msg ${grouped ? 'grouped' : ''}">${avatar(m.from)}<div style="min-width:0;flex:1">${grouped ? '' : `<div class="sender">${AGENTS[m.from].name}</div>`}<div class="bubble" ${m.report ? 'style="padding:4px;background:transparent;border:0"' : ''}>${inner}</div><div class="time" style="text-align:left">${m.time}</div></div></div>`;
-    }
-    prev = m;
-  });
-  if (c && !msgs.length) body = '<div class="empty"><p>No messages yet.</p></div>';
-  const otherUnread = CHATS.filter((x) => x.id !== S.chat).reduce((n, x) => n + x.unread, 0);
-  $('#chat').innerHTML = `
-    <div class="dockbar"><button class="btn ghost icon" id="dockOpen" title="Show chat" aria-label="Show chat">${ico('chat')}</button>${a ? avatar(c.agent) : ''}</div>
-    <div class="chathead"><canvas class="banner" data-seed="${c ? c.id.length + 3 : 5}"></canvas>
-      <div class="bar">
-        <button class="hbtn mobile-only" id="sideBtn" aria-label="Recents">${ico('menu', 'sm')}</button>
-        ${a ? avatar(c.agent) : logo()}
-        <button class="who switcher" id="chatSwitch" aria-haspopup="dialog" aria-expanded="${S.switchPop}" title="Change chat"><div class="n"><span style="overflow:hidden;text-overflow:ellipsis">${c ? esc(a.name + ' · ' + c.title) : 'New chat'}</span><span class="chevd">${ico('chev', 'sm')}</span>${otherUnread ? `<span class="badge" aria-label="${otherUnread} unread in other chats">${otherUnread}</span>` : ''}</div><div class="s">${c ? esc(c.team) : 'Claude on the server PC'}</div></button>
-        ${a ? `<button class="hbtn" data-agent="${c.agent}" title="Edit the ${a.role} role and memory for ${esc(c.title)}">${ico('brain', 'sm')}<span>Role files</span></button>` : ''}
-        ${S.ws && !S.compact ? `<button class="hbtn mobile-only" id="phoneBack" aria-label="Back to workspace">${ico('x', 'sm')}</button><button class="hbtn" id="dockMin" title="Minimise chat" aria-label="Minimise chat">${ico('panelRight', 'sm')}</button>` : ''}
-        <button class="hbtn" id="compactBtn" title="${S.compact ? 'Expand the window' : 'Collapse: Recents and Chat move to the right'}" aria-label="${S.compact ? 'Expand window' : 'Collapse window'}" aria-pressed="${S.compact}">${ico(S.compact ? 'expand' : 'collapse', 'sm')}</button>
-      </div>
-    </div>
-    ${S.switchPop ? `<div class="hpop switch" role="dialog" aria-label="Change chat">${[...new Set(CHATS.map((x) => x.team))].map((team) => `<div class="sec" style="padding:8px 8px 4px"><span class="label" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(team)}</span></div>${CHATS.filter((x) => x.team === team).map((x) => `<button class="item ${x.id === S.chat ? 'active' : ''}" data-chat="${x.id}">${avatar(x.agent)}<span style="min-width:0"><div class="ttl">${esc(AGENTS[x.agent].name + ' · ' + x.title)}</div><div class="meta">${esc(x.meta)}</div></span>${x.unread ? `<span class="badge" aria-label="${x.unread} unread">${x.unread}</span>` : `<span class="meta">${x.time}</span>`}</button>`).join('')}`).join('')}<button class="btn" id="newChat" style="margin-top:6px">${ico('plus')}New chat</button></div>` : ''}
-    ${S.addProject ? `<form class="dialog" id="addForm" aria-label="Add a project"><span class="label">Add a project</span>
-      <label class="field"><span class="hint">Team</span><input id="apTeam" value="${esc(TEAM)}" required></label>
-      <label class="field"><span class="hint">Project name</span><input id="apName" placeholder="Project Iron" required></label>
-      <label class="field"><span class="hint">Agent name</span><input id="apAgent" placeholder="Lydia" required></label>
-      <label class="field"><span class="hint">Description (optional)</span><input id="apDesc" placeholder="Nightly reports"></label>
-      <div class="btnrow"><button class="btn primary">Add project</button><button type="button" class="btn ghost" id="apCancel">Cancel</button></div></form>` : ''}
-    <div class="log"><div class="log-inner">${c ? body : `<div class="empty">${logo()}<h2>New chat<span>Snip, open a zip, or type.</span></h2><p>Snips and zip files you open here appear in Recents on the left.</p></div>`}</div></div>
-    ${S.typing && a ? `<div class="typing"><i></i><i></i><i></i> ${a.name} is typing…</div>` : ''}
-    <div class="composer-wrap">
-      ${ctx || S.attach ? `<div class="context">${ctx ? `<span class="ctx">${ico(S.ws.kind === 'snip' ? 'scissors' : S.ws.kind === 'doc' ? 'md' : S.ws.kind === 'settings' ? 'settings' : 'brain', 'sm')}Ask about: ${esc(ctx)}</span>` : ''}${S.attach ? `<span class="ctx">${ico('image', 'sm')}${esc(SNIPS.find((s) => s.id === S.attach).name)} <button class="linkbtn" id="dropAttach" aria-label="Remove attachment">${ico('x', 'sm')}</button></span>` : ''}</div>` : ''}
-      <form class="composer" id="composer">
-        <button type="button" class="btn ghost icon" title="Snip into this message" aria-label="Snip into this message" id="snipInto">${ico('scissors')}</button>
-        <button type="button" class="btn ghost icon" title="Attach a file or zip" aria-label="Attach a file or zip">${ico('clip')}</button>
-        <textarea id="input" rows="1" placeholder="${a ? 'Type reply' : 'Message Claude'}" aria-label="Message"></textarea>
-        <button class="send" aria-label="Send">${ico('send')}</button>
-      </form>
-    </div>`;
-  const log = $('.log', $('#chat')); log.scrollTop = log.scrollHeight;
-  requestAnimationFrame(redrawBanners);
 }
 
 /* ---------- Workspace ---------- */
@@ -1451,8 +1270,7 @@ function headHTML(kindIcon, name, path, extra = '', saveLabel) {
     <span class="saved ${S.dirty ? 'dirty' : ''}"><span class="d"></span><span class="lbl">${S.dirty ? 'Unsaved changes' : saveLabel || (S.settings.mode === 'server' ? 'Saved on the server · autosave' : 'Saved on the server')}</span></span>
     ${extra}
     <button class="btn" id="wsSave" title="Save (Ctrl+S)" ${S.dirty ? '' : 'disabled'}>${ico('save')}<span>Save</span></button>
-    <button class="btn icon" id="compactBtn2" title="${S.compact ? 'Expand the window' : 'Collapse: Recents and Chat move to the right'}" aria-label="${S.compact ? 'Expand window' : 'Collapse window'}">${ico(S.compact ? 'expand' : 'collapse')}</button>
-    <button class="btn mobile-only" id="phoneChat" aria-label="Chat">${ico('chat')}</button>
+    <button class="btn icon" id="compactBtn2" title="${S.compact ? 'Expand the window' : 'Collapse: Recents moves to the right'}" aria-label="${S.compact ? 'Expand window' : 'Collapse window'}">${ico(S.compact ? 'expand' : 'collapse')}</button>
     <button class="btn" id="wsClose" title="Close and return to chat">${ico('x')}<span>Close</span></button>
   </div>
   ${S.closing ? `<div class="unsaved" role="alert"><span class="msgtxt">Save changes to <b>${esc(name)}</b> before closing?</span><button class="btn primary" id="saveClose">Save and close</button><button class="btn" id="discardClose">Close without saving</button><button class="btn ghost" id="cancelClose">Cancel</button></div>` : ''}`;
@@ -1501,11 +1319,10 @@ function renderSnipWS() {
       <aside class="numbered" aria-label="Callouts">
         <div class="head"><span class="label">Callouts ${S.theme === 'aura' ? `{${String(s.shapes.length).padStart(2, '0')}}` : '· ' + s.shapes.length}</span></div>
         <div class="list" id="calloutList">${calloutsHTML(s)}</div>
-        <div class="foot2"><button class="btn" id="askSnip">${ico('chat')}Ask about this snip</button></div>
       </aside>
     </div>
     <div class="statusbar"><span class="kbd">Ctrl</span><span class="kbd" style="margin-left:-10px">Alt</span><span class="kbd" style="margin-left:-10px">S</span><span style="margin-left:-8px">to snip</span><span style="margin-left:auto" id="zoomStat"></span><span>${s.w} × ${s.h}</span></div>`;
-  if (S.view && S.view.id === s.id && !S.view.fit) applyView(); else requestAnimationFrame(() => { fitView(); S.view.id = s.id; });
+  if (S.view && S.view.id === s.id && !S.view.fit) applyView(); else requestAnimationFrame(() => { fitView(); if (S.view) S.view.id = s.id; });
 }
 function calloutsHTML(s) {
   return s.shapes.length ? s.shapes.map((c) => `<div class="el ${S.sel === c.n ? 'sel' : ''} ${c.hide ? 'dim' : ''}" data-sel="${c.n}"><span class="num" style="background:${c.color};color:${c.color === INK50 ? '#09090B' : '#fff'}">${c.n}</span><div style="min-width:0"><div class="row"><span class="k">${TYPE_LABEL[c.type]}</span><button class="hidebtn" data-hide="${c.n}" aria-pressed="${!!c.hide}" title="${c.hide ? 'Number and arrow are hidden from Copy and Export' : 'Hide this number and arrow from Copy and Export'}">${c.hide ? 'Show #' : 'Hide #'}</button></div><textarea data-note="${c.n}" rows="2" placeholder="Add a note" aria-label="Note for callout ${c.n}">${esc(c.note)}</textarea></div></div>`).join('') : '<p class="hint" style="padding:8px">Draw on the image to add a callout.</p>';
@@ -1600,7 +1417,6 @@ function renderDocWS() {
       ${pv ? `<aside class="numbered" aria-label="Callouts">
         <div class="head"><span class="label">Callouts ${S.theme === 'aura' ? `{${String(w.marks.length).padStart(2, '0')}}` : '· ' + w.marks.length}</span></div>
         <div class="list" id="docCallouts">${docCalloutsHTML()}</div>
-        <div class="foot2"><button class="btn" id="askDoc">${ico('chat')}Ask about this file</button></div>
       </aside>` : ''}
       ${S.picker ? `<div class="picker" role="dialog" aria-label="Insert snip"><span class="label">Insert snip</span>${SNIPS.map((s) => `<button class="attach" data-insert="${s.id}">${snipSVG(s.id)}<span><b>${esc(s.name)}</b><div class="meta mono" style="color:var(--t3)">${s.shapes.length} callouts · export.png → images/</div></span></button>`).join('')}<label class="hint" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="withNotes" checked> Add callout notes as a numbered list</label><button class="btn ghost" id="pickClose">Cancel</button></div>` : ''}
     </div>
@@ -1627,50 +1443,24 @@ function renderImageWS() {
     <div class="wsbody"><div class="stage" style="display:grid;place-items:center;padding:24px">${snipSVG('s-line3', 'snipfull', 'export')}</div><aside class="numbered"><div class="head"><span class="label">Linked from · 1</span></div><div class="list"><button class="el"><span class="num">1</span><div><div class="k">Markdown</div><div class="txt">P06-Project-Workspace-Spec.md</div></div></button></div></aside></div>
     <div class="statusbar"><span>PNG · 1280 × 720</span></div>`;
 }
-function renderAgentWS() {
-  const k = S.ws.id, a = AGENTS[k], f = AGENT_FILES[k][S.agentTab];
-  const text = S.ws.text;
-  const outline = headings(text).filter((h) => !h.img);
-  $('#ws').innerHTML = headHTML('brain', `${PROJECT} · ${a.role} · ${S.agentTab === 'personality' ? 'Role' : 'Memory'}`, storePath(f.path)) + `
-    <div class="agenthero"><canvas class="banner" data-solid="0.45" data-seed="${a.hue + 11}"></canvas><div class="in">${avatar(k)}<div><h2>${a.role}</h2><div class="label" style="margin-top:6px">${PROJECT} · chat name ${a.name}</div>
-      <div style="display:flex;gap:10px;margin-top:6px"><button class="linkbtn" id="picBtn" data-pic="${k}">Choose picture</button>${a.pic ? `<button class="linkbtn" id="picDel" data-pic="${k}">Remove</button>` : ''}</div></div><span style="flex:1"></span>
-      <div class="tabs" role="tablist"><button role="tab" data-tab="personality" aria-selected="${S.agentTab === 'personality'}">${ico('user', 'sm')} Role</button><button role="tab" data-tab="memory" aria-selected="${S.agentTab === 'memory'}">${ico('brain', 'sm')} Memory</button></div></div></div>
-    <div class="toolbar"><button class="tool" data-md="## " aria-label="Heading">${ico('h')}</button><button class="tool" data-md="- " aria-label="List">${ico('list')}</button><button class="tool" data-md="**" aria-label="Bold">${ico('bold')}</button>
-      <span class="vsep"></span><span class="hint">${S.agentTab === 'personality' ? `The ${a.role} role for ${PROJECT}: read at the start of every run, no personality. Changes apply to the next run.` : `What the ${a.role} role keeps between runs in ${PROJECT}. You can add, edit or delete lines.`} The chat name and picture are labels only.</span></div>
-    <div class="wsbody">
-      <div class="docsplit split"><textarea class="src" id="src" spellcheck="true" aria-label="${esc(f.path)}">${esc(text)}</textarea><div class="preview" id="preview">${mdHTML(text)}</div></div>
-      <aside class="numbered"><div class="head"><span class="label">Sections · ${outline.length}</span></div>
-        <div class="list">${outline.map((h, i) => `<button class="el" data-line="${h.line}"><span class="num">${i + 1}</span><div style="min-width:0"><div class="k">Heading ${h.level}</div><div class="txt">${esc(h.text)}</div></div></button>`).join('')}</div>
-        <div class="foot2"><span class="hint">Stored in ${esc(storeRoot())}/roles/</span></div></aside>
-    </div>
-    <div class="statusbar"><span>${esc(storePath(f.path))}</span><span style="margin-left:auto">${text.split('\n').length} lines</span></div>`;
-  requestAnimationFrame(redrawBanners);
-}
-const SETTINGS_SECTIONS = [['storage', 'Storage', 'folder'], ['mode', 'This computer', 'server'], ['links', 'Open from other computers', 'globe'], ['ai', 'AI replies', 'brain'], ['endpoint', 'Agent report endpoint', 'send'], ['github', 'GitHub report source', 'github'], ['notify', 'Notifications', 'bell'], ['access', 'Access password', 'key']];
+const SETTINGS_SECTIONS = [['storage', 'Storage', 'folder'], ['mode', 'This computer', 'server'], ['links', 'Open from other computers', 'globe'], ['access', 'Access password', 'key']];
 function renderSettingsWS() {
-  const st = S.settings, c = CHATS.find((x) => x.id === S.chat) || CHATS[0];
+  const st = S.settings;
   const card = (id, title, icon, body) => `<section class="card" id="set-${id}"><h3>${ico(icon, 'sm')}${title}</h3>${body}</section>`;
   $('#ws').innerHTML = headHTML('settings', 'Settings', '%APPDATA%\\Collide\\config.json', '', 'Saved') + `
     <div class="wsbody">
       <div class="settings">
         ${card('storage', 'Storage', 'folder', `
-          <label class="radio"><input type="radio" name="storage" value="project" ${st.storage === 'project' ? 'checked' : ''}> <b>Project folder</b><span class="hint">snips, markups, callouts and role files go in <code>${esc(PROJECT)}/Collide/</code></span></label>
-          <label class="radio"><input type="radio" name="storage" value="app" ${st.storage === 'app' ? 'checked' : ''}> <b>App storage on the server</b><span class="hint">kept in Collide on the server PC until deleted automatically</span></label>
-          ${st.storage === 'app' ? `<label class="field"><span class="hint">Keep the newest files, then delete the oldest automatically</span><input id="keepN" type="number" min="1" value="${esc(st.keep)}" placeholder="[number of files]"></label>` : ''}
-          <span class="hint">Applies to the project this chat works on: ${esc(PROJECT)}.</span>`)}
+          <span>Snips, markups, zip files and Markdown callouts are stored on the server PC: <code>%APPDATA%\\Collide\\</code> (A).</span>
+          <label class="field"><span class="hint">Delete the oldest automatically after this many files</span><input id="keepN" type="number" min="1" value="${esc(st.keep)}" placeholder="[number of files]"></label>
+          <span class="hint">On a Connected PC, new work is held only until it reaches the server, then the local copy is removed.</span>`)}
         ${card('mode', 'This computer', 'server', `
-          <label class="radio"><input type="radio" name="mode" value="server" ${st.mode === 'server' ? 'checked' : ''}> <b>Server</b><span class="hint">keeps the chats and markups, runs the AI and receives reports</span></label>
-          <label class="radio"><input type="radio" name="mode" value="client" ${st.mode === 'client' ? 'checked' : ''}> <b>Connected</b><span class="hint">opens the server PC's Collide; snips and Copy stay on this PC</span></label>
+          <label class="radio"><input type="radio" name="mode" value="server" ${st.mode === 'server' ? 'checked' : ''}> <b>Server</b><span class="hint">stores the snips, markups and zips</span></label>
+          <label class="radio"><input type="radio" name="mode" value="client" ${st.mode === 'client' ? 'checked' : ''}> <b>Connected</b><span class="hint">opens the server PC's Collide; capture and Copy stay on this PC</span></label>
           ${st.mode === 'client' ? `<label class="field"><span class="hint">Server address</span><input id="srvAddr" value="${esc(st.server)}" placeholder="[server address]:3500"></label>` : ''}
           <div class="btnrow"><button class="btn" id="testConn">Test connection</button><button class="btn primary" id="saveRestart">Save and restart</button></div>
           <span class="hint">${st.mode === 'client' ? 'Connected to ' + esc(st.server || '[server address]') : 'Running as the server. On the other computer, choose Connected and enter an address from Open from other computers.'} Closing the window hides Collide to the tray so other computers stay connected.</span>`)}
         ${card('links', 'Open from other computers', 'globe', `<div><code>http://[this PC's network address]:3500</code></div><div><code>http://[Tailscale address]:3500</code></div><div class="btnrow"><button class="btn" data-copy="Network link">${ico('copy', 'sm')}Copy network link</button></div><span class="hint">Phones and browsers can open the link too (no screen capture).</span>`)}
-        ${card('ai', 'AI replies', 'brain', `<span>On · <code>claude</code> CLI found on this PC · model <code>claude-sonnet-5-5</code></span><span class="hint">Replies use the subscription the CLI is signed into. At most 2 run at once; others show "queued".</span>`)}
-        ${card('endpoint', 'Agent report endpoint', 'send', `<div><code>POST http://[this PC]:3500/api/reports</code></div><div>Header: <code>Authorization: Bearer &lt;report token&gt;</code></div><div>Project id for this chat: <code>${esc(c.id)}</code></div><div class="btnrow"><button class="btn" data-copy="Report token">${ico('key', 'sm')}Copy report token</button></div><span class="hint">See scripts/send-report.ps1 for a ready-made sender.</span>`)}
-        ${card('github', 'GitHub report source', 'github', `<span class="hint">For cloud agents: Collide reads ${esc(AGENTS[c.agent].name)}'s "Nightly report" comments from this issue.</span>
-          <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:8px"><label class="field"><span class="hint">owner/repo</span><input id="ghRepo" value="${esc(st.repo)}"></label><label class="field"><span class="hint">Issue</span><input id="ghIssue" type="number" value="${esc(st.issue)}"></label></div>
-          <div class="btnrow"><button class="btn" id="ghSave">Save</button><button class="btn" id="ghCheck">Check now</button></div><span class="hint" id="ghStatus">Checked 11:50 · checks every 5 minutes · 1 report imported</span>`)}
-        ${card('notify', 'Notifications', 'bell', `<label class="radio"><input type="checkbox" id="notifyBox" ${st.notify ? 'checked' : ''}> Desktop notification when a report arrives and Collide is in the background</label>`)}
         ${card('access', 'Access password', 'key', `<label class="field"><span class="hint">Optional. Other computers, phones and browsers ask for it once.</span><input id="accessPw" type="password" value="${esc(st.password)}" placeholder="No password"></label>`)}
       </div>
       <aside class="numbered" aria-label="Sections"><div class="head"><span class="label">Sections · ${SETTINGS_SECTIONS.length}</span></div>
@@ -1679,43 +1469,39 @@ function renderSettingsWS() {
 }
 function renderWS() {
   if (!S.ws) {
-    $('#ws').innerHTML = S.compact && S.winMax ? `<div class="blank"><div class="in">${logo()}<b>Blank canvas</b><span>New snip (Ctrl+Alt+S), or open a snip, a zip file or a role from Recents. It fits to this canvas.</span><div class="btnrow" style="justify-content:center"><button class="btn primary" id="blankSnip">${ico('scissors')}New snip</button><button class="btn" id="blankOpen">${ico('fileUp')}Open file</button></div></div></div>` : '';
+    $('#ws').innerHTML = !S.compact || S.winMax ? `<div class="blank"><button class="btn icon mobile-only menu" id="sideBtn2" aria-label="Recents">${ico('menu')}</button><div class="in">${logo()}<b>Blank canvas</b><span>New snip (Ctrl+Alt+S), open an image, or open a snip or a zip file from Recents. It fits to this canvas.</span><div class="btnrow" style="justify-content:center"><button class="btn primary" id="blankSnip">${ico('scissors')}New snip</button><button class="btn" id="blankOpen">${ico('fileUp')}Open file</button></div></div></div>` : '';
     return;
   }
   if (S.ws.kind === 'snip') renderSnipWS();
   else if (S.ws.kind === 'doc') S.ws.type === 'image' ? renderImageWS() : renderDocWS();
-  else if (S.ws.kind === 'settings') renderSettingsWS();
-  else renderAgentWS();
+  else renderSettingsWS();
 }
 function layout() {
   app.classList.toggle('ws-open', !!S.ws);
-  app.classList.toggle('dock-min', !!S.ws && S.dockMin && !S.compact);
   app.classList.toggle('compact', S.compact);
   app.classList.toggle('maxed', S.compact && S.winMax);
-  app.classList.toggle('with-canvas', S.compact && (S.winMax || !!S.ws));
+  app.classList.toggle('with-canvas', !S.compact || S.winMax || !!S.ws);
   document.body.classList.toggle('compact-bg', S.compact);
   let cn = $('#compactNote');
   const showNote = S.compact && !(S.winMax || S.ws);
   if (showNote && !cn) { cn = document.createElement('div'); cn.id = 'compactNote'; cn.className = 'compact-note'; document.body.appendChild(cn); }
-  if (cn) { if (showNote) cn.textContent = 'Windowed and collapsed: Collide shrinks to Recents and Chat on the right of the screen. A new or opened snip adds a canvas on the left and fits to it.'; else cn.remove(); }
+  if (cn) { if (showNote) cn.textContent = 'Windowed and collapsed: Collide shrinks to the Recents panel on the right of the screen. A new or opened snip adds a canvas on the left and fits to it.'; else cn.remove(); }
   let wc = $('#winCtl');
   if (S.compact && !wc) { wc = document.createElement('div'); wc.id = 'winCtl'; wc.className = 'winctl'; document.body.appendChild(wc); }
   if (wc) { if (S.compact) wc.innerHTML = `Prototype · window <button id="winMax" aria-pressed="${S.winMax}">Maximized</button><button id="winSmall" aria-pressed="${!S.winMax}">Windowed</button>`; else wc.remove(); }
   try { localStorage.setItem('collide-proto-winmax', S.winMax ? '1' : '0'); } catch (e) {}
   try { localStorage.setItem('collide-proto-compact', S.compact ? '1' : '0'); } catch (e) {}
-  app.classList.toggle('phone-chat', S.phoneChat);
   app.classList.toggle('side-open', S.sideOpen);
 }
-function render() { layout(); renderSide(); renderWS(); renderChat(); requestAnimationFrame(redrawBanners); }
+function render() { layout(); renderSide(); renderWS(); }
 
 /* ---------- Actions ---------- */
 let toastT;
 function toast(t) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (el.hidden = true), 2600); }
-function heldName() { const w = S.ws; return w.kind === 'snip' ? snipOf().name : w.kind === 'doc' ? w.name : w.kind === 'settings' ? 'Settings' : `${AGENTS[w.id].role} · ${S.agentTab === 'personality' ? 'role' : 'memory'}`; }
-function setCompact(on) { S.compact = on; S.switchPop = false; layout(); renderSide(); renderWS(); renderChat(); requestAnimationFrame(() => { fitPage(); if (S.ws && S.ws.kind === 'snip') fitView(); }); }
+function setCompact(on) { S.compact = on; layout(); renderSide(); renderWS(); requestAnimationFrame(() => { fitPage(); if (S.ws && S.ws.kind === 'snip') fitView(); }); }
 function openWS(ws) {
   if (S.ws && S.dirty) { S.closing = true; S.pending = ws; renderWS(); return; }
-  S.ws = ws; S.dirty = false; S.closing = false; S.sel = null; S.picker = false; S.sideOpen = false; S.phoneChat = false; S.hist = []; S.redo = []; S.view = null; S.dsel = null; S.dtool = 'select'; S.switchPop = false;
+  S.ws = ws; S.dirty = false; S.closing = false; S.sel = null; S.picker = false; S.sideOpen = false; S.hist = []; S.redo = []; S.view = null; S.dsel = null; S.dtool = 'select';
   if (ws.kind === 'snip' && S.tool === 'canvas-snip') S.tool = 'select';
   render();
 }
@@ -1727,7 +1513,6 @@ function openFile(path) {
 function save() {
   if (!S.ws) return;
   if (S.ws.kind === 'doc' && S.ws.file) { S.ws.file.text = S.ws.text; S.ws.file.marks = clone(S.ws.marks || []); }
-  if (S.ws.kind === 'agent') AGENT_FILES[S.ws.id][S.agentTab].text = S.ws.text;
   if (S.ws.kind === 'snip') { snipOf().saved = S.settings.mode === 'server'; }
   S.dirty = false; S.closing = false;
   toast(S.ws.kind === 'snip' ? `Saved to ${storePath(`Markups/${slug(snipOf().name)}/`)} (source.png, annotations.json, export.png)` : S.ws.kind === 'settings' ? 'Saved' : 'Saved on the server');
@@ -1735,7 +1520,7 @@ function save() {
 function closeWS(force) {
   if (S.dirty && !force) { S.closing = true; renderWS(); return; }
   const next = S.pending; S.pending = null;
-  S.ws = null; S.dirty = false; S.closing = false; S.sel = null; S.picker = false; S.phoneChat = false;
+  S.ws = null; S.dirty = false; S.closing = false; S.sel = null; S.picker = false;
   if (next) S.ws = next;
   render();
 }
@@ -1760,32 +1545,15 @@ function newSnip(fromCanvas) {
   openWS({ kind: 'snip', id: s.id });
   toast(fromCanvas ? 'Copied to clipboard · opened as a new markup' : 'Snip copied to clipboard');
 }
-function sendReply(c, text) {
-  S.typing = true; renderChat();
-  setTimeout(() => {
-    S.typing = false;
-    const msgs = MESSAGES[c.id] = MESSAGES[c.id] || [];
-    const reps = msgs.filter((m) => m.report);
-    let reply;
-    if (/^latest$/i.test(text.trim())) reply = reps.length ? `<p>Latest report: <b>${esc(reps[reps.length - 1].report.title)}</b> (${esc(reps[reps.length - 1].report.runDate)}). ${mdLite(reps[reps.length - 1].report.summary)}</p>` : '<p>No reports yet.</p>';
-    else if (/^list reports$/i.test(text.trim())) reply = `<ul>${reps.map((m) => `<li>${esc(m.report.runDate)} · ${esc(m.report.status)} · ${esc(m.report.title)}</li>`).join('') || '<li>No reports yet.</li>'}</ul>`;
-    else reply = '<p>Prototype: real replies come from the <code>claude</code> CLI on the server PC, 2 at a time.</p>';
-    msgs.push({ from: c.agent, day: 'Today', time: 'now', text: reply });
-    renderChat();
-  }, 1200);
-}
-
 document.addEventListener('click', (e) => {
   const t = e.target.closest('button, .cloud[data-push], [data-sel], [data-dsel]');
-  if (!t) { let ch = false; if (S.pop && !e.target.closest('.pop')) { S.pop = false; renderSide(); } if (S.switchPop && !e.target.closest('.hpop')) { S.switchPop = false; ch = true; } if (ch) renderChat(); return; }
+  if (!t) { if (S.pop && !e.target.closest('.pop')) { S.pop = false; renderSide(); } return; }
   const d = t.dataset;
   if (t.matches('.cloud[data-push]')) { e.stopPropagation(); const s = SNIPS.find((x) => x.id === t.closest('[data-snip]').dataset.snip); s.saved = true; renderSide(); toast('Saved to the server'); return; }
-  if (d.chat) { S.chat = d.chat; CHATS.find((x) => x.id === d.chat).unread = 0; S.switchPop = false; S.addProject = false; renderChat(); return; }
   if (d.snip) { openWS({ kind: 'snip', id: d.snip }); return; }
   if (d.zip) { S.open[d.zip] = !S.open[d.zip]; renderSide(); return; }
   if (d.toggle) { S.open[d.toggle] = !S.open[d.toggle]; renderSide(); return; }
   if (d.file) { openFile(d.file); return; }
-  if (d.agent) { S.agentTab = 'personality'; openWS({ kind: 'agent', id: d.agent, text: AGENT_FILES[d.agent].personality.text }); return; }
   if (d.filter) { S.filter = d.filter; renderSide(); return; }
   if (d.tag) { S.query = d.tag; S.filter = 'snips'; renderSide(); return; }
   if (d.themeSet) { S.theme = d.themeSet; applyTheme(); renderSide(); if (S.ws && S.ws.kind === 'snip') renderSnipWS(); return; }
@@ -1798,11 +1566,8 @@ document.addEventListener('click', (e) => {
   if (d.dtool) { S.dtool = d.dtool; if (d.dtool === 'canvas-snip') toast('Drag a box over the page. Esc cancels.'); renderWS(); return; }
   if (d.dcolor) { S.color = d.dcolor; if (S.dsel) { S.ws.marks.find((m) => m.n === S.dsel).color = d.dcolor; markDirty(); } renderWS(); return; }
   if (d.dsel && !e.target.closest('textarea')) { S.dsel = Number(d.dsel); paintPreview(); document.querySelectorAll('#docCallouts .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.dsel) === S.dsel)); return; }
-  if (d.report) { S.openReports[d.report] = !S.openReports[d.report]; renderChat(); const el = document.getElementById('rep-' + d.report); if (el) el.scrollIntoView({ block: 'nearest' }); return; }
-  if (d.goto) { S.switchPop = false; S.openReports[d.goto] = true; renderChat(); const el = document.getElementById('rep-' + d.goto); if (el) el.scrollIntoView({ block: 'center' }); return; }
   if (d.gotoSet) { const el = document.getElementById('set-' + d.gotoSet); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
   if (d.copy) { toast(`${d.copy} copied`); return; }
-  if (d.tab) { if (S.dirty) { toast('Save or close first'); return; } S.agentTab = d.tab; S.ws.text = AGENT_FILES[S.ws.id][d.tab].text; renderWS(); renderChat(); return; }
   if (d.sel && !e.target.closest('textarea, .hidebtn')) { S.sel = Number(d.sel); redrawStage(); document.querySelectorAll('#calloutList .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.sel) === S.sel)); return; }
   if (d.line !== undefined) { const ta = $('#src'); if (ta) { const lines = ta.value.split('\n'); const pos = lines.slice(0, Number(d.line)).join('\n').length + (Number(d.line) ? 1 : 0); ta.focus(); ta.setSelectionRange(pos, pos + (lines[d.line] || '').length); const lh = parseFloat(getComputedStyle(ta).lineHeight) || 20; ta.scrollTop = Math.max(0, d.line * lh - 60); } return; }
   if (d.md !== undefined) { const ta = $('#src'); if (ta) { const s = ta.selectionStart, en = ta.selectionEnd, sel = ta.value.slice(s, en); const ins = d.md === '**' ? `**${sel || 'bold'}**` : d.md === '[](url)' ? `[${sel || 'link'}](url)` : d.md + sel; ta.setRangeText(ins, s, en, 'end'); ta.dispatchEvent(new Event('input', { bubbles: true })); ta.focus(); } return; }
@@ -1814,7 +1579,6 @@ document.addEventListener('click', (e) => {
   }
   switch (t.id) {
     case 'compactBtn': case 'compactBtn2': setCompact(!S.compact); return;
-    case 'expandHeld': setCompact(false); return;
     case 'winMax': S.winMax = true; layout(); renderWS(); requestAnimationFrame(() => { fitPage(); if (S.ws && S.ws.kind === 'snip') fitView(); }); return;
     case 'winSmall': S.winMax = false; layout(); renderWS(); requestAnimationFrame(() => { fitPage(); if (S.ws && S.ws.kind === 'snip') fitView(); }); return;
     case 'blankOpen': $('#imgFile').click(); return;
@@ -1822,19 +1586,12 @@ document.addEventListener('click', (e) => {
     case 'settingsBtn': case 'modePill': openWS({ kind: 'settings' }); return;
     case 'blankSnip': $('#newSnip').click(); return;
     case 'newSnip': { const dl = S.delay; if (dl === 'No delay') { toast('Drag a box on your screen. Esc cancels.'); setTimeout(() => newSnip(false), 700); } else { toast(`Collide hides, waits ${dl}, then captures`); setTimeout(() => newSnip(false), 1600); } return; }
-    case 'newChat': S.addProject = true; S.switchPop = false; if (S.ws) { S.dockMin = false; S.phoneChat = true; layout(); } renderChat(); setTimeout(() => $('#apName') && $('#apName').focus(), 30); return;
-    case 'apCancel': S.addProject = false; renderChat(); return;
     case 'openZip': S.open['z-builder'] = true; S.filter = 'all'; renderSide(); toast('Unpacked builder-v0.1.zip on the server'); return;
-    case 'chatSwitch': S.switchPop = !S.switchPop; S.addProject = false; renderChat(); return;
     case 'wsSave': save(); renderWS(); renderSide(); return;
     case 'wsClose': closeWS(false); return;
     case 'saveClose': save(); closeWS(true); return;
     case 'discardClose': if (S.ws && S.ws.kind === 'snip' && S.hist.length) snipOf().shapes = S.hist[0]; closeWS(true); return;
     case 'cancelClose': S.closing = false; S.pending = null; renderWS(); return;
-    case 'dockMin': S.dockMin = true; layout(); requestAnimationFrame(() => { if (S.view && S.view.fit) fitView(); fitPage(); }); return;
-    case 'dockOpen': S.dockMin = false; layout(); requestAnimationFrame(() => { if (S.view && S.view.fit) fitView(); fitPage(); }); return;
-    case 'phoneChat': S.phoneChat = true; layout(); return;
-    case 'phoneBack': S.phoneChat = false; layout(); return;
     case 'sideBtn': case 'sideBtn2': S.sideOpen = !S.sideOpen; layout(); return;
     case 'insertSnip': S.picker = true; renderWS(); return;
     case 'pickClose': S.picker = false; renderWS(); return;
@@ -1845,15 +1602,8 @@ document.addEventListener('click', (e) => {
     case 'openMarkup': toast(`Opens a markup folder from ${storePath('Markups/')}`); return;
     case 'undo': if (S.hist.length) { const s = snipOf(); S.redo.push(clone(s.shapes)); s.shapes = S.hist.pop(); S.sel = null; snipChanged(); } return;
     case 'redoBtn': if (S.redo.length) { const s = snipOf(); S.hist.push(clone(s.shapes)); s.shapes = S.redo.pop(); snipChanged(); } return;
-    case 'askSnip': case 'askDoc': S.dockMin = false; S.phoneChat = true; layout(); setTimeout(() => $('#input') && $('#input').focus(), 50); return;
-    case 'snipInto': S.attach = (S.ws && S.ws.kind === 'snip') ? S.ws.id : SNIPS[0].id; renderChat(); toast('Snip copied to clipboard · attached to this message'); return;
-    case 'dropAttach': S.attach = null; renderChat(); return;
-    case 'picBtn': S._picFor = d.pic; $('#picFile').click(); return;
-    case 'picDel': AGENTS[d.pic].pic = ''; render(); return;
     case 'testConn': toast(S.settings.mode === 'server' ? 'This PC is the server · port 3500 is free' : `Reached ${S.settings.server || '[server address]'} · Collide 0.4 [placeholder]`); return;
     case 'saveRestart': toast('Saved · Collide restarts in ' + (S.settings.mode === 'server' ? 'Server' : 'Connected') + ' mode'); renderSide(); return;
-    case 'ghSave': toast('GitHub report source saved'); return;
-    case 'ghCheck': $('#ghStatus').textContent = 'Checked just now · no new reports'; return;
     case 'notesBtn': { const n = $('#notes'); n.hidden = !n.hidden; t.setAttribute('aria-expanded', String(!n.hidden)); return; }
   }
 });
@@ -1865,13 +1615,10 @@ document.addEventListener('change', (e) => {
   const t = e.target;
   if (t.id === 'delay') { S.delay = t.value; return; }
   if (t.name === 'mode') { S.settings.mode = t.value; renderWS(); return; }
-  if (t.name === 'storage') { S.settings.storage = t.value; renderWS(); renderSide(); return; }
-  if (t.id === 'notifyBox') { S.settings.notify = t.checked; toast(t.checked ? 'Notifications on' : 'Notifications off'); return; }
-  if ((t.id === 'picFile' || t.id === 'imgFile') && t.files && t.files[0]) {
+  if (t.id === 'imgFile' && t.files && t.files[0]) {
     const file = t.files[0], r = new FileReader();
     r.onload = () => {
-      if (t.id === 'picFile') { AGENTS[S._picFor].pic = r.result; render(); toast('Picture saved on the server PC'); }
-      else { const im = new Image(); im.onload = () => { const s = { id: 's-' + Date.now(), img: r.result, name: file.name.replace(/\.[^.]+$/, ''), w: im.naturalWidth, h: im.naturalHeight, day: 'Today', time: 'now', saved: false, tags: [], shapes: [] }; SNIPS.unshift(s); openWS({ kind: 'snip', id: s.id }); }; im.src = r.result; }
+      { const im = new Image(); im.onload = () => { const s = { id: 's-' + Date.now(), img: r.result, name: file.name.replace(/\.[^.]+$/, ''), w: im.naturalWidth, h: im.naturalHeight, day: 'Today', time: 'now', saved: false, tags: [], shapes: [] }; SNIPS.unshift(s); openWS({ kind: 'snip', id: s.id }); }; im.src = r.result; }
     };
     r.readAsDataURL(file); t.value = '';
   }
@@ -1988,27 +1735,10 @@ document.addEventListener('input', (e) => {
   if (e.target.id === 'q') { S.query = e.target.value; S._focusQ = true; renderSide(); return; }
   if (e.target.dataset.dnote) { S.ws.marks.find((m) => m.n === Number(e.target.dataset.dnote)).note = e.target.value; markDirty(); return; }
   if (e.target.dataset.note) { const sh = snipOf().shapes.find((c) => c.n === Number(e.target.dataset.note)); sh.note = e.target.value; markDirty(); snipOf().saved = false; redrawStage(); return; }
-  if (e.target.id === 'src') { S.ws.text = e.target.value; const pv = $('#preview'); if (pv && S.ws.kind === 'agent') pv.innerHTML = mdHTML(S.ws.text); else if (S.ws.type === 'md') paintPreview(); markDirty(); return; }
+  if (e.target.id === 'src') { S.ws.text = e.target.value; if (S.ws.type === 'md') paintPreview(); markDirty(); return; }
   if (e.target.id === 'srvAddr') { S.settings.server = e.target.value; return; }
-  if (e.target.id === 'ghRepo') { S.settings.repo = e.target.value; return; }
-  if (e.target.id === 'ghIssue') { S.settings.issue = e.target.value; return; }
   if (e.target.id === 'keepN') { S.settings.keep = e.target.value; return; }
   if (e.target.id === 'accessPw') { S.settings.password = e.target.value; return; }
-  if (e.target.id === 'input') { e.target.style.height = 'auto'; e.target.style.height = Math.min(140, e.target.scrollHeight) + 'px'; }
-});
-document.addEventListener('submit', (e) => {
-  e.preventDefault();
-  if (e.target.id === 'addForm') {
-    const name = $('#apName').value.trim(), agent = $('#apAgent').value.trim(); if (!name || !agent) return;
-    const key = slug(agent); if (!AGENTS[key]) { AGENTS[key] = { name: agent, role: 'Agent', hue: Object.keys(AGENTS).length % 4, pic: '' }; AGENT_FILES[key] = { personality: { path: `roles/${key}/role.md`, text: `# ${agent}\n\n[placeholder]\n` }, memory: { path: `roles/${key}/memory.md`, text: `# ${agent} memory\n\n- [placeholder]\n` } }; }
-    const id = slug(name) || 'project';
-    CHATS.unshift({ id, agent: key, title: name, team: $('#apTeam').value.trim() || TEAM, desc: $('#apDesc').value.trim(), meta: `${agent} · new project`, time: 'now', day: 'Today', unread: 0 });
-    MESSAGES[id] = []; S.chat = id; S.addProject = false; render(); toast(`Added ${name}`); return;
-  }
-  const inp = $('#input'); const v = inp.value.trim(); const c = CHATS.find((x) => x.id === S.chat); if ((!v && !S.attach) || !c) return;
-  (MESSAGES[c.id] = MESSAGES[c.id] || []).push({ from: 'me', day: 'Today', time: 'now', text: v ? `<p>${esc(v)}</p>` : '', snip: S.attach || undefined });
-  S.attach = null; c.meta = `${AGENTS[c.agent].name} · ${v.slice(0, 40)}`; c.time = 'now';
-  renderChat(); renderSide(); sendReply(c, v);
 });
 document.addEventListener('keydown', (e) => {
   const typing = /TEXTAREA|INPUT|SELECT/.test(e.target.tagName);
@@ -2016,12 +1746,11 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (S.tool === 'canvas-snip') { S.tool = 'select'; renderWS(); return; }
     if (S.ws && S.ws.kind === 'doc' && S.dtool !== 'select') { S.dtool = 'select'; renderWS(); return; }
-    if (S.picker) { S.picker = false; renderWS(); } else if (S.addProject) { S.addProject = false; renderChat(); } else if (S.switchPop) { S.switchPop = false; renderChat(); } else if (S.pop) { S.pop = false; renderSide(); } else if (S.sideOpen) { S.sideOpen = false; layout(); }
+    if (S.picker) { S.picker = false; renderWS(); } else if (S.pop) { S.pop = false; renderSide(); } else if (S.sideOpen) { S.sideOpen = false; layout(); }
   }
   const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
   if (ctrl && e.altKey && k === 's') { e.preventDefault(); $('#newSnip').click(); return; }
   if (ctrl && k === 's' && S.ws) { e.preventDefault(); if (S.dirty) { save(); renderWS(); renderSide(); } return; }
-  if (e.key === 'Enter' && !e.shiftKey && e.target.id === 'input') { e.preventDefault(); $('#composer').requestSubmit(); return; }
   if (S.ws && S.ws.kind === 'doc' && S.docView === 'preview' && !typing) {
     if ((e.key === 'Delete' || e.key === 'Backspace') && S.dsel) { S.ws.marks = S.ws.marks.filter((m) => m.n !== S.dsel); S.dsel = null; markDirty(); renderWS(); return; }
     const dm = { v: 'select', b: 'box', c: 'circle' }; if (!ctrl && dm[k]) { S.dtool = dm[k]; renderWS(); return; }
