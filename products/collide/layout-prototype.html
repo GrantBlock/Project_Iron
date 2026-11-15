@@ -831,6 +831,10 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
 .blank { position: relative; }
 .blank .menu { position: absolute; left: 12px; top: calc(12px + env(safe-area-inset-top, 0px)); }
 .chat { display: none !important; }
+.matgrp { display: inline-flex; align-items: center; gap: 6px; padding: 4px 7px; border-radius: 999px; background: #FFFFFF; box-shadow: 0 1px 3px rgba(0,0,0,.18), 0 1px 1px rgba(0,0,0,.08); }
+.swatch.mat { width: 20px; height: 20px; border: 0; border-radius: 50%; box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 1px 2px rgba(0,0,0,.35); transition: transform 120ms; }
+.swatch.mat:hover { transform: translateY(-1px); }
+.swatch.mat[aria-pressed="true"] { box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 0 0 2px #FFFFFF, 0 0 0 4px #1F1F1F; }
 .auragrp { display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 6px; border-radius: 999px; border: var(--border-w) solid var(--line-2); }
 .annsel { height: 24px; font-size: 11.5px; padding: 0 4px; border-radius: 999px; }
 .el.ccard { grid-template-columns: 16px minmax(0, 1fr); gap: 8px; padding: 8px 9px 8px 4px; }
@@ -894,7 +898,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
     <li><b>Home is a blank canvas</b> with Recents on the left: snips, zip files and their folder trees, tags.</li>
     <li><b>Tabs on the canvas</b> (Grant 2026-11-15): each open snip, file or Settings is a tab with a dot: amber = changed, green = saved. Each keeps its own undo and zoom. Ctrl+W or × closes, Ctrl+Tab switches, middle-click closes.</li>
     <li><b>Closing with unsaved changes</b> shows a splash screen: Save and close, Close without saving, Cancel.</li>
-    <li><b>Markdown files:</b> Preview with Callouts, or Code + preview. Box and Circle callouts on the page; Canvas snip saves the marked-up area as a markup.</li>
+    <li><b>Markdown files:</b> Preview with Callouts, or Code + preview. On the page: Select, Box, Circle, Line, X mark, 4 colours, stroke 2/3/5, resize handles, undo/redo, Delete. <b>Copy PNG</b> copies the visible page with its callouts; Canvas snip saves a marked-up area as a markup. Both stay inside the visible area.</li>
     <li><b>Collapse</b> moves Recents to the right. Windowed: the window shrinks to Recents; a new or opened snip adds a canvas and fits to it. Maximized: blank canvas. Try both with the "Prototype · window" switch.</li>
     <li><b>Storage on the server PC</b>, with automatic deletion after [number of files]. Settings → Storage.</li>
     <li><b>Themes:</b> Dark, Light, Aura for the whole app. The logo is never recoloured.</li>
@@ -906,8 +910,10 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
     <tr><td>Canvas snip with W × H readout, Esc leaves</td><td><b>Removed from the Snip toolbar</b> (Grant 2026-11-15). Stays in the Markdown editor.</td></tr>
     <tr><td>Open file, Open markup, Save Ctrl+S, Copy Ctrl+Shift+C, Export</td><td>Open file → sidebar <b>Open</b> (zip, markup or image); <b>Add snip</b> adds a capture beside the image and the canvas grows: Current = the program that is open, Behind = Collide hides and you snip the screen behind (like New snip); select it to move it or resize it from a corner (aspect locked); Open markup, Copy, Export in the toolbar; Save in the header</td></tr>
     <tr><td>Select V, Rectangle R, Ellipse O, Filled rectangle, Filled ellipse, X mark X, Point P</td><td>Snip toolbar without the filled tools; <b>shading is a toggle in the callout card</b>; type can be changed in the card</td></tr>
+    <tr><td>Esc</td><td>Returns to the Select tool in Snip and in the Markdown page (also leaves a note box you are typing in)</td></tr>
+    <tr><td>Line tool</td><td>Snip and Markdown toolbars (L); drag its ends to change it; arrows point to its middle</td></tr>
     <tr><td>Resize shapes</td><td>8 handles on a selected shape (corners and edges), sized for the zoom; Shift on a corner keeps the aspect. Added images: corner handles, aspect always locked</td></tr>
-    <tr><td>4 colours, stroke 2/3/5, undo/redo (50 steps), Delete</td><td>4 colours from the chosen <b>Aura theme</b> (Highlight, Ink, Deep, Light); the theme also styles the note bubbles</td></tr>
+    <tr><td>4 colours, stroke 2/3/5, undo/redo (50 steps), Delete</td><td>The same <b>4 material colours</b> in every theme (red, blue, yellow, gray) in a white box; note bubbles are white boxes. After a shape is drawn no colour stays selected, so you pick the next one (unpicked = red)</td></tr>
     <tr><td>Numbered note boxes outside the image, arrows, drag to move; empty note = number chip</td><td>Canvas. Draft: every new box starts slightly off-line, so its arrow is angled</td></tr>
     <tr><td>Callouts panel: notes, Hide # / Show #</td><td><b>Callout card:</b> number and type; hide text, hide bubble (was Hide #), hide outline (keeps the fill); <b>Fill %</b> (0 % = no fill) replaces shading and transparency; drag the grip to reorder (renumbers)</td></tr>
     <tr><td>Wheel zoom, right-drag and Space-drag pan, Ctrl+0 refit, refit on resize</td><td>Canvas</td></tr>
@@ -980,6 +986,7 @@ Object.assign(I, {
   key: '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/>',
   github: '<path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.1-1.3-.3-2.5-1-3.5.3-1.2.3-2.4 0-3.5 0 0-1 0-3 1.5a10.6 10.6 0 0 0-6 0C7 2 6 2 6 2c-.3 1.1-.3 2.3 0 3.5A5.4 5.4 0 0 0 5 9c0 3.5 3 5.5 6 5.5-.4.5-.8 1.1-1 1.7-.2.6-.2 1.2-.1 1.8v4M9 18c-4.5 2-5-2-7-2"/>',
   server: '<rect x="2" y="3" width="20" height="8" rx="2"/><rect x="2" y="13" width="20" height="8" rx="2"/><path d="M6 7h.01M6 17h.01"/>',
+  line: '<path d="M5 19 19 5"/>',
   collapse: '<path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/>',
   expand: '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',
   reports: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="m9 15 2 2 4-4"/>',
@@ -995,15 +1002,21 @@ const clone = (o) => JSON.parse(JSON.stringify(o));
 
 /* ---------- Example data ---------- */
 const TYPE_LABEL = { rect: 'Rectangle', ellipse: 'Ellipse', 'rect-fill': 'Rectangle', 'ellipse-fill': 'Ellipse', cross: 'X mark', point: 'Point' };
-const SHAPE_TYPES = ['rect', 'ellipse', 'cross', 'point'];
+const SHAPE_TYPES = ['rect', 'ellipse', 'line', 'cross', 'point'];
+TYPE_LABEL.line = 'Line';
 const SIG = '#FF3D1F', STEEL = '#4C87C4', AMBER = '#E3A73A', INK50 = '#F3F2EF';
 /* Annotations and note bubbles use an Aura theme (Grant 2026-11-15). Colours are stored as roles, so changing the theme recolours the markup. */
-const ROLES = [['hl', 'Highlight'], ['ink', 'Ink'], ['deep', 'Deep'], ['tile', 'Light']];
-const auraOf = (name) => AURA.find((a) => a.name === name) || AURA[0];
-function pal(s) { const a = auraOf(s.style || 'sage'); return { hl: a.hlf, ink: a.ink, deep: a.deep, tile: a.tile, bg: a.bg, f1: a.f1, t1: a.t1, o1: a.o1 }; }
+/* Annotation colours (Grant 2026-11-15): the same four in every theme, material style, white note boxes. */
+const MAT = { red: ['#EF5350', '#E53935', '#C62828'], blue: ['#42A5F5', '#1E88E5', '#1565C0'], yellow: ['#FFEE58', '#FDD835', '#F9A825'], gray: ['#BDBDBD', '#757575', '#424242'] };
+const ROLES = [['red', 'Red'], ['blue', 'Blue'], ['yellow', 'Yellow'], ['gray', 'Gray']];
+const LEGACY = { hl: 'red', ink: 'gray', deep: 'blue', tile: 'yellow' };
+const DEFAULT_COLOR = 'red';
+function pal() { return { bg: '#09090B', f1: '#FFFFFF', t1: '#1F1F1F', o1: '#D9D9D9' }; }
+const swatchBG = (n) => `linear-gradient(145deg, ${MAT[n][0]} 0%, ${MAT[n][1]} 55%, ${MAT[n][2]} 100%)`;
+function onColor(hex) { const h = hex.replace('#', ''); const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255); return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.55 ? '#1F1F1F' : '#FFFFFF'; }
 /** Fill amount 0–100 %. Old markups: shaded shapes become 30 %. */
 const fillPct = (sh) => (sh.fillPct ?? (sh.fill || sh.type.endsWith('-fill') ? 30 : 0));
-const col = (sh, s) => (sh.color && sh.color[0] === '#' ? sh.color : pal(s)[sh.color] || pal(s).hl);
+const col = (sh) => { if (sh.color && sh.color[0] === '#') return sh.color; const n = MAT[sh.color] ? sh.color : LEGACY[sh.color] || DEFAULT_COLOR; return MAT[n][1]; };
 function onColor(hex) { const h = hex.replace('#', ''); const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255); return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.55 ? '#0b0b0a' : '#fcfcfc'; }
 const SNIPS = [
   { id: 's-line3', art: 'line3', name: 'Line 3 conveyor guard', w: 1280, h: 720, day: 'Today', time: '10:40', saved: false, tags: ['LINE 3', 'CONVEYOR'],
@@ -1053,7 +1066,7 @@ const ZIPS = [
       { name: 'CLAUDE.md', type: 'md', text: '# Working rules\n\n- Direct, concise, structured.\n- Mark assumptions (A) and placeholders [brackets].\n' },
       { name: 'design', kids: [
         { name: 'specs', kids: [
-          { name: 'P06-Project-Workspace-Spec.md', type: 'md', text: P06, marks: [ { n: 1, type: 'box', x: 26, y: 132, w: 628, h: 30, color: SIG, note: 'Add Uploads to this list.' }, { n: 2, type: 'circle', x: 210, y: 236, w: 150, h: 46, color: STEEL, note: 'Name the session panel.' } ] },
+          { name: 'P06-Project-Workspace-Spec.md', type: 'md', text: P06, marks: [ { n: 1, type: 'box', x: 26, y: 132, w: 628, h: 30, color: 'red', note: 'Add Uploads to this list.' }, { n: 2, type: 'circle', x: 210, y: 236, w: 150, h: 46, color: 'blue', note: 'Name the session panel.' } ] },
           { name: 'P08-3D-Designer-Spec.md', type: 'md', text: '# P08 3D Designer Spec\n\n## 1 Purpose\n\n[placeholder]\n' },
         ] },
         { name: 'exports', kids: [ { name: 'P06.png', type: 'image' }, { name: 'P08.png', type: 'image' } ] },
@@ -1069,7 +1082,7 @@ const ZIPS = [
 const S = {
   theme: 'system', aura: 'sage', filter: 'all', chat: 'project-iron', ws: null, dirty: false, dockMin: false,
   open: { 'z-builder': true, 'z-builder/design': true, 'z-builder/design/specs': true },
-  tool: 'select', sel: null, color: SIG, role: 'hl', addMode: 'Current', sw: 3, view: null, panning: null, drag: null, hist: [], redo: [],
+  tool: 'select', sel: null, color: SIG, role: null, dcolor: null, selByDraw: false, addMode: 'Current', sw: 3, view: null, panning: null, drag: null, hist: [], redo: [],
   docView: 'preview', dtool: 'select', dsel: null, ddrag: null, pop: false, picker: false, closing: false, sideOpen: false, query: '',
   compact: false, winMax: true, pending: null, tabs: [], active: -1, splash: null, delay: 'No delay',
   settings: { keep: '', mode: 'server', server: '', repo: 'GrantBlock/Project_Iron', issue: '2', notify: true, password: '' },
@@ -1121,6 +1134,7 @@ function noteBoxes(s) {
     }
     // Ellipses: the arrow ends on the ellipse's edge, on the line from the box towards the centre (Grant 2026-11-15: "make it touch the ellipse").
     if (sh.type.startsWith('ellipse')) { const rx = sh.w / 2, ry = sh.h / 2, dx = from.x - c.x, dy = from.y - c.y, t = 1 / Math.sqrt((dx / rx) ** 2 + (dy / ry) ** 2 || 1); to = { x: c.x + dx * t, y: c.y + dy * t }; }
+    if (sh.type === 'line') { to = { x: c.x, y: c.y }; if (!d) from = { x: Math.min(Math.max(c.x, box.x), box.x + box.w), y: Math.min(Math.max(c.y, box.y), box.y + box.h) }; }
     if (sh.type === 'point') { const dx = from.x - to.x, dy = from.y - to.y, l = Math.hypot(dx, dy) || 1; to.x += dx / l * 9; to.y += dy / l * 9; }
     out[sh.n] = { box, lines, from, to };
   }
@@ -1161,12 +1175,14 @@ function shapeSVG(sh, sel, s, mode = 'full') {
   if (type === 'rect') g = `<rect x="${sh.x}" y="${sh.y}" width="${sh.w}" height="${sh.h}" ${fill} ${st}/>`;
   else if (type === 'ellipse') g = `<ellipse cx="${sh.x + sh.w / 2}" cy="${sh.y + sh.h / 2}" rx="${sh.w / 2}" ry="${sh.h / 2}" ${fill} ${st}/>`;
   else if (type === 'cross') g = `<path d="M${sh.x} ${sh.y}l${sh.w} ${sh.h}M${sh.x + sh.w} ${sh.y}l${-sh.w} ${sh.h}" ${st} stroke-linecap="round"/>`;
+  else if (type === 'line') g = `<line x1="${sh.x}" y1="${sh.y}" x2="${sh.x + sh.w}" y2="${sh.y + sh.h}" ${st} stroke-linecap="round"/>`;
   else g = `<circle cx="${sh.x}" cy="${sh.y}" r="${3 + sh.sw}" fill="${c}" ${sh.hideOutline ? 'fill-opacity=".35"' : ''} stroke="${pal(s).f1}" stroke-width="1.5"/>`;
-  const hit = type === 'point' ? `<circle cx="${sh.x}" cy="${sh.y}" r="12" fill="transparent"/>` : `<rect x="${sh.x - 4}" y="${sh.y - 4}" width="${sh.w + 8}" height="${sh.h + 8}" fill="transparent"/>`;
+  const hit = type === 'line' ? `<line x1="${sh.x}" y1="${sh.y}" x2="${sh.x + sh.w}" y2="${sh.y + sh.h}" stroke="transparent" stroke-width="14"/>` : type === 'point' ? `<circle cx="${sh.x}" cy="${sh.y}" r="12" fill="transparent"/>` : `<rect x="${sh.x - 4}" y="${sh.y - 4}" width="${sh.w + 8}" height="${sh.h + 8}" fill="transparent"/>`;
   let selg = '';
   if (sel) {
     const b = type === 'point' ? { x: sh.x - 10, y: sh.y - 10, w: 20, h: 20 } : { x: sh.x - 3, y: sh.y - 3, w: sh.w + 6, h: sh.h + 6 };
-    selg = `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="none" stroke="#fff" stroke-dasharray="4 3" stroke-width="1"/>` +
+    selg = type === 'line' ? handlesSVG({ x: sh.x, y: sh.y, w: sh.w, h: sh.h }, ['p1', 'p2'], `data-hs="${sh.n}"`)
+      : `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="none" stroke="#fff" stroke-dasharray="4 3" stroke-width="1"/>` +
       (type === 'point' ? '' : handlesSVG({ x: sh.x, y: sh.y, w: sh.w, h: sh.h }, HANDLE_DIRS, `data-hs="${sh.n}"`));
   }
   if (sh.hideOutline && mode !== 'full' && (type === 'cross' || type === 'point')) g = '';
@@ -1189,10 +1205,23 @@ function markers(s) {
 /* Images added with Add snip sit on the canvas over the first image; drag them with Select. */
 const HANDLE_DIRS = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
 /** Handles at a box: all 8 for shapes, corners only for images (aspect locked). Sized for the current zoom. */
-function handlesSVG(b, dirs, attr) {
-  const hs = 10 / ((S.view && S.view.k) || 1);
-  const pos = { nw: [b.x, b.y], n: [b.x + b.w / 2, b.y], ne: [b.x + b.w, b.y], e: [b.x + b.w, b.y + b.h / 2], se: [b.x + b.w, b.y + b.h], s: [b.x + b.w / 2, b.y + b.h], sw: [b.x, b.y + b.h], w: [b.x, b.y + b.h / 2] };
-  return dirs.map((d) => `<rect ${attr} data-h="${d}" x="${pos[d][0] - hs / 2}" y="${pos[d][1] - hs / 2}" width="${hs}" height="${hs}" rx="${hs * 0.2}" fill="#fff" stroke="#09090B" stroke-width="${hs * 0.12}" style="cursor:${d}-resize"/>`).join('');
+function handlesSVG(b, dirs, attr, k) {
+  const hs = 10 / (k || (S.view && S.view.k) || 1);
+  const pos = { nw: [b.x, b.y], n: [b.x + b.w / 2, b.y], ne: [b.x + b.w, b.y], e: [b.x + b.w, b.y + b.h / 2], se: [b.x + b.w, b.y + b.h], s: [b.x + b.w / 2, b.y + b.h], sw: [b.x, b.y + b.h], w: [b.x, b.y + b.h / 2], p1: [b.x, b.y], p2: [b.x + b.w, b.y + b.h] };
+  return dirs.map((d) => `<rect ${attr} data-h="${d}" x="${pos[d][0] - hs / 2}" y="${pos[d][1] - hs / 2}" width="${hs}" height="${hs}" rx="${d.startsWith('p') ? hs / 2 : hs * 0.2}" fill="#fff" stroke="#09090B" stroke-width="${hs * 0.12}" style="cursor:${d.startsWith('p') ? 'crosshair' : d + '-resize'}"/>`).join('');
+}
+/** Resize a box from a handle. Lines move an end point. Shift on a corner keeps the aspect; dragging past the far edge flips. */
+function resizeBox(o, dir, dx, dy, shift) {
+  if (dir === 'p1') return { x: o.x + dx, y: o.y + dy, w: o.w - dx, h: o.h - dy };
+  if (dir === 'p2') return { x: o.x, y: o.y, w: o.w + dx, h: o.h + dy };
+  let x = o.x, y = o.y, w = o.w, h = o.h;
+  if (dir.includes('w')) { x = o.x + dx; w = o.w - dx; }
+  if (dir.includes('e')) w = o.w + dx;
+  if (dir.includes('n')) { y = o.y + dy; h = o.h - dy; }
+  if (dir.includes('s')) h = o.h + dy;
+  if (shift && dir.length === 2 && o.w && o.h) { const k = Math.max(Math.abs(w) / o.w, Math.abs(h) / o.h); const nw = o.w * k * Math.sign(w || 1), nh = o.h * k * Math.sign(h || 1); if (dir.includes('w')) x = o.x + o.w - nw; if (dir.includes('n')) y = o.y + o.h - nh; w = nw; h = nh; }
+  if (w < 0) { x += w; w = -w; } if (h < 0) { y += h; h = -h; }
+  return { x, y, w: Math.max(4, w), h: Math.max(4, h) };
 }
 function layersSVG(s, mode) {
   return (s.images || []).map((im, i) => {
@@ -1389,13 +1418,12 @@ function applyView() {
 function redrawStage() { const z = $('#zoomer'); if (z) { const s = snipOf(); const before = S.cbox; syncBox(s); z.innerHTML = snipSVG(S.ws.id, 'snipfull', 'full'); if (before !== S.cbox) applyView(); } }
 function renderSnipWS() {
   const s = snipOf(); syncBox(s);
-  const tools = [['select', 'pointer', 'Select', 'V'], ['rect', 'square', 'Rectangle', 'R'], ['ellipse', 'circle', 'Ellipse', 'O'], ['cross', 'cross', 'X mark', 'X'], ['point', 'dot', 'Point', 'P']];
+  const tools = [['select', 'pointer', 'Select', 'V'], ['rect', 'square', 'Rectangle', 'R'], ['ellipse', 'circle', 'Ellipse', 'O'], ['line', 'line', 'Line', 'L'], ['cross', 'cross', 'X mark', 'X'], ['point', 'dot', 'Point', 'P']];
   $('#ws').innerHTML = headHTML('scissors', s.name, storePath(`Markups/${slug(s.name)}/`)) + `
     <div class="toolbar" role="toolbar" aria-label="Markup tools">
       ${tools.map(([k, ic, l, key]) => `<button class="tool" data-tool="${k}" aria-pressed="${S.tool === k}" title="${l}${key ? ` (${key})` : ''}" aria-label="${l}">${ico(ic)}</button>`).join('')}
       <span class="vsep"></span>
-      <span class="auragrp" title="Annotation colours and note bubbles from an Aura theme">${ROLES.map(([r, l]) => `<button class="swatch" data-role="${r}" aria-pressed="${S.role === r}" aria-label="Colour ${l}" title="${l}" style="background:${pal(s)[r]}"></button>`).join('')}
-      <select class="select annsel" id="annTheme" aria-label="Aura theme for annotations">${AURA.map((a) => `<option ${(s.style || 'sage') === a.name ? 'selected' : ''}>${a.name}</option>`).join('')}</select></span>
+      <span class="matgrp" role="group" aria-label="Colour for the next shape">${ROLES.map(([r, l]) => `<button class="swatch mat" data-role="${r}" aria-pressed="${S.role === r}" aria-label="${l}" title="${l}${S.role ? '' : ' (pick a colour for the next shape)'}" style="background:${swatchBG(r)}"></button>`).join('')}</span>
       <span class="vsep"></span>
       <span role="group" aria-label="Stroke width" style="display:flex;gap:2px">${[2, 3, 5].map((w) => `<button class="stroke" data-sw="${w}" aria-pressed="${S.sw === w}" aria-label="Stroke ${w}"><span style="height:${w}px"></span></button>`).join('')}</span>
       <span style="flex:1 1 0;min-width:4px"></span>
@@ -1461,17 +1489,23 @@ function mdHTML(src) {
 /* Markdown editor: Preview + Callouts, or Code + Preview. Box and circle callouts are drawn on the
    rendered page (a fixed-width page, so they stay put); Canvas snip saves a marked-up region as a markup. */
 const PAGE_W = 680;
-const DOC_TOOLS = [['select', 'pointer', 'Select', 'V'], ['box', 'square', 'Box', 'B'], ['circle', 'circle', 'Circle', 'C']];
+const DOC_TOOLS = [['select', 'pointer', 'Select', 'V'], ['box', 'square', 'Box', 'B'], ['circle', 'circle', 'Circle', 'C'], ['line', 'line', 'Line', 'L'], ['cross', 'cross', 'X mark', 'X']];
+const DOC_LABEL = { box: 'Box', circle: 'Circle', line: 'Line', cross: 'X mark' };
+function docShapeSVG(m, c, sw, extra = '') {
+  if (m.type === 'box') return `<rect x="${m.x}" y="${m.y}" width="${m.w}" height="${m.h}" rx="3" fill="${c}" fill-opacity=".06" stroke="${c}" stroke-width="${sw}" ${extra}/>`;
+  if (m.type === 'circle') return `<ellipse cx="${m.x + m.w / 2}" cy="${m.y + m.h / 2}" rx="${Math.abs(m.w / 2)}" ry="${Math.abs(m.h / 2)}" fill="${c}" fill-opacity=".06" stroke="${c}" stroke-width="${sw}" ${extra}/>`;
+  if (m.type === 'line') return `<line x1="${m.x}" y1="${m.y}" x2="${m.x + m.w}" y2="${m.y + m.h}" stroke="${c}" stroke-width="${sw}" stroke-linecap="round" ${extra}/>`;
+  return `<path d="M${m.x} ${m.y}l${m.w} ${m.h}M${m.x + m.w} ${m.y}l${-m.w} ${m.h}" stroke="${c}" stroke-width="${sw}" stroke-linecap="round" fill="none" ${extra}/>`;
+}
 function docMarksSVG() {
   const marks = S.ws.marks || [];
+  const k = S.pageK || 1;
   const shapes = marks.map((m) => {
-    const sel = S.dsel === m.n;
-    const g = m.type === 'box'
-      ? `<rect x="${m.x}" y="${m.y}" width="${m.w}" height="${m.h}" rx="3" fill="${m.color}" fill-opacity=".06" stroke="${m.color}" stroke-width="2.5"/>`
-      : `<ellipse cx="${m.x + m.w / 2}" cy="${m.y + m.h / 2}" rx="${m.w / 2}" ry="${m.h / 2}" fill="${m.color}" fill-opacity=".06" stroke="${m.color}" stroke-width="2.5"/>`;
-    const bx = m.type === 'box' ? m.x : m.x + m.w * 0.15, by = m.type === 'box' ? m.y : m.y + m.h * 0.15;
-    const ring = sel ? `<rect x="${m.x - 4}" y="${m.y - 4}" width="${m.w + 8}" height="${m.h + 8}" fill="none" stroke="var(--t1)" stroke-dasharray="4 3"/>` : '';
-    return `<g data-dmark="${m.n}">${g}${ring}<circle cx="${bx}" cy="${by}" r="11" fill="${m.color}"/><text x="${bx}" y="${by + 4}" text-anchor="middle" font-family="Geist Mono, monospace" font-size="11" font-weight="600" fill="${m.color === INK50 ? '#09090B' : '#fff'}">${m.n}</text></g>`;
+    const sel = S.dsel === m.n, c = col(m), sw = m.sw || 2.5;
+    const hit = m.type === 'line' ? `<line x1="${m.x}" y1="${m.y}" x2="${m.x + m.w}" y2="${m.y + m.h}" stroke="transparent" stroke-width="14"/>` : `<rect x="${m.x - 4}" y="${m.y - 4}" width="${m.w + 8}" height="${m.h + 8}" fill="transparent"/>`;
+    const bx = m.type === 'circle' ? m.x + m.w * 0.15 : m.x, by = m.type === 'circle' ? m.y + m.h * 0.15 : m.y;
+    const handles = sel ? (m.type === 'line' ? handlesSVG(m, ['p1', 'p2'], `data-dmh="${m.n}"`, k) : `<rect x="${m.x - 3}" y="${m.y - 3}" width="${m.w + 6}" height="${m.h + 6}" fill="none" stroke="var(--t1)" stroke-dasharray="4 3"/>` + handlesSVG(m, HANDLE_DIRS, `data-dmh="${m.n}"`, k)) : '';
+    return `<g data-dmark="${m.n}">${hit}${docShapeSVG(m, c, sw)}<circle cx="${bx}" cy="${by}" r="11" fill="${c}"/><text x="${bx}" y="${by + 4}" text-anchor="middle" font-family="Geist Mono, monospace" font-size="11" font-weight="600" fill="${onColor(c)}">${m.n}</text>${handles}</g>`;
   }).join('');
   return `<svg id="docOverlay" aria-hidden="true">${shapes}<g id="docLive"></g></svg>`;
 }
@@ -1490,8 +1524,8 @@ function fitPage() {
 }
 function docCalloutsHTML() {
   const marks = S.ws.marks || [];
-  return marks.length ? marks.map((m) => `<div class="el ${S.dsel === m.n ? 'sel' : ''}" data-dsel="${m.n}"><span class="num" style="background:${m.color};color:${m.color === INK50 ? '#09090B' : '#fff'}">${m.n}</span><div style="min-width:0"><div class="k">${m.type === 'box' ? 'Box' : 'Circle'}</div><textarea data-dnote="${m.n}" rows="2" placeholder="Add a note" aria-label="Note for callout ${m.n}">${esc(m.note)}</textarea></div></div>`).join('')
-    : '<p class="hint" style="padding:8px">Draw a box or a circle on the page to add a callout.</p>';
+  return marks.length ? marks.map((m) => { const c = col(m); return `<div class="el ccard ${S.dsel === m.n ? 'sel' : ''}" data-dsel="${m.n}" style="grid-template-columns:minmax(0,1fr);padding-left:9px"><div style="min-width:0;display:grid;gap:6px"><div class="row"><span class="num" style="background:${c};color:${onColor(c)}">${m.n}</span><select class="typesel" data-dtype="${m.n}" aria-label="Type of callout ${m.n}">${Object.entries(DOC_LABEL).map(([t, l]) => `<option value="${t}" ${t === m.type ? 'selected' : ''}>${l}</option>`).join('')}</select></div><textarea data-dnote="${m.n}" rows="2" placeholder="Add a note" aria-label="Note for callout ${m.n}">${esc(m.note)}</textarea></div></div>`; }).join('')
+    : '<p class="hint" style="padding:8px">Draw a box, circle, line or X on the page to add a callout.</p>';
 }
 function renderDocWS() {
   const w = S.ws;
@@ -1508,11 +1542,17 @@ function renderDocWS() {
   const v = (k, l) => `<button class="tool" data-view="${k}" aria-pressed="${S.docView === k}">${l}</button>`;
   $('#ws').innerHTML = head + `
     <div class="toolbar" role="toolbar" aria-label="Markdown tools">
-      ${pv ? `<button class="tool" data-dtool="canvas-snip" aria-pressed="${S.dtool === 'canvas-snip'}" title="Canvas snip: drag a box over the page; saves the marked-up area as a markup and copies it (Esc cancels)" aria-label="Canvas snip">${ico('crop')}</button>
+      ${pv ? `<button class="tool" data-dtool="canvas-snip" aria-pressed="${S.dtool === 'canvas-snip'}" title="Canvas snip: drag a box over the visible page; saves the marked-up area as a markup and copies it (Esc cancels)" aria-label="Canvas snip">${ico('crop')}</button>
+      <button class="tool" id="docCopy" title="Copy the visible page with its callouts to the clipboard as a PNG (Ctrl+Shift+C)">${ico('copy')}<span>Copy PNG</span></button>
       <span class="vsep"></span>
       ${DOC_TOOLS.map(([k, ic, l, key]) => `<button class="tool" data-dtool="${k}" aria-pressed="${S.dtool === k}" title="${l} (${key})" aria-label="${l}">${ico(ic)}</button>`).join('')}
       <span class="vsep"></span>
-      ${COLORS.map(([c, l]) => `<button class="swatch" data-dcolor="${c}" aria-pressed="${S.color === c}" aria-label="Colour ${l}" style="background:${c}"></button>`).join('<span style="width:4px"></span>')}`
+      <span class="matgrp" role="group" aria-label="Colour for the next shape">${ROLES.map(([r, l]) => `<button class="swatch mat" data-dcolor="${r}" aria-pressed="${S.dcolor === r}" aria-label="${l}" title="${l}" style="background:${swatchBG(r)}"></button>`).join('')}</span>
+      <span class="vsep"></span>
+      <span role="group" aria-label="Stroke width" style="display:flex;gap:2px">${[2, 3, 5].map((w) => `<button class="stroke" data-dsw="${w}" aria-pressed="${S.sw === w}" aria-label="Stroke ${w}"><span style="height:${w}px"></span></button>`).join('')}</span>
+      <span class="vsep"></span>
+      <button class="tool" id="docUndo" title="Undo (Ctrl+Z)" aria-label="Undo" ${(S.dhist || []).length ? '' : 'disabled style="opacity:.4"'}>${ico('undo')}</button>
+      <button class="tool" id="docRedo" title="Redo (Ctrl+Y)" aria-label="Redo" ${(S.dredo || []).length ? '' : 'disabled style="opacity:.4"'}>${ico('redo')}</button>`
       : `<button class="tool" data-md="## " title="Heading" aria-label="Heading">${ico('h')}</button><button class="tool" data-md="**" title="Bold" aria-label="Bold">${ico('bold')}</button><button class="tool" data-md="- " title="List" aria-label="List">${ico('list')}</button><button class="tool" data-md="[](url)" title="Link" aria-label="Link">${ico('link')}</button>`}
       <span class="vsep"></span><button class="tool" id="insertSnip">${ico('scissors')}<span>Insert snip</span></button>
       <span style="flex:1 1 0;min-width:4px"></span>${v('preview', 'Preview')}${v('code', 'Code + preview')}
@@ -1531,14 +1571,30 @@ function renderDocWS() {
     <div class="statusbar"><span>${esc(w.zip)}</span><span>UTF-8 · LF</span>${pv ? `<span>${w.marks.length} callouts → ${esc(storePath(`callouts/${w.name.replace(/\.md$/, '')}.json`))}</span>` : ''}<span style="margin-left:auto">${w.text.split('\n').length} lines</span></div>`;
   paintPreview();
 }
+/** The part of the page that is on screen, in page pixels. Copy and Canvas snip stay inside it. */
+function visibleRect() {
+  const pg = $('#page'), pv = $('#preview'); if (!pg || !pv) return null;
+  const k = S.pageK || 1, r = pg.getBoundingClientRect(), v = pv.getBoundingClientRect();
+  const x0 = Math.max(0, (v.left - r.left) / k), y0 = Math.max(0, (v.top - r.top) / k);
+  const x1 = Math.min(r.width / k, (v.right - r.left) / k), y1 = Math.min(r.height / k, (v.bottom - r.top) / k);
+  return { x: x0, y: y0, w: Math.max(0, x1 - x0), h: Math.max(0, y1 - y0) };
+}
+function clampToVisible(rg) {
+  const v = visibleRect(); if (!v) return rg;
+  const x0 = Math.max(rg.x, v.x), y0 = Math.max(rg.y, v.y), x1 = Math.min(rg.x + rg.w, v.x + v.w), y1 = Math.min(rg.y + rg.h, v.y + v.h);
+  return { x: x0, y: y0, w: Math.max(0, x1 - x0), h: Math.max(0, y1 - y0) };
+}
 function pagePoint(e) { const pg = $('#page'), r = pg.getBoundingClientRect(), k = S.pageK || 1; return { x: (e.clientX - r.left) / k, y: (e.clientY - r.top) / k }; }
 function saveDocMarkup(rg) {
+  rg = clampToVisible(rg); if (rg.w < 8 || rg.h < 8) { toast('Drag inside the visible page'); return; }
   const w = S.ws, pg = $('#page');
   const html = mdHTML(w.text);
   const now = new Date(), t = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
   const f = IW / rg.w;
-  const shapes = (w.marks || []).filter((m) => m.x < rg.x + rg.w && m.x + m.w > rg.x && m.y < rg.y + rg.h && m.y + m.h > rg.y).map((m) => ({
-    n: m.n, type: m.type === 'box' ? 'rect' : 'ellipse', x: Math.round((m.x - rg.x) * f), y: Math.round((m.y - rg.y) * f), w: Math.round(m.w * f), h: Math.round(m.h * f), color: m.color, sw: 3, note: m.note,
+  const TYPE_TO_SNIP = { box: 'rect', circle: 'ellipse', line: 'line', cross: 'cross' };
+  const inside = (m) => { const xa = Math.min(m.x, m.x + m.w), xb = Math.max(m.x, m.x + m.w), ya = Math.min(m.y, m.y + m.h), yb = Math.max(m.y, m.y + m.h); return xa < rg.x + rg.w && xb > rg.x && ya < rg.y + rg.h && yb > rg.y; };
+  const shapes = (w.marks || []).filter(inside).map((m) => ({
+    n: m.n, type: TYPE_TO_SNIP[m.type], x: Math.round((m.x - rg.x) * f), y: Math.round((m.y - rg.y) * f), w: Math.round(m.w * f), h: Math.round(m.h * f), color: m.color, sw: 3, note: m.note,
   }));
   const s = { id: 's-' + Date.now(), art: 'doc', doc: { html, x: rg.x, y: rg.y, w: rg.w, pageW: pg.clientWidth }, name: `${w.name.replace(/\.md$/, '')} · ${t}`, w: Math.round(rg.w * 2), h: Math.round(rg.h * 2), day: 'Today', time: t, saved: S.settings.mode === 'server', tags: [], shapes };
   SNIPS.unshift(s); renderSide();
@@ -1609,7 +1665,7 @@ let toastT;
 function toast(t) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (el.hidden = true), 2600); }
 function setCompact(on) { S.compact = on; layout(); renderSide(); renderWS(); requestAnimationFrame(() => { fitPage(); if (S.ws && S.ws.kind === 'snip') fitView(); }); }
 /* Tabs on the canvas (Grant 2026-11-15): each open item keeps its own changes, undo history and view. */
-const TAB_FIELDS = ['dirty', 'hist', 'redo', 'view', 'sel', 'dsel', 'selImg', 'cbox'];
+const TAB_FIELDS = ['dirty', 'hist', 'redo', 'view', 'sel', 'dsel', 'selImg', 'cbox', 'dhist', 'dredo'];
 const tabKey = (ws) => (ws.kind === 'snip' ? 'snip:' + ws.id : ws.kind === 'doc' ? 'doc:' + ws.path : ws.kind);
 function stash() { const t = S.tabs[S.active]; if (!t) return; t.ws = S.ws; TAB_FIELDS.forEach((f) => (t[f] = S[f])); }
 function load(i) {
@@ -1622,7 +1678,7 @@ function openWS(ws) {
   stash();
   const i = S.tabs.findIndex((t) => tabKey(t.ws) === tabKey(ws));
   if (i >= 0) load(i);
-  else { S.tabs.push({ ws, dirty: false, hist: [], redo: [], view: null, sel: null, dsel: null, selImg: null, cbox: null }); load(S.tabs.length - 1); }
+  else { S.tabs.push({ ws, dirty: false, hist: [], redo: [], view: null, sel: null, dsel: null, selImg: null, cbox: null, dhist: [], dredo: [] }); load(S.tabs.length - 1); }
   S.sideOpen = false; render();
 }
 function tabName(ws) { return ws.kind === 'snip' ? (SNIPS.find((x) => x.id === ws.id) || {}).name || 'Snip' : ws.kind === 'doc' ? ws.name : 'Settings'; }
@@ -1683,6 +1739,7 @@ function markDirty() {
   const sv = $('.saved', $('#ws')); if (sv) { sv.classList.add('dirty'); sv.querySelector('.lbl').textContent = 'Unsaved changes'; }
   const b = $('#wsSave'); if (b) b.disabled = false;
 }
+function pushDocHist() { S.dhist = S.dhist || []; S.dhist.push(clone(S.ws.marks)); if (S.dhist.length > 50) S.dhist.shift(); S.dredo = []; }
 function pushHist() { const s = snipOf(); S.hist.push(clone(s.shapes)); if (S.hist.length > 50) S.hist.shift(); S.redo = []; }
 function snipChanged(full = true) { const s = snipOf(); s.saved = false; markDirty(); if (full) { renderWS(); renderSide(); } else redrawStage(); }
 function copyToast(what) {
@@ -1715,16 +1772,17 @@ document.addEventListener('click', (e) => {
   if (d.aura) { S.aura = d.aura; applyTheme(); renderSide(); return; }
   if (d.tool) { S.tool = d.tool; if (d.tool === 'canvas-snip') toast('Drag a box on the canvas. Esc leaves.'); renderWS(); return; }
   if (d.tabclose !== undefined) { e.stopPropagation(); closeTab(Number(d.tabclose), false); return; }
-  if (d.role) { S.role = d.role; if (S.sel) { pushHist(); snipOf().shapes.find((x) => x.n === S.sel).color = d.role; snipChanged(); } else renderWS(); return; }
+  if (d.role) { S.role = d.role; if (S.sel && !S.selByDraw) { pushHist(); snipOf().shapes.find((x) => x.n === S.sel).color = d.role; snipChanged(); } else renderWS(); return; }
   if (d.tog) { e.stopPropagation(); const [f, n] = d.tog.split(':'); pushHist(); const sh = snipOf().shapes.find((x) => x.n === Number(n)); if (f === 'fill') { const was = sh.fill || sh.type.endsWith('-fill'); sh.type = sh.type.replace('-fill', ''); sh.fill = !was; } else sh[f] = !sh[f]; snipChanged(); return; }
   if (d.sw) { S.sw = Number(d.sw); if (S.sel) { pushHist(); snipOf().shapes.find((x) => x.n === S.sel).sw = S.sw; snipChanged(); } else renderWS(); return; }
   if (d.view) { S.docView = d.view; S.dtool = 'select'; renderWS(); return; }
-  if (d.dtool) { S.dtool = d.dtool; if (d.dtool === 'canvas-snip') toast('Drag a box over the page. Esc cancels.'); renderWS(); return; }
-  if (d.dcolor) { S.color = d.dcolor; if (S.dsel) { S.ws.marks.find((m) => m.n === S.dsel).color = d.dcolor; markDirty(); } renderWS(); return; }
-  if (d.dsel && !e.target.closest('textarea')) { S.dsel = Number(d.dsel); paintPreview(); document.querySelectorAll('#docCallouts .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.dsel) === S.dsel)); return; }
+  if (d.dtool) { S.dtool = d.dtool; if (d.dtool === 'canvas-snip') toast('Drag a box over the visible page. Esc returns to Select.'); renderWS(); return; }
+  if (d.dcolor) { S.dcolor = d.dcolor; if (S.dsel && !S.dselByDraw) { pushDocHist(); S.ws.marks.find((m) => m.n === S.dsel).color = d.dcolor; markDirty(); } renderWS(); return; }
+  if (d.dsw) { S.sw = Number(d.dsw); if (S.dsel) { pushDocHist(); S.ws.marks.find((m) => m.n === S.dsel).sw = S.sw; markDirty(); } renderWS(); return; }
+  if (d.dsel && !e.target.closest('textarea, select')) { S.dselByDraw = false; S.dsel = Number(d.dsel); paintPreview(); document.querySelectorAll('#docCallouts .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.dsel) === S.dsel)); return; }
   if (d.gotoSet) { const el = document.getElementById('set-' + d.gotoSet); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
   if (d.copy) { toast(`${d.copy} copied`); return; }
-  if (d.sel && !e.target.closest('textarea, .hidebtn, .tog, select, input, .grip')) { S.sel = Number(d.sel); redrawStage(); document.querySelectorAll('#calloutList .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.sel) === S.sel)); return; }
+  if (d.sel && !e.target.closest('textarea, .hidebtn, .tog, select, input, .grip')) { S.selByDraw = false; S.sel = Number(d.sel); redrawStage(); document.querySelectorAll('#calloutList .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.sel) === S.sel)); return; }
   if (d.line !== undefined) { const ta = $('#src'); if (ta) { const lines = ta.value.split('\n'); const pos = lines.slice(0, Number(d.line)).join('\n').length + (Number(d.line) ? 1 : 0); ta.focus(); ta.setSelectionRange(pos, pos + (lines[d.line] || '').length); const lh = parseFloat(getComputedStyle(ta).lineHeight) || 20; ta.scrollTop = Math.max(0, d.line * lh - 60); } return; }
   if (d.md !== undefined) { const ta = $('#src'); if (ta) { const s = ta.selectionStart, en = ta.selectionEnd, sel = ta.value.slice(s, en); const ins = d.md === '**' ? `**${sel || 'bold'}**` : d.md === '[](url)' ? `[${sel || 'link'}](url)` : d.md + sel; ta.setRangeText(ins, s, en, 'end'); ta.dispatchEvent(new Event('input', { bubbles: true })); ta.focus(); } return; }
   if (d.insert) {
@@ -1740,6 +1798,9 @@ document.addEventListener('click', (e) => {
     case 'blankOpen': $('#imgFile').click(); return;
     case 'themeBtn': S.pop = !S.pop; renderSide(); return;
     case 'settingsBtn': case 'modePill': openWS({ kind: 'settings' }); return;
+    case 'docCopy': { const v = visibleRect(); if (v) toast(`Copied the visible page and its callouts as a PNG · ${Math.round(v.w * 2)} × ${Math.round(v.h * 2)}`); return; }
+    case 'docUndo': if ((S.dhist || []).length) { S.dredo.push(clone(S.ws.marks)); S.ws.marks = S.dhist.pop(); S.dsel = null; markDirty(); renderWS(); } return;
+    case 'docRedo': if ((S.dredo || []).length) { S.dhist.push(clone(S.ws.marks)); S.ws.marks = S.dredo.pop(); markDirty(); renderWS(); } return;
     case 'blankSnip': $('#newSnip').click(); return;
     case 'newSnip': { const dl = S.delay; if (dl === 'No delay') { toast('Drag a box on your screen. Esc cancels.'); setTimeout(() => newSnip(false), 700); } else { toast(`Collide hides, waits ${dl}, then captures`); setTimeout(() => newSnip(false), 1600); } return; }
     case 'openZip': S.open['z-builder'] = true; S.filter = 'all'; renderSide(); toast('Open: a zip file or a saved markup · builder-v0.1.zip unpacked on the server'); return;
@@ -1786,8 +1847,8 @@ document.addEventListener('change', (e) => {
   const t = e.target;
   if (t.id === 'delay') { S.delay = t.value; return; }
   if (t.id === 'addMode') { S.addMode = t.value; return; }
-  if (t.id === 'annTheme') { pushHist(); snipOf().style = t.value; snipChanged(); renderSide(); return; }
-  if (t.dataset && t.dataset.type) { pushHist(); const sh = snipOf().shapes.find((x) => x.n === Number(t.dataset.type)); const fp0 = fillPct(sh); sh.type = t.value; sh.fill = false; sh.fillPct = t.value === 'rect' || t.value === 'ellipse' ? fp0 : 0; if (t.value === 'point') { sh.x += sh.w / 2; sh.y += sh.h / 2; sh.w = 0; sh.h = 0; } else if (!sh.w) { sh.x -= 40; sh.y -= 25; sh.w = 80; sh.h = 50; } snipChanged(); return; }
+  if (t.dataset && t.dataset.dtype) { pushDocHist(); const m = S.ws.marks.find((x) => x.n === Number(t.dataset.dtype)); m.type = t.value; if (t.value !== 'line') { if (m.w < 0) { m.x += m.w; m.w = -m.w; } if (m.h < 0) { m.y += m.h; m.h = -m.h; } } markDirty(); renderWS(); return; }
+  if (t.dataset && t.dataset.type) { pushHist(); const sh = snipOf().shapes.find((x) => x.n === Number(t.dataset.type)); const fp0 = fillPct(sh); sh.type = t.value; sh.fill = false; sh.fillPct = t.value === 'rect' || t.value === 'ellipse' ? fp0 : 0; if (t.value === 'point') { sh.x += sh.w / 2; sh.y += sh.h / 2; sh.w = 0; sh.h = 0; } else if (t.value !== 'line' && (sh.w < 0 || sh.h < 0)) { if (sh.w < 0) { sh.x += sh.w; sh.w = -sh.w; } if (sh.h < 0) { sh.y += sh.h; sh.h = -sh.h; } } else if (!sh.w) { sh.x -= 40; sh.y -= 25; sh.w = 80; sh.h = 50; } snipChanged(); return; }
   if (t.dataset && t.dataset.fillpct) { snipChanged(); return; }
   if (t.name === 'mode') { S.settings.mode = t.value; renderWS(); return; }
   if (t.id === 'imgFile' && t.files && t.files[0]) {
@@ -1815,15 +1876,17 @@ document.addEventListener('dragend', () => { S.dragN = null; document.querySelec
 /* ---------- Canvas: draw, select, move, note boxes, zoom, pan, canvas snip ---------- */
 function toImage(e) { const svg = $('#zoomer svg'); const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
 
-/* Markdown page: draw, select and move callouts; canvas snip */
+/* Markdown page: draw, select, move and resize callouts; canvas snip inside the visible page */
 document.addEventListener('pointerdown', (e) => {
   if (!S.ws || S.ws.kind !== 'doc' || S.docView !== 'preview' || e.button !== 0) return;
   const pg = e.target.closest('#page'); if (!pg) return;
   const p = pagePoint(e);
   if (S.dtool === 'select') {
+    const hEl = e.target.closest('[data-dmh]');
+    if (hEl) { const m = S.ws.marks.find((x) => x.n === Number(hEl.dataset.dmh)); pushDocHist(); S.ddrag = { kind: 'resize', n: m.n, dir: hEl.dataset.h, p0: p, orig: { x: m.x, y: m.y, w: m.w, h: m.h }, moved: false }; e.preventDefault(); return; }
     const mk = e.target.closest('[data-dmark]'); const n = mk ? Number(mk.dataset.dmark) : null;
     if (n === null) { if (S.dsel) { S.dsel = null; paintPreview(); document.querySelectorAll('#docCallouts .el').forEach((el) => el.classList.remove('sel')); } return; }
-    S.dsel = n; const m = S.ws.marks.find((x) => x.n === n); S.ddrag = { kind: 'move', n, p0: p, orig: { x: m.x, y: m.y }, moved: false };
+    S.dsel = n; S.dselByDraw = false; const m = S.ws.marks.find((x) => x.n === n); pushDocHist(); S.ddrag = { kind: 'move', n, p0: p, orig: { x: m.x, y: m.y }, moved: false };
     paintPreview(); document.querySelectorAll('#docCallouts .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.dsel) === n)); e.preventDefault(); return;
   }
   e.preventDefault();
@@ -1831,27 +1894,36 @@ document.addEventListener('pointerdown', (e) => {
 });
 document.addEventListener('pointermove', (e) => {
   const dr = S.ddrag; if (!dr) return;
-  const p = pagePoint(e);
-  if (dr.kind === 'move') { const m = S.ws.marks.find((x) => x.n === dr.n); m.x = Math.round(dr.orig.x + p.x - dr.p0.x); m.y = Math.round(dr.orig.y + p.y - dr.p0.y); dr.moved = true; paintPreview(); return; }
+  const p = pagePoint(e), dx = p.x - dr.p0.x, dy = p.y - dr.p0.y;
+  if (dr.kind === 'move') { const m = S.ws.marks.find((x) => x.n === dr.n); m.x = Math.round(dr.orig.x + dx); m.y = Math.round(dr.orig.y + dy); dr.moved = true; paintPreview(); return; }
+  if (dr.kind === 'resize') { const m = S.ws.marks.find((x) => x.n === dr.n); const r = m.type === 'line' && !dr.dir.startsWith('p') ? dr.orig : resizeBox(dr.orig, dr.dir, dx, dy, e.shiftKey); Object.assign(m, { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.w), h: Math.round(r.h) }); dr.moved = true; paintPreview(); return; }
   dr.p1 = p;
-  const x = Math.min(dr.p0.x, p.x), y = Math.min(dr.p0.y, p.y), w = Math.abs(p.x - dr.p0.x), h = Math.abs(p.y - dr.p0.y);
   const live = $('#docLive'); if (!live) return;
   if (dr.kind === 'csnip') {
-    live.innerHTML = `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="rgba(76,135,196,.08)" stroke="var(--t1)" stroke-dasharray="5 4"/>`;
+    const r = clampToVisible({ x: Math.min(dr.p0.x, p.x), y: Math.min(dr.p0.y, p.y), w: Math.abs(dx), h: Math.abs(dy) });
+    live.innerHTML = `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="rgba(30,136,229,.08)" stroke="var(--t1)" stroke-dasharray="5 4"/>`;
     let ro = $('#readout'); if (!ro) { ro = document.createElement('div'); ro.id = 'readout'; ro.className = 'readout'; document.body.appendChild(ro); ro.style.position = 'fixed'; }
-    ro.style.left = (e.clientX + 12) + 'px'; ro.style.top = (e.clientY + 12) + 'px'; ro.textContent = `${Math.round(w * 2)} × ${Math.round(h * 2)}`;
-  } else live.innerHTML = S.dtool === 'box' ? `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="none" stroke="${S.color}" stroke-width="2.5"/>` : `<ellipse cx="${x + w / 2}" cy="${y + h / 2}" rx="${w / 2}" ry="${h / 2}" fill="none" stroke="${S.color}" stroke-width="2.5"/>`;
+    ro.style.left = (e.clientX + 12) + 'px'; ro.style.top = (e.clientY + 12) + 'px'; ro.textContent = `${Math.round(r.w * 2)} × ${Math.round(r.h * 2)}`;
+    return;
+  }
+  const c = MAT[S.dcolor || DEFAULT_COLOR][1];
+  const m = S.dtool === 'line' ? { type: 'line', x: dr.p0.x, y: dr.p0.y, w: dx, h: dy } : { type: S.dtool, x: Math.min(dr.p0.x, p.x), y: Math.min(dr.p0.y, p.y), w: Math.abs(dx), h: Math.abs(dy) };
+  live.innerHTML = docShapeSVG(m, c, S.sw);
 });
 document.addEventListener('pointerup', () => {
   const dr = S.ddrag; if (!dr) return; S.ddrag = null;
   const ro = $('#readout'); if (ro) ro.remove();
-  if (dr.kind === 'move') { if (dr.moved) markDirty(); return; }
-  let x = Math.min(dr.p0.x, dr.p1.x), y = Math.min(dr.p0.y, dr.p1.y), w = Math.abs(dr.p1.x - dr.p0.x), h = Math.abs(dr.p1.y - dr.p0.y);
+  if (dr.kind === 'move' || dr.kind === 'resize') { if (dr.moved) { markDirty(); renderWS(); } else S.dhist.pop(); return; }
+  const dx = dr.p1.x - dr.p0.x, dy = dr.p1.y - dr.p0.y;
+  let x = Math.min(dr.p0.x, dr.p1.x), y = Math.min(dr.p0.y, dr.p1.y), w = Math.abs(dx), h = Math.abs(dy);
   if (dr.kind === 'csnip') { if (w > 8 && h > 8) saveDocMarkup({ x, y, w, h }); paintPreview(); return; }
-  if (w < 10 || h < 10) { w = S.dtool === 'box' ? 140 : 90; h = S.dtool === 'box' ? 40 : 60; x -= w / 2; y -= h / 2; }
+  if (S.dtool === 'line') { x = dr.p0.x; y = dr.p0.y; w = dx; h = dy; if (Math.hypot(w, h) < 10) { w = 140; h = 0; } }
+  else if (w < 10 || h < 10) { w = S.dtool === 'box' ? 140 : S.dtool === 'cross' ? 28 : 90; h = S.dtool === 'box' ? 40 : S.dtool === 'cross' ? 28 : 60; x -= w / 2; y -= h / 2; }
+  pushDocHist();
   const marks = S.ws.marks; const n = marks.length ? Math.max(...marks.map((m) => m.n)) + 1 : 1;
-  marks.push({ n, type: S.dtool, x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h), color: S.color, note: '' });
-  S.dsel = n; markDirty(); renderWS();
+  marks.push({ n, type: S.dtool, x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h), color: S.dcolor || DEFAULT_COLOR, sw: S.sw, note: '' });
+  S.dsel = n; S.dselByDraw = true; S.dcolor = null; // deselect the colour after a shape is drawn
+  markDirty(); renderWS();
   const ta = $(`[data-dnote="${n}"]`); if (ta) ta.focus();
 });
 let spaceDown = false;
@@ -1878,14 +1950,14 @@ document.addEventListener('pointerdown', (e) => {
     if (imgEl && !boxEl && !shEl) { const i = Number(imgEl.dataset.img), im = s.images[i]; S.selImg = i; S.sel = null; pushHist(); S.drag = { kind: 'img', i, p0: p, orig: { x: im.x, y: im.y }, moved: false }; stage.setPointerCapture(e.pointerId); redrawStage(); return; }
     S.selImg = null;
     const n = boxEl ? Number(boxEl.dataset.box) : shEl ? Number(shEl.dataset.shape) : null;
-    S.sel = n; document.querySelectorAll('#calloutList .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.sel) === n));
+    S.sel = n; S.selByDraw = false; document.querySelectorAll('#calloutList .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.sel) === n));
     if (n) { const sh = s.shapes.find((x) => x.n === n); pushHist(); S.drag = { kind: boxEl ? 'box' : 'move', n, p0: p, orig: clone(sh), box0: boxEl ? clone(noteBoxes(s)[n].box) : null, moved: false }; stage.setPointerCapture(e.pointerId); }
     redrawStage(); return;
   }
   // Drawing tools
   pushHist();
   const n = s.shapes.length ? Math.max(...s.shapes.map((c) => c.n)) + 1 : 1;
-  const sh = { n, type: S.tool, x: Math.round(p.x), y: Math.round(p.y), w: 0, h: 0, color: S.role, sw: S.sw, note: '' };
+  const sh = { n, type: S.tool, x: Math.round(p.x), y: Math.round(p.y), w: 0, h: 0, color: S.role || DEFAULT_COLOR, sw: S.sw, note: '' };
   s.shapes.push(sh); S.sel = n;
   if (S.tool === 'point') { snipChanged(); const ta = $(`[data-note="${n}"]`); if (ta) ta.focus(); return; }
   S.drag = { kind: 'draw', n, p0: p }; stage.setPointerCapture(e.pointerId); redrawStage();
@@ -1904,7 +1976,8 @@ document.addEventListener('pointermove', (e) => {
   }
   const sh = s.shapes.find((x) => x.n === S.drag.n) || {};
   const dx = p.x - S.drag.p0.x, dy = p.y - S.drag.p0.y;
-  if (S.drag.kind === 'draw') { sh.x = Math.round(Math.min(S.drag.p0.x, p.x)); sh.y = Math.round(Math.min(S.drag.p0.y, p.y)); sh.w = Math.round(Math.abs(dx)); sh.h = Math.round(Math.abs(dy)); }
+  if (S.drag.kind === 'draw' && sh.type === 'line') { sh.x = Math.round(S.drag.p0.x); sh.y = Math.round(S.drag.p0.y); sh.w = Math.round(dx); sh.h = Math.round(dy); }
+  else if (S.drag.kind === 'draw') { sh.x = Math.round(Math.min(S.drag.p0.x, p.x)); sh.y = Math.round(Math.min(S.drag.p0.y, p.y)); sh.w = Math.round(Math.abs(dx)); sh.h = Math.round(Math.abs(dy)); }
   else if (S.drag.kind === 'move') { sh.x = Math.round(S.drag.orig.x + dx); sh.y = Math.round(S.drag.orig.y + dy); S.drag.moved = true; }
   else if (S.drag.kind === 'resize') {
     const o = S.drag.orig, dir = S.drag.dir; S.drag.moved = true;
@@ -1916,15 +1989,8 @@ document.addEventListener('pointermove', (e) => {
       im.w = Math.round(o.w * k); im.h = Math.round(o.h * k);
       im.x = dir.includes('w') ? o.x + o.w - im.w : o.x; im.y = dir.includes('n') ? o.y + o.h - im.h : o.y;
     } else {
-      // Shapes: free resize from any edge or corner; Shift keeps the aspect; dragging past the far edge flips.
-      let x = o.x, y = o.y, w = o.w, h = o.h;
-      if (dir.includes('w')) { x = o.x + dx; w = o.w - dx; }
-      if (dir.includes('e')) w = o.w + dx;
-      if (dir.includes('n')) { y = o.y + dy; h = o.h - dy; }
-      if (dir.includes('s')) h = o.h + dy;
-      if (e.shiftKey && dir.length === 2 && o.w && o.h) { const k = Math.max(Math.abs(w) / o.w, Math.abs(h) / o.h); const nw = o.w * k * Math.sign(w || 1), nh = o.h * k * Math.sign(h || 1); if (dir.includes('w')) x = o.x + o.w - nw; if (dir.includes('n')) y = o.y + o.h - nh; w = nw; h = nh; }
-      if (w < 0) { x += w; w = -w; } if (h < 0) { y += h; h = -h; }
-      Object.assign(sh, { x: Math.round(x), y: Math.round(y), w: Math.max(4, Math.round(w)), h: Math.max(4, Math.round(h)) });
+      const r = resizeBox(o, dir, dx, dy, e.shiftKey);
+      Object.assign(sh, { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.w), h: Math.round(r.h) });
     }
   }
   else if (S.drag.kind === 'img') { const im = s.images[S.drag.i]; im.x = Math.round(S.drag.orig.x + dx); im.y = Math.round(S.drag.orig.y + dy); S.drag.moved = true; }
@@ -1939,7 +2005,11 @@ document.addEventListener('pointerup', () => {
   if (dr.kind === 'csnip') { const ro = $('#readout'); if (ro) ro.remove(); const w = Math.abs(dr.x1 - dr.x0), h = Math.abs(dr.y1 - dr.y0); if (w > 6 && h > 6) newSnip(true); else $('#liveRect').innerHTML = ''; return; }
   if (dr.kind === 'img' || dr.kind === 'resize') { if (dr.moved) snipChanged(); else S.hist.pop(); return; }
   const s = snipOf(), sh = s.shapes.find((x) => x.n === dr.n);
-  if (dr.kind === 'draw') { if (sh.w < 8 || sh.h < 8) { sh.w = sh.type === 'cross' ? 28 : 80; sh.h = sh.type === 'cross' ? 28 : 50; sh.x -= sh.w / 2; sh.y -= sh.h / 2; } snipChanged(); const ta = $(`[data-note="${dr.n}"]`); if (ta) ta.focus(); return; }
+  if (dr.kind === 'draw') {
+    if (sh.type === 'line') { if (Math.hypot(sh.w, sh.h) < 8) { sh.w = 100; sh.h = -30; } }
+    else if (sh.w < 8 || sh.h < 8) { sh.w = sh.type === 'cross' ? 28 : 80; sh.h = sh.type === 'cross' ? 28 : 50; sh.x -= sh.w / 2; sh.y -= sh.h / 2; }
+    S.role = null; S.selByDraw = true; // Grant: deselect the colour after a shape is drawn, so the next colour can be picked
+    snipChanged(); const ta = $(`[data-note="${dr.n}"]`); if (ta) ta.focus(); return; }
   if (dr.moved) snipChanged(); else S.hist.pop();
 });
 document.addEventListener('wheel', (e) => {
@@ -1970,16 +2040,21 @@ document.addEventListener('keydown', (e) => {
   const typing = /TEXTAREA|INPUT|SELECT/.test(e.target.tagName);
   if (e.key === ' ' && !typing) { spaceDown = true; if (e.target.closest && !e.target.closest('button')) e.preventDefault(); }
   if (e.key === 'Escape') {
-    if (S.tool === 'canvas-snip') { S.tool = 'select'; renderWS(); return; }
-    if (S.ws && S.ws.kind === 'doc' && S.dtool !== 'select') { S.dtool = 'select'; renderWS(); return; }
-    if (S.picker) { S.picker = false; renderWS(); } else if (S.pop) { S.pop = false; renderSide(); } else if (S.sideOpen) { S.sideOpen = false; layout(); }
+    // Esc goes to the Select tool (Grant 2026-11-15); while typing a note it also leaves the note box.
+    if (S.picker) { S.picker = false; renderWS(); return; }
+    if (S.ws && S.ws.kind === 'snip' && (S.tool !== 'select' || typing)) { if (S.drag && S.drag.kind === 'draw') { S.drag = null; S.hist.length && (snipOf().shapes = S.hist.pop()); } S.tool = 'select'; renderWS(); return; }
+    if (S.ws && S.ws.kind === 'doc' && S.docView === 'preview' && (S.dtool !== 'select' || (typing && e.target.dataset.dnote !== undefined))) { S.ddrag = null; const r = $('#readout'); if (r) r.remove(); S.dtool = 'select'; renderWS(); return; }
+    if (S.pop) { S.picker = false; renderWS(); } else if (S.pop) { S.pop = false; renderSide(); } else if (S.sideOpen) { S.sideOpen = false; layout(); }
   }
   const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
   if (ctrl && e.altKey && k === 's') { e.preventDefault(); $('#newSnip').click(); return; }
   if (ctrl && k === 's' && S.ws) { e.preventDefault(); if (S.dirty) { save(); renderWS(); renderSide(); } return; }
   if (S.ws && S.ws.kind === 'doc' && S.docView === 'preview' && !typing) {
-    if ((e.key === 'Delete' || e.key === 'Backspace') && S.dsel) { S.ws.marks = S.ws.marks.filter((m) => m.n !== S.dsel); S.dsel = null; markDirty(); renderWS(); return; }
-    const dm = { v: 'select', b: 'box', c: 'circle' }; if (!ctrl && dm[k]) { S.dtool = dm[k]; renderWS(); return; }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && S.dsel) { pushDocHist(); S.ws.marks = S.ws.marks.filter((m) => m.n !== S.dsel); S.dsel = null; markDirty(); renderWS(); return; }
+    if (ctrl && k === 'z') { e.preventDefault(); $('#docUndo').click(); return; }
+    if (ctrl && k === 'y') { e.preventDefault(); $('#docRedo').click(); return; }
+    if (ctrl && e.shiftKey && k === 'c') { e.preventDefault(); $('#docCopy').click(); return; }
+    const dm = { v: 'select', b: 'box', c: 'circle', l: 'line', x: 'cross' }; if (!ctrl && dm[k]) { S.dtool = dm[k]; renderWS(); return; }
   }
   if (!S.ws || S.ws.kind !== 'snip' || typing) return;
   if (ctrl && e.shiftKey && k === 'c') { e.preventDefault(); copyToast('Copied'); return; }
@@ -1988,7 +2063,7 @@ document.addEventListener('keydown', (e) => {
   if (ctrl && k === '0') { e.preventDefault(); fitView(); return; }
   if ((e.key === 'Delete' || e.key === 'Backspace') && S.selImg != null && !S.sel) { pushHist(); snipOf().images.splice(S.selImg, 1); S.selImg = null; snipChanged(); return; }
   if ((e.key === 'Delete' || e.key === 'Backspace') && S.sel) { pushHist(); const s = snipOf(); s.shapes = s.shapes.filter((x) => x.n !== S.sel); S.sel = null; snipChanged(); return; }
-  const map = { v: 'select', r: 'rect', o: 'ellipse', x: 'cross', p: 'point' };
+  const map = { v: 'select', r: 'rect', o: 'ellipse', l: 'line', x: 'cross', p: 'point' };
   if (!ctrl && map[k]) { S.tool = map[k]; renderWS(); }
 });
 document.addEventListener('keyup', (e) => { if (e.key === ' ') spaceDown = false; });
