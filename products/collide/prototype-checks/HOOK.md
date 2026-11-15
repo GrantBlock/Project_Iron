@@ -4,7 +4,7 @@ RUN3 task T30. The prototype (`../layout-prototype.html`) and the app (`../app/`
 
 - **Read-only.** It returns a fresh plain JSON object each call and changes nothing.
 - **Prototype:** one `<script>` block at the end of `layout-prototype.html`. It reads the prototype's state; no prototype behaviour changed (the 15 scripts in this folder print the same results as before).
-- **App:** `app/src/editor/refState.ts` builds it from the app's real state; `EditorShell.tsx` exposes it. Concepts the app does not have yet are `null`, `[]` or `false`.
+- **App:** `app/src/editor/refState.ts` builds it from the app's real state; `EditorShell.tsx` exposes it, always. Concepts the app does not have yet are `null` or `[]`.
 - **Ids are opaque.** Tab and item ids differ between the prototype and the app. Compare them inside one run (for example `selection` against `items[].id`); never write one into a spec.
 
 ## Shape (version 1)
@@ -45,4 +45,16 @@ Recents and the file tree, the Markdown source text, toasts, the status bar, the
 
 ## The app today (before T31 to T34)
 
-The app has one image, no tabs and one editor. Until the layout and the engine are built it reports: `view` `"blank"` or `"snip"`; `tabs` one entry while an image is open (`dirty` always `false`: the app does not track unsaved changes yet); `mode`, `aura`, `bubble`, `points` and `splash` `null`; `theme` `"dark"`; `sidebar.addMode` `"Current"`, `sidebar.collapsed` `false`; item types and colours as the app stores them (hex colours, `callout`, `highlight`, `arrow`, `text`); `hidden.bubble` from the app's "Hide #" toggle. The task that builds each part moves its fields to the prototype's values.
+The app has one image, no tabs and one editor. A concept the app does not have yet is `null` or `[]`. Until the layout and the engine are built it reports:
+
+| Field | The app today |
+| --- | --- |
+| `view`, `editor` | `"blank"` / `null`, or `"snip"` / `"snip"` while an image is open |
+| `tabs` | `[]` (no tabs) |
+| `mode`, `theme`, `aura`, `splash` | `null` |
+| `activeTool`, `color`, `stroke` | the toolbar's values as the app stores them (the colour is a design-system token), `null` on the empty canvas |
+| `items` | the shapes front to back; `type` and `color` as stored (`callout`, `highlight`, `arrow`, `text`; hex colours); `number` from the callout number; `hidden.bubble` from "Hide #"; `fill` 0 or 100; `points` and `bubble` `null` |
+| `zoom` | the status bar's percent and whether the view is fitted |
+| `sidebar` | `delay` in the prototype's words; `addMode` and `collapsed` `null` |
+
+The task that builds each part moves its fields to the prototype's values. The app's `window.__collide` also has older helpers (`openImage`, `seedShape`, `getState`, `getDoc`, ...) used by `app/e2e/`; reference specs never call them.
