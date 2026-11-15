@@ -811,9 +811,10 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
 .docsplit.mode-preview .page { width: 680px; transform-origin: 0 0; padding: 28px 34px 40px; background: var(--raised); border-radius: 6px; box-shadow: var(--shadow); }
 .docsplit.mode-preview .page h1 { margin-top: 0; }
 #docOverlay { position: absolute; left: 0; top: 0; width: 100%; pointer-events: none; overflow: visible; }
-#docOverlay [data-dmark] { pointer-events: all; cursor: move; }
+#docOverlay [data-shape], #docOverlay [data-box] { pointer-events: all; }
 .preview.drawing #docOverlay { pointer-events: all; cursor: crosshair; }
-.preview.drawing #docOverlay [data-dmark] { pointer-events: none; }
+.preview.drawing #docOverlay [data-shape], .preview.drawing #docOverlay [data-box] { pointer-events: none; }
+.typesel.static { display: inline-flex; align-items: center; padding: 0 8px; }
 .snapdoc { padding: 28px 34px 40px; background: #FFFFFF; color: #09090B; font: 400 13.5px/1.45 'Geist', Arial, sans-serif; }
 .snapdoc h1, .snapdoc h2, .snapdoc h3 { letter-spacing: -.02em; font-weight: 600; line-height: 1.15; margin: 18px 0 8px; }
 .snapdoc h1 { font-size: 24px; margin-top: 0; } .snapdoc h2 { font-size: 17px; } .snapdoc h3 { font-size: 14.5px; }
@@ -940,6 +941,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
     <li><b>Home is a blank canvas</b> with Recents on the left: snips, zip files and their folder trees, tags. Hover a snip or zip and click the bin (or press Delete) to delete it; a splash screen asks first.</li>
     <li><b>Tabs on the canvas</b> (Grant 2026-11-15): each open snip, file or Settings is a tab with a dot: amber = changed, green = saved. Each keeps its own undo and zoom. Ctrl+W or × closes, Ctrl+Tab switches, middle-click closes.</li>
     <li><b>Closing with unsaved changes</b> shows a splash screen: Save and close, Close without saving, Cancel.</li>
+    <li><b>Markdown markup = image markup</b> (Grant 2026-11-15): the same tools, note bubbles with angled leaders (outside the page, stacking and snapping), and the same callout cards. New tools go to both.</li>
     <li><b>Markdown files:</b> Edit (Markdown with a live preview) or Preview (mark up), switched in the header; "● unsaved" beside the name; Save; full width (square) hides the sidebar and callouts; ^ hides the toolbar. Edit toolbar: Heading ▾, List, Table, Label, Num list, Bold, Link, Insert snip; tables show in the preview. The markup toolbar uses the Snip layout: Select, Box, Circle, Line, X mark, Point, 4 colours, stroke 2/3/5; on the right undo/redo, Insert snip, Copy PNG and Export (saves the visible page as a markup). Canvas snip is removed. Resize handles and Delete work as in Snip. <b>Copy PNG</b> copies the visible page with its callouts; Canvas snip saves a marked-up area as a markup. Both stay inside the visible area.</li>
     <li><b>Collapse</b> moves Recents to the right. Windowed: the window shrinks to Recents; a new or opened snip adds a canvas and fits to it. Maximized: blank canvas. Try both with the "Prototype · window" switch.</li>
     <li><b>Storage on the server PC</b>, with automatic deletion after [number of files]. Settings → Storage.</li>
@@ -955,6 +957,8 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
     <tr><td>Print area</td><td>Dashed frame with corner marks and its size: the image, added images, shapes and shown bubbles, plus a 12 px margin when anything goes past the image (was 24 px). Notes can go anywhere, also over the frame; it follows them. Copy takes it; Fit (Ctrl+0) zooms to it</td></tr>
     <tr><td>Bubble stacking</td><td>When bubbles would overlap, one sits to the right, bottom, top or left of the other (closest free spot off the image). Drop a bubble near another and it snaps beside it</td></tr>
     <tr><td>Esc</td><td>Returns to the Select tool in Snip and in the Markdown page (also leaves a note box you are typing in). A click outside the canvas or page (not the toolbar) does the same</td></tr>
+    <tr><td>Pen and Highlighter</td><td>Both editors (N, H): freehand strokes; move and resize like any shape; the highlighter is a wide translucent stroke in the chosen colour</td></tr>
+    <tr><td>Paste an image (Ctrl+V)</td><td>Snip: added beside the image like Add snip. Markdown: saved to the zip's images/ and linked at the cursor (end of file in Preview). Nothing open: opens as a new snip. Text pastes are unchanged</td></tr>
     <tr><td>Line tool</td><td>Snip and Markdown toolbars (L); drag its ends to change it; arrows point to its middle</td></tr>
     <tr><td>Resize shapes</td><td>8 handles on a selected shape (corners and edges), sized for the zoom; Shift on a corner keeps the aspect. Added images: corner handles, aspect always locked</td></tr>
     <tr><td>4 colours, stroke 2/3/5, undo/redo (50 steps), Delete</td><td>The same <b>4 material colours</b> in every theme (red, blue, yellow, gray) in a white box; note bubbles are white boxes. After a shape is drawn no colour stays selected; picking a drawing tool again (for example Select, then Circle) brings back the last colour and line thickness. Snip and Markdown each remember their own, also after a reload</td></tr>
@@ -1031,6 +1035,7 @@ Object.assign(I, {
   github: '<path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.1-1.3-.3-2.5-1-3.5.3-1.2.3-2.4 0-3.5 0 0-1 0-3 1.5a10.6 10.6 0 0 0-6 0C7 2 6 2 6 2c-.3 1.1-.3 2.3 0 3.5A5.4 5.4 0 0 0 5 9c0 3.5 3 5.5 6 5.5-.4.5-.8 1.1-1 1.7-.2.6-.2 1.2-.1 1.8v4M9 18c-4.5 2-5-2-7-2"/>',
   server: '<rect x="2" y="3" width="20" height="8" rx="2"/><rect x="2" y="13" width="20" height="8" rx="2"/><path d="M6 7h.01M6 17h.01"/>',
   line: '<path d="M5 19 19 5"/>',
+  highlighter: '<path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/>',
   table: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16M15 4v16"/>',
   tag: '<path d="M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.7 8.7a2.4 2.4 0 0 0 3.4 0l6.6-6.6a2.4 2.4 0 0 0 0-3.4z"/><circle cx="7.5" cy="7.5" r="1"/>',
   listNum: '<path d="M10 6h11M10 12h11M10 18h11M4 6h1v4M4 10h2M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/>',
@@ -1054,6 +1059,10 @@ const clone = (o) => JSON.parse(JSON.stringify(o));
 /* ---------- Example data ---------- */
 const TYPE_LABEL = { rect: 'Rectangle', ellipse: 'Ellipse', 'rect-fill': 'Rectangle', 'ellipse-fill': 'Ellipse', cross: 'X mark', point: 'Point' };
 const SHAPE_TYPES = ['rect', 'ellipse', 'line', 'cross', 'point'];
+/* One tool list for Snip and the Markdown page (Grant 2026-11-15: add tools to both going forward). */
+const TOOLS_ALL = [['select', 'pointer', 'Select', 'V'], ['rect', 'square', 'Rectangle', 'R'], ['ellipse', 'circle', 'Ellipse', 'O'], ['line', 'line', 'Line', 'L'], ['cross', 'cross', 'X mark', 'X'], ['point', 'dot', 'Point', 'P'], ['pen', 'pen', 'Pen', 'N'], ['hl', 'highlighter', 'Highlighter', 'H']];
+const TOOL_KEYS_ALL = { v: 'select', r: 'rect', o: 'ellipse', l: 'line', x: 'cross', p: 'point', n: 'pen', h: 'hl' };
+TYPE_LABEL.pen = 'Pen'; TYPE_LABEL.hl = 'Highlighter';
 TYPE_LABEL.line = 'Line';
 const SIG = '#FF3D1F', STEEL = '#4C87C4', AMBER = '#E3A73A', INK50 = '#F3F2EF';
 /* Annotations and note bubbles use an Aura theme (Grant 2026-11-15). Colours are stored as roles, so changing the theme recolours the markup. */
@@ -1117,7 +1126,7 @@ const ZIPS = [
       { name: 'CLAUDE.md', type: 'md', text: '# Working rules\n\n- Direct, concise, structured.\n- Mark assumptions (A) and placeholders [brackets].\n' },
       { name: 'design', kids: [
         { name: 'specs', kids: [
-          { name: 'P06-Project-Workspace-Spec.md', type: 'md', text: P06, marks: [ { n: 1, type: 'box', x: 26, y: 132, w: 628, h: 30, color: 'red', note: 'Add Uploads to this list.' }, { n: 2, type: 'circle', x: 210, y: 236, w: 150, h: 46, color: 'blue', note: 'Name the session panel.' } ] },
+          { name: 'P06-Project-Workspace-Spec.md', type: 'md', text: P06, marks: [ { n: 1, type: 'rect', x: 26, y: 132, w: 628, h: 30, sw: 3, color: 'red', note: 'Add Uploads to this list.' }, { n: 2, type: 'ellipse', x: 210, y: 236, w: 150, h: 46, sw: 3, color: 'blue', note: 'Name the session panel.' } ] },
           { name: 'P08-3D-Designer-Spec.md', type: 'md', text: '# P08 3D Designer Spec\n\n## 1 Purpose\n\n[placeholder]\n' },
         ] },
         { name: 'exports', kids: [ { name: 'P06.png', type: 'image' }, { name: 'P08.png', type: 'image' } ] },
@@ -1155,7 +1164,7 @@ const ih = (s) => Math.round(IW * s.h / s.w);
 const NOTE_W = 150, NOTE_GAP = 40, NOTE_TILT = 14, NOTE_STACK = 6, NOTE_PAD = 6, BADGE = 16, LINE = 14, CHARS = 22;
 function wrap(t) { const words = String(t).split(/\s+/).filter(Boolean); const out = []; let cur = ''; for (const w of words) { if ((cur + ' ' + w).trim().length > CHARS) { if (cur) out.push(cur); cur = w; } else cur = (cur + ' ' + w).trim(); } if (cur) out.push(cur); return out; }
 function noteBoxes(s) {
-  const H = ih(s), taken = [], out = {};
+  const W = s.W || IW, H = s.H || ih(s), taken = [], out = {};
   for (const sh of s.shapes) {
     const lines = sh.note && !sh.hideText ? wrap(sh.note) : [];
     const w = lines.length ? NOTE_W : NOTE_PAD * 2 + BADGE;
@@ -1164,15 +1173,15 @@ function noteBoxes(s) {
     let box, d = null;
     if (sh.box) box = { ...sh.box, w, h };
     else {
-      d = [['left', c.x], ['right', IW - c.x], ['top', c.y], ['bottom', H - c.y]].reduce((a, b) => (b[1] < a[1] ? b : a))[0];
+      d = [['left', c.x], ['right', W - c.x], ['top', c.y], ['bottom', H - c.y]].reduce((a, b) => (b[1] < a[1] ? b : a))[0];
       // Draft: every auto-placed box sits NOTE_TILT off the shape's centre line, so its arrow starts at a slight angle (about 20°).
-      box = d === 'left' ? { x: -NOTE_GAP - w, y: c.y - h / 2 - NOTE_TILT } : d === 'right' ? { x: IW + NOTE_GAP, y: c.y - h / 2 - NOTE_TILT } : d === 'top' ? { x: c.x - w / 2 + NOTE_TILT, y: -NOTE_GAP - h } : { x: c.x - w / 2 + NOTE_TILT, y: H + NOTE_GAP };
+      box = d === 'left' ? { x: -NOTE_GAP - w, y: c.y - h / 2 - NOTE_TILT } : d === 'right' ? { x: W + NOTE_GAP, y: c.y - h / 2 - NOTE_TILT } : d === 'top' ? { x: c.x - w / 2 + NOTE_TILT, y: -NOTE_GAP - h } : { x: c.x - w / 2 + NOTE_TILT, y: H + NOTE_GAP };
       box.w = w; box.h = h;
       const vert = d === 'left' || d === 'right';
       // Stacking (Grant 2026-11-15): a bubble that would overlap another can sit to its right, bottom, top or left.
       // Free spots off the image win; among them, the one closest to the shape.
       const hits = (b) => taken.find((t) => b.x < t.x + t.w + NOTE_STACK && t.x < b.x + b.w + NOTE_STACK && b.y < t.y + t.h + NOTE_STACK && t.y < b.y + b.h + NOTE_STACK);
-      const onImage = (b) => b.x < IW && b.x + b.w > 0 && b.y < H && b.y + b.h > 0;
+      const onImage = (b) => b.x < W && b.x + b.w > 0 && b.y < H && b.y + b.h > 0;
       for (let i = 0; i < 40; i++) {
         const hit = hits(box);
         if (!hit) break;
@@ -1255,17 +1264,20 @@ function shapeSVG(sh, sel, s, mode = 'full') {
   else if (type === 'ellipse') g = `<ellipse cx="${sh.x + sh.w / 2}" cy="${sh.y + sh.h / 2}" rx="${sh.w / 2}" ry="${sh.h / 2}" ${fill} ${st}/>`;
   else if (type === 'cross') g = `<path d="M${sh.x} ${sh.y}l${sh.w} ${sh.h}M${sh.x + sh.w} ${sh.y}l${-sh.w} ${sh.h}" ${st} stroke-linecap="round"/>`;
   else if (type === 'line') g = `<line x1="${sh.x}" y1="${sh.y}" x2="${sh.x + sh.w}" y2="${sh.y + sh.h}" ${st} stroke-linecap="round"/>`;
+  else if (type === 'pen') g = `<path d="${penPath(sh)}" fill="none" ${st} stroke-linecap="round" stroke-linejoin="round"/>`;
+  else if (type === 'hl') g = sh.hideOutline && mode !== 'full' ? '' : `<path d="${penPath(sh)}" fill="none" stroke="${c}" stroke-width="${hlWidth(sh)}" stroke-opacity="${sh.hideOutline ? 0.15 : 0.38}" stroke-linecap="round" stroke-linejoin="round" style="mix-blend-mode:multiply"/>`;
   else g = `<circle cx="${sh.x}" cy="${sh.y}" r="${3 + sh.sw}" fill="${c}" ${sh.hideOutline ? 'fill-opacity=".35"' : ''} stroke="${pal(s).f1}" stroke-width="1.5"/>`;
-  const hit = type === 'line' ? `<line x1="${sh.x}" y1="${sh.y}" x2="${sh.x + sh.w}" y2="${sh.y + sh.h}" stroke="transparent" stroke-width="14"/>` : type === 'point' ? `<circle cx="${sh.x}" cy="${sh.y}" r="12" fill="transparent"/>` : `<rect x="${sh.x - 4}" y="${sh.y - 4}" width="${sh.w + 8}" height="${sh.h + 8}" fill="transparent"/>`;
+  const hit = type === 'pen' || type === 'hl' ? `<path d="${penPath(sh)}" fill="none" stroke="transparent" stroke-width="${Math.max(14, type === 'hl' ? hlWidth(sh) : 0)}" stroke-linecap="round"/>` : type === 'line' ? `<line x1="${sh.x}" y1="${sh.y}" x2="${sh.x + sh.w}" y2="${sh.y + sh.h}" stroke="transparent" stroke-width="14"/>` : type === 'point' ? `<circle cx="${sh.x}" cy="${sh.y}" r="12" fill="transparent"/>` : `<rect x="${sh.x - 4}" y="${sh.y - 4}" width="${sh.w + 8}" height="${sh.h + 8}" fill="transparent"/>`;
   let selg = '';
   if (sel) {
     const b = type === 'point' ? { x: sh.x - 10, y: sh.y - 10, w: 20, h: 20 } : { x: sh.x - 3, y: sh.y - 3, w: sh.w + 6, h: sh.h + 6 };
     selg = type === 'line' ? handlesSVG({ x: sh.x, y: sh.y, w: sh.w, h: sh.h }, ['p1', 'p2'], `data-hs="${sh.n}"`)
-      : `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="none" stroke="#fff" stroke-dasharray="4 3" stroke-width="1"/>` +
+      : `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="none" stroke="${S.ws && S.ws.kind === 'doc' ? '#1F1F1F' : '#fff'}" stroke-dasharray="4 3" stroke-width="1"/>` +
       (type === 'point' ? '' : handlesSVG({ x: sh.x, y: sh.y, w: sh.w, h: sh.h }, HANDLE_DIRS, `data-hs="${sh.n}"`));
   }
   if (sh.hideOutline && mode !== 'full' && (type === 'cross' || type === 'point')) g = '';
-  return `<g data-shape="${sh.n}" style="cursor:${S.tool === 'select' ? 'move' : 'inherit'}">${g}${hit}${selg}</g>`;
+  const curTool = S.ws && S.ws.kind === 'doc' ? S.dtool : S.tool;
+  return `<g data-shape="${sh.n}" style="cursor:${curTool === 'select' ? 'move' : 'inherit'}">${g}${hit}${selg}</g>`;
 }
 function noteSVG(sh, nb, sel, s) {
   const { box, lines, from, to } = nb;
@@ -1284,8 +1296,12 @@ function markers(s) {
 /* Images added with Add snip sit on the canvas over the first image; drag them with Select. */
 const HANDLE_DIRS = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
 /** Handles at a box: all 8 for shapes, corners only for images (aspect locked). Sized for the current zoom. */
+const penPath = (sh) => 'M' + (sh.pts || [[sh.x, sh.y]]).map((q) => q[0] + ' ' + q[1]).join('L');
+const hlWidth = (sh) => (sh.sw || 3) * 4 + 6;
+/** Keep a freehand stroke's box in step with its points. */
+function penBox(sh) { const xs = sh.pts.map((q) => q[0]), ys = sh.pts.map((q) => q[1]); sh.x = Math.min(...xs); sh.y = Math.min(...ys); sh.w = Math.max(...xs) - sh.x; sh.h = Math.max(...ys) - sh.y; }
 function handlesSVG(b, dirs, attr, k) {
-  const hs = 10 / (k || (S.view && S.view.k) || 1);
+  const hs = 10 / (k || S._hk || (S.view && S.view.k) || 1);
   const pos = { nw: [b.x, b.y], n: [b.x + b.w / 2, b.y], ne: [b.x + b.w, b.y], e: [b.x + b.w, b.y + b.h / 2], se: [b.x + b.w, b.y + b.h], s: [b.x + b.w / 2, b.y + b.h], sw: [b.x, b.y + b.h], w: [b.x, b.y + b.h / 2], p1: [b.x, b.y], p2: [b.x + b.w, b.y + b.h] };
   return dirs.map((d) => `<rect ${attr} data-h="${d}" x="${pos[d][0] - hs / 2}" y="${pos[d][1] - hs / 2}" width="${hs}" height="${hs}" rx="${d.startsWith('p') ? hs / 2 : hs * 0.2}" fill="#fff" stroke="#09090B" stroke-width="${hs * 0.12}" style="cursor:${d.startsWith('p') ? 'crosshair' : d + '-resize'}"/>`).join('');
 }
@@ -1306,7 +1322,7 @@ function layersSVG(s, mode) {
   return (s.images || []).map((im, i) => {
     const a = { art: im.art, w: 1280, h: 720 };
     const sel = mode === 'full' && S.selImg === i;
-    return `<g data-img="${i}" style="cursor:${S.tool === 'select' ? 'move' : 'inherit'}"><svg x="${im.x}" y="${im.y}" width="${im.w}" height="${im.h}" viewBox="0 0 ${IW} 360" preserveAspectRatio="none">${artSVG(a)}</svg>
+    return `<g data-img="${i}" style="cursor:${S.tool === 'select' ? 'move' : 'inherit'}">${im.img ? `<image href="${im.img}" x="${im.x}" y="${im.y}" width="${im.w}" height="${im.h}" preserveAspectRatio="none"/>` : `<svg x="${im.x}" y="${im.y}" width="${im.w}" height="${im.h}" viewBox="0 0 ${IW} 360" preserveAspectRatio="none">${artSVG(a)}</svg>`}
       <rect x="${im.x}" y="${im.y}" width="${im.w}" height="${im.h}" fill="none" stroke="${sel ? '#fff' : 'rgba(0,0,0,.35)'}" stroke-width="${sel ? 1.5 : 1}" ${sel ? 'stroke-dasharray="4 3"' : ''}/>${sel ? handlesSVG(im, ['nw', 'ne', 'se', 'sw'], `data-hi="${i}"`) : ''}</g>`;
   }).join('');
 }
@@ -1503,7 +1519,7 @@ function applyView() {
 function redrawStage() { const z = $('#zoomer'); if (z) { const s = snipOf(); const before = S.cbox; syncBox(s); z.innerHTML = snipSVG(S.ws.id, 'snipfull', 'full'); if (before !== S.cbox) applyView(); } }
 function renderSnipWS() {
   const s = snipOf(); syncBox(s);
-  const tools = [['select', 'pointer', 'Select', 'V'], ['rect', 'square', 'Rectangle', 'R'], ['ellipse', 'circle', 'Ellipse', 'O'], ['line', 'line', 'Line', 'L'], ['cross', 'cross', 'X mark', 'X'], ['point', 'dot', 'Point', 'P']];
+  const tools = TOOLS_ALL;
   $('#ws').innerHTML = headHTML('scissors', s.name, storePath(`Markups/${slug(s.name)}/`)) + `
     <div class="toolbar" role="toolbar" aria-label="Markup tools">
       ${tools.map(([k, ic, l, key]) => `<button class="tool" data-tool="${k}" aria-pressed="${S.tool === k}" title="${l}${key ? ` (${key})` : ''}" aria-label="${l}">${ico(ic)}</button>`).join('')}
@@ -1533,11 +1549,12 @@ function calloutsHTML(s) {
   const tog = (f, n, ic, on, off, pressed) => `<button class="tog" data-tog="${f}:${n}" aria-pressed="${pressed}" title="${pressed ? on : off}" aria-label="${pressed ? on : off}">${ico(ic, 'sm')}</button>`;
   return s.shapes.map((c) => {
     const k = col(c, s), fp = fillPct(c), type = c.type.replace('-fill', '');
-    return `<div class="el ccard ${S.sel === c.n ? 'sel' : ''}" data-sel="${c.n}" data-drop="${c.n}">
+    const selN = S.ws && S.ws.kind === 'doc' ? S.dsel : S.sel;
+    return `<div class="el ccard ${selN === c.n ? 'sel' : ''}" data-sel="${c.n}" data-drop="${c.n}">
       <span class="grip" draggable="true" data-grip="${c.n}" title="Drag to reorder" aria-label="Reorder callout ${c.n}">${ico('menu', 'sm')}</span>
       <div style="min-width:0;display:grid;gap:6px">
         <div class="row"><span class="num" style="background:${k};color:${onColor(k)}">${c.n}</span>
-          <select class="typesel" data-type="${c.n}" aria-label="Type of callout ${c.n}">${SHAPE_TYPES.map((t) => `<option value="${t}" ${t === type ? 'selected' : ''}>${TYPE_LABEL[t]}</option>`).join('')}</select>
+          ${SHAPE_TYPES.includes(type) ? `<select class="typesel" data-type="${c.n}" aria-label="Type of callout ${c.n}">${SHAPE_TYPES.map((t) => `<option value="${t}" ${t === type ? 'selected' : ''}>${TYPE_LABEL[t]}</option>`).join('')}</select>` : `<span class="typesel static">${TYPE_LABEL[type]}</span>`}
           <span style="flex:1"></span>
           ${tog('hideText', c.n, 'text', 'Text hidden: click to show', 'Hide the note text (keeps the number)', !!c.hideText)}
           ${tog('hideBubble', c.n, 'chat', 'Bubble hidden: click to show', 'Hide the bubble and arrow (Copy and Export too)', !!c.hideBubble)}
@@ -1551,6 +1568,7 @@ function headings(text) {
   const out = []; text.split('\n').forEach((l, i) => { const m = /^(#{1,3})\s+(.*)/.exec(l); if (m) out.push({ level: m[1].length, text: m[2], line: i }); const im = /^!\[([^\]]*)\]\(([^)]+)\)/.exec(l); if (im) out.push({ level: 9, text: im[1] || im[2], line: i, img: true }); });
   return out;
 }
+const PASTED = {}; // images/<name>.png → data URL for images pasted into a Markdown file
 function mdHTML(src) {
   const inline = (s) => esc(s).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>');
   let html = '', list = null;
@@ -1570,7 +1588,7 @@ function mdHTML(src) {
     else if ((m = /^!\[([^\]]*)\]\(([^)]+)\)/.exec(line))) {
       close();
       const snip = SNIPS.find((s) => m[2].includes(slug(s.name)));
-      html += `<figure>${snip ? snipSVG(snip.id, 'fig', 'export') : `<svg viewBox="0 0 640 200"><rect width="640" height="200" fill="var(--sunk)"/></svg>`}<figcaption class="mono">${esc(m[2])}</figcaption></figure>`;
+      html += `<figure>${snip ? snipSVG(snip.id, 'fig', 'export') : PASTED[m[2]] ? `<img src="${PASTED[m[2]]}" alt="${esc(m[1])}" style="max-width:100%;border-radius:6px;display:block">` : `<svg viewBox="0 0 640 200"><rect width="640" height="200" fill="var(--sunk)"/></svg>`}<figcaption class="mono">${esc(m[2])}</figcaption></figure>`;
     }
     else if ((m = /^\s*[-*]\s+(.*)/.exec(line))) { if (list !== 'ul') { close(); html += '<ul>'; list = 'ul'; } html += `<li>${inline(m[1])}</li>`; }
     else if ((m = /^\s*\d+\.\s+(.*)/.exec(line))) { if (list !== 'ol') { close(); html += '<ol>'; list = 'ol'; } html += `<li>${inline(m[1])}</li>`; }
@@ -1582,49 +1600,36 @@ function mdHTML(src) {
 /* Markdown editor: Preview + Callouts, or Code + Preview. Box and circle callouts are drawn on the
    rendered page (a fixed-width page, so they stay put); Canvas snip saves a marked-up region as a markup. */
 const PAGE_W = 680;
-const DOC_TOOLS = [['select', 'pointer', 'Select', 'V'], ['box', 'square', 'Box', 'B'], ['circle', 'circle', 'Circle', 'C'], ['line', 'line', 'Line', 'L'], ['cross', 'cross', 'X mark', 'X'], ['point', 'dot', 'Point', 'P']];
-const DOC_LABEL = { box: 'Box', circle: 'Circle', line: 'Line', cross: 'X mark', point: 'Point' };
-function docShapeSVG(m, c, sw, extra = '') {
-  if (m.type === 'box') return `<rect x="${m.x}" y="${m.y}" width="${m.w}" height="${m.h}" rx="3" fill="${c}" fill-opacity=".06" stroke="${c}" stroke-width="${sw}" ${extra}/>`;
-  if (m.type === 'circle') return `<ellipse cx="${m.x + m.w / 2}" cy="${m.y + m.h / 2}" rx="${Math.abs(m.w / 2)}" ry="${Math.abs(m.h / 2)}" fill="${c}" fill-opacity=".06" stroke="${c}" stroke-width="${sw}" ${extra}/>`;
-  if (m.type === 'point') return `<circle cx="${m.x}" cy="${m.y}" r="${3 + sw}" fill="${c}" stroke="#FFFFFF" stroke-width="1.5" ${extra}/>`;
-  if (m.type === 'line') return `<line x1="${m.x}" y1="${m.y}" x2="${m.x + m.w}" y2="${m.y + m.h}" stroke="${c}" stroke-width="${sw}" stroke-linecap="round" ${extra}/>`;
-  return `<path d="M${m.x} ${m.y}l${m.w} ${m.h}M${m.x + m.w} ${m.y}l${-m.w} ${m.h}" stroke="${c}" stroke-width="${sw}" stroke-linecap="round" fill="none" ${extra}/>`;
-}
+const DOC_TOOLS = TOOLS_ALL;
+/** The Markdown page as a markup surface: page pixels, bubbles and leaders outside the page like outside an image. */
+function docCtx() { if (!S._docCtx || S._docCtx.shapes !== S.ws.marks) S._docCtx = { shapes: S.ws.marks, images: [] }; Object.assign(S._docCtx, { W: PAGE_W, H: S.pageH || 900 }); return S._docCtx; }
 function docMarksSVG() {
-  const marks = S.ws.marks || [];
-  const k = S.pageK || 1;
-  const shapes = marks.map((m) => {
-    const sel = S.dsel === m.n, c = col(m), sw = m.sw || 2.5;
-    const hit = m.type === 'point' ? `<circle cx="${m.x}" cy="${m.y}" r="12" fill="transparent"/>` : m.type === 'line' ? `<line x1="${m.x}" y1="${m.y}" x2="${m.x + m.w}" y2="${m.y + m.h}" stroke="transparent" stroke-width="14"/>` : `<rect x="${m.x - 4}" y="${m.y - 4}" width="${m.w + 8}" height="${m.h + 8}" fill="transparent"/>`;
-    const bx = m.type === 'circle' ? m.x + m.w * 0.15 : m.type === 'point' ? m.x + 14 : m.x, by = m.type === 'circle' ? m.y + m.h * 0.15 : m.type === 'point' ? m.y - 14 : m.y;
-    const handles = sel ? (m.type === 'point' ? `<circle cx="${m.x}" cy="${m.y}" r="${9}" fill="none" stroke="var(--t1)" stroke-dasharray="3 2"/>` : m.type === 'line' ? handlesSVG(m, ['p1', 'p2'], `data-dmh="${m.n}"`, k) : `<rect x="${m.x - 3}" y="${m.y - 3}" width="${m.w + 6}" height="${m.h + 6}" fill="none" stroke="var(--t1)" stroke-dasharray="4 3"/>` + handlesSVG(m, HANDLE_DIRS, `data-dmh="${m.n}"`, k)) : '';
-    return `<g data-dmark="${m.n}">${hit}${docShapeSVG(m, c, sw)}<circle cx="${bx}" cy="${by}" r="11" fill="${c}"/><text x="${bx}" y="${by + 4}" text-anchor="middle" font-family="Geist Mono, monospace" font-size="11" font-weight="600" fill="${onColor(c)}">${m.n}</text>${handles}</g>`;
-  }).join('');
-  return `<svg id="docOverlay" aria-hidden="true">${shapes}<g id="docLive"></g></svg>`;
+  const ctx = docCtx(), nb = noteBoxes(ctx), sel = S.dsel;
+  return `<svg id="docOverlay" aria-hidden="true" overflow="visible"><defs>${markers(ctx)}</defs>${ctx.shapes.map((sh) => shapeSVG(sh, sel === sh.n, ctx, 'full')).join('')}${ctx.shapes.map((sh) => noteSVG(sh, nb[sh.n], sel === sh.n, ctx)).join('')}</svg>`;
 }
 function paintPreview() {
   const pg = $('#page'); if (!pg) return;
-  pg.innerHTML = mdHTML(S.ws.text) + (S.docView === 'preview' ? docMarksSVG() : '');
-  const ov = $('#docOverlay'); if (ov) ov.setAttribute('height', pg.scrollHeight);
+  pg.innerHTML = mdHTML(S.ws.text);
+  if (S.docView === 'preview') {
+    S.pageH = pg.offsetHeight; S._hk = S.pageK || 1;
+    pg.insertAdjacentHTML('beforeend', docMarksSVG()); S._hk = null;
+    const ov = $('#docOverlay'); if (ov) ov.setAttribute('height', S.pageH);
+  }
   fitPage();
 }
-/** Scale the fixed-width page down to fit its pane; callouts stay in page pixels. */
+/** Scale the fixed-width page to fit its pane, with room beside, above and below it for bubbles; callouts stay in page pixels. */
+const PAGE_SIDE = 210, PAGE_TOPM = 90;
 function fitPage() {
   const pg = $('#page'), wrap = $('#pageWrap'), pv = $('#preview'); if (!pg || !wrap || !pv) return;
-  const k = Math.min(1, (pv.clientWidth - 44) / PAGE_W);
-  S.pageK = k; pg.style.transform = `scale(${k})`;
-  wrap.style.width = PAGE_W * k + 'px'; wrap.style.height = pg.offsetHeight * k + 'px';
-}
-function docCalloutsHTML() {
-  const marks = S.ws.marks || [];
-  return marks.length ? marks.map((m) => { const c = col(m); return `<div class="el ccard ${S.dsel === m.n ? 'sel' : ''}" data-dsel="${m.n}" style="grid-template-columns:minmax(0,1fr);padding-left:9px"><div style="min-width:0;display:grid;gap:6px"><div class="row"><span class="num" style="background:${c};color:${onColor(c)}">${m.n}</span><select class="typesel" data-dtype="${m.n}" aria-label="Type of callout ${m.n}">${Object.entries(DOC_LABEL).map(([t, l]) => `<option value="${t}" ${t === m.type ? 'selected' : ''}>${l}</option>`).join('')}</select></div><textarea data-dnote="${m.n}" rows="2" placeholder="Add a note" aria-label="Note for callout ${m.n}">${esc(m.note)}</textarea></div></div>`; }).join('')
-    : '<p class="hint" style="padding:8px">Draw a box, circle, line or X on the page to add a callout.</p>';
+  const k = Math.min(1, (pv.clientWidth - 44) / (PAGE_W + 2 * PAGE_SIDE));
+  S.pageK = k; pg.style.transform = `translate(${PAGE_SIDE * k}px, ${PAGE_TOPM * k}px) scale(${k})`;
+  wrap.style.width = (PAGE_W + 2 * PAGE_SIDE) * k + 'px'; wrap.style.height = (pg.offsetHeight + 2 * PAGE_TOPM) * k + 'px';
 }
 function renderDocWS() {
   const w = S.ws;
   const isMd = w.type === 'md';
   if (!w.marks) w.marks = clone((w.file && w.file.marks) || []);
+  w.marks.forEach((m) => { if (m.type === 'box') m.type = 'rect'; if (m.type === 'circle') m.type = 'ellipse'; if (!m.sw) m.sw = 3; });
   const vbtn = (k, l, t) => `<button data-view="${k}" aria-pressed="${S.docView === k}" title="${t}">${l}</button>`;
   const head = headHTML(isMd ? 'md' : 'file', w.name, w.zip + w.path.replace(w.zipId, ''),
     `${isMd ? `<span class="viewseg" role="group" aria-label="View">${vbtn('code', 'Edit', 'Edit the Markdown, with a live preview beside it')}${vbtn('preview', 'Preview', 'Preview the page and mark it up')}</span>` : ''}<button class="btn" id="repack" title="Build a new zip with the same folder layout">${ico('package')}<span>Repack zip</span></button>`,
@@ -1668,7 +1673,7 @@ function renderDocWS() {
       </div>
       ${pv ? `<aside class="numbered" aria-label="Callouts">
         <div class="head"><span class="label">Callouts ${S.theme === 'aura' ? `{${String(w.marks.length).padStart(2, '0')}}` : '· ' + w.marks.length}</span></div>
-        <div class="list" id="docCallouts">${docCalloutsHTML()}</div>
+        <div class="list" id="calloutList">${calloutsHTML(docCtx())}</div>
       </aside>` : ''}
       ${S.picker ? `<div class="picker" role="dialog" aria-label="Insert snip"><span class="label">Insert snip</span>${SNIPS.map((s) => `<button class="attach" data-insert="${s.id}">${snipSVG(s.id)}<span><b>${esc(s.name)}</b><div class="meta mono" style="color:var(--t3)">${s.shapes.length} callouts · export.png → images/</div></span></button>`).join('')}<label class="hint" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="withNotes" checked> Add callout notes as a numbered list</label><button class="btn ghost" id="pickClose">Cancel</button></div>` : ''}
     </div>
@@ -1695,10 +1700,10 @@ function saveDocMarkup(rg) {
   const html = mdHTML(w.text);
   const now = new Date(), t = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
   const f = IW / rg.w;
-  const TYPE_TO_SNIP = { box: 'rect', circle: 'ellipse', line: 'line', cross: 'cross', point: 'point' };
   const inside = (m) => { const xa = Math.min(m.x, m.x + m.w) - 1, xb = Math.max(m.x, m.x + m.w) + 1, ya = Math.min(m.y, m.y + m.h) - 1, yb = Math.max(m.y, m.y + m.h) + 1; return xa < rg.x + rg.w && xb > rg.x && ya < rg.y + rg.h && yb > rg.y; };
   const shapes = (w.marks || []).filter(inside).map((m) => ({
-    n: m.n, type: TYPE_TO_SNIP[m.type], x: Math.round((m.x - rg.x) * f), y: Math.round((m.y - rg.y) * f), w: Math.round(m.w * f), h: Math.round(m.h * f), color: m.color, sw: 3, note: m.note,
+    ...clone(m), box: undefined, x: Math.round((m.x - rg.x) * f), y: Math.round((m.y - rg.y) * f), w: Math.round(m.w * f), h: Math.round(m.h * f), sw: 3,
+    pts: m.pts ? m.pts.map(([px, py]) => [Math.round((px - rg.x) * f), Math.round((py - rg.y) * f)]) : undefined,
   }));
   const s = { id: 's-' + Date.now(), art: 'doc', doc: { html, x: rg.x, y: rg.y, w: rg.w, pageW: pg.clientWidth }, name: `${w.name.replace(/\.md$/, '')} · ${t}`, w: Math.round(rg.w * 2), h: Math.round(rg.h * 2), day: 'Today', time: t, saved: S.settings.mode === 'server', tags: [], shapes };
   SNIPS.unshift(s); renderSide();
@@ -1918,16 +1923,15 @@ document.addEventListener('click', (e) => {
   if (d.addmode) { S.addMode = d.addmode; try { localStorage.setItem('collide-proto-addmode', d.addmode); } catch (x) {} renderSide(); return; }
   if (d.tabclose !== undefined) { e.stopPropagation(); closeTab(Number(d.tabclose), false); return; }
   if (d.role) { S.role = d.role; S.lastRole = d.role; savePen(); if (S.sel && !S.selByDraw) { pushHist(); snipOf().shapes.find((x) => x.n === S.sel).color = d.role; snipChanged(); } else renderWS(); return; }
-  if (d.tog) { e.stopPropagation(); const [f, n] = d.tog.split(':'); pushHist(); const sh = snipOf().shapes.find((x) => x.n === Number(n)); if (f === 'fill') { const was = sh.fill || sh.type.endsWith('-fill'); sh.type = sh.type.replace('-fill', ''); sh.fill = !was; } else sh[f] = !sh[f]; snipChanged(); return; }
+  if (d.tog) { e.stopPropagation(); const [f, n] = d.tog.split(':'); const F = surf(); F.hist(); const sh = F.s.shapes.find((x) => x.n === Number(n)); if (f === 'fill') { const was = sh.fill || sh.type.endsWith('-fill'); sh.type = sh.type.replace('-fill', ''); sh.fill = !was; } else sh[f] = !sh[f]; F.commit(); return; }
   if (d.sw) { S.sw = Number(d.sw); savePen(); if (S.sel) { pushHist(); snipOf().shapes.find((x) => x.n === S.sel).sw = S.sw; snipChanged(); } else renderWS(); return; }
   if (d.view) { S.docView = d.view; S.dtool = 'select'; renderWS(); return; }
   if (d.dtool) { pickDtool(d.dtool); if (d.dtool === 'canvas-snip') toast('Drag a box over the visible page. Esc returns to Select.'); renderWS(); return; }
   if (d.dcolor) { S.dcolor = d.dcolor; S.lastDcolor = d.dcolor; savePen(); if (S.dsel && !S.dselByDraw) { pushDocHist(); S.ws.marks.find((m) => m.n === S.dsel).color = d.dcolor; markDirty(); } renderWS(); return; }
   if (d.dsw) { S.dsw = Number(d.dsw); savePen(); if (S.dsel) { pushDocHist(); S.ws.marks.find((m) => m.n === S.dsel).sw = S.dsw; markDirty(); } renderWS(); return; }
-  if (d.dsel && !e.target.closest('textarea, select')) { S.dselByDraw = false; S.dsel = Number(d.dsel); paintPreview(); document.querySelectorAll('#docCallouts .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.dsel) === S.dsel)); return; }
   if (d.gotoSet) { const el = document.getElementById('set-' + d.gotoSet); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
   if (d.copy) { toast(`${d.copy} copied`); return; }
-  if (d.sel && !e.target.closest('textarea, .hidebtn, .tog, select, input, .grip')) { S.selByDraw = false; S.sel = Number(d.sel); redrawStage(); document.querySelectorAll('#calloutList .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.sel) === S.sel)); return; }
+  if (d.sel && !e.target.closest('textarea, .hidebtn, .tog, select, input, .grip')) { const F = surf(); if (F) { S[F.selKey] = Number(d.sel); S[F.byDrawKey] = false; F.redraw(); } document.querySelectorAll('#calloutList .el').forEach((el) => el.classList.toggle('sel', el.dataset.sel === d.sel)); return; }
   if (d.line !== undefined) { const ta = $('#src'); if (ta) { const lines = ta.value.split('\n'); const pos = lines.slice(0, Number(d.line)).join('\n').length + (Number(d.line) ? 1 : 0); ta.focus(); ta.setSelectionRange(pos, pos + (lines[d.line] || '').length); const lh = parseFloat(getComputedStyle(ta).lineHeight) || 20; ta.scrollTop = Math.max(0, d.line * lh - 60); } return; }
   if (d.mdline !== undefined) { mdLinePrefix(d.mdline); return; }
   if (d.md !== undefined) { const ta = $('#src'); if (ta) { const s = ta.selectionStart, en = ta.selectionEnd, sel = ta.value.slice(s, en); const ins = d.md === '**' ? `**${sel}**` : d.md === '[](url)' ? `[${sel || 'link'}](url)` : d.md + sel; ta.setRangeText(ins, s, en, 'end'); if (d.md === '**' && !sel) ta.setSelectionRange(s + 2, s + 2); ta.dispatchEvent(new Event('input', { bubbles: true })); ta.focus(); } return; }
@@ -1997,9 +2001,8 @@ document.addEventListener('click', (e) => {
 document.addEventListener('change', (e) => {
   const t = e.target;
   if (t.id === 'mdHeading') { const v = t.value; t.value = ''; if (v !== '') mdLinePrefix(v === '0' ? '' : '#'.repeat(Number(v)) + ' ', true); return; }
-  if (t.dataset && t.dataset.dtype) { pushDocHist(); const m = S.ws.marks.find((x) => x.n === Number(t.dataset.dtype)); m.type = t.value; if (t.value !== 'line') { if (m.w < 0) { m.x += m.w; m.w = -m.w; } if (m.h < 0) { m.y += m.h; m.h = -m.h; } } markDirty(); renderWS(); return; }
-  if (t.dataset && t.dataset.type) { pushHist(); const sh = snipOf().shapes.find((x) => x.n === Number(t.dataset.type)); const fp0 = fillPct(sh); sh.type = t.value; sh.fill = false; sh.fillPct = t.value === 'rect' || t.value === 'ellipse' ? fp0 : 0; if (t.value === 'point') { sh.x += sh.w / 2; sh.y += sh.h / 2; sh.w = 0; sh.h = 0; } else if (t.value !== 'line' && (sh.w < 0 || sh.h < 0)) { if (sh.w < 0) { sh.x += sh.w; sh.w = -sh.w; } if (sh.h < 0) { sh.y += sh.h; sh.h = -sh.h; } } else if (!sh.w) { sh.x -= 40; sh.y -= 25; sh.w = 80; sh.h = 50; } snipChanged(); return; }
-  if (t.dataset && t.dataset.fillpct) { snipChanged(); return; }
+  if (t.dataset && t.dataset.type) { const F = surf(); F.hist(); const sh = F.s.shapes.find((x) => x.n === Number(t.dataset.type)); const fp0 = fillPct(sh); sh.type = t.value; sh.fill = false; sh.fillPct = t.value === 'rect' || t.value === 'ellipse' ? fp0 : 0; if (t.value === 'point') { sh.x += sh.w / 2; sh.y += sh.h / 2; sh.w = 0; sh.h = 0; } else if (t.value !== 'line' && (sh.w < 0 || sh.h < 0)) { if (sh.w < 0) { sh.x += sh.w; sh.w = -sh.w; } if (sh.h < 0) { sh.y += sh.h; sh.h = -sh.h; } } else if (!sh.w) { sh.x -= 40; sh.y -= 25; sh.w = 80; sh.h = 50; } F.commit(); return; }
+  if (t.dataset && t.dataset.fillpct) { surf().commit(); return; }
   if (t.name === 'mode') { S.settings.mode = t.value; renderWS(); return; }
   if (t.id === 'imgFile' && t.files && t.files[0]) {
     const file = t.files[0], r = new FileReader();
@@ -2020,132 +2023,149 @@ document.addEventListener('pointerdown', (e) => {
     const st = $('#stage'); if (st) st.classList.remove('cursor-add');
   }
   if (S.ws.kind === 'doc' && S.dtool !== 'select' && !e.target.closest('#preview')) {
-    S.dtool = 'select'; S.ddrag = null;
+    S.dtool = 'select'; S.drag = null;
     document.querySelectorAll('#ws [data-dtool]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.dtool === 'select')));
     const pv = $('#preview'); if (pv) pv.classList.remove('drawing');
   }
 }, true);
+
+/* Paste an image (Grant 2026-11-15): works like inserting one, in both editors. Text pastes are left alone. */
+document.addEventListener('paste', (e) => {
+  const item = [...((e.clipboardData && e.clipboardData.items) || [])].find((i) => i.type && i.type.startsWith('image/'));
+  if (!item) return;
+  const file = item.getAsFile(); if (!file) return;
+  e.preventDefault();
+  const r = new FileReader();
+  r.onload = () => { const im = new Image(); im.onload = () => pasteImage(r.result, im.naturalWidth, im.naturalHeight); im.src = r.result; };
+  r.readAsDataURL(file);
+});
+function pasteImage(url, w, h) {
+  const now = new Date(), stamp = [now.getHours(), now.getMinutes(), now.getSeconds()].map((v) => String(v).padStart(2, '0')).join('');
+  if (S.ws && S.ws.kind === 'snip') {
+    // Like Add snip: beside the image, the canvas grows; select it to move or resize it.
+    const s = snipOf(); pushHist(); s.images = s.images || [];
+    const H = ih(s), right = Math.max(IW, ...s.images.map((im) => im.x + im.w));
+    s.images.push({ img: url, x: right + 24, y: 0, w: Math.round(H * w / h), h: H });
+    S.selImg = s.images.length - 1; S.tool = 'select'; snipChanged(); requestAnimationFrame(fitView);
+    toast(`Pasted image added beside the image · ${w} × ${h}`); return;
+  }
+  if (S.ws && S.ws.kind === 'doc' && S.ws.type === 'md') {
+    // Like Insert snip: the image goes into the zip's images/ folder and a link goes in at the cursor (end of file in Preview).
+    const name = `pasted-${stamp}.png`, rel = `images/${name}`;
+    PASTED[rel] = url;
+    const zip = ZIPS.find((z) => z.id === S.ws.zipId);
+    if (zip) { let folder = zip.tree.kids.find((k) => k.name === 'images' && k.kids); if (!folder) { folder = { name: 'images', kids: [] }; zip.tree.kids.push(folder); } folder.kids.push({ name, type: 'image', url }); S.open[zip.id + '/images'] = true; }
+    const ta = $('#src'), link = `![Pasted image](${rel})`;
+    if (ta) { const pos = ta.selectionStart, before = ta.value.slice(0, pos); const lead = before && !before.endsWith('\n') ? '\n\n' : ''; ta.setRangeText(`${lead}${link}\n`, pos, ta.selectionEnd, 'end'); ta.dispatchEvent(new Event('input', { bubbles: true })); ta.focus(); }
+    else { S.ws.text = S.ws.text.replace(/\s*$/, '') + `\n\n${link}\n`; markDirty(); renderWS(); }
+    renderSide(); toast(`Pasted image saved to ${rel} and linked`); return;
+  }
+  // Nothing open: the pasted image opens as a new snip.
+  const t = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const s = { id: 's-' + Date.now(), img: url, name: `Pasted image ${t}`, w, h, day: 'Today', time: t, saved: S.settings.mode === 'server', tags: [], shapes: [] };
+  SNIPS.unshift(s); openWS({ kind: 'snip', id: s.id }); toast(`Pasted image opened as a new snip · ${w} × ${h}`);
+}
 
 /* ---------- Callout cards: drag the grip to reorder; numbers follow the new order ---------- */
 document.addEventListener('dragstart', (e) => { const g = e.target.closest && e.target.closest('[data-grip]'); if (!g) return; S.dragN = Number(g.dataset.grip); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', String(S.dragN)); } catch (x) {} });
 document.addEventListener('dragover', (e) => { const el = e.target.closest && e.target.closest('[data-drop]'); if (el && S.dragN) { e.preventDefault(); document.querySelectorAll('.ccard').forEach((c) => c.classList.toggle('dropping', c === el)); } });
 document.addEventListener('drop', (e) => {
   const el = e.target.closest && e.target.closest('[data-drop]'); if (!el || !S.dragN) return; e.preventDefault();
-  const s = snipOf(), from = s.shapes.findIndex((x) => x.n === S.dragN), to = s.shapes.findIndex((x) => x.n === Number(el.dataset.drop));
+  const F = surf(); if (!F) return; const s = F.s, from = s.shapes.findIndex((x) => x.n === S.dragN), to = s.shapes.findIndex((x) => x.n === Number(el.dataset.drop));
   S.dragN = null; if (from < 0 || to < 0 || from === to) { renderWS(); return; }
-  pushHist(); const selShape = s.shapes.find((x) => x.n === S.sel);
+  F.hist(); const selShape = s.shapes.find((x) => x.n === S[F.selKey]);
   const [m] = s.shapes.splice(from, 1); s.shapes.splice(to, 0, m); s.shapes.forEach((x, i) => (x.n = i + 1));
-  S.sel = selShape ? selShape.n : null; snipChanged(); toast('Callouts renumbered');
+  S[F.selKey] = selShape ? selShape.n : null; F.commit(); toast('Callouts renumbered');
 });
 document.addEventListener('dragend', () => { S.dragN = null; document.querySelectorAll('.ccard').forEach((c) => c.classList.remove('dropping')); });
 
 /* ---------- Canvas: draw, select, move, note boxes, zoom, pan, canvas snip ---------- */
 function toImage(e) { const svg = $('#zoomer svg'); const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
 
-/* Markdown page: draw, select, move and resize callouts; canvas snip inside the visible page */
-document.addEventListener('pointerdown', (e) => {
-  if (!S.ws || S.ws.kind !== 'doc' || S.docView !== 'preview' || e.button !== 0) return;
-  const pg = e.target.closest('#page'); if (!pg) return;
-  const p = pagePoint(e);
-  if (S.dtool === 'select') {
-    const hEl = e.target.closest('[data-dmh]');
-    if (hEl) { const m = S.ws.marks.find((x) => x.n === Number(hEl.dataset.dmh)); pushDocHist(); S.ddrag = { kind: 'resize', n: m.n, dir: hEl.dataset.h, p0: p, orig: { x: m.x, y: m.y, w: m.w, h: m.h }, moved: false }; e.preventDefault(); return; }
-    const mk = e.target.closest('[data-dmark]'); const n = mk ? Number(mk.dataset.dmark) : null;
-    if (n === null) { if (S.dsel) { S.dsel = null; paintPreview(); document.querySelectorAll('#docCallouts .el').forEach((el) => el.classList.remove('sel')); } return; }
-    S.dsel = n; S.dselByDraw = false; const m = S.ws.marks.find((x) => x.n === n); pushDocHist(); S.ddrag = { kind: 'move', n, p0: p, orig: { x: m.x, y: m.y }, moved: false };
-    paintPreview(); document.querySelectorAll('#docCallouts .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.dsel) === n)); e.preventDefault(); return;
-  }
-  e.preventDefault();
-  S.ddrag = { kind: S.dtool === 'canvas-snip' ? 'csnip' : 'draw', p0: p, p1: p };
-});
-document.addEventListener('pointermove', (e) => {
-  const dr = S.ddrag; if (!dr) return;
-  const p = pagePoint(e), dx = p.x - dr.p0.x, dy = p.y - dr.p0.y;
-  if (dr.kind === 'move') { const m = S.ws.marks.find((x) => x.n === dr.n); m.x = Math.round(dr.orig.x + dx); m.y = Math.round(dr.orig.y + dy); dr.moved = true; paintPreview(); return; }
-  if (dr.kind === 'resize') { const m = S.ws.marks.find((x) => x.n === dr.n); const r = m.type === 'line' && !dr.dir.startsWith('p') ? dr.orig : resizeBox(dr.orig, dr.dir, dx, dy, e.shiftKey); Object.assign(m, { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.w), h: Math.round(r.h) }); dr.moved = true; paintPreview(); return; }
-  dr.p1 = p;
-  const live = $('#docLive'); if (!live) return;
-  if (dr.kind === 'csnip') {
-    const r = clampToVisible({ x: Math.min(dr.p0.x, p.x), y: Math.min(dr.p0.y, p.y), w: Math.abs(dx), h: Math.abs(dy) });
-    live.innerHTML = `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="rgba(30,136,229,.08)" stroke="var(--t1)" stroke-dasharray="5 4"/>`;
-    let ro = $('#readout'); if (!ro) { ro = document.createElement('div'); ro.id = 'readout'; ro.className = 'readout'; document.body.appendChild(ro); ro.style.position = 'fixed'; }
-    ro.style.left = (e.clientX + 12) + 'px'; ro.style.top = (e.clientY + 12) + 'px'; ro.textContent = `${Math.round(r.w * 2)} × ${Math.round(r.h * 2)}`;
-    return;
-  }
-  const c = MAT[S.dcolor || S.lastDcolor || DEFAULT_COLOR][1];
-  const m = S.dtool === 'point' ? { type: 'point', x: p.x, y: p.y, w: 0, h: 0 } : S.dtool === 'line' ? { type: 'line', x: dr.p0.x, y: dr.p0.y, w: dx, h: dy } : { type: S.dtool, x: Math.min(dr.p0.x, p.x), y: Math.min(dr.p0.y, p.y), w: Math.abs(dx), h: Math.abs(dy) };
-  live.innerHTML = docShapeSVG(m, c, S.dsw);
-});
-document.addEventListener('pointerup', () => {
-  const dr = S.ddrag; if (!dr) return; S.ddrag = null;
-  const ro = $('#readout'); if (ro) ro.remove();
-  if (dr.kind === 'move' || dr.kind === 'resize') { if (dr.moved) { markDirty(); renderWS(); } else S.dhist.pop(); return; }
-  const dx = dr.p1.x - dr.p0.x, dy = dr.p1.y - dr.p0.y;
-  let x = Math.min(dr.p0.x, dr.p1.x), y = Math.min(dr.p0.y, dr.p1.y), w = Math.abs(dx), h = Math.abs(dy);
-  if (dr.kind === 'csnip') { if (w > 8 && h > 8) saveDocMarkup({ x, y, w, h }); paintPreview(); return; }
-  if (S.dtool === 'point') { x = dr.p1.x; y = dr.p1.y; w = 0; h = 0; }
-  else if (S.dtool === 'line') { x = dr.p0.x; y = dr.p0.y; w = dx; h = dy; if (Math.hypot(w, h) < 10) { w = 140; h = 0; } }
-  else if (w < 10 || h < 10) { w = S.dtool === 'box' ? 140 : S.dtool === 'cross' ? 28 : 90; h = S.dtool === 'box' ? 40 : S.dtool === 'cross' ? 28 : 60; x -= w / 2; y -= h / 2; }
-  pushDocHist();
-  const marks = S.ws.marks; const n = marks.length ? Math.max(...marks.map((m) => m.n)) + 1 : 1;
-  marks.push({ n, type: S.dtool, x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h), color: S.dcolor || S.lastDcolor || DEFAULT_COLOR, sw: S.dsw, note: '' });
-  S.dsel = n; S.dselByDraw = true; S.dcolor = null; // deselect the colour after a shape is drawn
-  markDirty(); renderWS();
-  const ta = $(`[data-dnote="${n}"]`); if (ta) ta.focus();
-});
 let spaceDown = false;
 document.addEventListener('auxclick', (e) => { const tb = e.target.closest('[data-tabi]'); if (tb && e.button === 1) closeTab(Number(tb.dataset.tabi), false); });
 document.addEventListener('contextmenu', (e) => { if (e.target.closest('#stage')) e.preventDefault(); });
+/* ---------- One markup engine for Snip and the Markdown page (Grant 2026-11-15: same leaders, callout cards and tools in both) ---------- */
+function surf() {
+  if (!S.ws) return null;
+  if (S.ws.kind === 'snip') return { kind: 'snip', s: snipOf(), point: toImage, redraw: redrawStage, commit: snipChanged, hist: pushHist, popHist: () => S.hist.pop(), selKey: 'sel', byDrawKey: 'selByDraw', colorKey: 'role', lastKey: 'lastRole', swKey: 'sw', toolKey: 'tool', k: () => (S.view && S.view.k) || 1 };
+  if (S.ws.kind === 'doc' && S.docView === 'preview') return { kind: 'doc', s: docCtx(), point: pagePoint, redraw: paintPreview, commit: () => { markDirty(); renderWS(); }, hist: pushDocHist, popHist: () => S.dhist.pop(), selKey: 'dsel', byDrawKey: 'dselByDraw', colorKey: 'dcolor', lastKey: 'lastDcolor', swKey: 'dsw', toolKey: 'dtool', k: () => S.pageK || 1 };
+  return null;
+}
+function finishDraw(F, sh) {
+  if (sh.type === 'pen' || sh.type === 'hl') {
+    if (sh.pts.length < 2) { F.s.shapes.splice(F.s.shapes.indexOf(sh), 1); F.popHist(); S[F.selKey] = null; F.redraw(); return; }
+    penBox(sh);
+  } else if (sh.type === 'line') { if (Math.hypot(sh.w, sh.h) < 8) { sh.w = 100; sh.h = -30; } }
+  else if (sh.type !== 'point' && (sh.w < 8 || sh.h < 8)) { sh.w = sh.type === 'cross' ? 28 : 80; sh.h = sh.type === 'cross' ? 28 : 50; sh.x -= sh.w / 2; sh.y -= sh.h / 2; }
+  S[F.colorKey] = null; S[F.byDrawKey] = true; // the colour deselects after a draw; picking a tool again brings it back
+  F.commit(); const ta = $(`[data-note="${sh.n}"]`); if (ta) ta.focus();
+}
 document.addEventListener('pointerdown', (e) => {
-  const stage = e.target.closest('#stage');
-  if (!stage || !S.ws || S.ws.kind !== 'snip' || !S.view) return;
-  if (e.button === 2 || (e.button === 0 && spaceDown) || e.button === 1) {
-    S.panning = { x: e.clientX, y: e.clientY, vx: S.view.x, vy: S.view.y }; stage.classList.add('panning'); stage.setPointerCapture(e.pointerId); e.preventDefault(); return;
+  const F = surf(); if (!F) return;
+  const root = e.target.closest(F.kind === 'snip' ? '#stage' : '#page'); if (!root) return;
+  if (F.kind === 'snip') {
+    if (!S.view) return;
+    if (e.button === 2 || (e.button === 0 && spaceDown) || e.button === 1) {
+      S.panning = { x: e.clientX, y: e.clientY, vx: S.view.x, vy: S.view.y }; root.classList.add('panning'); root.setPointerCapture(e.pointerId); e.preventDefault(); return;
+    }
   }
   if (e.button !== 0) return;
-  const p = toImage(e), s = snipOf();
-  if (S.tool === 'canvas-snip') { S.drag = { kind: 'csnip', x0: p.x, y0: p.y, x1: p.x, y1: p.y }; stage.setPointerCapture(e.pointerId); return; }
-  if (S.tool === 'select') {
+  const p = F.point(e), s = F.s, tool = S[F.toolKey];
+  if (F.kind === 'snip' && tool === 'canvas-snip') { S.drag = { kind: 'csnip', x0: p.x, y0: p.y, x1: p.x, y1: p.y }; root.setPointerCapture(e.pointerId); return; }
+  if (tool === 'select') {
     const hEl = e.target.closest('[data-h]');
     if (hEl) {
       const isImg = hEl.dataset.hi !== undefined, t = isImg ? s.images[Number(hEl.dataset.hi)] : s.shapes.find((x) => x.n === Number(hEl.dataset.hs));
-      pushHist(); S.drag = { kind: 'resize', dir: hEl.dataset.h, img: isImg, i: Number(hEl.dataset.hi), n: Number(hEl.dataset.hs), p0: p, orig: { x: t.x, y: t.y, w: t.w, h: t.h }, moved: false };
-      stage.setPointerCapture(e.pointerId); e.preventDefault(); return;
+      F.hist(); S.drag = { kind: 'resize', dir: hEl.dataset.h, img: isImg, i: Number(hEl.dataset.hi), n: Number(hEl.dataset.hs), p0: p, orig: clone(t), moved: false };
+      root.setPointerCapture(e.pointerId); e.preventDefault(); return;
     }
-    const imgEl = e.target.closest('[data-img]');
+    const imgEl = F.kind === 'snip' && e.target.closest('[data-img]');
     const boxEl = e.target.closest('[data-box]'), shEl = e.target.closest('[data-shape]');
-    if (imgEl && !boxEl && !shEl) { const i = Number(imgEl.dataset.img), im = s.images[i]; S.selImg = i; S.sel = null; pushHist(); S.drag = { kind: 'img', i, p0: p, orig: { x: im.x, y: im.y }, moved: false }; stage.setPointerCapture(e.pointerId); redrawStage(); return; }
+    if (imgEl && !boxEl && !shEl) { const i = Number(imgEl.dataset.img), im = s.images[i]; S.selImg = i; S.sel = null; F.hist(); S.drag = { kind: 'img', i, p0: p, orig: { x: im.x, y: im.y }, moved: false }; root.setPointerCapture(e.pointerId); F.redraw(); return; }
     S.selImg = null;
     const n = boxEl ? Number(boxEl.dataset.box) : shEl ? Number(shEl.dataset.shape) : null;
-    S.sel = n; S.selByDraw = false; document.querySelectorAll('#calloutList .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.sel) === n));
-    if (n) { const sh = s.shapes.find((x) => x.n === n); pushHist(); S.drag = { kind: boxEl ? 'box' : 'move', n, p0: p, orig: clone(sh), box0: boxEl ? clone(noteBoxes(s)[n].box) : null, moved: false }; stage.setPointerCapture(e.pointerId); }
-    redrawStage(); return;
+    if (n === null && F.kind === 'doc' && !S.dsel) return; // let a plain click on the page text through
+    S[F.selKey] = n; S[F.byDrawKey] = false;
+    document.querySelectorAll('#calloutList .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.sel) === n));
+    if (n) { const sh = s.shapes.find((x) => x.n === n); F.hist(); S.drag = { kind: boxEl ? 'box' : 'move', n, p0: p, orig: clone(sh), box0: boxEl ? clone(noteBoxes(s)[n].box) : null, moved: false }; root.setPointerCapture(e.pointerId); e.preventDefault(); }
+    F.redraw(); return;
   }
-  // Drawing tools
-  pushHist();
+  // Drawing tools (the same set in both editors)
+  e.preventDefault();
+  F.hist();
   const n = s.shapes.length ? Math.max(...s.shapes.map((c) => c.n)) + 1 : 1;
-  const sh = { n, type: S.tool, x: Math.round(p.x), y: Math.round(p.y), w: 0, h: 0, color: S.role || S.lastRole || DEFAULT_COLOR, sw: S.sw, note: '' };
-  s.shapes.push(sh); S.sel = n;
-  if (S.tool === 'point') { snipChanged(); const ta = $(`[data-note="${n}"]`); if (ta) ta.focus(); return; }
-  S.drag = { kind: 'draw', n, p0: p }; stage.setPointerCapture(e.pointerId); redrawStage();
+  const sh = { n, type: tool, x: Math.round(p.x), y: Math.round(p.y), w: 0, h: 0, color: S[F.colorKey] || S[F.lastKey] || DEFAULT_COLOR, sw: S[F.swKey], note: '' };
+  if (tool === 'pen' || tool === 'hl') sh.pts = [[Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10]];
+  s.shapes.push(sh); S[F.selKey] = n;
+  if (tool === 'point') { finishDraw(F, sh); return; }
+  S.drag = { kind: 'draw', n, p0: p }; root.setPointerCapture(e.pointerId); F.redraw();
 });
 document.addEventListener('pointermove', (e) => {
   if (S.panning) { S.view.x = S.panning.vx + e.clientX - S.panning.x; S.view.y = S.panning.vy + e.clientY - S.panning.y; S.view.fit = false; applyView(); return; }
   if (!S.drag) return;
-  const p = toImage(e), s = snipOf();
+  const F = surf(); if (!F) return;
+  const p = F.point(e), s = F.s;
   if (S.drag.kind === 'csnip') {
     Object.assign(S.drag, { x1: p.x, y1: p.y });
     const x = Math.min(S.drag.x0, p.x), y = Math.min(S.drag.y0, p.y), w = Math.abs(p.x - S.drag.x0), h = Math.abs(p.y - S.drag.y0);
     $('#liveRect').innerHTML = `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="rgba(255,255,255,.06)" stroke="#fff" stroke-dasharray="5 4" stroke-width="${1 / S.view.k}"/>`;
-    let ro = $('#readout'); if (!ro) { ro = document.createElement('div'); ro.id = 'readout'; ro.className = 'readout'; $('#stage').appendChild(ro); }
-    const r = $('#stage').getBoundingClientRect(); ro.style.left = (e.clientX - r.left + 12) + 'px'; ro.style.top = (e.clientY - r.top + 12) + 'px';
-    ro.textContent = `${Math.round(w * s.w / IW)} × ${Math.round(h * s.w / IW)}`; return;
+    return;
   }
   const sh = s.shapes.find((x) => x.n === S.drag.n) || {};
   const dx = p.x - S.drag.p0.x, dy = p.y - S.drag.p0.y;
-  if (S.drag.kind === 'draw' && sh.type === 'line') { sh.x = Math.round(S.drag.p0.x); sh.y = Math.round(S.drag.p0.y); sh.w = Math.round(dx); sh.h = Math.round(dy); }
+  if (S.drag.kind === 'draw' && (sh.type === 'pen' || sh.type === 'hl')) {
+    const last = sh.pts[sh.pts.length - 1];
+    if (Math.hypot(p.x - last[0], p.y - last[1]) * F.k() >= 2) sh.pts.push([Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10]);
+    penBox(sh);
+  }
+  else if (S.drag.kind === 'draw' && sh.type === 'line') { sh.x = Math.round(S.drag.p0.x); sh.y = Math.round(S.drag.p0.y); sh.w = Math.round(dx); sh.h = Math.round(dy); }
   else if (S.drag.kind === 'draw') { sh.x = Math.round(Math.min(S.drag.p0.x, p.x)); sh.y = Math.round(Math.min(S.drag.p0.y, p.y)); sh.w = Math.round(Math.abs(dx)); sh.h = Math.round(Math.abs(dy)); }
-  else if (S.drag.kind === 'move') { sh.x = Math.round(S.drag.orig.x + dx); sh.y = Math.round(S.drag.orig.y + dy); S.drag.moved = true; }
+  else if (S.drag.kind === 'move') {
+    sh.x = Math.round(S.drag.orig.x + dx); sh.y = Math.round(S.drag.orig.y + dy);
+    if (sh.pts) sh.pts = S.drag.orig.pts.map(([px, py]) => [px + dx, py + dy]);
+    S.drag.moved = true;
+  }
   else if (S.drag.kind === 'resize') {
     const o = S.drag.orig, dir = S.drag.dir; S.drag.moved = true;
     if (S.drag.img) {
@@ -2158,22 +2178,25 @@ document.addEventListener('pointermove', (e) => {
     } else {
       const r = resizeBox(o, dir, dx, dy, e.shiftKey);
       Object.assign(sh, { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.w), h: Math.round(r.h) });
+      // Freehand strokes scale their points with the box.
+      if (o.pts) sh.pts = o.pts.map(([px, py]) => [r.x + (o.w ? (px - o.x) * r.w / o.w : 0), r.y + (o.h ? (py - o.y) * r.h / o.h : 0)]);
     }
   }
   else if (S.drag.kind === 'img') { const im = s.images[S.drag.i]; im.x = Math.round(S.drag.orig.x + dx); im.y = Math.round(S.drag.orig.y + dy); S.drag.moved = true; }
   else if (S.drag.kind === 'box') { sh.box = { x: Math.round(S.drag.box0.x + dx), y: Math.round(S.drag.box0.y + dy) }; S.drag.moved = true; }
-  redrawStage();
+  F.redraw();
 });
 document.addEventListener('pointerup', () => {
   S._alphaHist = false;
   if (S.panning) { S.panning = null; const st = $('#stage'); if (st) st.classList.remove('panning'); return; }
   if (!S.drag) return;
   const dr = S.drag; S.drag = null;
-  if (dr.kind === 'csnip') { const ro = $('#readout'); if (ro) ro.remove(); const w = Math.abs(dr.x1 - dr.x0), h = Math.abs(dr.y1 - dr.y0); if (w > 6 && h > 6) newSnip(true); else $('#liveRect').innerHTML = ''; return; }
-  if (dr.kind === 'img' || dr.kind === 'resize') { if (dr.moved) snipChanged(); else S.hist.pop(); return; }
+  const F = surf(); if (!F) return;
+  if (dr.kind === 'csnip') { const w = Math.abs(dr.x1 - dr.x0), h = Math.abs(dr.y1 - dr.y0); if (w > 6 && h > 6) newSnip(true); else $('#liveRect').innerHTML = ''; return; }
+  if (dr.kind === 'img' || dr.kind === 'resize') { if (dr.moved) F.commit(); else F.popHist(); return; }
   if (dr.kind === 'box' && dr.moved) {
     // Snap: dropped within reach of another bubble, it stacks to that bubble's right, left, top or bottom, aligned.
-    const s0 = snipOf(), nb = noteBoxes(s0), me = nb[dr.n].box, SNAP = 18, G = NOTE_STACK;
+    const s0 = F.s, nb = noteBoxes(s0), me = nb[dr.n].box, SNAP = 18, G = NOTE_STACK;
     let bestSnap = null;
     for (const o of s0.shapes) {
       if (o.n === dr.n || o.hideBubble) continue; const b = nb[o.n].box;
@@ -2185,13 +2208,9 @@ document.addEventListener('pointerup', () => {
     }
     if (bestSnap) s0.shapes.find((x) => x.n === dr.n).box = { x: Math.round(bestSnap[1].x), y: Math.round(bestSnap[1].y) };
   }
-  const s = snipOf(), sh = s.shapes.find((x) => x.n === dr.n);
-  if (dr.kind === 'draw') {
-    if (sh.type === 'line') { if (Math.hypot(sh.w, sh.h) < 8) { sh.w = 100; sh.h = -30; } }
-    else if (sh.w < 8 || sh.h < 8) { sh.w = sh.type === 'cross' ? 28 : 80; sh.h = sh.type === 'cross' ? 28 : 50; sh.x -= sh.w / 2; sh.y -= sh.h / 2; }
-    S.role = null; S.selByDraw = true; // Grant: deselect the colour after a shape is drawn, so the next colour can be picked
-    snipChanged(); const ta = $(`[data-note="${dr.n}"]`); if (ta) ta.focus(); return; }
-  if (dr.moved) snipChanged(); else S.hist.pop();
+  const sh = F.s.shapes.find((x) => x.n === dr.n);
+  if (dr.kind === 'draw' && sh) { finishDraw(F, sh); return; }
+  if (dr.moved) F.commit(); else F.popHist();
 });
 document.addEventListener('wheel', (e) => {
   const stage = e.target.closest('#stage'); if (!stage || !S.view) return;
@@ -2205,10 +2224,9 @@ document.addEventListener('dblclick', (e) => {
   const n = Number(el.dataset.box || el.dataset.shape); S.sel = n; const ta = $(`[data-note="${n}"]`); if (ta) { ta.focus(); ta.select(); }
 });
 document.addEventListener('input', (e) => {
-  if (e.target.dataset && e.target.dataset.fillpct) { const sh = snipOf().shapes.find((x) => x.n === Number(e.target.dataset.fillpct)); if (!S._alphaHist) { pushHist(); S._alphaHist = true; } sh.fillPct = Number(e.target.value); sh.fill = false; sh.type = sh.type.replace('-fill', ''); const o = $(`[data-fill-out="${sh.n}"]`); if (o) o.textContent = e.target.value + '%'; markDirty(); redrawStage(); return; }
+  if (e.target.dataset && e.target.dataset.fillpct) { const F = surf(); const sh = F.s.shapes.find((x) => x.n === Number(e.target.dataset.fillpct)); if (!S._alphaHist) { F.hist(); S._alphaHist = true; } sh.fillPct = Number(e.target.value); sh.fill = false; sh.type = sh.type.replace('-fill', ''); const o = $(`[data-fill-out="${sh.n}"]`); if (o) o.textContent = e.target.value + '%'; markDirty(); F.redraw(); return; }
   if (e.target.id === 'q') { S.query = e.target.value; S._focusQ = true; renderSide(); return; }
-  if (e.target.dataset.dnote) { S.ws.marks.find((m) => m.n === Number(e.target.dataset.dnote)).note = e.target.value; markDirty(); return; }
-  if (e.target.dataset.note) { const sh = snipOf().shapes.find((c) => c.n === Number(e.target.dataset.note)); sh.note = e.target.value; markDirty(); snipOf().saved = false; redrawStage(); return; }
+  if (e.target.dataset.note) { const F = surf(); if (!F) return; const sh = F.s.shapes.find((c) => c.n === Number(e.target.dataset.note)); sh.note = e.target.value; markDirty(); if (F.kind === 'snip') snipOf().saved = false; F.redraw(); return; }
   if (e.target.id === 'src') { S.ws.text = e.target.value; if (S.ws.type === 'md') paintPreview(); markDirty(); return; }
   if (e.target.id === 'srvAddr') { S.settings.server = e.target.value; return; }
   if (e.target.id === 'keepN') { S.settings.keep = e.target.value; return; }
@@ -2226,7 +2244,7 @@ document.addEventListener('keydown', (e) => {
     // Esc goes to the Select tool (Grant 2026-11-15); while typing a note it also leaves the note box.
     if (S.picker) { S.picker = false; renderWS(); return; }
     if (S.ws && S.ws.kind === 'snip' && (S.tool !== 'select' || typing)) { if (S.drag && S.drag.kind === 'draw') { S.drag = null; S.hist.length && (snipOf().shapes = S.hist.pop()); } S.tool = 'select'; renderWS(); return; }
-    if (S.ws && S.ws.kind === 'doc' && S.docView === 'preview' && (S.dtool !== 'select' || (typing && e.target.dataset.dnote !== undefined))) { S.ddrag = null; const r = $('#readout'); if (r) r.remove(); S.dtool = 'select'; renderWS(); return; }
+    if (S.ws && S.ws.kind === 'doc' && S.docView === 'preview' && (S.dtool !== 'select' || (typing && e.target.dataset.note !== undefined))) { S.drag = null; const r = $('#readout'); if (r) r.remove(); S.dtool = 'select'; renderWS(); return; }
     if (S.pop) { S.picker = false; renderWS(); } else if (S.pop) { S.pop = false; renderSide(); } else if (S.sideOpen) { S.sideOpen = false; layout(); }
   }
   const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
@@ -2238,7 +2256,7 @@ document.addEventListener('keydown', (e) => {
     if (ctrl && k === 'z') { e.preventDefault(); $('#docUndo').click(); return; }
     if (ctrl && k === 'y') { e.preventDefault(); $('#docRedo').click(); return; }
     if (ctrl && e.shiftKey && k === 'c') { e.preventDefault(); $('#docCopy').click(); return; }
-    const dm = { v: 'select', b: 'box', c: 'circle', l: 'line', x: 'cross', p: 'point' }; if (!ctrl && dm[k]) { pickDtool(dm[k]); renderWS(); return; }
+    const dm = { ...TOOL_KEYS_ALL, b: 'rect', c: 'ellipse' }; if (!ctrl && dm[k]) { pickDtool(dm[k]); renderWS(); return; }
   }
   if (!S.ws || S.ws.kind !== 'snip' || typing) return;
   if (ctrl && e.shiftKey && k === 'c') { e.preventDefault(); copyToast('Copied'); return; }
@@ -2247,7 +2265,7 @@ document.addEventListener('keydown', (e) => {
   if (ctrl && k === '0') { e.preventDefault(); fitView(); return; }
   if ((e.key === 'Delete' || e.key === 'Backspace') && S.selImg != null && !S.sel) { pushHist(); snipOf().images.splice(S.selImg, 1); S.selImg = null; snipChanged(); return; }
   if ((e.key === 'Delete' || e.key === 'Backspace') && S.sel) { pushHist(); const s = snipOf(); s.shapes = s.shapes.filter((x) => x.n !== S.sel); S.sel = null; snipChanged(); return; }
-  const map = { v: 'select', r: 'rect', o: 'ellipse', l: 'line', x: 'cross', p: 'point' };
+  const map = TOOL_KEYS_ALL;
   if (!ctrl && map[k]) { pickTool(map[k]); renderWS(); }
 });
 document.addEventListener('keyup', (e) => { if (e.key === ' ') spaceDown = false; });
