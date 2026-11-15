@@ -964,6 +964,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
     <tr><td>Select V, Rectangle R, Ellipse O, Filled rectangle, Filled ellipse, X mark X, Point P</td><td>Snip toolbar without the filled tools; <b>shading is a toggle in the callout card</b>; type can be changed in the card</td></tr>
     <tr><td>Print area</td><td>Dashed frame with corner marks and its size: the image, added images, shapes and shown bubbles, plus a 12 px margin when anything goes past the image (was 24 px). Notes can go anywhere, also over the frame; it follows them. Copy takes it; Fit (Ctrl+0) zooms to it</td></tr>
     <tr><td>Bubble stacking</td><td>When bubbles would overlap, one sits to the right, bottom, top or left of the other (closest free spot off the image). Drop a bubble near another and it snaps beside it</td></tr>
+    <tr><td>Zoom the Markdown page</td><td>Ctrl + mouse wheel (around the cursor), Ctrl + = / −, Ctrl+0 fits; the zoom % is in the status bar</td></tr>
     <tr><td>Esc</td><td>Returns to the Select tool in Snip and in the Markdown page (also leaves a note box you are typing in). A click outside the canvas or page (not the toolbar) does the same</td></tr>
     <tr><td>Pen, Highlighter, Eraser</td><td>Both editors (N, H, E). Strokes and added images are in the list without a number or bubble. The eraser removes a whole pen or highlighter stroke and leaves shapes and images alone</td></tr>
     <tr><td>Order</td><td>The list runs front to back; drag a grip to bring an item forward or send it back. Callout numbers follow that order (front-most = 1)</td></tr>
@@ -1650,12 +1651,29 @@ function paintPreview() {
 const PAGE_SIDE = 210, PAGE_TOPM = 90;
 function fitPage() {
   const pg = $('#page'), wrap = $('#pageWrap'), pv = $('#preview'); if (!pg || !wrap || !pv) return;
-  const k = Math.min(1, (pv.clientWidth - 44) / (PAGE_W + 2 * PAGE_SIDE));
+  const k = Math.min(1, (pv.clientWidth - 44) / (PAGE_W + 2 * PAGE_SIDE)) * (S.docZoom || 1);
   S.pageK = k; pg.style.transform = `translate(${PAGE_SIDE * k}px, ${PAGE_TOPM * k}px) scale(${k})`;
   wrap.style.width = (PAGE_W + 2 * PAGE_SIDE) * k + 'px'; wrap.style.height = (pg.offsetHeight + 2 * PAGE_TOPM) * k + 'px';
+  const zs = $('#docZoomStat'); if (zs) zs.textContent = Math.round(k * 100) + '%' + (S.docZoom && S.docZoom !== 1 ? '' : ' · fit');
 }
+/* Ctrl + mouse wheel zooms the Markdown page around the cursor (Grant 2026-11-15); Ctrl+0 fits it again. */
+document.addEventListener('wheel', (e) => {
+  if (!e.ctrlKey || !S.ws || S.ws.kind !== 'doc') return;
+  const pv = e.target.closest && e.target.closest('#preview'); if (!pv || !$('#pageWrap')) return;
+  e.preventDefault();
+  const r = pv.getBoundingClientRect(), cx = e.clientX - r.left, cy = e.clientY - r.top;
+  const wrap = $('#pageWrap'), w0 = wrap.getBoundingClientRect(), fx = (e.clientX - w0.left) / w0.width, fy = (e.clientY - w0.top) / w0.height;
+  S.docZoom = Math.min(4, Math.max(0.4, (S.docZoom || 1) * (e.deltaY < 0 ? 1.1 : 1 / 1.1)));
+  paintPreview();
+  const w1 = wrap.getBoundingClientRect();
+  pv.scrollLeft += (w1.left + fx * w1.width) - (r.left + cx);
+  pv.scrollTop += (w1.top + fy * w1.height) - (r.top + cy);
+}, { passive: false });
 function renderDocWS() {
   const w = S.ws;
+  // Keep the page where it is when the editor re-renders (tool change, a new shape, a card edit).
+  const oldPv = $('#preview'), keep = oldPv && S._pvKey === w.path + S.docView ? [oldPv.scrollLeft, oldPv.scrollTop] : null;
+  S._pvKey = w.path + S.docView;
   const isMd = w.type === 'md';
   if (!w.marks) w.marks = clone((w.file && w.file.marks) || []);
   w.marks.forEach((m) => { if (m.type === 'box') m.type = 'rect'; if (m.type === 'circle') m.type = 'ellipse'; if (!m.sw) m.sw = 3; });
@@ -1706,8 +1724,9 @@ function renderDocWS() {
       </aside>` : ''}
       ${S.picker ? `<div class="picker" role="dialog" aria-label="Insert snip"><span class="label">Insert snip</span>${SNIPS.map((s) => `<button class="attach" data-insert="${s.id}">${snipSVG(s.id)}<span><b>${esc(s.name)}</b><div class="meta mono" style="color:var(--t3)">${s.shapes.length} callouts · export.png → images/</div></span></button>`).join('')}<label class="hint" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="withNotes" checked> Add callout notes as a numbered list</label><button class="btn ghost" id="pickClose">Cancel</button></div>` : ''}
     </div>
-    <div class="statusbar"><span>${esc(w.zip)}</span><span>UTF-8 · LF</span>${pv ? `<span>${w.marks.length} callouts → ${esc(storePath(`callouts/${w.name.replace(/\.md$/, '')}.json`))}</span>` : ''}<span style="margin-left:auto">${w.text.split('\n').length} lines</span></div>`;
+    <div class="statusbar"><span>${esc(w.zip)}</span><span>UTF-8 · LF</span>${pv ? `<span>${w.marks.filter(isCallout).length} callouts → ${esc(storePath(`callouts/${w.name.replace(/\.md$/, '')}.json`))}</span><span id="docZoomStat" title="Ctrl + mouse wheel zooms; Ctrl+0 fits"></span>` : ''}<span style="margin-left:auto">${w.text.split('\n').length} lines</span></div>`;
   paintPreview();
+  if (keep) { const pvN = $('#preview'); if (pvN) { pvN.scrollLeft = keep[0]; pvN.scrollTop = keep[1]; } }
 }
 /** The part of the page that is on screen, in page pixels. Copy and Canvas snip stay inside it. */
 function visibleRect() {
@@ -2298,6 +2317,8 @@ document.addEventListener('keydown', (e) => {
     if (ctrl && k === 'z') { e.preventDefault(); $('#docUndo').click(); return; }
     if (ctrl && k === 'y') { e.preventDefault(); $('#docRedo').click(); return; }
     if (ctrl && e.shiftKey && k === 'c') { e.preventDefault(); $('#docCopy').click(); return; }
+    if (ctrl && k === '0') { e.preventDefault(); S.docZoom = 1; paintPreview(); return; }
+    if (ctrl && (k === '=' || k === '+' || k === '-')) { e.preventDefault(); S.docZoom = Math.min(4, Math.max(0.4, (S.docZoom || 1) * (k === '-' ? 1 / 1.1 : 1.1))); paintPreview(); return; }
     const dm = { ...TOOL_KEYS_ALL, b: 'rect', c: 'ellipse' }; if (!ctrl && dm[k]) { pickDtool(dm[k]); renderWS(); return; }
   }
   if (!S.ws || S.ws.kind !== 'snip' || typing) return;
