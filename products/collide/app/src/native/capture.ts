@@ -1,5 +1,5 @@
 // T14: capture the display under the cursor and hold the frozen frame, ported from
-// src-tauri/src/capture.rs (plus `crop_from_state` from crop.rs). Runs in the
+// the Rust shell's capture.rs (plus `crop_from_state` from crop.rs). Runs in the
 // Electron main process, but imports nothing from Electron: the capturer and the
 // PNG decoder are passed in, so the tests run headless with fakes.
 

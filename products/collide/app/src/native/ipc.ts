@@ -88,7 +88,7 @@ export function registerBridge(deps: BridgeDeps): { state: CaptureState } {
   handle("markups.pick", () => deps.markups.pick());
   handle("markups.list", () => deps.markups.list());
 
-  // Overlay events go to every window, the sender included (Tauri's emit did the same).
+  // Overlay events go to every window, the sender included (the Rust shell's emit did the same).
   deps.ipcMain.on(OVERLAY_EVENT_CHANNEL, (event, name, payload) => {
     if (!trusted(event) || !(OVERLAY_EVENTS as readonly unknown[]).includes(name)) return;
     deps.broadcast(OVERLAY_EVENT_CHANNEL, name, payload);

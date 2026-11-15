@@ -4,7 +4,7 @@ import { effectiveScale, isEmptyBox, normalizeBox, readout, type Box, type Point
 export type OverlayResult = { kind: "crop"; box: Box; scale: number } | { kind: "cancel" };
 
 interface Props {
-  /** Frozen frame URL (data URL in Tauri, fixture URL in a browser). */
+  /** Frozen frame URL (data URL in the desktop app, fixture URL in a browser). */
   frame: string;
   /** Display scale factor: physical px per logical px. */
   scale: number;

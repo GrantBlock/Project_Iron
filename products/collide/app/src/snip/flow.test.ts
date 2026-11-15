@@ -126,7 +126,7 @@ describe("snip flow", () => {
     expect(calls.slice(-2)).toEqual(["hide_overlay", "show_editor"]);
   });
 
-  it("a string rejection (Tauri errors are strings) still produces a readable toast", async () => {
+  it("a string rejection (the desktop shell's errors can be strings) still produces a readable toast", async () => {
     const { deps, flow, invoke } = setup();
     invoke.mockRejectedValueOnce("No monitor found under the cursor — try again.");
     await flow.start();

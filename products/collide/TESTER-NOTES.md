@@ -2,7 +2,7 @@
 
 2026-11-14 · From Grant's session `claude/peaceful-babbage-04aj3j`, merged into `development`. These changes came from Grant testing Collide on Windows 11. What is automated is listed under each item; the **Windows** lines are what still needs a real check on Grant's PC (no Windows box in the cloud).
 
-Run: `cd products/collide/app && pnpm install && pnpm test && pnpm e2e --trace off` (Vitest 117, Playwright 39 at merge). Rust: `cd src-tauri && cargo test` (20).
+Run: `cd products/collide/app && pnpm install && pnpm test && pnpm e2e --trace off && xvfb-run -a pnpm e2e:electron --trace off` (`xvfb-run -a` on Linux only). Desktop app: `pnpm electron:dev`. At the 2026-11-14 merge: Vitest 117, Playwright 39, `cargo` 20; since T17 (run 2) there is no Rust, and the 20 `cargo` tests are Vitest tests (table in `app/CLAUDE.md`).
 
 ## What changed and how to test it
 
@@ -17,7 +17,7 @@ Run: `cd products/collide/app && pnpm install && pnpm test && pnpm e2e --trace o
    - Automated: `src/editor/notes.test.ts`, `e2e/fit.spec.ts`.
 5. **Toolbar:** Select, Rectangle, Ellipse, Filled rectangle, Filled ellipse, X mark (X), Point (P). The Arrow, Text and Callout tools were removed. Old markups with those shapes still open and display (`e2e/tools.spec.ts`).
 6. **Desktop window: one border, one title.** In Tauri, the native Windows title bar is kept and the in-app frame/title row is dropped. The browser build keeps the framed look (`e2e/frame.spec.ts`).
-   - Windows: `pnpm tauri dev`. One title bar, no rounded inner panel, no gap at the edges.
+   - Windows: `pnpm electron:dev`. One title bar, no rounded inner panel, no gap at the edges.
 
 7. **A finished snip is copied to the clipboard automatically**, like Snipping Tool. Toast: "Snip copied to clipboard". If the copy fails, the snip still opens and the toast says why (`e2e/snip.spec.ts`).
    - Windows: Ctrl+Alt+S, drag a box, then paste straight into another app without clicking Copy.
@@ -36,7 +36,7 @@ Run: `cd products/collide/app && pnpm install && pnpm test && pnpm e2e --trace o
 - Auto-placed boxes keep their place in shape order. Deleting an early shape can shift the auto-placed boxes after it; boxes the user moved stay where they are.
 - All keyboard shortcuts are provisional until the accessibility spec (ISSUES #10).
 - `e2e/history.spec.ts` "row and shape selection stay in sync" failed once under a full parallel run and then passed on every rerun. Watch for flakiness.
-- The e2e desktop check (`frame.spec.ts`) uses a stub Tauri bridge. It proves the layout switch, not the real window.
+- The e2e desktop check (`frame.spec.ts`) uses a stub `window.collide` bridge (Tauri until run 2 T17). It proves the layout switch, not the real window.
 
 ## Please report back (issue #2 nightly report)
 

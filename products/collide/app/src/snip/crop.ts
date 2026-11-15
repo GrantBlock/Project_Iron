@@ -1,4 +1,4 @@
-// T14: crop maths for a snip, ported from src-tauri/src/crop.rs. Pure TypeScript:
+// T14: crop maths for a snip, ported from the Rust shell's crop.rs. Pure TypeScript:
 // no Electron, no DOM. The main process uses it to crop the held frame
 // (src/native/capture.ts).
 //

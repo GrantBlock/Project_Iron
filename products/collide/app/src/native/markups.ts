@@ -1,5 +1,5 @@
-// T16: markup folders on disk, in the main process. Replaces the Tauri fs and dialog
-// plugins and the fs scope in src-tauri/capabilities/default.json.
+// T16: markup folders on disk, in the main process. Replaces the Rust shell's fs and
+// dialog plugins and the fs scope in its capabilities/default.json.
 //
 // Layout, as before: Documents/Collide/Markups/<folder>/{source.png, annotations.json, export.png}.
 // Every path is resolved here and checked against the Markups folder before any file
@@ -95,7 +95,7 @@ function storeMessage(kind: MarkupStoreErrorKind, detail: string, cause: string)
       return "The markup to save is incomplete: source.png, annotations.json or export.png is missing. Save again.";
     case "NoDocumentsFolder":
       return `Collide could not find your Documents folder (${cause}). Check that it exists, then restart Collide.`;
-    // The next two are the texts the Tauri store showed.
+    // The next two are the texts the Rust shell's store showed.
     case "WriteFailed":
       return `Writing ${detail} failed (${cause}). Check that ${MARKUPS_LABEL} is writable and has free space, then save again.`;
     case "ReadFailed":

@@ -1,5 +1,5 @@
 // T15: `settings.json` in the app's user-data folder, e.g. `{ "hotkey": "Ctrl+Alt+S" }`,
-// ported from src-tauri/src/settings.rs plus `setup_hotkey` from lib.rs.
+// ported from the Rust shell's settings.rs plus `setup_hotkey` from lib.rs.
 //
 // Missing file -> written with defaults. Invalid hotkey (unparseable, or the
 // Windows-owned Win+Shift+S) -> default hotkey plus a warning naming the fix.

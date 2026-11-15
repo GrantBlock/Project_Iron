@@ -1,4 +1,4 @@
-// T14: the 3 tests of src-tauri/src/capture.rs, ported one for one with a fake
+// T14: the 3 tests of the Rust shell's capture.rs, ported one for one with a fake
 // capturer (same names), then the cases the Node port adds.
 import { describe, expect, it } from "vitest";
 import { captureInto, CaptureError, CaptureState, cropFromState, encodePng, type Capture, type CaptureErrorKind, type Capturer, type MonitorInfo } from "./capture";

@@ -1,5 +1,5 @@
 // Markup folder storage behind a small interface (T06): `source.png`, `annotations.json`, `export.png`.
-// TauriMarkupStore (tauriStore.ts) writes real folders; MemoryMarkupStore backs Vitest and the browser/e2e build.
+// ElectronMarkupStore (electronStore.ts) writes real folders through the main process; MemoryMarkupStore backs Vitest and the browser/e2e build.
 import { parse, serialize, type AnnotationsDoc } from "../model";
 
 export const MARKUPS_SUBPATH = "Collide/Markups";

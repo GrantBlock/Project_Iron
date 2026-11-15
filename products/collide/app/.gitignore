@@ -3,6 +3,5 @@ dist
 dist-electron
 release
 target
-src-tauri/gen
 test-results
 playwright-report

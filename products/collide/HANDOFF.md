@@ -14,7 +14,7 @@
 | T14 | Bridge, capture, crop | Done (Vitest 219, Playwright 45, Electron e2e 6; capture at 100–200% and second monitor: manual Grant/Lydia) | n/a (Phase E) |
 | T15 | Snip choreography, settings | Done (Vitest 286, Playwright 45, Electron e2e 13 ×2; TESTER-NOTES 1, 7, 9, real hotkey, overlay DPI: manual Grant/Lydia) | n/a (Phase E) |
 | T16 | Local markup storage | Done (Vitest 319, Playwright 45, Electron e2e 15 ×2; real folder dialog, OneDrive/UNC Documents: manual Grant/Lydia) | n/a (Phase E) |
-| T17 | Remove Tauri | To do | — |
+| T17 | Remove Tauri | Done (Vitest 319, Playwright 45 (2 of 3 full runs green, see ISSUES 16), Electron e2e 15; no Rust; Reviewer doc fixes applied by Planner) | n/a (Phase E) |
 | T30 | Reference harness | To do | |
 | T31 | Layout shell | To do | |
 | T32 | Markup engine | To do | |
@@ -78,7 +78,7 @@ None.
 
 ## Grant: test first on Windows 11
 
-1. `cd products/collide/app && pnpm install && pnpm tauri dev` starts the app (Linux needs the -dev packages in `app/CLAUDE.md`; Windows needs the standard Tauri prerequisites).
+1. `cd products/collide/app && pnpm install && pnpm electron:dev` starts the app (since run 2 T17: Electron, no Rust or Tauri prerequisites).
 2. Open an image, draw, move, resize and delete each shape, add notes, undo/redo; Save (Ctrl+S), close, Open — all still editable.
 3. Export PNG — same size as the source.
 4. `Ctrl+Alt+S` from another app opens the overlay on the monitor under the cursor; the editor is not in the frame.

@@ -54,17 +54,17 @@ Two screens: a snip overlay for capture and a three-pane editor for markup and A
 
 ## Tech stack
 
-Tauri v2 with a React frontend; every library below is free for commercial use. tldraw is excluded because production use needs a paid commercial license.
+Electron (Node in the main process) with a React frontend, since run 2 (`RUN2.md`, Grant 2026-11-15; before that Tauri v2 and Rust); every library below is free for commercial use. tldraw is excluded because production use needs a paid commercial license.
 
 | Layer | Choice | Role |
 | --- | --- | --- |
-| App shell | Tauri v2 (Rust + React/TypeScript) | Native window, global hotkey, file system access |
-| Capture | `xcap` crate | Full-monitor capture for the frozen frame |
-| Crop | `image` crate | Crop the frozen frame to the dragged box, encode PNG |
+| App shell | Electron (Node main process + React/TypeScript), preload bridge `window.collide` | Native window, global hotkey, file system access |
+| Capture | Electron `desktopCapturer` in the main process | Full-monitor capture for the frozen frame |
+| Crop | TypeScript (`src/snip/crop.ts`) + Electron `nativeImage` | Crop the frozen frame to the dragged box, encode PNG |
 | Canvas | react-konva | Shapes, drag/resize (`Transformer`), flatten via `stage.toDataURL()` |
 | PDF view | pdf.js | Render pages to canvas under the annotation layer |
 | PDF export | pdf-lib | Write native annotations or flatten |
-| Storage | Local folders + SQLite (`tauri-plugin-sql`) | Files per markup; index, tags, search, chat history |
+| Storage | Local folders via Node `fs` in the main process, scoped to `Documents/Collide/Markups`; index: SQLite [library for Electron not chosen; the Tauri SQL plugin no longer applies] | Files per markup; index, tags, search, chat history |
 | AI (offline) | Ollama + a vision-capable model | Private, free, lower quality |
 | AI (cloud, optional) | Claude API | Better output; images leave the PC |
 
@@ -147,7 +147,7 @@ Ship Phase 1 (editor) as a must and Phase 2 (snip) as a stretch, with passing te
 - No AI panel code tonight; leave an empty right-side pane as a placeholder
 - No branding on exports
 - Target OS: Windows 11; code must also build on macOS/Linux so agents can run tests anywhere
-- Package manager `pnpm`; TypeScript strict mode; no dependencies beyond the Tech stack table plus test tooling (Vitest, Playwright, `cargo test`) without Planner approval
+- Package manager `pnpm`; TypeScript strict mode; no dependencies beyond the Tech stack table plus test tooling (Vitest, Playwright) without Planner approval
 
 ## Team
 
@@ -165,7 +165,7 @@ Opus plans and unblocks; Sonnet does the volume. Every task passes Coder → Rev
 1. Planner picks the next unblocked task, writes a ticket (goal, files in scope, acceptance criteria copied from the board), and marks it "In progress" in `PROGRESS.md`.
 2. Coder implements on `task/Txx-<slug>` (branched from `snip-markup/run-1`) with unit tests, then hands to Reviewer.
 3. Reviewer approves or returns a fix list. Maximum 2 review rounds.
-4. Tester runs `pnpm test`, `pnpm e2e` and `cargo test`, plus the task's acceptance check, and records the result in `PROGRESS.md`.
+4. Tester runs `pnpm test`, `pnpm e2e` and `pnpm e2e:electron`, plus the task's acceptance check, and records the result in `PROGRESS.md`.
 5. Pass → squash-merge the task branch into `snip-markup/run-1`, Planner marks Done in both the task board and `PROGRESS.md`. Fail → back to Coder.
 6. After 2 failed Coder cycles on one task, Planner marks it Blocked in `PROGRESS.md`, adds a row to `ISSUES.md` saying what was tried and what's needed, logs the same in `HANDOFF.md`, and moves to the next independent task.
 
@@ -229,7 +229,7 @@ By morning `snip-markup/run-1` holds working code, a pull request from it into `
 
 **Grant tests on Windows 11** (things agents can't verify)
 
-- [ ] `pnpm install && pnpm tauri dev` starts the app
+- [ ] `pnpm install && pnpm electron:dev` starts the app
 - [ ] Draw, move, resize and delete each shape on a real screenshot; save, close, reopen
 - [ ] `Ctrl+Alt+S` opens the overlay on the monitor under the cursor (if T11 merged)
 - [ ] Crop lines up with what was dragged at 100% and 150% display scaling
