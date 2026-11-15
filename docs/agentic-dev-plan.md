@@ -57,6 +57,7 @@ Related (in `GrantBlock/designengineering-ai`, `Builder v0.1/`): `development-pa
 - [stated] 2026-11-15: In the Markdown markup, shapes can start in the margin beside the page, and Ctrl + mouse wheel zooms the page (Grant).
 - [stated] 2026-11-15: The canvas can be saved as its own file type, a Collide file with the extension `.collide`, holding the source files and the markup so it reopens editable (Grant). Package layout is Draft (not yet approved by Grant): manifest.json, sources/, preview.png.
 - [stated] 2026-11-15: Collide callout numbers count up as callouts are added (counted from the back), so existing numbers stay (Grant). Replaces "numbers follow front-to-back order" above for the direction.
+- [stated] 2026-11-15: PDF is in Collide's scope for the scheduled run (RUN3 task T38), kept to the smallest version (Grant).
 - [stated] 2026-11-15: The Snip canvas shows a print area marker; notes may go over it. Autofit works with the annotations on a tighter margin (Grant).
 - [stated] 2026-11-15: Annotation bubbles can stack to the right, top, bottom or left of another bubble (Grant).
 - [stated] 2026-11-15: Collide's scroll bars follow the theme. With a drawing tool on, a click outside the view area goes back to the Select tool (Grant).

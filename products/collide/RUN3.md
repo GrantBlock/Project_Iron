@@ -28,9 +28,10 @@ The Planner reads this file, `SPEC.md` (team, task loop, rules), `RUN2.md`, `HAN
 | T34 | Markdown editor: Edit (text tools: Heading, List, Table, Label, Num list, Bold, Link; live preview) and Preview (the T32 engine on the page, margins usable, Ctrl + wheel zoom, keep scroll); Insert image and paste into `images/`; Copy PNG and Export of the visible page; unsaved mark, full width, hide toolbar. | Markdown specs pass on both | T32 |
 | T35 | `.collide` files: save and open, sources in their own formats plus every item and the order; reopens editable. Package layout per Grant's answer. | Round trip: save → open gives the same `__collide.state()` and the same screenshot | T33, T34 |
 | T36 | Storage on the server PC (Server mode): the Node server keeps snips, zips, callouts and `.collide` files in [storage folder], deletes the oldest after [number of files]. Connected mode stays for a later run. | Storage specs pass in the app (prototype shows the settings only) | T31 |
+| T38 | PDF (Grant 2026-11-15, smallest version): Open a `.pdf`; each page renders with pdf.js as a page in the T32 canvas (page tabs or arrows), marked up with the same tools, callouts and cards; Save keeps the PDF and the markup together in a `.collide`; Export writes a PDF (pdf-lib, markup drawn on each page) and Copy gives the page as PNG. No PDF text editing, forms or OCR. Specs: no prototype for PDF, so Lydia writes them from this row with a 2-page fixture PDF. | Open → mark up page 2 → save → reopen gives the same state; exported PDF has the same pages with the markup | T32, T35 |
 | T37 | Handoff: `HANDOFF.md`, reference report (per spec: prototype / app), screenshot differences for Grant, Windows manual checks in `TESTER-NOTES.md`. | Matches the final board | All attempted |
 
-T30–T34 are **must**; T35–T36 run if usage remains; T37 always runs last.
+T30–T34 are **must**; T35, T36 and T38 run if usage remains; T37 always runs last.
 
 ## Rules (in addition to SPEC.md's)
 
@@ -51,3 +52,4 @@ Integration branch `collide/run-3`, cut from `development` after Run 2 is merged
 3. `.collide` package layout: `manifest.json`, `sources/`, `preview.png`?
 4. Screenshot tolerance: list differences above 2% of pixels (A), or fail the spec?
 5. Export: source size as today, or the print area?
+6. PDF: is T38's scope right (open, mark up pages, save, export PDF; no text editing or OCR)?
