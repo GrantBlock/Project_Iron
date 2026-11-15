@@ -193,7 +193,7 @@ test("capture and crop through the bridge: real screen frame, real nativeImage c
   }
 });
 
-test("bridge: the T16 stubs say which task fills them in; settings, copyImage and overlay events answer", async () => {
+test("bridge: markups, settings, copyImage and overlay events answer", async () => {
   const { app, userData, close } = await launch();
   try {
     const page = await app.firstWindow();
@@ -220,7 +220,9 @@ test("bridge: the T16 stubs say which task fills them in; settings, copyImage an
         showOverlay: await message(collide.showOverlay({ x: 0, y: 0, width: 0, height: 10 })),
         copyImage: await message(collide.copyImage("data:image/png;base64,AAAA")),
         settingsStatus: await collide.settingsStatus(),
-        markupsList: await message(collide.markups.list()),
+        // Real since T16 (markups.spec.ts): nothing is saved yet in this launch's own Documents folder.
+        markupsList: await collide.markups.list(),
+        markupsOpen: await message(collide.markups.open("")),
         ping: await ping,
         unknownEvent,
         offSnip: typeof offSnip,
@@ -230,7 +232,8 @@ test("bridge: the T16 stubs say which task fills them in; settings, copyImage an
       showOverlay: "The overlay position is not valid — start a new snip.",
       copyImage: "The image to copy is not a PNG — try Copy again, or use Export instead.",
       settingsStatus: { hotkey: "Ctrl+Alt+S", warning: null },
-      markupsList: "markups.list is not available in this build yet — it arrives with T16.",
+      markupsList: [],
+      markupsOpen: "No markup folder was given. Pick a folder created by Save.",
       ping: { snipId: 7 },
       unknownEvent: "Unknown overlay event: collide:capture-monitor",
       offSnip: "function",

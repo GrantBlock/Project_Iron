@@ -7,4 +7,5 @@ export { APP_NAME, devServerUrl, distFile, sameOrigin } from "./shell";
 export { createChoreography } from "./windows";
 export { setupHotkey } from "./settings";
 export { copyImage } from "./clipboard";
+export { createMarkups } from "./markups";
 export { fakeCapturer } from "./fakeCapturer";

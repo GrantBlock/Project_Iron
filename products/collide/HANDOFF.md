@@ -13,7 +13,7 @@
 | T13 | Electron shell | Done (Vitest 119, Playwright 45, Electron smoke 3; Windows exe check: manual Grant/Lydia) | n/a (Phase E) |
 | T14 | Bridge, capture, crop | Done (Vitest 219, Playwright 45, Electron e2e 6; capture at 100–200% and second monitor: manual Grant/Lydia) | n/a (Phase E) |
 | T15 | Snip choreography, settings | Done (Vitest 286, Playwright 45, Electron e2e 13 ×2; TESTER-NOTES 1, 7, 9, real hotkey, overlay DPI: manual Grant/Lydia) | n/a (Phase E) |
-| T16 | Local markup storage | To do | — |
+| T16 | Local markup storage | Done (Vitest 319, Playwright 45, Electron e2e 15 ×2; real folder dialog, OneDrive/UNC Documents: manual Grant/Lydia) | n/a (Phase E) |
 | T17 | Remove Tauri | To do | — |
 | T30 | Reference harness | To do | |
 | T31 | Layout shell | To do | |

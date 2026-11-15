@@ -3,21 +3,19 @@
 // table is unit-tested with a fake `ipcMain`.
 //
 // Real: captureMonitor, cropCapture and the overlay event relay (T14); the window
-// moves, copyImage and settingsStatus (T15).
-// Typed stubs (they reject with a message naming their task): markups.* (T16).
+// moves, copyImage and settingsStatus (T15); markups.* (T16, markups.ts).
 
 import {
-  IMPLEMENTED,
   INVOKE_CHANNELS,
   OVERLAY_EVENT_CHANNEL,
   OVERLAY_EVENTS,
-  STUB_TASK,
   type InvokeMethod,
   type IpcReply,
   type SettingsStatus,
 } from "./bridge";
 import { CaptureState, cropFromState, type Capturer, type FrameImage } from "./capture";
 import { captureMonitor, electronCapturer, type ElectronCaptureDeps } from "./electronCapturer";
+import type { Markups } from "./markups";
 import { overlayBoundsFor, type Choreography } from "./windows";
 import type { LogicalRect } from "../snip/crop";
 
@@ -44,6 +42,8 @@ export interface BridgeDeps extends ElectronCaptureDeps {
   copyImage: (png: unknown) => void;
   /** What loading settings.json and registering the hotkey gave; null before that has run. */
   settingsStatus: () => SettingsStatus | null;
+  /** Markup folders, scoped to Documents/Collide/Markups (markups.ts). */
+  markups: Markups;
   /** Defaults to the real capturer; tests and the Electron e2e pass a fake. */
   capturer?: Capturer;
   state?: CaptureState;
@@ -54,11 +54,6 @@ export const UNTRUSTED_SENDER = "This page may not use Collide's desktop feature
 /** The text the page gets for a failure: the error's own cause-and-fix message, as the Rust shell serialized it. */
 export function errorText(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
-}
-
-export function stubMessage(method: InvokeMethod): string {
-  const task = (STUB_TASK as Partial<Record<InvokeMethod, string>>)[method];
-  return `${method} is not available in this build yet — it arrives with ${task}.`;
 }
 
 /** Register every bridge channel. Returns the capture state (the held frame). */
@@ -87,12 +82,11 @@ export function registerBridge(deps: BridgeDeps): { state: CaptureState } {
   handle("copyImage", (png) => deps.copyImage(png));
   handle("settingsStatus", () => deps.settingsStatus());
 
-  for (const method of Object.keys(INVOKE_CHANNELS) as InvokeMethod[]) {
-    if (IMPLEMENTED.includes(method)) continue;
-    handle(method, () => {
-      throw new Error(stubMessage(method));
-    });
-  }
+  // The arguments come from the page: markups.ts checks their types and every path.
+  handle("markups.save", (folderName, files) => deps.markups.save(folderName, files));
+  handle("markups.open", (folder) => deps.markups.open(folder));
+  handle("markups.pick", () => deps.markups.pick());
+  handle("markups.list", () => deps.markups.list());
 
   // Overlay events go to every window, the sender included (Tauri's emit did the same).
   deps.ipcMain.on(OVERLAY_EVENT_CHANNEL, (event, name, payload) => {

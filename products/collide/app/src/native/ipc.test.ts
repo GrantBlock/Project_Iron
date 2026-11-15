@@ -1,8 +1,9 @@
-// T14/T15: the main-process side of the bridge, with a fake ipcMain, a fake capturer and fake windows.
+// T14/T15/T16: the main-process side of the bridge, with a fake ipcMain, a fake capturer, fake windows and a fake markup store.
 import { describe, expect, it } from "vitest";
-import { IMPLEMENTED, INVOKE_CHANNELS, OVERLAY_EVENT_CHANNEL, OVERLAY_EVENTS, STUB_TASK, type InvokeMethod, type IpcReply, type SettingsStatus } from "./bridge";
+import { INVOKE_CHANNELS, OVERLAY_EVENT_CHANNEL, OVERLAY_EVENTS, type InvokeMethod, type IpcReply, type SettingsStatus } from "./bridge";
 import { CaptureError, type Capturer } from "./capture";
 import { registerBridge, UNTRUSTED_SENDER, type IpcEventLike } from "./ipc";
+import { MarkupStoreError } from "./markups";
 import type { CaptureInfo, CropInfo } from "../snip/flow";
 import { decodeDataUrl, decodePng, TestImage } from "./testImage";
 
@@ -13,6 +14,7 @@ const PNG = "data:image/png;base64,iVBORw0KGgo=";
 function setup(capturer?: Capturer, settings: SettingsStatus | null = { hotkey: "Ctrl+Alt+S", warning: null }) {
   const moves: unknown[][] = [];
   const copied: unknown[] = [];
+  const stored: unknown[][] = [];
   const handlers = new Map<string, (event: IpcEventLike, ...args: unknown[]) => unknown>();
   const listeners = new Map<string, (event: IpcEventLike, ...args: unknown[]) => void>();
   const sent: unknown[][] = [];
@@ -48,11 +50,31 @@ function setup(capturer?: Capturer, settings: SettingsStatus | null = { hotkey: 
       copied.push(png);
     },
     settingsStatus: () => settings,
+    markups: {
+      save: (folderName, files) => {
+        stored.push(["save", folderName, files]);
+        if (folderName !== "2026-11-15_snip") throw new MarkupStoreError("InvalidFolderName", String(folderName));
+        return `/docs/Collide/Markups/${folderName}`;
+      },
+      open: (folder) => {
+        stored.push(["open", folder]);
+        if (folder !== "/docs/Collide/Markups/2026-11-15_snip") throw new MarkupStoreError("OutsideMarkups", String(folder));
+        return { sourcePng: new Uint8Array([137, 80]), annotations: "{}" };
+      },
+      pick: async () => {
+        stored.push(["pick"]);
+        return null;
+      },
+      list: () => {
+        stored.push(["list"]);
+        return ["/docs/Collide/Markups/2026-11-15_snip"];
+      },
+    },
     capturer: capturer ?? { captureAt: async () => ({ image: TestImage.marked(90, 60), monitor, display: { id: 2, bounds: { x: -60, y: -40, width: 60, height: 40 } } }) },
   });
   const invoke = <T>(method: InvokeMethod, event: IpcEventLike, ...args: unknown[]) =>
     handlers.get(INVOKE_CHANNELS[method])!(event, ...args) as Promise<IpcReply<T>>;
-  return { handlers, listeners, sent, state, invoke, moves, copied };
+  return { handlers, listeners, sent, state, invoke, moves, copied, stored };
 }
 
 describe("registerBridge", () => {
@@ -104,16 +126,25 @@ describe("registerBridge", () => {
     expect(failing.state.frame).toBeNull();
   });
 
-  it("every method that is not implemented yet is a stub that names its task", async () => {
-    const { invoke } = setup();
-    const stubs = (Object.keys(INVOKE_CHANNELS) as InvokeMethod[]).filter((m) => !IMPLEMENTED.includes(m));
-    expect(stubs.sort()).toEqual(Object.keys(STUB_TASK).sort());
-    expect(stubs).toEqual(["markups.list", "markups.open", "markups.pick", "markups.save"]);
-    for (const method of stubs) {
-      const task = STUB_TASK[method as keyof typeof STUB_TASK];
-      expect(await invoke(method, fromApp)).toEqual({ ok: false, error: `${method} is not available in this build yet — it arrives with ${task}.` });
+  it("T16: no stubs are left; the markups channels reach the store with the page's arguments, and its typed errors come back as messages", async () => {
+    const { invoke, stored } = setup();
+    const files = { sourcePng: new Uint8Array([1]), annotations: "{}", exportPng: new Uint8Array([2]) };
+    expect(await invoke("markups.save", fromApp, "2026-11-15_snip", files)).toEqual({ ok: true, value: "/docs/Collide/Markups/2026-11-15_snip" });
+    expect(await invoke("markups.open", fromApp, "/docs/Collide/Markups/2026-11-15_snip")).toEqual({ ok: true, value: { sourcePng: new Uint8Array([137, 80]), annotations: "{}" } });
+    expect(await invoke("markups.pick", fromApp)).toEqual({ ok: true, value: null });
+    expect(await invoke("markups.list", fromApp)).toEqual({ ok: true, value: ["/docs/Collide/Markups/2026-11-15_snip"] });
+    expect(stored).toEqual([["save", "2026-11-15_snip", files], ["open", "/docs/Collide/Markups/2026-11-15_snip"], ["pick"], ["list"]]);
+
+    expect(await invoke("markups.open", fromApp, "/etc")).toEqual({
+      ok: false,
+      error: "/etc is outside Documents/Collide/Markups. Pick a folder inside Documents/Collide/Markups.",
+    });
+    expect(await invoke("markups.save", fromApp, "../up", files)).toMatchObject({ ok: false, error: expect.stringContaining('"../up" cannot be used as a markup folder name') });
+    // Every channel answers with real behaviour: none says "not available in this build".
+    for (const method of Object.keys(INVOKE_CHANNELS) as InvokeMethod[]) {
+      const reply = await invoke(method, fromApp);
+      expect(reply.ok ? "" : reply.error, method).not.toMatch(/not available in this build/);
     }
-    expect(STUB_TASK["markups.save"]).toBe("T16");
   });
 
   it("T15: the window moves reach the choreography; the overlay goes on the captured display", async () => {
@@ -147,10 +178,10 @@ describe("registerBridge", () => {
   });
 
   it("refuses any sender that is not one of Collide's own pages", async () => {
-    const { invoke, state, listeners, sent, moves, copied } = setup();
+    const { invoke, state, listeners, sent, moves, copied, stored } = setup();
     for (const event of [{ senderFrame: { url: "https://example.com/" } }, { senderFrame: null }, {}] as IpcEventLike[]) {
       expect(await invoke("captureMonitor", event)).toEqual({ ok: false, error: UNTRUSTED_SENDER });
-      for (const method of ["hideEditor", "showEditor", "showOverlay", "hideOverlay", "copyImage", "settingsStatus"] as const) {
+      for (const method of ["hideEditor", "showEditor", "showOverlay", "hideOverlay", "copyImage", "settingsStatus", "markups.save", "markups.open", "markups.pick", "markups.list"] as const) {
         expect(await invoke(method, event, PNG), method).toEqual({ ok: false, error: UNTRUSTED_SENDER });
       }
       listeners.get(OVERLAY_EVENT_CHANNEL)!(event, "collide:overlay-ping", undefined);
@@ -159,6 +190,7 @@ describe("registerBridge", () => {
     expect(sent).toEqual([]);
     expect(moves).toEqual([]);
     expect(copied).toEqual([]);
+    expect(stored).toEqual([]);
   });
 
   it("relays the overlay events to every window and nothing else", () => {
