@@ -32,3 +32,30 @@ The first argument is the prototype file. The second is a folder for screenshots
 | `save-collide-file.js` | Save as .collide from Snip and from Markdown |
 | `callout-numbering.js` | A new callout takes the next number; existing numbers stay |
 | `esc-returns-to-select.js` | Esc returns to Select in both editors, also from a note box |
+
+## The reference harness (T30)
+
+The asserting specs live in `../app/reference/specs/`, one per script above, same name with `.spec.ts`. Each runs twice: against the prototype, then against the app. The test hook both expose is in [`HOOK.md`](HOOK.md).
+
+```bash
+cd products/collide/app
+pnpm ref              # both: builds the app (vite build), serves it, runs every spec on each
+pnpm ref:prototype    # the prototype only: no build, no server
+pnpm ref:app          # the app only
+pnpm ref:prototype tabs        # one spec file (anything after the script name goes to Playwright)
+REF_SHOTS=0 pnpm ref:prototype # skip the screenshots
+```
+
+The run ends with one line per spec, `prototype ✓/✗ · app ✓/✗`, and the totals; the same is written to `app/reference-out/report.json`. Screenshots go to `app/reference-out/screens/<prototype|app>/<spec>/<name>-<theme>-<size>.png` (`reference-out/` is not committed). The exit code is not 0 while any spec fails on either one.
+
+Status: `tabs-and-close-splash` is converted and is the example. The other 14 scripts are still to convert.
+
+### Writing a spec
+
+- Import `test` and `expect` from `../fixture`. It gives `open()` (load the target fresh), `reload()` (keep what was saved), `state()` (`window.__collide.state()`) and `shots(name)` (1440 × 860 and 400 × 800 in Dark, Light and Aura Sage).
+- Use the visible UI only: `getByRole`, `getByLabel`, `getByText`. No CSS classes, ids, `data-` attributes, `window.S`, `snipOf()` or app hooks other than `state()`. A drag on the canvas starts from a visible element's box (`locator.boundingBox()`), never from fixed screen numbers.
+- Ids from `state()` are different in the prototype and the app: compare them inside one run, never write one into a spec.
+- Wait with assertions that retry (`await expect(locator)…`, `await expect.poll(async () => (await state()).view).toBe("snip")`), not fixed sleeps.
+- A spec must pass on the prototype. If it fails there, the spec is wrong (RUN3). If the prototype itself looks wrong, keep the spec as the prototype behaves and add a row to `../ISSUES.md`.
+- Every test also fails on an uncaught error in the page (the scripts printed these as `errs`).
+- What differs between the prototype and the app (how each is loaded, how a theme is set for a screenshot) goes in `fixture.ts`, not in a spec.

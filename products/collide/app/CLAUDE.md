@@ -13,6 +13,7 @@ Electron (Node main process) + React 18 + TypeScript (strict) + Vite. Package ma
 - `pnpm test` — Vitest (jsdom), files `src/**/*.test.ts(x)`
 - `pnpm e2e` — Playwright, chromium only, starts the dev server; uses `/opt/pw-browsers/chromium` if present. Do not run `playwright install` in the cloud box.
 - `pnpm e2e:electron` — build + Electron e2e (`e2e-electron/`: shell, bridge, the snip with a fake capture, markup save and open); on Linux run `xvfb-run -a pnpm e2e:electron`. Each test starts the app with its own empty user-data folder and its own Documents folder (set with Electron's `app.setPath`; the folder dialog is replaced from the test, so the app has no test hook for either). `COLLIDE_FAKE_CAPTURE=1` (ignored by a packaged app) swaps the screen grab for a fixed four-colour frame
+- `pnpm ref` — the reference harness (RUN3 T30): every spec in `reference/specs/` runs against `../layout-prototype.html` and against the app (the Vite build under `vite preview`, port 4173), then prints per spec `prototype ✓/✗ · app ✓/✗`. `pnpm ref:prototype` and `pnpm ref:app` run one side. How to write a spec: `../prototype-checks/README.md`; the test hook: `../prototype-checks/HOOK.md`
 
 ## Prerequisites
 Node and pnpm only. No Rust toolchain, no `xcap` and no extra system packages: `pnpm install` downloads Electron. Vitest and `pnpm e2e` need no display; `pnpm electron:dev` and `pnpm e2e:electron` need one (`xvfb-run -a` on Linux).
@@ -20,6 +21,8 @@ Node and pnpm only. No Rust toolchain, no `xcap` and no extra system packages: `
 ## Layout
 - `src/` — React frontend (`main.tsx` imports `../../design-system/styles.css`)
 - `e2e/` — Playwright specs
+- `reference/` — the reference harness: `playwright.config.ts` (projects `prototype` and `app`), `fixture.ts` (`open`, `reload`, `state`, `shots`), `reporter.ts`, `specs/`; output in `reference-out/` (not committed)
+- `src/editor/refState.ts` — what `window.__collide.state()` returns, the read-only test hook the prototype has too
 - `electron/` — Electron shell: `main.cjs` (thin: windows, protocol, wiring), `preload.cjs` (`window.collide`; self-contained, a sandboxed preload can only require `electron`), `icons/` (generated from `../design-system/assets/logo/`)
 - `src/native/` — main-process logic in TypeScript, unit-tested with fakes (Electron modules are passed in, never imported): capture, IPC table, shell guards, the snip's window moves (`windows.ts`), `settings.json` and the global hotkey (`settings.ts`; the file is in Electron's user-data folder), `copyImage` (`clipboard.ts`), markup folders and the Open dialog (`markups.ts`: every path is resolved and checked against `Documents/Collide/Markups`, anything outside is refused); `bridge.ts` is the type of `window.collide`
 - `src/io/` — markup storage behind the `MarkupStore` interface: `electronStore.ts` (the Electron app, over `window.collide.markups`), the memory store in `markupStore.ts` (browser, e2e)

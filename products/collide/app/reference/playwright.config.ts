@@ -22,6 +22,8 @@ export default defineConfig<RefOptions>({
   use: {
     browserName: "chromium",
     viewport: SIZES[0],
+    // A step that cannot be done fails in seconds, not at the test timeout (the app fails many specs until it is built).
+    actionTimeout: 5000,
     trace: "off",
     launchOptions: existsSync(preinstalled) ? { executablePath: preinstalled } : {},
   },
