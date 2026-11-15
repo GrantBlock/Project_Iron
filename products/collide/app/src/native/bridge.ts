@@ -1,7 +1,6 @@
 // T14: the type of `window.collide`, the only thing the Electron preload
 // (electron/preload.cjs) exposes to the page, and the IPC channel names behind it.
-// The frontend does not call it yet: the switch from Tauri is T15 (snip, settings)
-// and T16 (markups).
+// T15: the snip, the overlay page and the settings warning use it. Markups follow in T16.
 
 import type { LogicalRect } from "../snip/crop";
 import type { CaptureInfo, CropInfo } from "../snip/flow";
@@ -37,17 +36,20 @@ export type InvokeMethod = keyof typeof INVOKE_CHANNELS;
 export const OVERLAY_EVENT_CHANNEL = "collide:overlay-event";
 export const SNIP_REQUEST_CHANNEL = "collide:snip-request";
 
-/** Implemented in T14. Every other invoke method is a typed stub that rejects until its task lands. */
-export const IMPLEMENTED: readonly InvokeMethod[] = ["captureMonitor", "cropCapture"];
+/** Implemented: capture and crop (T14), the window moves, copyImage and settingsStatus (T15). Every other invoke method is a typed stub that rejects until its task lands. */
+export const IMPLEMENTED: readonly InvokeMethod[] = [
+  "captureMonitor",
+  "cropCapture",
+  "hideEditor",
+  "showEditor",
+  "showOverlay",
+  "hideOverlay",
+  "copyImage",
+  "settingsStatus",
+];
 
 /** Which task fills in each stub. */
-export const STUB_TASK: Record<Exclude<InvokeMethod, "captureMonitor" | "cropCapture">, "T15" | "T16"> = {
-  hideEditor: "T15",
-  showEditor: "T15",
-  showOverlay: "T15",
-  hideOverlay: "T15",
-  copyImage: "T15",
-  settingsStatus: "T15",
+export const STUB_TASK: Record<Extract<InvokeMethod, `markups.${string}`>, "T16"> = {
   "markups.save": "T16",
   "markups.open": "T16",
   "markups.pick": "T16",
@@ -57,7 +59,7 @@ export const STUB_TASK: Record<Exclude<InvokeMethod, "captureMonitor" | "cropCap
 /** What every invoke channel answers; the preload turns `ok: false` into a rejected promise with `error` as its message. */
 export type IpcReply<T = unknown> = { ok: true; value: T } | { ok: false; error: string };
 
-/** Where to put the overlay: the captured monitor, as `captureMonitor()` reported it. */
+/** Where to put the overlay: the captured monitor, as `captureMonitor()` reported it (physical px). */
 export interface OverlayBounds {
   x: number;
   y: number;
@@ -85,19 +87,18 @@ export interface CollideBridge {
   captureMonitor(): Promise<CaptureInfo>;
   /** Crop the held frame to `box` (logical px relative to the overlay) at `scale`. */
   cropCapture(box: LogicalRect, scale: number): Promise<CropInfo>;
-  /** Stub until T15. */
+  /** Hide the editor for a snip, leaving no ghost in the capture; resolves once the overlay window's page has loaded. */
   hideEditor(): Promise<void>;
-  /** Stub until T15. */
+  /** Put the editor back exactly where it was (position, size, maximized, opacity), show and focus it. */
   showEditor(): Promise<void>;
-  /** Stub until T15. */
+  /** Place the overlay on the captured display, then show and focus it. */
   showOverlay(bounds: OverlayBounds): Promise<void>;
-  /** Stub until T15. */
   hideOverlay(): Promise<void>;
-  /** Put a PNG data URL on the clipboard as an image. Stub until T15. */
+  /** Put a PNG data URL (`data:image/png;base64,...`) on the clipboard as an image. For when the web clipboard refuses. */
   copyImage(png: string): Promise<void>;
-  /** Stub until T15. */
+  /** The hotkey in use, and a warning when settings.json or the registration had a problem. */
   settingsStatus(): Promise<SettingsStatus | null>;
-  /** Call `cb` when the global shortcut asks for a snip (sent from T15 on). Returns the unsubscribe function. */
+  /** Call `cb` when the global shortcut asks for a snip Returns the unsubscribe function. */
   onSnipRequest(cb: () => void): () => void;
   /** Markup folders under Documents/Collide/Markups. Stubs until T16. */
   markups: {

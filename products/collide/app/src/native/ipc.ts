@@ -2,9 +2,9 @@
 // channel of the preload bridge; Electron's modules are passed in, so the whole
 // table is unit-tested with a fake `ipcMain`.
 //
-// Real in T14: captureMonitor, cropCapture and the overlay event relay.
-// Typed stubs (they reject with a message naming their task): the window moves,
-// copyImage and settingsStatus (T15) and markups.* (T16).
+// Real: captureMonitor, cropCapture and the overlay event relay (T14); the window
+// moves, copyImage and settingsStatus (T15).
+// Typed stubs (they reject with a message naming their task): markups.* (T16).
 
 import {
   IMPLEMENTED,
@@ -14,9 +14,11 @@ import {
   STUB_TASK,
   type InvokeMethod,
   type IpcReply,
+  type SettingsStatus,
 } from "./bridge";
 import { CaptureState, cropFromState, type Capturer, type FrameImage } from "./capture";
 import { captureMonitor, electronCapturer, type ElectronCaptureDeps } from "./electronCapturer";
+import { overlayBoundsFor, type Choreography } from "./windows";
 import type { LogicalRect } from "../snip/crop";
 
 export interface IpcEventLike {
@@ -36,7 +38,13 @@ export interface BridgeDeps extends ElectronCaptureDeps {
   isTrusted: (url: string) => boolean;
   /** Send to every Collide window. */
   broadcast: (channel: string, ...args: unknown[]) => void;
-  /** Defaults to the real capturer; tests and the T15 e2e pass a fake. */
+  /** The snip's window moves (windows.ts). */
+  windows: Choreography;
+  /** Put a PNG data URL on the clipboard as an image; throws with the cause and the fix. */
+  copyImage: (png: unknown) => void;
+  /** What loading settings.json and registering the hotkey gave; null before that has run. */
+  settingsStatus: () => SettingsStatus | null;
+  /** Defaults to the real capturer; tests and the Electron e2e pass a fake. */
   capturer?: Capturer;
   state?: CaptureState;
 }
@@ -72,6 +80,12 @@ export function registerBridge(deps: BridgeDeps): { state: CaptureState } {
 
   handle("captureMonitor", () => captureMonitor(deps, state, capturer));
   handle("cropCapture", (box, scale) => cropFromState(state, box as LogicalRect, scale as number, deps.decodePng));
+  handle("hideEditor", () => deps.windows.hideEditor());
+  handle("showEditor", () => deps.windows.showEditor());
+  handle("showOverlay", (bounds) => deps.windows.showOverlay(overlayBoundsFor(state.frame, bounds)));
+  handle("hideOverlay", () => deps.windows.hideOverlay());
+  handle("copyImage", (png) => deps.copyImage(png));
+  handle("settingsStatus", () => deps.settingsStatus());
 
   for (const method of Object.keys(INVOKE_CHANNELS) as InvokeMethod[]) {
     if (IMPLEMENTED.includes(method)) continue;

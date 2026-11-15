@@ -52,6 +52,13 @@ export function physicalSize(display: DisplayLike): { width: number; height: num
   };
 }
 
+/** A display's top-left corner in virtual-desktop physical px (the platform's own conversion where there is one). */
+export function physicalOrigin(screen: ScreenLike, display: DisplayLike): Point {
+  const dip = { x: display.bounds.x, y: display.bounds.y };
+  const origin = screen.dipToScreenPoint ? screen.dipToScreenPoint(dip) : { x: dip.x * display.scaleFactor, y: dip.y * display.scaleFactor };
+  return { x: Math.round(origin.x), y: Math.round(origin.y) };
+}
+
 /**
  * The screen source for a display. Matched by id; a lone source is that display
  * (some platforms give no usable id). (A) With several sources and no id match
@@ -94,16 +101,13 @@ export function electronCapturer({ screen, desktopCapturer }: ElectronCaptureDep
         throw new CaptureError("CaptureFailed", "the screen returned an empty frame");
       }
 
-      const dipOrigin = { x: display.bounds.x, y: display.bounds.y };
-      const origin = screen.dipToScreenPoint
-        ? screen.dipToScreenPoint(dipOrigin)
-        : { x: dipOrigin.x * display.scaleFactor, y: dipOrigin.y * display.scaleFactor };
+      const origin = physicalOrigin(screen, display);
 
       return {
         image,
         monitor: {
-          x: Math.round(origin.x),
-          y: Math.round(origin.y),
+          x: origin.x,
+          y: origin.y,
           width: size.width,
           height: size.height,
           scaleFactor: display.scaleFactor,

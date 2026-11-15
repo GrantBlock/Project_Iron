@@ -1,6 +1,9 @@
 // T14: the shell's small security decisions as pure functions, so they are unit-tested.
 // Used by electron/main.cjs.
 
+/** The app's name: the window title and (as `productName` in package.json) the user-data folder. */
+export const APP_NAME = "Collide";
+
 /** The part of `node:path` that `distFile` uses (`path`, `path.win32` or `path.posix`). */
 export interface PathLike {
   sep: string;
