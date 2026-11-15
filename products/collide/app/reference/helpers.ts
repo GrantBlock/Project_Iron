@@ -78,3 +78,39 @@ export function mapper(from: [number, number], to: [number, number], item: { x: 
   const k = (to[0] - from[0]) / item.w;
   return { k, toScreen: (x, y) => [from[0] + (x - item.x) * k, from[1] + (y - item.y) * k] };
 }
+
+/**
+ * Paste a 320 × 200 PNG, as a paste of an image from the clipboard (the browser gives no real clipboard to a test):
+ * a paste event with an image file goes to whatever has the focus. Resolves to whether the page took the paste over
+ * (preventDefault was called).
+ */
+export async function pasteImage(page: Page): Promise<boolean> {
+  return page.evaluate(async () => {
+    const c = document.createElement("canvas");
+    c.width = 320;
+    c.height = 200;
+    const x = c.getContext("2d")!;
+    x.fillStyle = "#1E88E5";
+    x.fillRect(0, 0, 320, 200);
+    x.fillStyle = "#fff";
+    x.font = "40px sans-serif";
+    x.fillText("PASTE", 90, 115);
+    const blob = await new Promise<Blob | null>((r) => c.toBlob(r, "image/png"));
+    const dt = new DataTransfer();
+    dt.items.add(new File([blob!], "p.png", { type: "image/png" }));
+    const ev = new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true });
+    (document.activeElement || document.body).dispatchEvent(ev);
+    return ev.defaultPrevented;
+  });
+}
+
+/** Paste plain text into whatever has the focus; resolves to whether the page took the paste over. */
+export async function pasteText(page: Page, text: string): Promise<boolean> {
+  return page.evaluate((t) => {
+    const dt = new DataTransfer();
+    dt.setData("text/plain", t);
+    const ev = new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true });
+    (document.activeElement || document.body).dispatchEvent(ev);
+    return ev.defaultPrevented;
+  }, text);
+}
