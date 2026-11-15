@@ -904,6 +904,11 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
 .mdtable th, .mdtable td { border: 1px solid var(--line-2); padding: 5px 9px; text-align: left; }
 .mdtable th { background: var(--sunk); font-weight: 600; }
 .snapdoc .mdtable th, .snapdoc .mdtable td { border-color: #d6d6d6; } .snapdoc .mdtable th { background: #f2f2f2; }
+.segtog { display: inline-flex; align-items: stretch; height: 32px; padding: 2px; gap: 2px; border-radius: var(--r-btn); background: var(--sunk); border: var(--border-w) solid var(--line-2); }
+.segtog button { min-width: 0; padding: 0 7px; border: 0; border-radius: calc(var(--r-btn) - 2px); background: transparent; color: var(--t3); font: 500 11.5px var(--font-ui); white-space: nowrap; }
+.segtog button:hover { color: var(--t1); }
+.segtog button[aria-checked="true"] { background: var(--raised); color: var(--t1); box-shadow: 0 1px 2px rgba(0,0,0,.14); }
+:root[data-app-theme="aura"] .segtog button[aria-checked="true"] { background: var(--aura-ink); color: var(--aura-surface); }
 .viewseg { display: inline-flex; padding: 2px; gap: 2px; border-radius: var(--r-btn); background: var(--sunk); border: var(--border-w) solid var(--line); }
 .viewseg button { height: 26px; padding: 0 10px; border: 0; border-radius: var(--r-btn); background: transparent; color: var(--t3); font-size: 12px; white-space: nowrap; }
 .viewseg button[aria-pressed="true"] { background: var(--raised); color: var(--t1); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
@@ -942,7 +947,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
   </ol>
   <h4>Collide Snip today (TESTER-NOTES 1–10, run 1) → here</h4>
   <table class="parity">
-    <tr><td>New snip, Ctrl+Alt+S, delay 0/3/5/10 s</td><td>Sidebar, top; blank canvas</td></tr>
+    <tr><td>New snip, Ctrl+Alt+S, delay 0/3/5/10 s</td><td>Sidebar, top, with a 0s / 3s / 5s / 10s toggle; blank canvas. Add snip has a Current / Behind toggle</td></tr>
     <tr><td>Snip copied to clipboard automatically</td><td>Toast after New snip</td></tr>
     <tr><td>Canvas snip with W × H readout, Esc leaves</td><td><b>Removed</b> from the Snip toolbar and the Markdown editor (Grant 2026-11-15). In Markdown, Export saves the visible marked-up page</td></tr>
     <tr><td>Open file, Open markup, Save Ctrl+S, Copy Ctrl+Shift+C, Export</td><td>Open file and Open markup → sidebar <b>Open</b> (zip, markup or image), the toolbar folder button is removed; <b>Add snip</b> adds a capture beside the image and the canvas grows: Current = the program that is open, Behind = Collide hides and you snip the screen behind (like New snip); select it to move it or resize it from a corner (aspect locked); Open markup, Copy, Export in the toolbar; Save in the header</td></tr>
@@ -1138,6 +1143,7 @@ try { const t = localStorage.getItem('collide-proto-theme'); const a = localStor
 /* The pen (Grant 2026-11-15): last colour and line thickness, per editor, kept after a reload.
    After a draw the colour is deselected; picking a drawing tool again brings the last colour back. */
 try { const pen = JSON.parse(localStorage.getItem('collide-proto-pen') || '{}'); if (pen.role) S.lastRole = pen.role; if (pen.dcolor) S.lastDcolor = pen.dcolor; if (pen.sw) S.sw = pen.sw; if (pen.dsw) S.dsw = pen.dsw; } catch (e) {}
+try { S.delay = localStorage.getItem('collide-proto-delay') || S.delay; S.addMode = localStorage.getItem('collide-proto-addmode') || S.addMode; } catch (e) {}
 function savePen() { try { localStorage.setItem('collide-proto-pen', JSON.stringify({ role: S.lastRole, dcolor: S.lastDcolor, sw: S.sw, dsw: S.dsw })); } catch (e) {} }
 function pickTool(t) { S.tool = t; if (t !== 'select' && !S.role) S.role = S.lastRole; }
 function pickDtool(t) { S.dtool = t; if (t !== 'select' && t !== 'canvas-snip' && !S.dcolor) S.dcolor = S.lastDcolor; }
@@ -1428,9 +1434,9 @@ function renderSide() {
     <div class="brand">${logo()}<span class="word">Collide</span><button class="mode label" id="modePill" style="border:0;margin-left:auto" title="${S.settings.mode === 'server' ? 'Server: this PC stores the snips, markups and zips' : 'Connected to the server PC'}"><span class="dot"></span>${S.settings.mode === 'server' ? 'Server' : 'Connected'}</button><button class="btn ghost icon" id="compactBtn" style="width:28px;height:28px" title="${S.compact ? 'Expand the window' : 'Collapse: Recents moves to the right'}" aria-label="${S.compact ? 'Expand window' : 'Collapse window'}">${ico(S.compact ? 'expand' : 'collapse', 'sm')}</button></div>
     <div class="actions">
       <button class="btn primary" id="newSnip" title="New snip (Ctrl+Alt+S)">${ico('scissors')}New snip</button>
-      <label style="display:contents"><span hidden>Snip delay</span><select class="select" id="delay" aria-label="Delay before New snip captures">${['No delay', '3 s', '5 s', '10 s'].map((d) => `<option ${S.delay === d ? 'selected' : ''}>${d}</option>`).join('')}</select></label>
+      <span class="segtog" role="radiogroup" aria-label="Delay before New snip captures">${[['No delay', '0s', 'No delay'], ['3 s', '3s', 'Wait 3 seconds'], ['5 s', '5s', 'Wait 5 seconds'], ['10 s', '10s', 'Wait 10 seconds']].map(([v, l, t]) => `<button role="radio" aria-checked="${S.delay === v}" data-delay="${v}" title="${t}, then capture">${l}</button>`).join('')}</span>
       <button class="btn" id="addSnip" title="Add a snip to the open canvas: Current = the program that is open; Behind = Collide hides and you snip the screen behind it">${ico('plus')}Add snip</button>
-      <select class="select" id="addMode" aria-label="Where Add snip puts the new snip" title="Current: a screenshot of the program that is open. Behind: Collide hides and you snip the screen behind it, like New snip.">${['Current', 'Behind'].map((m) => `<option ${S.addMode === m ? 'selected' : ''}>${m}</option>`).join('')}</select>
+      <span class="segtog" role="radiogroup" aria-label="Where Add snip captures">${[['Current', 'A screenshot of the program that is open'], ['Behind', 'Collide hides and you snip the screen behind it, like New snip']].map(([v, t]) => `<button role="radio" aria-checked="${S.addMode === v}" data-addmode="${v}" title="${t}">${v}</button>`).join('')}</span>
       <button class="btn" id="openZip" style="grid-column:1 / -1" title="Open a zip file or a saved markup">${ico('folderOpen')}Open</button>
     </div>
     <label class="search">${ico('search', 'sm')}<input id="q" placeholder="Search" value="${esc(S.query)}" aria-label="Search"></label>
@@ -1908,6 +1914,8 @@ document.addEventListener('click', (e) => {
   if (d.themeSet) { S.theme = d.themeSet; applyTheme(); renderSide(); if (S.ws && S.ws.kind === 'snip') renderSnipWS(); return; }
   if (d.aura) { S.aura = d.aura; applyTheme(); renderSide(); return; }
   if (d.tool) { pickTool(d.tool); if (d.tool === 'canvas-snip') toast('Drag a box on the canvas. Esc leaves.'); renderWS(); return; }
+  if (d.delay) { S.delay = d.delay; try { localStorage.setItem('collide-proto-delay', d.delay); } catch (x) {} renderSide(); return; }
+  if (d.addmode) { S.addMode = d.addmode; try { localStorage.setItem('collide-proto-addmode', d.addmode); } catch (x) {} renderSide(); return; }
   if (d.tabclose !== undefined) { e.stopPropagation(); closeTab(Number(d.tabclose), false); return; }
   if (d.role) { S.role = d.role; S.lastRole = d.role; savePen(); if (S.sel && !S.selByDraw) { pushHist(); snipOf().shapes.find((x) => x.n === S.sel).color = d.role; snipChanged(); } else renderWS(); return; }
   if (d.tog) { e.stopPropagation(); const [f, n] = d.tog.split(':'); pushHist(); const sh = snipOf().shapes.find((x) => x.n === Number(n)); if (f === 'fill') { const was = sh.fill || sh.type.endsWith('-fill'); sh.type = sh.type.replace('-fill', ''); sh.fill = !was; } else sh[f] = !sh[f]; snipChanged(); return; }
@@ -1988,8 +1996,6 @@ document.addEventListener('click', (e) => {
 }, true);
 document.addEventListener('change', (e) => {
   const t = e.target;
-  if (t.id === 'delay') { S.delay = t.value; return; }
-  if (t.id === 'addMode') { S.addMode = t.value; return; }
   if (t.id === 'mdHeading') { const v = t.value; t.value = ''; if (v !== '') mdLinePrefix(v === '0' ? '' : '#'.repeat(Number(v)) + ' ', true); return; }
   if (t.dataset && t.dataset.dtype) { pushDocHist(); const m = S.ws.marks.find((x) => x.n === Number(t.dataset.dtype)); m.type = t.value; if (t.value !== 'line') { if (m.w < 0) { m.x += m.w; m.w = -m.w; } if (m.h < 0) { m.y += m.h; m.h = -m.h; } } markDirty(); renderWS(); return; }
   if (t.dataset && t.dataset.type) { pushHist(); const sh = snipOf().shapes.find((x) => x.n === Number(t.dataset.type)); const fp0 = fillPct(sh); sh.type = t.value; sh.fill = false; sh.fillPct = t.value === 'rect' || t.value === 'ellipse' ? fp0 : 0; if (t.value === 'point') { sh.x += sh.w / 2; sh.y += sh.h / 2; sh.w = 0; sh.h = 0; } else if (t.value !== 'line' && (sh.w < 0 || sh.h < 0)) { if (sh.w < 0) { sh.x += sh.w; sh.w = -sh.w; } if (sh.h < 0) { sh.y += sh.h; sh.h = -sh.h; } } else if (!sh.w) { sh.x -= 40; sh.y -= 25; sh.w = 80; sh.h = 50; } snipChanged(); return; }

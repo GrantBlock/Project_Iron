@@ -49,6 +49,7 @@ Related (in `GrantBlock/designengineering-ai`, `Builder v0.1/`): `development-pa
 - [stated] 2026-11-15: Collide Snip and the Markdown editor have a Line tool. The Markdown editor has the common shape tools (select, box, circle, line, X mark, colours, stroke, resize, undo/redo, delete), a Copy to clipboard as PNG for the marked-up page, and its Copy and Canvas snip stay inside the visible area (Grant).
 - [stated] 2026-11-15: After a shape is drawn, no colour stays selected, so the next shape's colour can be picked. Esc returns to the Select tool (Grant).
 - [stated] 2026-11-15: Collide remembers the last selected colour and line thickness; going back to a drawing tool after finishing (for example Select, then Circle) brings them back (Grant).
+- [stated] 2026-11-15: The New snip delay and the Add snip Current / Behind choice are toggles, not drop-downs (Grant).
 - [stated] 2026-11-15: The Snip canvas shows a print area marker; notes may go over it. Autofit works with the annotations on a tighter margin (Grant).
 - [stated] 2026-11-15: Annotation bubbles can stack to the right, top, bottom or left of another bubble (Grant).
 - [stated] 2026-11-15: Collide's scroll bars follow the theme. With a drawing tool on, a click outside the view area goes back to the Select tool (Grant).
