@@ -1,3 +1,31 @@
+# Collide — Run 2 + 3 Handoff (scheduled run, `collide/run`)
+
+## Run session 1
+
+- Start (UTC): 2026-11-15T15:38Z · Planner (Irileth). Stop starting new tasks at 19:53Z (4 h 15 min).
+- Merged at start (CLAUDE.md step 1): `claude/intelligent-brown-2hlzyu` (Agent Chat 0.4.x, `tools/project-chat/` only).
+
+### Board
+
+| ID | Task | Status | Specs prototype / app |
+| --- | --- | --- | --- |
+| T13 | Electron shell | To do | — |
+| T14 | Bridge, capture, crop | To do | — |
+| T15 | Snip choreography, settings | To do | — |
+| T16 | Local markup storage | To do | — |
+| T17 | Remove Tauri | To do | — |
+| T30 | Reference harness | To do | |
+| T31 | Layout shell | To do | |
+| T32 | Markup engine | To do | |
+| T33 | Images on canvas | To do | |
+| T34 | Markdown editor | To do | |
+| T35 | `.collide` files | To do | |
+| T36 | Server storage | To do | |
+| T38 | PDF | To do | |
+| T37 | Handoff | To do | |
+
+---
+
 # Collide — Run 1 Handoff
 
 2026-11-14 · Planner. Branch `snip-markup/run-1` → pull request into `development` (Grant reviews and merges; no agent merged into `development` or `main`).
