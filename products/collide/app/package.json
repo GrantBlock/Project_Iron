@@ -1,16 +1,23 @@
 {
   "name": "collide",
+  "productName": "Collide",
   "private": true,
   "version": "0.1.0",
+  "description": "Collide",
+  "author": "Block Concepts LLC",
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "e2e": "playwright test",
+    "e2e:electron": "pnpm build && playwright test -c playwright.electron.config.ts",
     "lint": "eslint .",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "electron:dev": "node scripts/electron-dev.mjs",
+    "dist": "pnpm build && electron-builder --win portable --x64"
   },
   "dependencies": {
     "@tauri-apps/plugin-dialog": "^2.8.4",
@@ -32,11 +39,38 @@
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^6.3.0",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
     "eslint": "^10.15.0",
     "jsdom": "^31.0.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.72.2",
     "vite": "^8.3.8",
     "vitest": "^5.1.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron"
+    ]
+  },
+  "build": {
+    "appId": "com.blockconcepts.collide",
+    "productName": "Collide",
+    "files": [
+      "dist/**",
+      "electron/**",
+      "!node_modules"
+    ],
+    "win": {
+      "target": "portable",
+      "icon": "electron/icons/icon.ico",
+      "signAndEditExecutable": false
+    },
+    "portable": {
+      "artifactName": "Collide-${version}.exe"
+    },
+    "directories": {
+      "output": "release"
+    }
   }
 }

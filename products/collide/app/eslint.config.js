@@ -2,11 +2,26 @@ import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", "node_modules", "src-tauri/target", "src-tauri/gen"] },
+  { ignores: ["dist", "release", "node_modules", "src-tauri/target", "src-tauri/gen"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
     files: ["scripts/**/*.mjs"],
-    languageOptions: { globals: { Buffer: "readonly", URL: "readonly", console: "readonly" } },
+    languageOptions: { globals: { Buffer: "readonly", URL: "readonly", console: "readonly", process: "readonly" } },
+  },
+  {
+    // Electron main and preload: plain CommonJS run by Electron, not bundled by Vite.
+    files: ["electron/**/*.cjs"],
+    languageOptions: {
+      sourceType: "commonjs",
+      globals: {
+        require: "readonly",
+        __dirname: "readonly",
+        process: "readonly",
+        URL: "readonly",
+        Response: "readonly",
+      },
+    },
+    rules: { "@typescript-eslint/no-require-imports": "off" },
   },
 );

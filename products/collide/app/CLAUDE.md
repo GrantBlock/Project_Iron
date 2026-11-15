@@ -6,10 +6,13 @@ Tauri v2 + React 18 + TypeScript (strict) + Vite. Package manager: pnpm. Run all
 - `pnpm install` — install deps
 - `pnpm dev` — Vite dev server on :1420 (browser)
 - `pnpm tauri dev` — native window (needs webkit2gtk-4.1 on Linux; needs a display)
+- `pnpm electron:dev` — Electron window on the Vite dev server (needs a display; as root on Linux add `--no-sandbox`)
+- `pnpm dist` — build + portable Windows `.exe` in `release/` (electron-builder)
 - `pnpm build` — typecheck + production build to `dist/`
 - `pnpm lint` — ESLint (flat config, typescript-eslint)
 - `pnpm test` — Vitest (jsdom), files `src/**/*.test.ts(x)`
 - `pnpm e2e` — Playwright, chromium only, starts the dev server; uses `/opt/pw-browsers/chromium` if present. Do not run `playwright install` in the cloud box.
+- `pnpm e2e:electron` — build + Electron shell smoke test (`e2e-electron/`); on Linux run `xvfb-run -a pnpm e2e:electron`
 - `cd src-tauri && cargo test` — Rust tests
 
 ## Linux prerequisites
@@ -18,6 +21,7 @@ Tauri v2 + React 18 + TypeScript (strict) + Vite. Package manager: pnpm. Run all
 ## Layout
 - `src/` — React frontend (`main.tsx` imports `../../design-system/styles.css`)
 - `e2e/` — Playwright specs
+- `electron/` — Electron shell: `main.cjs`, `preload.cjs` (`window.collide`), `icons/` (same files as `src-tauri/icons/`)
 - `src-tauri/` — Rust shell (`lib.rs` has `run()`), `tauri.conf.json`, `icons/` (generated from `../design-system/assets/logo/`)
 - `../design-system/` — tokens and components (source of truth)
 
