@@ -968,6 +968,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
     <tr><td>Esc</td><td>Returns to the Select tool in Snip and in the Markdown page (also leaves a note box you are typing in). A click outside the canvas or page (not the toolbar) does the same</td></tr>
     <tr><td>Pen, Highlighter, Eraser</td><td>Both editors (N, H, E). Strokes and added images are in the list without a number or bubble. The eraser removes a whole pen or highlighter stroke and leaves shapes and images alone</td></tr>
     <tr><td>Order</td><td>The list runs front to back; drag a grip to bring an item forward or send it back. Callout numbers follow that order (front-most = 1)</td></tr>
+    <tr><td>Collide file (.collide)</td><td>Save as .collide (toolbar, before Copy) in Snip and Markdown: the sources in their own formats plus every shape, bubble, note and the order, so it reopens editable. Open opens .collide files. Package layout is Draft: manifest.json, sources/, preview.png</td></tr>
     <tr><td>Paste an image (Ctrl+V)</td><td>Snip: added beside the image like Add snip. Markdown: saved to the zip's images/ and linked at the cursor (end of file in Preview). Nothing open: opens as a new snip. Text pastes are unchanged</td></tr>
     <tr><td>Line tool</td><td>Snip and Markdown toolbars (L); drag its ends to change it; arrows point to its middle</td></tr>
     <tr><td>Resize shapes</td><td>8 handles on a selected shape (corners and edges), sized for the zoom; Shift on a corner keeps the aspect. Added images: corner handles, aspect always locked</td></tr>
@@ -1045,6 +1046,7 @@ Object.assign(I, {
   github: '<path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.1-1.3-.3-2.5-1-3.5.3-1.2.3-2.4 0-3.5 0 0-1 0-3 1.5a10.6 10.6 0 0 0-6 0C7 2 6 2 6 2c-.3 1.1-.3 2.3 0 3.5A5.4 5.4 0 0 0 5 9c0 3.5 3 5.5 6 5.5-.4.5-.8 1.1-1 1.7-.2.6-.2 1.2-.1 1.8v4M9 18c-4.5 2-5-2-7-2"/>',
   server: '<rect x="2" y="3" width="20" height="8" rx="2"/><rect x="2" y="13" width="20" height="8" rx="2"/><path d="M6 7h.01M6 17h.01"/>',
   line: '<path d="M5 19 19 5"/>',
+  fileDown: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="M12 11v6M9 14l3 3 3-3"/>',
   eraser: '<path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7M5 11l9 9"/>',
   highlighter: '<path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/>',
   table: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16M15 4v16"/>',
@@ -1471,7 +1473,7 @@ function renderSide() {
       <span class="segtog" role="radiogroup" aria-label="Delay before New snip captures">${[['No delay', '0s', 'No delay'], ['3 s', '3s', 'Wait 3 seconds'], ['5 s', '5s', 'Wait 5 seconds'], ['10 s', '10s', 'Wait 10 seconds']].map(([v, l, t]) => `<button role="radio" aria-checked="${S.delay === v}" data-delay="${v}" title="${t}, then capture">${l}</button>`).join('')}</span>
       <button class="btn" id="addSnip" title="Add a snip to the open canvas: Current = the program that is open; Behind = Collide hides and you snip the screen behind it">${ico('plus')}Add snip</button>
       <span class="segtog" role="radiogroup" aria-label="Where Add snip captures">${[['Current', 'A screenshot of the program that is open'], ['Behind', 'Collide hides and you snip the screen behind it, like New snip']].map(([v, t]) => `<button role="radio" aria-checked="${S.addMode === v}" data-addmode="${v}" title="${t}">${v}</button>`).join('')}</span>
-      <button class="btn" id="openZip" style="grid-column:1 / -1" title="Open a zip file or a saved markup">${ico('folderOpen')}Open</button>
+      <button class="btn" id="openZip" style="grid-column:1 / -1" title="Open a .collide file, a zip file, a saved markup or an image">${ico('folderOpen')}Open</button>
     </div>
     <label class="search">${ico('search', 'sm')}<input id="q" placeholder="Search" value="${esc(S.query)}" aria-label="Search"></label>
     <div class="scroll">
@@ -1551,6 +1553,7 @@ function renderSnipWS() {
       <button class="tool" id="undo" title="Undo (Ctrl+Z)" aria-label="Undo" ${S.hist.length ? '' : 'disabled style="opacity:.4"'}>${ico('undo')}</button>
       <button class="tool" id="redoBtn" title="Redo (Ctrl+Y)" aria-label="Redo" ${S.redo.length ? '' : 'disabled style="opacity:.4"'}>${ico('redo')}</button>
       <span class="vsep"></span>
+      <button class="tool" id="saveCollide" title="Save as a Collide file (.collide): the sources in their own formats plus every shape, bubble, note and order; reopens editable" aria-label="Save as .collide">${ico('fileDown')}</button>
       <button class="tool" id="copyImg" title="Copy image to clipboard (Ctrl+Shift+C)" aria-label="Copy to clipboard">${ico('copy')}</button>
       <button class="btn" id="exportBtn" style="height:28px">${ico('share', 'sm')}Export</button>
     </div>
@@ -1701,6 +1704,7 @@ function renderDocWS() {
       <button class="tool" id="docUndo" title="Undo (Ctrl+Z)" aria-label="Undo" ${(S.dhist || []).length ? '' : 'disabled style="opacity:.4"'}>${ico('undo')}</button>
       <button class="tool" id="docRedo" title="Redo (Ctrl+Y)" aria-label="Redo" ${(S.dredo || []).length ? '' : 'disabled style="opacity:.4"'}>${ico('redo')}</button>
       <span class="vsep"></span>
+      <button class="tool" id="saveCollide" title="Save as a Collide file (.collide): the sources in their own formats plus every shape, bubble, note and order; reopens editable" aria-label="Save as .collide">${ico('fileDown')}</button>
       <button class="tool" id="docCopy" title="Copy the visible page with its callouts as a PNG (Ctrl+Shift+C)" aria-label="Copy PNG">${ico('copy')}</button>
       <button class="btn" id="docExport" style="height:28px" title="Save the visible marked-up page as a markup PNG">${ico('share', 'sm')}Export</button>`
       : `<label class="tbtn hsel">${ico('h', 'sm')}<select id="mdHeading" aria-label="Heading"><option value="">Heading</option><option value="0">Normal text</option><option value="1">Heading 1</option><option value="2">Heading 2</option><option value="3">Heading 3</option></select></label>
@@ -2008,7 +2012,7 @@ document.addEventListener('click', (e) => {
     case 'docRedo': if ((S.dredo || []).length) { S.dhist.push(clone(S.ws.marks)); S.ws.marks = S.dredo.pop(); markDirty(); renderWS(); } return;
     case 'blankSnip': $('#newSnip').click(); return;
     case 'newSnip': { const dl = S.delay; if (dl === 'No delay') { toast('Drag a box on your screen. Esc cancels.'); setTimeout(() => newSnip(false), 700); } else { toast(`Collide hides, waits ${dl}, then captures`); setTimeout(() => newSnip(false), 1600); } return; }
-    case 'openZip': S.open['z-builder'] = true; S.filter = 'all'; renderSide(); toast('Open: a zip file or a saved markup · builder-v0.1.zip unpacked on the server'); return;
+    case 'openZip': S.open['z-builder'] = true; S.filter = 'all'; renderSide(); toast('Open: a .collide file, a zip file, a saved markup or an image · builder-v0.1.zip unpacked on the server'); return;
     case 'addSnip': {
       // Current: a new screenshot of the program that is open, added to the open canvas.
       // Behind: Collide hides and captures the screen behind it, like New snip; the crop is added to the open canvas.
@@ -2033,6 +2037,21 @@ document.addEventListener('click', (e) => {
     case 'insertSnip': S.picker = true; renderWS(); return;
     case 'pickClose': S.picker = false; renderWS(); return;
     case 'repack': toast(`Repacked ${S.ws.zip} · untouched files kept byte-for-byte · original kept`); return;
+    case 'saveCollide': {
+      // A .collide file (Grant 2026-11-15): one package that reopens fully editable. Layout is Draft (not yet approved by Grant):
+      //   manifest.json  kind (snip | markdown), version, items in front-to-back order with geometry, colours, notes, toggles, bubble positions
+      //   sources/       the base image and every added or pasted image in its original format, or the .md file and its pasted images
+      //   preview.png    what Copy would give, for thumbnails
+      const w = S.ws; if (!w) return;
+      if (w.kind === 'snip') {
+        const s = snipOf(), imgs = s.shapes.filter((x) => x.type === 'image').length, items = s.shapes.length;
+        toast(`Saved ${slug(s.name)}.collide · ${1 + imgs} source${imgs ? 's' : ''} and ${items} item${items === 1 ? '' : 's'} · ${storePath('')}`);
+      } else if (w.kind === 'doc') {
+        const pasted = (w.text.match(/\]\(images\/pasted-[^)]+\)/g) || []).length, items = (w.marks || []).length;
+        toast(`Saved ${w.name.replace(/\.md$/, '')}.collide · the .md file${pasted ? ` and ${pasted} pasted image${pasted > 1 ? 's' : ''}` : ''} with ${items} item${items === 1 ? '' : 's'} · ${storePath('')}`);
+      }
+      return;
+    }
     case 'copyImg': if (S.ws && S.ws.kind === 'snip') copyToast('Copied'); else toast('Copied to this PC’s clipboard'); return;
     case 'exportBtn': { const s = snipOf(); toast(`Exported ${slug(s.name)}.png · ${s.w} × ${s.h} (source size)`); return; }
     case 'openFile': $('#imgFile').click(); return;
