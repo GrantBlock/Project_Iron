@@ -952,7 +952,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
     <tr><td>Esc</td><td>Returns to the Select tool in Snip and in the Markdown page (also leaves a note box you are typing in). A click outside the canvas or page (not the toolbar) does the same</td></tr>
     <tr><td>Line tool</td><td>Snip and Markdown toolbars (L); drag its ends to change it; arrows point to its middle</td></tr>
     <tr><td>Resize shapes</td><td>8 handles on a selected shape (corners and edges), sized for the zoom; Shift on a corner keeps the aspect. Added images: corner handles, aspect always locked</td></tr>
-    <tr><td>4 colours, stroke 2/3/5, undo/redo (50 steps), Delete</td><td>The same <b>4 material colours</b> in every theme (red, blue, yellow, gray) in a white box; note bubbles are white boxes. After a shape is drawn no colour stays selected, so you pick the next one (unpicked = red)</td></tr>
+    <tr><td>4 colours, stroke 2/3/5, undo/redo (50 steps), Delete</td><td>The same <b>4 material colours</b> in every theme (red, blue, yellow, gray) in a white box; note bubbles are white boxes. After a shape is drawn no colour stays selected; picking a drawing tool again (for example Select, then Circle) brings back the last colour and line thickness. Snip and Markdown each remember their own, also after a reload</td></tr>
     <tr><td>Numbered note boxes outside the image, arrows, drag to move; empty note = number chip</td><td>Canvas. Draft: every new box starts slightly off-line, so its arrow is angled</td></tr>
     <tr><td>Callouts panel: notes, Hide # / Show #</td><td><b>Callout card:</b> number and type; hide text, hide bubble (was Hide #), hide outline (keeps the fill); <b>Fill %</b> (0 % = no fill) replaces shading and transparency; drag the grip to reorder (renumbers)</td></tr>
     <tr><td>Wheel zoom, right-drag and Space-drag pan, Ctrl+0 refit, refit on resize</td><td>Canvas</td></tr>
@@ -1128,13 +1128,19 @@ const ZIPS = [
 const S = {
   theme: 'system', aura: 'sage', filter: 'all', chat: 'project-iron', ws: null, dirty: false, dockMin: false,
   open: { 'z-builder': true, 'z-builder/design': true, 'z-builder/design/specs': true },
-  tool: 'select', sel: null, color: SIG, role: null, dcolor: null, selByDraw: false, addMode: 'Current', sw: 3, view: null, panning: null, drag: null, hist: [], redo: [],
+  tool: 'select', sel: null, color: SIG, role: null, dcolor: null, lastRole: 'red', lastDcolor: 'red', dsw: 3, selByDraw: false, addMode: 'Current', sw: 3, view: null, panning: null, drag: null, hist: [], redo: [],
   docView: 'preview', dtool: 'select', dsel: null, ddrag: null, pop: false, picker: false, closing: false, sideOpen: false, query: '',
   compact: false, winMax: true, pending: null, tabs: [], active: -1, splash: null, delAsk: null, delay: 'No delay',
   settings: { keep: '', mode: 'server', server: '', repo: 'GrantBlock/Project_Iron', issue: '2', notify: true, password: '' },
 };
 try { const t = localStorage.getItem('collide-proto-theme'); const a = localStorage.getItem('collide-proto-aura'); if (t) S.theme = t; if (a) S.aura = a; S.compact = localStorage.getItem('collide-proto-compact') === '1'; S.winMax = localStorage.getItem('collide-proto-winmax') !== '0'; } catch (e) {}
 
+/* The pen (Grant 2026-11-15): last colour and line thickness, per editor, kept after a reload.
+   After a draw the colour is deselected; picking a drawing tool again brings the last colour back. */
+try { const pen = JSON.parse(localStorage.getItem('collide-proto-pen') || '{}'); if (pen.role) S.lastRole = pen.role; if (pen.dcolor) S.lastDcolor = pen.dcolor; if (pen.sw) S.sw = pen.sw; if (pen.dsw) S.dsw = pen.dsw; } catch (e) {}
+function savePen() { try { localStorage.setItem('collide-proto-pen', JSON.stringify({ role: S.lastRole, dcolor: S.lastDcolor, sw: S.sw, dsw: S.dsw })); } catch (e) {} }
+function pickTool(t) { S.tool = t; if (t !== 'select' && !S.role) S.role = S.lastRole; }
+function pickDtool(t) { S.dtool = t; if (t !== 'select' && t !== 'canvas-snip' && !S.dcolor) S.dcolor = S.lastDcolor; }
 const $ = (s, r = document) => r.querySelector(s);
 const app = $('#app');
 /* ---------- Snip: image, shapes, note boxes (same rules as src/editor/notes.ts, scaled) ---------- */
@@ -1631,7 +1637,7 @@ function renderDocWS() {
       <span class="vsep"></span>
       <span class="matgrp" role="group" aria-label="Colour for the next shape">${ROLES.map(([r, l]) => `<button class="swatch mat" data-dcolor="${r}" aria-pressed="${S.dcolor === r}" aria-label="${l}" title="${l}" style="background:${swatchBG(r)}"></button>`).join('')}</span>
       <span class="vsep"></span>
-      <span role="group" aria-label="Stroke width" style="display:flex;gap:2px">${[2, 3, 5].map((w) => `<button class="stroke" data-dsw="${w}" aria-pressed="${S.sw === w}" aria-label="Stroke ${w}"><span style="height:${w}px"></span></button>`).join('')}</span>
+      <span role="group" aria-label="Stroke width" style="display:flex;gap:2px">${[2, 3, 5].map((w) => `<button class="stroke" data-dsw="${w}" aria-pressed="${S.dsw === w}" aria-label="Stroke ${w}"><span style="height:${w}px"></span></button>`).join('')}</span>
       <span style="flex:1 1 0;min-width:4px"></span>
       <button class="tool" id="docUndo" title="Undo (Ctrl+Z)" aria-label="Undo" ${(S.dhist || []).length ? '' : 'disabled style="opacity:.4"'}>${ico('undo')}</button>
       <button class="tool" id="docRedo" title="Redo (Ctrl+Y)" aria-label="Redo" ${(S.dredo || []).length ? '' : 'disabled style="opacity:.4"'}>${ico('redo')}</button>
@@ -1901,15 +1907,15 @@ document.addEventListener('click', (e) => {
   if (d.tag) { S.query = d.tag; S.filter = 'snips'; renderSide(); return; }
   if (d.themeSet) { S.theme = d.themeSet; applyTheme(); renderSide(); if (S.ws && S.ws.kind === 'snip') renderSnipWS(); return; }
   if (d.aura) { S.aura = d.aura; applyTheme(); renderSide(); return; }
-  if (d.tool) { S.tool = d.tool; if (d.tool === 'canvas-snip') toast('Drag a box on the canvas. Esc leaves.'); renderWS(); return; }
+  if (d.tool) { pickTool(d.tool); if (d.tool === 'canvas-snip') toast('Drag a box on the canvas. Esc leaves.'); renderWS(); return; }
   if (d.tabclose !== undefined) { e.stopPropagation(); closeTab(Number(d.tabclose), false); return; }
-  if (d.role) { S.role = d.role; if (S.sel && !S.selByDraw) { pushHist(); snipOf().shapes.find((x) => x.n === S.sel).color = d.role; snipChanged(); } else renderWS(); return; }
+  if (d.role) { S.role = d.role; S.lastRole = d.role; savePen(); if (S.sel && !S.selByDraw) { pushHist(); snipOf().shapes.find((x) => x.n === S.sel).color = d.role; snipChanged(); } else renderWS(); return; }
   if (d.tog) { e.stopPropagation(); const [f, n] = d.tog.split(':'); pushHist(); const sh = snipOf().shapes.find((x) => x.n === Number(n)); if (f === 'fill') { const was = sh.fill || sh.type.endsWith('-fill'); sh.type = sh.type.replace('-fill', ''); sh.fill = !was; } else sh[f] = !sh[f]; snipChanged(); return; }
-  if (d.sw) { S.sw = Number(d.sw); if (S.sel) { pushHist(); snipOf().shapes.find((x) => x.n === S.sel).sw = S.sw; snipChanged(); } else renderWS(); return; }
+  if (d.sw) { S.sw = Number(d.sw); savePen(); if (S.sel) { pushHist(); snipOf().shapes.find((x) => x.n === S.sel).sw = S.sw; snipChanged(); } else renderWS(); return; }
   if (d.view) { S.docView = d.view; S.dtool = 'select'; renderWS(); return; }
-  if (d.dtool) { S.dtool = d.dtool; if (d.dtool === 'canvas-snip') toast('Drag a box over the visible page. Esc returns to Select.'); renderWS(); return; }
-  if (d.dcolor) { S.dcolor = d.dcolor; if (S.dsel && !S.dselByDraw) { pushDocHist(); S.ws.marks.find((m) => m.n === S.dsel).color = d.dcolor; markDirty(); } renderWS(); return; }
-  if (d.dsw) { S.sw = Number(d.dsw); if (S.dsel) { pushDocHist(); S.ws.marks.find((m) => m.n === S.dsel).sw = S.sw; markDirty(); } renderWS(); return; }
+  if (d.dtool) { pickDtool(d.dtool); if (d.dtool === 'canvas-snip') toast('Drag a box over the visible page. Esc returns to Select.'); renderWS(); return; }
+  if (d.dcolor) { S.dcolor = d.dcolor; S.lastDcolor = d.dcolor; savePen(); if (S.dsel && !S.dselByDraw) { pushDocHist(); S.ws.marks.find((m) => m.n === S.dsel).color = d.dcolor; markDirty(); } renderWS(); return; }
+  if (d.dsw) { S.dsw = Number(d.dsw); savePen(); if (S.dsel) { pushDocHist(); S.ws.marks.find((m) => m.n === S.dsel).sw = S.dsw; markDirty(); } renderWS(); return; }
   if (d.dsel && !e.target.closest('textarea, select')) { S.dselByDraw = false; S.dsel = Number(d.dsel); paintPreview(); document.querySelectorAll('#docCallouts .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.dsel) === S.dsel)); return; }
   if (d.gotoSet) { const el = document.getElementById('set-' + d.gotoSet); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
   if (d.copy) { toast(`${d.copy} copied`); return; }
@@ -2060,9 +2066,9 @@ document.addEventListener('pointermove', (e) => {
     ro.style.left = (e.clientX + 12) + 'px'; ro.style.top = (e.clientY + 12) + 'px'; ro.textContent = `${Math.round(r.w * 2)} × ${Math.round(r.h * 2)}`;
     return;
   }
-  const c = MAT[S.dcolor || DEFAULT_COLOR][1];
+  const c = MAT[S.dcolor || S.lastDcolor || DEFAULT_COLOR][1];
   const m = S.dtool === 'point' ? { type: 'point', x: p.x, y: p.y, w: 0, h: 0 } : S.dtool === 'line' ? { type: 'line', x: dr.p0.x, y: dr.p0.y, w: dx, h: dy } : { type: S.dtool, x: Math.min(dr.p0.x, p.x), y: Math.min(dr.p0.y, p.y), w: Math.abs(dx), h: Math.abs(dy) };
-  live.innerHTML = docShapeSVG(m, c, S.sw);
+  live.innerHTML = docShapeSVG(m, c, S.dsw);
 });
 document.addEventListener('pointerup', () => {
   const dr = S.ddrag; if (!dr) return; S.ddrag = null;
@@ -2076,7 +2082,7 @@ document.addEventListener('pointerup', () => {
   else if (w < 10 || h < 10) { w = S.dtool === 'box' ? 140 : S.dtool === 'cross' ? 28 : 90; h = S.dtool === 'box' ? 40 : S.dtool === 'cross' ? 28 : 60; x -= w / 2; y -= h / 2; }
   pushDocHist();
   const marks = S.ws.marks; const n = marks.length ? Math.max(...marks.map((m) => m.n)) + 1 : 1;
-  marks.push({ n, type: S.dtool, x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h), color: S.dcolor || DEFAULT_COLOR, sw: S.sw, note: '' });
+  marks.push({ n, type: S.dtool, x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h), color: S.dcolor || S.lastDcolor || DEFAULT_COLOR, sw: S.dsw, note: '' });
   S.dsel = n; S.dselByDraw = true; S.dcolor = null; // deselect the colour after a shape is drawn
   markDirty(); renderWS();
   const ta = $(`[data-dnote="${n}"]`); if (ta) ta.focus();
@@ -2112,7 +2118,7 @@ document.addEventListener('pointerdown', (e) => {
   // Drawing tools
   pushHist();
   const n = s.shapes.length ? Math.max(...s.shapes.map((c) => c.n)) + 1 : 1;
-  const sh = { n, type: S.tool, x: Math.round(p.x), y: Math.round(p.y), w: 0, h: 0, color: S.role || DEFAULT_COLOR, sw: S.sw, note: '' };
+  const sh = { n, type: S.tool, x: Math.round(p.x), y: Math.round(p.y), w: 0, h: 0, color: S.role || S.lastRole || DEFAULT_COLOR, sw: S.sw, note: '' };
   s.shapes.push(sh); S.sel = n;
   if (S.tool === 'point') { snipChanged(); const ta = $(`[data-note="${n}"]`); if (ta) ta.focus(); return; }
   S.drag = { kind: 'draw', n, p0: p }; stage.setPointerCapture(e.pointerId); redrawStage();
@@ -2226,7 +2232,7 @@ document.addEventListener('keydown', (e) => {
     if (ctrl && k === 'z') { e.preventDefault(); $('#docUndo').click(); return; }
     if (ctrl && k === 'y') { e.preventDefault(); $('#docRedo').click(); return; }
     if (ctrl && e.shiftKey && k === 'c') { e.preventDefault(); $('#docCopy').click(); return; }
-    const dm = { v: 'select', b: 'box', c: 'circle', l: 'line', x: 'cross', p: 'point' }; if (!ctrl && dm[k]) { S.dtool = dm[k]; renderWS(); return; }
+    const dm = { v: 'select', b: 'box', c: 'circle', l: 'line', x: 'cross', p: 'point' }; if (!ctrl && dm[k]) { pickDtool(dm[k]); renderWS(); return; }
   }
   if (!S.ws || S.ws.kind !== 'snip' || typing) return;
   if (ctrl && e.shiftKey && k === 'c') { e.preventDefault(); copyToast('Copied'); return; }
@@ -2236,7 +2242,7 @@ document.addEventListener('keydown', (e) => {
   if ((e.key === 'Delete' || e.key === 'Backspace') && S.selImg != null && !S.sel) { pushHist(); snipOf().images.splice(S.selImg, 1); S.selImg = null; snipChanged(); return; }
   if ((e.key === 'Delete' || e.key === 'Backspace') && S.sel) { pushHist(); const s = snipOf(); s.shapes = s.shapes.filter((x) => x.n !== S.sel); S.sel = null; snipChanged(); return; }
   const map = { v: 'select', r: 'rect', o: 'ellipse', l: 'line', x: 'cross', p: 'point' };
-  if (!ctrl && map[k]) { S.tool = map[k]; renderWS(); }
+  if (!ctrl && map[k]) { pickTool(map[k]); renderWS(); }
 });
 document.addEventListener('keyup', (e) => { if (e.key === ' ') spaceDown = false; });
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => requestAnimationFrame(redrawBanners));
