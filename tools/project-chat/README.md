@@ -72,6 +72,22 @@ after installing the CLI). Add the CLI's install folder to the **System** PATH (
 just your user PATH) and restart Project Chat, or run `start.bat` instead of the
 `.exe`.
 
+## The agent's tools and files
+
+**Read-only tools.** When the agent answers in the chat it runs the `claude` CLI with read-only tools and `--permission-mode dontAsk`, so anything not on this list is refused without asking:
+
+- `Read`, `Grep`, `Glob` in the project folder and the agent's own files
+- `gh pr view/list/diff`, `gh issue view/list`, `gh run list/view`, `git log/status/diff/show` (needs `gh` installed and signed in on the server PC)
+- Web reads of `github.com`, `api.github.com` and `raw.githubusercontent.com`
+
+It cannot edit files or run anything else. When a file should change, it shows the exact new text and names the file; you apply it. An older CLI without these options gets a reply without tools.
+
+**Project folder.** `PUT /api/projects/<id>/settings` with `{"workspace":"T:\\Main_Workspace\\Project-Iron-PC\\products\\collide"}` sets the folder the agent reads and works in (it must exist on the server PC). The app UI for this comes with the Files and editor build.
+
+**Agent files.** Each project's agent has `personality.md`, `skills.md` and `memory.md` in `%APPDATA%\\Project Chat\\data\\agents\\<project>\\` (only on the server PC, never in the repository). They are created with short defaults, read before every reply, and edited with `GET`/`PUT /api/projects/<id>/agent-files/<name>`.
+
+**Open file.** The chat request can carry the file open in the editor (`context: {file, content}`); the agent sees it with the message.
+
 ## GitHub report source (cloud agents)
 
 Cloud agents (Claude Code scheduled sessions) can't reach this PC, so they post the nightly report as a **comment on a GitHub issue** and Agent Chat pulls it in.
