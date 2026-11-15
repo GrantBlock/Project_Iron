@@ -880,6 +880,21 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
 .splashcard .sin .sdot { position: absolute; right: 22px; top: 86px; }
 .splashcard h2 { margin: 4px 0 0; font-size: 20px; font-weight: var(--title-weight); letter-spacing: var(--title-track); line-height: 1.15; text-wrap: balance; }
 .splashcard p { margin: 0; color: var(--t3); }
+/* Scroll bars follow the theme (Grant 2026-11-15): thin, rounded, tinted from the theme's ink. */
+:root { --sb-thumb: color-mix(in srgb, var(--t1) 24%, transparent); --sb-thumb-hover: color-mix(in srgb, var(--t1) 42%, transparent); }
+* { scrollbar-width: thin; scrollbar-color: var(--sb-thumb) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--sb-thumb); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--sb-thumb-hover); background-clip: padding-box; }
+.rowend { display: inline-flex; align-items: center; gap: 4px; }
+.item .del { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 6px; color: var(--t3); opacity: 0; transition: opacity 120ms; }
+.item:hover .del, .item:focus-within .del, .item .del:focus-visible { opacity: 1; }
+.item .del:hover { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+:root[data-app-theme="aura"] .item.active .del { color: color-mix(in srgb, var(--aura-surface) 75%, var(--aura-ink)); }
+.btn.danger { background: #C62828; border-color: transparent; color: #FFFFFF; }
+.btn.danger:hover { background: #B71C1C; }
+@media (hover: none) { .item .del { opacity: 1; } }
 .notes h4 { margin: 12px 0 2px; font-size: 12.5px; }
 </style>
 
@@ -895,7 +910,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
   <h3>Collide: Snip and Zip editor</h3>
   <ol>
     <li><b>No chat in Collide</b> (Grant 2026-11-15). Agents are worked on separately; Agent Chat (<code>tools/project-chat</code>) stays its own app.</li>
-    <li><b>Home is a blank canvas</b> with Recents on the left: snips, zip files and their folder trees, tags.</li>
+    <li><b>Home is a blank canvas</b> with Recents on the left: snips, zip files and their folder trees, tags. Hover a snip or zip and click the bin (or press Delete) to delete it; a splash screen asks first.</li>
     <li><b>Tabs on the canvas</b> (Grant 2026-11-15): each open snip, file or Settings is a tab with a dot: amber = changed, green = saved. Each keeps its own undo and zoom. Ctrl+W or × closes, Ctrl+Tab switches, middle-click closes.</li>
     <li><b>Closing with unsaved changes</b> shows a splash screen: Save and close, Close without saving, Cancel.</li>
     <li><b>Markdown files:</b> Preview with Callouts, or Code + preview. On the page: Select, Box, Circle, Line, X mark, 4 colours, stroke 2/3/5, resize handles, undo/redo, Delete. <b>Copy PNG</b> copies the visible page with its callouts; Canvas snip saves a marked-up area as a markup. Both stay inside the visible area.</li>
@@ -912,7 +927,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
     <tr><td>Select V, Rectangle R, Ellipse O, Filled rectangle, Filled ellipse, X mark X, Point P</td><td>Snip toolbar without the filled tools; <b>shading is a toggle in the callout card</b>; type can be changed in the card</td></tr>
     <tr><td>Print area</td><td>Dashed frame with corner marks and its size: the image, added images, shapes and shown bubbles, plus a 12 px margin when anything goes past the image (was 24 px). Notes can go anywhere, also over the frame; it follows them. Copy takes it; Fit (Ctrl+0) zooms to it</td></tr>
     <tr><td>Bubble stacking</td><td>When bubbles would overlap, one sits to the right, bottom, top or left of the other (closest free spot off the image). Drop a bubble near another and it snaps beside it</td></tr>
-    <tr><td>Esc</td><td>Returns to the Select tool in Snip and in the Markdown page (also leaves a note box you are typing in)</td></tr>
+    <tr><td>Esc</td><td>Returns to the Select tool in Snip and in the Markdown page (also leaves a note box you are typing in). A click outside the canvas or page (not the toolbar) does the same</td></tr>
     <tr><td>Line tool</td><td>Snip and Markdown toolbars (L); drag its ends to change it; arrows point to its middle</td></tr>
     <tr><td>Resize shapes</td><td>8 handles on a selected shape (corners and edges), sized for the zoom; Shift on a corner keeps the aspect. Added images: corner handles, aspect always locked</td></tr>
     <tr><td>4 colours, stroke 2/3/5, undo/redo (50 steps), Delete</td><td>The same <b>4 material colours</b> in every theme (red, blue, yellow, gray) in a white box; note bubbles are white boxes. After a shape is drawn no colour stays selected, so you pick the next one (unpicked = red)</td></tr>
@@ -989,6 +1004,7 @@ Object.assign(I, {
   github: '<path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.1-1.3-.3-2.5-1-3.5.3-1.2.3-2.4 0-3.5 0 0-1 0-3 1.5a10.6 10.6 0 0 0-6 0C7 2 6 2 6 2c-.3 1.1-.3 2.3 0 3.5A5.4 5.4 0 0 0 5 9c0 3.5 3 5.5 6 5.5-.4.5-.8 1.1-1 1.7-.2.6-.2 1.2-.1 1.8v4M9 18c-4.5 2-5-2-7-2"/>',
   server: '<rect x="2" y="3" width="20" height="8" rx="2"/><rect x="2" y="13" width="20" height="8" rx="2"/><path d="M6 7h.01M6 17h.01"/>',
   line: '<path d="M5 19 19 5"/>',
+  trash: '<path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/>',
   collapse: '<path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/>',
   expand: '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',
   reports: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="m9 15 2 2 4-4"/>',
@@ -1086,7 +1102,7 @@ const S = {
   open: { 'z-builder': true, 'z-builder/design': true, 'z-builder/design/specs': true },
   tool: 'select', sel: null, color: SIG, role: null, dcolor: null, selByDraw: false, addMode: 'Current', sw: 3, view: null, panning: null, drag: null, hist: [], redo: [],
   docView: 'preview', dtool: 'select', dsel: null, ddrag: null, pop: false, picker: false, closing: false, sideOpen: false, query: '',
-  compact: false, winMax: true, pending: null, tabs: [], active: -1, splash: null, delay: 'No delay',
+  compact: false, winMax: true, pending: null, tabs: [], active: -1, splash: null, delAsk: null, delay: 'No delay',
   settings: { keep: '', mode: 'server', server: '', repo: 'GrantBlock/Project_Iron', issue: '2', notify: true, password: '' },
 };
 try { const t = localStorage.getItem('collide-proto-theme'); const a = localStorage.getItem('collide-proto-aura'); if (t) S.theme = t; if (a) S.aura = a; S.compact = localStorage.getItem('collide-proto-compact') === '1'; S.winMax = localStorage.getItem('collide-proto-winmax') !== '0'; } catch (e) {}
@@ -1358,10 +1374,10 @@ function renderSide() {
     const o = r.o;
     if (r.t === 'snip') {
       const active = S.ws && S.ws.kind === 'snip' && S.ws.id === o.id;
-      return `<button class="item ${active ? 'active' : ''}" data-snip="${o.id}"><span class="thumb">${snipSVG(o.id)}</span><span style="min-width:0"><div class="ttl">${esc(o.name)}</div><div class="meta"><span class="mono">${o.shapes.length} callouts · ${o.w} × ${o.h}</span></div></span>${cloudIcon(o.saved)}</button>`;
+      return `<button class="item ${active ? 'active' : ''}" data-snip="${o.id}"><span class="thumb">${snipSVG(o.id)}</span><span style="min-width:0"><div class="ttl">${esc(o.name)}</div><div class="meta"><span class="mono">${o.shapes.length} callouts · ${o.w} × ${o.h}</span></div></span><span class="rowend"><span class="del" role="button" tabindex="0" data-del="snip:${o.id}" title="Delete ${esc(o.name)}" aria-label="Delete ${esc(o.name)}">${ico('trash', 'sm')}</span>${cloudIcon(o.saved)}</span></button>`;
     }
     const open = !!S.open[o.id];
-    return `<button class="item" data-zip="${o.id}" aria-expanded="${open}"><span class="thumb">${ico('package')}</span><span style="min-width:0"><div class="ttl">${esc(o.name)}</div><div class="meta"><span class="mono">${o.meta}</span></div></span><span class="cloud" style="transform:rotate(${open ? 90 : 0}deg);transition:transform 120ms">${ico('chev', 'sm')}</span></button>${open ? `<div class="tree">${treeHTML(o.tree, o.id, 0)}</div>` : ''}`;
+    return `<button class="item" data-zip="${o.id}" aria-expanded="${open}"><span class="thumb">${ico('package')}</span><span style="min-width:0"><div class="ttl">${esc(o.name)}</div><div class="meta"><span class="mono">${o.meta}</span></div></span><span class="rowend"><span class="del" role="button" tabindex="0" data-del="zip:${o.id}" title="Delete ${esc(o.name)}" aria-label="Delete ${esc(o.name)}">${ico('trash', 'sm')}</span><span class="cloud" style="transform:rotate(${open ? 90 : 0}deg);transition:transform 120ms">${ico('chev', 'sm')}</span></span></button>${open ? `<div class="tree">${treeHTML(o.tree, o.id, 0)}</div>` : ''}`;
   };
   // Chats filter groups by team, like Agent Chat's Projects; everything else groups by day.
   const groups = ['Today', 'Earlier'];
@@ -1732,6 +1748,33 @@ function closeTab(i, force) {
   const next = S.tabs.length ? Math.min(i === S.active ? i : S.active > i ? S.active - 1 : S.active, S.tabs.length - 1) : -1;
   S.active = -1; load(next); render();
 }
+/* Delete a snip or a zip from Recents (Grant 2026-11-15): ask first on the same kind of splash screen. */
+function delTarget(key) { const [kind, id] = key.split(':'); return kind === 'snip' ? { kind, id, item: SNIPS.find((x) => x.id === id) } : { kind, id, item: ZIPS.find((x) => x.id === id) }; }
+function askDelete(key) { S.delAsk = key; renderDelAsk(); }
+function renderDelAsk() {
+  let el = $('#delSplash');
+  if (!S.delAsk) { if (el) el.remove(); return; }
+  const t = delTarget(S.delAsk); if (!t.item) { S.delAsk = null; if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'delSplash'; el.className = 'splash'; document.body.appendChild(el); }
+  const what = t.kind === 'snip' ? `markup and its ${t.item.shapes.length} callouts` : 'zip file and its unpacked folder';
+  const openTabs = S.tabs.filter((x) => (t.kind === 'snip' ? x.ws.kind === 'snip' && x.ws.id === t.id : x.ws.kind === 'doc' && x.ws.zipId === t.id)).length;
+  el.innerHTML = `<div class="splashcard" role="alertdialog" aria-modal="true" aria-labelledby="delT" aria-describedby="delD">
+    <canvas class="banner" data-solid="0.5" data-seed="13"></canvas>
+    <div class="sin">${logo()}
+      <h2 id="delT">Delete ${esc(t.kind === 'snip' ? t.item.name : t.item.name)}?</h2>
+      <p id="delD">The ${what} are deleted from the server. This can't be undone.${openTabs ? ` ${openTabs} open tab${openTabs > 1 ? 's close' : ' closes'} without saving.` : ''}</p>
+      <div class="btnrow"><button class="btn danger" id="delYes">${ico('trash')}Delete</button><button class="btn ghost" id="delNo">Cancel</button></div>
+      <span class="hint">Enter deletes · Esc cancels</span></div></div>`;
+  requestAnimationFrame(redrawBanners);
+  $('#delNo').focus();
+}
+function doDelete() {
+  const t = delTarget(S.delAsk); S.delAsk = null; renderDelAsk(); if (!t.item) return;
+  // Close its tabs without asking (the user just chose to delete it).
+  for (let i = S.tabs.length - 1; i >= 0; i--) { const w = S.tabs[i].ws; if (t.kind === 'snip' ? w.kind === 'snip' && w.id === t.id : w.kind === 'doc' && w.zipId === t.id) { if (i === S.active) S.dirty = false; else S.tabs[i].dirty = false; closeTab(i, true); } }
+  if (t.kind === 'snip') SNIPS.splice(SNIPS.indexOf(t.item), 1); else { ZIPS.splice(ZIPS.indexOf(t.item), 1); delete S.open[t.id]; }
+  renderSide(); toast(`Deleted ${t.item.name}`);
+}
 /* Ask before closing: a splash screen over the whole window. */
 function renderSplash() {
   let el = $('#splash');
@@ -1784,6 +1827,8 @@ function newSnip(fromCanvas) {
   toast(fromCanvas ? 'Copied to clipboard · opened as a new markup' : 'Snip copied to clipboard');
 }
 document.addEventListener('click', (e) => {
+  const delEl = e.target.closest('[data-del]'); if (delEl) { e.stopPropagation(); askDelete(delEl.dataset.del); return; }
+  if (e.target.closest('#delSplash')) { const b = e.target.closest('button'); if (b && b.id === 'delYes') doDelete(); else if (b && b.id === 'delNo') { S.delAsk = null; renderDelAsk(); } return; }
   const tabEl = e.target.closest('[data-tabi]'); if (tabEl && !e.target.closest('[data-tabclose]')) { activateTab(Number(tabEl.dataset.tabi)); return; }
   const t = e.target.closest('button, .cloud[data-push], [data-sel], [data-dsel]');
   if (!t) { if (S.pop && !e.target.closest('.pop')) { S.pop = false; renderSide(); } return; }
@@ -1886,6 +1931,22 @@ document.addEventListener('change', (e) => {
     r.readAsDataURL(file); t.value = '';
   }
 });
+
+/* A click outside the canvas (Snip) or the page pane (Markdown) while a drawing tool is on goes back to Select (Grant 2026-11-15).
+   The toolbar is exempt, so colours and stroke can be picked for the tool. Updated in place so the click still lands where it was aimed. */
+document.addEventListener('pointerdown', (e) => {
+  if (!S.ws || e.target.closest('.toolbar, #splash, .picker')) return;
+  if (S.ws.kind === 'snip' && S.tool !== 'select' && !e.target.closest('#stage')) {
+    S.tool = 'select';
+    document.querySelectorAll('#ws [data-tool]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tool === 'select')));
+    const st = $('#stage'); if (st) st.classList.remove('cursor-add');
+  }
+  if (S.ws.kind === 'doc' && S.dtool !== 'select' && !e.target.closest('#preview')) {
+    S.dtool = 'select'; S.ddrag = null;
+    document.querySelectorAll('#ws [data-dtool]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.dtool === 'select')));
+    const pv = $('#preview'); if (pv) pv.classList.remove('drawing');
+  }
+}, true);
 
 /* ---------- Callout cards: drag the grip to reorder; numbers follow the new order ---------- */
 document.addEventListener('dragstart', (e) => { const g = e.target.closest && e.target.closest('[data-grip]'); if (!g) return; S.dragN = Number(g.dataset.grip); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', String(S.dragN)); } catch (x) {} });
@@ -2075,6 +2136,8 @@ document.addEventListener('input', (e) => {
   if (e.target.id === 'accessPw') { S.settings.password = e.target.value; return; }
 });
 document.addEventListener('keydown', (e) => {
+  if (S.delAsk) { if (e.key === 'Escape') { e.preventDefault(); S.delAsk = null; renderDelAsk(); } else if (e.key === 'Enter' && !e.target.closest('button')) { e.preventDefault(); doDelete(); } else if (e.key === 'Tab') { e.preventDefault(); const b = [...document.querySelectorAll('#delSplash button')]; const i = b.indexOf(document.activeElement); b[(i + 1) % b.length].focus(); } return; }
+  if ((e.key === 'Delete') && e.target.closest && e.target.closest('#side [data-snip], #side [data-zip]') && !e.target.closest('.tree')) { const it = e.target.closest('[data-snip], [data-zip]'); askDelete(it.dataset.snip ? 'snip:' + it.dataset.snip : 'zip:' + it.dataset.zip); return; }
   if (S.splash) { if (e.key === 'Escape') { e.preventDefault(); $('#cancelClose').click(); } else if (e.key === 'Enter' && !e.target.closest('button')) { e.preventDefault(); $('#saveClose').click(); } else if (e.key === 'Tab') { const b = [...document.querySelectorAll('#splash button')]; const i = b.indexOf(document.activeElement); e.preventDefault(); b[(i + (e.shiftKey ? -1 : 1) + b.length) % b.length].focus(); } return; }
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'w' && S.ws) { e.preventDefault(); closeWS(false); return; }
   if (e.ctrlKey && e.key === 'Tab' && S.tabs.length > 1) { e.preventDefault(); activateTab((S.active + (e.shiftKey ? -1 : 1) + S.tabs.length) % S.tabs.length); return; }
