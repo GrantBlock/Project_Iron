@@ -66,6 +66,8 @@ Related (in `GrantBlock/designengineering-ai`, `Builder v0.1/`): `development-pa
 - [stated] 2026-11-15: The Markdown markup toolbar uses the Snip toolbar's layout (tools, colours, stroke; undo/redo and actions on the right). The Markdown editor gets Edit / Preview, an unsaved mark, Save, full width and hide-toolbar buttons, and Heading, List, Table, Label and Num list tools (Grant).
 - [stated] 2026-11-15: Canvas snip is removed from Collide (Snip and the Markdown editor). The Open markup (folder) button is removed from the Snip toolbar; the sidebar Open covers it (Grant).
 - [stated] 2026-11-15: Items in the left panel can be deleted (Grant). Assumed (A): the snips and zip files in Recents, since Collide has no chats; a splash screen asks first.
+- [stated] 2026-11-15: The scheduled Collide run is approved. It is paced for the 5-hour usage limit: session 1 at 2:45 AM Central, session 2 at 7:45 AM Central (5 hours later) continues from `HANDOFF.md` on `collide/run` (Grant).
+- [stated] 2026-11-15: Each agent runs on the model that fits its role: Planner (Irileth) Opus 5.5; Coder (Hrongar) Fable 5.2 at high effort; Reviewer (Farengar) Opus 5.5; Tester (Lydia) Sonnet 5.5; read-only file searches Haiku 5.5 (Grant asked for the optimal model per role; the split is Claude's recommendation).
 - [stated] 2026-11-14: Collide keyboard shortcuts (incl. Ctrl+Shift+C Copy and Ctrl+0 fit-to-window) are decided later in an accessibility spec; current bindings are provisional.
 - [stated] 2026-11-14: Collide callouts: every rectangle, ellipse and new Point gets a numbered note box placed outside the image on the nearest side (stacked, draggable), with an arrow to the shape; box width is adjustable and height fits the text; edit on canvas (double-click) or in the Callouts panel; empty boxes are left out of Copy/Export. Toolbar becomes Select, Rectangle, Ellipse, Point (Arrow, Text, Callout tools removed); old markups with those shapes still open and display (Grant).
 - [stated] 2026-11-14: Collide: a callout with an empty note still shows its number (as a chip) and arrow in the editor, Copy and Export. A "Hide #" toggle in the Callouts sidebar leaves a callout's number box and arrow out of Copy/Export (dimmed in the editor); per callout (A) (Grant).
@@ -188,7 +190,7 @@ How a spec gets made: Irileth drafts it from the prototype page and the logs (tr
 | 5am | Lydia (Tester) | Checks preview URLs, posts screenshots and test results |
 | 6:30am | Lydia's report | One comment on issue #2: ready to merge, blocked, cost of the night; Agent Chat pulls it in |
 
-## Scheduled run: Collide prototype to Electron/Node (Draft (not yet approved by Grant))
+## Scheduled run: Collide prototype to Electron/Node (approved by Grant 2026-11-15)
 
 Grant asked (2026-11-15) for a scheduled run that turns the Collide prototype into the real app on Electron/Node and tests the app against the prototype. Brief: `products/collide/RUN3.md`. Reference: `products/collide/layout-prototype.html` (live copy: the Collide Layout Prototype artifact). Seed checks: `products/collide/prototype-checks/`.
 
@@ -201,7 +203,29 @@ Grant asked (2026-11-15) for a scheduled run that turns the Collide prototype in
 4. Screenshots (desktop and phone, Dark / Light / Aura) of the app are compared with the prototype's; differences go in the morning report for Grant.
 5. Nobody changes the prototype to make a spec pass, and no spec is weakened or skipped.
 
-**Schedule.** One scheduled cloud session at **2:45 AM Central** runs the whole team in the SPEC.md task loop (Planner, then Coder → Reviewer → Tester per task), until the board is done, usage reaches 75%, or a stop condition in SPEC.md is hit. If the board is not done, the next scheduled night continues from `HANDOFF.md`.
+**Schedule (paced for the 5-hour usage limit).**
+
+| Session | Time (Central) | Does |
+| --- | --- | --- |
+| 1 | 2:45 AM | Setup, Phase E (T13–T17), then T30 onward |
+| 2 | 7:45 AM (5 hours later, when the limit resets) | Continues from `HANDOFF.md` on `collide/run` until the board is done |
+
+Each session is the Planner and runs the SPEC.md task loop (Coder → Reviewer → Tester per task). Pacing rules:
+- Write the start time in `HANDOFF.md`; commit and push after every task, so nothing is lost when the limit hits.
+- From 4 h 15 min after the start, or at the first usage warning, start no new task: finish or park the current one, update `HANDOFF.md`, push, post the report.
+- Keep the Planner's own context small: delegate code, review and tests to subagents and read their short reports, not whole files.
+
+**Models per role.**
+
+| Role | Model | Why |
+| --- | --- | --- |
+| Planner (Irileth), the session itself | Opus 5.5 | Planning and unblocking; long session at half Fable's price |
+| Coder (Hrongar) | Fable 5.2, high effort | The hardest work (port, markup engine, PDF); fewer retries |
+| Reviewer (Farengar) | Opus 5.5 | Careful diff review without Fable's price |
+| Tester (Lydia) | Sonnet 5.5 | Writing and running Playwright specs |
+| File searches | Haiku 5.5 | Read-only searches |
+
+If the board is still not done after session 2, Grant decides the next session.
 
 **Done when** every reference spec passes on the app, the screenshot differences are accepted by Grant, and the one pull request from `collide/run` into `development` is open for Grant to merge.
 
