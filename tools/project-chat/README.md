@@ -72,14 +72,13 @@ after installing the CLI). Add the CLI's install folder to the **System** PATH (
 just your user PATH) and restart Project Chat, or run `start.bat` instead of the
 `.exe`.
 
-## Workspace layout (0.4)
+## 0.4.1: one chat, the agent's own files, one question at a time
 
-- **Header:** title at the top, **Menu** on the right (Projects, Reports, Connect).
-- **Sidebar:** **New chat**; the agent's **chat history** (Nightly reports pinned, then chats by day; ✕ deletes a chat); **Files**; the agent's files (personality, skills, memory), collapsed by default.
-- **Files:** set the **Project folder** in Menu → Projects. Explorer lists it (folders open, .. goes up); **Open folder** and **PowerShell** open Windows Explorer or a PowerShell window there on the server PC (from the server PC only).
-- **Editor:** .md, .markdown and .txt files and the agent's files. **Edit** (source) or **Preview** (click any line to edit it). Tools: **Heading** (H1–H6), **List** (`- `), **Table**, **Label** (`**…:** `: type, then → or `:` or click Label again to leave the marks), **Num list** (`1. `). **Save** or Ctrl+S; a backup is kept before every save.
-- **Full / half height** and **collapse** on both Explorer and the editor.
-- **Read this file** shares the open file with the agent; it can then answer about it and edit it (with **Undo**). **What do I run?** answers with a command you can copy or paste into PowerShell.
+0.4.1 goes back to the compact single-chat window of 0.3.6 (the 0.4.0 workspace with Files, editor and chat history is set aside; its server endpoints remain).
+
+- **One running chat** per project, trimmed to the newest 30 messages (`maxMessages`). Reports stay in their own list (newest 30, the latest 5 always kept). Chats made in 0.4.0 are merged into the one chat on first start.
+- **The agent's files:** `personality.md`, `skills.md`, `memory.md` and `plans.md`, stored only on the server PC. The agent reads them before every reply and changes them **only through this chat**, writing the whole file in a `<<<WRITE memory.md` … `WRITE>>>` block. Each change shows under the reply as "Updated Lydia / memory.md · Undo". Personality and skills change only when you ask. Menu → (agent name) shows the four files read-only.
+- **One question at a time:** the agent asks at most one question per reply. Others go in the "## Question roster" of `plans.md`; the bar above the reply box shows how many are waiting and **Ask next** asks for the next one. Your answer is recorded in `memory.md` and the question leaves the roster.
 
 ## The agent's tools and files
 
