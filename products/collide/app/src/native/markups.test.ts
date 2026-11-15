@@ -85,7 +85,7 @@ const OUTSIDE = (shown: string) => `${shown} is outside Documents/Collide/Markup
 describe("lib.rs tests, ported", () => {
   it("fs_capability_is_scoped_to_markups_folder", async () => {
     const { base, documents, root } = sandbox();
-    // The Tauri capability file listed a scope per fs permission. Here the scope is the code,
+    // The Rust shell's capability file listed a scope per fs permission. Here the scope is the code,
     // so the test watches every fs call the store makes and checks the path it was given.
     const touched: [string, string][] = [];
     const watched = new Proxy(fs, {
@@ -340,14 +340,14 @@ describe("createMarkups: save, open, list", () => {
     expect(markups.list().sort()).toEqual([path.join(root, "a"), path.join(root, "b")]);
   });
 
-  it("opening a folder without the files names the cause and the fix (the text the Tauri store showed)", async () => {
+  it("opening a folder without the files names the cause and the fix (the text the Rust shell's store showed)", async () => {
     const { documents, root } = sandbox();
     const { markups } = store(documents);
     const missing = path.join(root, "nope");
     const none = await failure(() => markups.open(missing));
     expect(none.kind).toBe("ReadFailed");
     expect(none.message).toMatch(new RegExp(`^${missing.replace(/[\\.]/g, "\\$&")} is missing source\\.png or annotations\\.json \\(ENOENT.*\\)\\. Pick a folder created by Save\\.$`));
-    // The Markups folder itself is inside the scope (as in the Tauri capability), but it is not a markup.
+    // The Markups folder itself is inside the scope (as in the Rust shell's capability file), but it is not a markup.
     fs.mkdirSync(root, { recursive: true });
     expect((await failure(() => markups.open(root))).kind).toBe("ReadFailed");
     for (const folder of [undefined, null, "", 7, { path: missing }, [missing]]) {
@@ -355,7 +355,7 @@ describe("createMarkups: save, open, list", () => {
     }
   });
 
-  it("a failed write names the folder, the cause and the fix (the text the Tauri store showed)", async () => {
+  it("a failed write names the folder, the cause and the fix (the text the Rust shell's store showed)", async () => {
     const { documents, root } = sandbox();
     const { markups } = store(documents);
     fs.mkdirSync(root, { recursive: true });

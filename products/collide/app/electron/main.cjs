@@ -92,7 +92,7 @@ function createEditorWindow() {
   return win;
 }
 
-// The capture overlay, as the Tauri shell configured it: transparent, frameless,
+// The capture overlay, as the Rust shell configured it: transparent, frameless,
 // always on top, not in the taskbar, hidden until a snip shows it. Not OS-
 // fullscreen: that would pick the monitor the window is on, not the captured one.
 function createOverlayWindow() {
@@ -185,7 +185,7 @@ app.whenReady().then(() => {
   settingsStatus = native.setupHotkey(app.getPath("userData"), { fs, path, mac: process.platform === "darwin" }, globalShortcut, () =>
     broadcast(native.SNIP_REQUEST_CHANNEL),
   );
-  // Same as the Tauri window: the native frame only, no menu bar.
+  // Same as the Rust shell's window: the native frame only, no menu bar.
   // Dev keeps Electron's default menu for reload and DevTools.
   if (app.isPackaged) Menu.setApplicationMenu(null);
   editor = createEditorWindow();

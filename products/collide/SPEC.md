@@ -54,17 +54,17 @@ Two screens: a snip overlay for capture and a three-pane editor for markup and A
 
 ## Tech stack
 
-Tauri v2 with a React frontend; every library below is free for commercial use. tldraw is excluded because production use needs a paid commercial license.
+Electron (Node in the main process) with a React frontend, since run 2 (`RUN2.md`, Grant 2026-11-15; before that Tauri v2 and Rust); every library below is free for commercial use. tldraw is excluded because production use needs a paid commercial license.
 
 | Layer | Choice | Role |
 | --- | --- | --- |
-| App shell | Tauri v2 (Rust + React/TypeScript) | Native window, global hotkey, file system access |
-| Capture | `xcap` crate | Full-monitor capture for the frozen frame |
-| Crop | `image` crate | Crop the frozen frame to the dragged box, encode PNG |
+| App shell | Electron (Node main process + React/TypeScript), preload bridge `window.collide` | Native window, global hotkey, file system access |
+| Capture | Electron `desktopCapturer` in the main process | Full-monitor capture for the frozen frame |
+| Crop | TypeScript (`src/snip/crop.ts`) + Electron `nativeImage` | Crop the frozen frame to the dragged box, encode PNG |
 | Canvas | react-konva | Shapes, drag/resize (`Transformer`), flatten via `stage.toDataURL()` |
 | PDF view | pdf.js | Render pages to canvas under the annotation layer |
 | PDF export | pdf-lib | Write native annotations or flatten |
-| Storage | Local folders + SQLite (`tauri-plugin-sql`) | Files per markup; index, tags, search, chat history |
+| Storage | Local folders via Node `fs` in the main process, scoped to `Documents/Collide/Markups`; index: SQLite [library for Electron not chosen; the Tauri SQL plugin no longer applies] | Files per markup; index, tags, search, chat history |
 | AI (offline) | Ollama + a vision-capable model | Private, free, lower quality |
 | AI (cloud, optional) | Claude API | Better output; images leave the PC |
 

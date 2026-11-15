@@ -6,7 +6,7 @@
 import type { LogicalRect } from "../snip/crop";
 import type { CaptureInfo, CropInfo } from "../snip/flow";
 
-/** Events between the editor and the overlay window (the names the Tauri build uses). */
+/** Events between the editor and the overlay window (the names the Rust shell used). */
 export const OVERLAY_EVENTS = [
   "collide:overlay-frame",
   "collide:overlay-ready",
@@ -95,7 +95,7 @@ export interface CollideBridge {
     /** The folders directly inside Markups (full paths). */
     list(): Promise<string[]>;
   };
-  /** The overlay events: sent to every Collide window, the sender included (as Tauri's emit/listen did). */
+  /** The overlay events: sent to every Collide window, the sender included (as the Rust shell's emit/listen did). */
   overlay: {
     emit(event: OverlayEvent, payload?: unknown): void;
     /** Returns the unsubscribe function. */

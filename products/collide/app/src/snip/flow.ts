@@ -1,5 +1,5 @@
 // T11: the snip orchestrator. All side effects come in through `SnipDeps`, so the
-// order of calls is unit-testable with mocks. Window moves are Rust commands (src-tauri/src/snip.rs).
+// order of calls is unit-testable with mocks. Window moves are main-process calls (src/native/windows.ts).
 
 export interface CaptureInfo {
   width: number;
@@ -25,7 +25,7 @@ export interface SnipNotice {
 }
 
 export interface SnipDeps {
-  /** Tauri `invoke`; undefined outside the desktop app. */
+  /** The desktop shell's `invoke`; undefined outside the desktop app. */
   invoke?: (cmd: string, args?: Record<string, unknown>) => Promise<unknown>;
   /** Resolve once the overlay window is listening (it answers a ping). */
   waitForOverlayReady: () => Promise<void>;
@@ -76,7 +76,7 @@ const cause = (e: unknown) => (e instanceof Error ? e.message : String(e));
 export const NOT_DESKTOP: SnipNotice = {
   tone: "error",
   title: "New snip needs the Collide desktop app",
-  description: "Screen capture is not available in a browser. Open Collide from its installed app (or pnpm tauri dev) and try again.",
+  description: "Screen capture is not available in a browser. Open Collide from its installed app (or pnpm electron:dev) and try again.",
 };
 
 export function createSnipFlow(deps: SnipDeps) {

@@ -1,4 +1,4 @@
-// T15: window choreography for a snip, ported from src-tauri/src/snip.rs. The JS
+// T15: window choreography for a snip, ported from the Rust shell's snip.rs. The JS
 // orchestrator (`src/snip/flow.ts`) decides the order; this only moves windows.
 // Electron's BrowserWindow is passed in (typed by the members used), so the moves
 // are unit-tested with fake windows.
@@ -101,7 +101,7 @@ export function createChoreography(deps: ChoreographyDeps): Choreography {
       } catch (e) {
         throw failed("hide the editor", e);
       }
-      // Have the overlay's page loaded before the flow pings it. The Tauri shell
+      // Have the overlay's page loaded before the flow pings it. The Rust shell
       // opened that window (hidden) at startup; here it is opened by the first snip.
       await deps.overlay().loaded;
     },

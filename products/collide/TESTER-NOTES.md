@@ -2,7 +2,7 @@
 
 2026-11-14 · From Grant's session `claude/peaceful-babbage-04aj3j`, merged into `development`. These changes came from Grant testing Collide on Windows 11. What is automated is listed under each item; the **Windows** lines are what still needs a real check on Grant's PC (no Windows box in the cloud).
 
-Run: `cd products/collide/app && pnpm install && pnpm test && pnpm e2e --trace off` (Vitest 117, Playwright 39 at merge). Rust: `cd src-tauri && cargo test` (20).
+Run: `cd products/collide/app && pnpm install && pnpm test && pnpm e2e --trace off && xvfb-run -a pnpm e2e:electron --trace off` (`xvfb-run -a` on Linux only). Desktop app: `pnpm electron:dev`. At the 2026-11-14 merge: Vitest 117, Playwright 39, `cargo` 20; since T17 (run 2) there is no Rust, and the 20 `cargo` tests are Vitest tests (table in `app/CLAUDE.md`).
 
 ## What changed and how to test it
 

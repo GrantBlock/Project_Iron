@@ -76,7 +76,7 @@ describe("ElectronMarkupStore", () => {
     const s: MarkupStore = new ElectronMarkupStore(markups);
     const id = await s.save("2026-11-13_x", { sourcePng: bytes(137, 80, 78, 71, 1), annotations: doc, exportPng: bytes(9, 9) });
     expect(id).toBe(path.join(root, "2026-11-13_x"));
-    // The same layout as the Tauri store wrote.
+    // The same layout as the Rust shell's store wrote.
     expect(fs.readdirSync(id).sort()).toEqual(["annotations.json", "export.png", "source.png"]);
     expect(JSON.parse(fs.readFileSync(path.join(id, "annotations.json"), "utf8"))).toEqual(doc);
     expect([...fs.readFileSync(path.join(id, "export.png"))]).toEqual([9, 9]);
@@ -132,7 +132,7 @@ describe("ElectronMarkupStore", () => {
     expect(fs.readdirSync(path.join(base, "Desktop"))).toEqual(["plan"]);
   });
 
-  it("opening a missing folder and a failed write keep the Tauri store's messages", async () => {
+  it("opening a missing folder and a failed write keep the Rust shell store's messages", async () => {
     const { markups, root } = bridge();
     const s = new ElectronMarkupStore(markups);
     const missing = await markupError(s.open(path.join(root, "nope")));

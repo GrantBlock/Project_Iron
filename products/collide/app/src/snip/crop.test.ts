@@ -1,4 +1,4 @@
-// T14: the 9 tests of src-tauri/src/crop.rs, ported one for one (same names, same
+// T14: the 9 tests of the Rust shell's crop.rs, ported one for one (same names, same
 // numbers), then more cases for scaling, negative monitor origins and zero-size boxes.
 import { describe, expect, it } from "vitest";
 import { CropError, cropRect, type CropErrorKind, type LogicalRect, type PhysicalRect } from "./crop";
