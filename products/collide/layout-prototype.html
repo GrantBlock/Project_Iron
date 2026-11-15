@@ -887,6 +887,28 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
 ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--sb-thumb); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
 ::-webkit-scrollbar-thumb:hover { background: var(--sb-thumb-hover); background-clip: padding-box; }
+.tbtn { height: 30px; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; border-radius: var(--r-ctl); border: var(--border-w) solid var(--line-2); background: var(--raised); color: var(--t1); font-size: 12.5px; white-space: nowrap; flex: none; }
+.tbtn:hover { background: var(--hover); }
+.tbtn + .tbtn, .hsel + .tbtn { margin-left: 4px; }
+.hsel { position: relative; padding-right: 4px; }
+.hsel select { border: 0; background: transparent; color: var(--t1); font: inherit; padding: 0 2px; cursor: pointer; }
+.unsaved-mark { display: inline-flex; align-items: center; gap: 5px; margin-left: 6px; font: 500 11.5px var(--font-ui); color: var(--t3); }
+.unsaved-mark[hidden] { display: none; }
+.wshead .btn.icon[aria-pressed="true"]#docFocus { background: var(--accent-soft); color: var(--accent); }
+.app.focus { grid-template-columns: 0 minmax(0, 1fr); }
+.app.focus .side { visibility: hidden; overflow: hidden; }
+.app.focus .numbered { display: none; }
+.app.focus .wsbody { grid-template-columns: minmax(0, 1fr) !important; }
+.mdtable { overflow-x: auto; margin: 8px 0 12px; }
+.mdtable table { border-collapse: collapse; font-size: 12.5px; min-width: 60%; }
+.mdtable th, .mdtable td { border: 1px solid var(--line-2); padding: 5px 9px; text-align: left; }
+.mdtable th { background: var(--sunk); font-weight: 600; }
+.snapdoc .mdtable th, .snapdoc .mdtable td { border-color: #d6d6d6; } .snapdoc .mdtable th { background: #f2f2f2; }
+.viewseg { display: inline-flex; padding: 2px; gap: 2px; border-radius: var(--r-btn); background: var(--sunk); border: var(--border-w) solid var(--line); }
+.viewseg button { height: 26px; padding: 0 10px; border: 0; border-radius: var(--r-btn); background: transparent; color: var(--t3); font-size: 12px; white-space: nowrap; }
+.viewseg button[aria-pressed="true"] { background: var(--raised); color: var(--t1); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+:root[data-app-theme="aura"] .viewseg button[aria-pressed="true"] { background: var(--aura-ink); color: var(--aura-surface); }
+@media (max-width: 1100px) { .wshead .viewseg button { padding: 0 6px; } #repack span { display: none; } }
 .rowend { display: inline-flex; align-items: center; gap: 4px; }
 .item .del { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 6px; color: var(--t3); opacity: 0; transition: opacity 120ms; }
 .item:hover .del, .item:focus-within .del, .item .del:focus-visible { opacity: 1; }
@@ -913,7 +935,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
     <li><b>Home is a blank canvas</b> with Recents on the left: snips, zip files and their folder trees, tags. Hover a snip or zip and click the bin (or press Delete) to delete it; a splash screen asks first.</li>
     <li><b>Tabs on the canvas</b> (Grant 2026-11-15): each open snip, file or Settings is a tab with a dot: amber = changed, green = saved. Each keeps its own undo and zoom. Ctrl+W or × closes, Ctrl+Tab switches, middle-click closes.</li>
     <li><b>Closing with unsaved changes</b> shows a splash screen: Save and close, Close without saving, Cancel.</li>
-    <li><b>Markdown files:</b> Preview with Callouts, or Code + preview. On the page: Select, Box, Circle, Line, X mark, 4 colours, stroke 2/3/5, resize handles, undo/redo, Delete. <b>Copy PNG</b> copies the visible page with its callouts; Canvas snip saves a marked-up area as a markup. Both stay inside the visible area.</li>
+    <li><b>Markdown files:</b> Edit (Markdown with a live preview) or Preview (mark up), switched in the header; "● unsaved" beside the name; Save; full width (square) hides the sidebar and callouts; ^ hides the toolbar. Edit toolbar: Heading ▾, List, Table, Label, Num list, Bold, Link, Insert snip; tables show in the preview. The markup toolbar uses the Snip layout: Select, Box, Circle, Line, X mark, Point, 4 colours, stroke 2/3/5; on the right undo/redo, Insert snip, Canvas snip, Copy PNG and Export (saves the visible page as a markup). Resize handles and Delete work as in Snip. <b>Copy PNG</b> copies the visible page with its callouts; Canvas snip saves a marked-up area as a markup. Both stay inside the visible area.</li>
     <li><b>Collapse</b> moves Recents to the right. Windowed: the window shrinks to Recents; a new or opened snip adds a canvas and fits to it. Maximized: blank canvas. Try both with the "Prototype · window" switch.</li>
     <li><b>Storage on the server PC</b>, with automatic deletion after [number of files]. Settings → Storage.</li>
     <li><b>Themes:</b> Dark, Light, Aura for the whole app. The logo is never recoloured.</li>
@@ -1004,6 +1026,12 @@ Object.assign(I, {
   github: '<path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.1-1.3-.3-2.5-1-3.5.3-1.2.3-2.4 0-3.5 0 0-1 0-3 1.5a10.6 10.6 0 0 0-6 0C7 2 6 2 6 2c-.3 1.1-.3 2.3 0 3.5A5.4 5.4 0 0 0 5 9c0 3.5 3 5.5 6 5.5-.4.5-.8 1.1-1 1.7-.2.6-.2 1.2-.1 1.8v4M9 18c-4.5 2-5-2-7-2"/>',
   server: '<rect x="2" y="3" width="20" height="8" rx="2"/><rect x="2" y="13" width="20" height="8" rx="2"/><path d="M6 7h.01M6 17h.01"/>',
   line: '<path d="M5 19 19 5"/>',
+  table: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16M15 4v16"/>',
+  tag: '<path d="M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.7 8.7a2.4 2.4 0 0 0 3.4 0l6.6-6.6a2.4 2.4 0 0 0 0-3.4z"/><circle cx="7.5" cy="7.5" r="1"/>',
+  listNum: '<path d="M10 6h11M10 12h11M10 18h11M4 6h1v4M4 10h2M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/>',
+  chevUp: '<path d="m18 15-6-6-6 6"/>',
+  chevDown: '<path d="m6 9 6 6 6-6"/>',
+  maximize: '<rect x="4" y="4" width="16" height="16" rx="2"/>',
   trash: '<path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/>',
   collapse: '<path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/>',
   expand: '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',
@@ -1415,15 +1443,15 @@ function renderSide() {
 
 /* ---------- Workspace ---------- */
 const COLORS = [[SIG, 'Signal'], [STEEL, 'Steel'], [AMBER, 'Amber'], [INK50, 'White']];
-function headHTML(kindIcon, name, path, extra = '', saveLabel) {
+function headHTML(kindIcon, name, path, extra = '', saveLabel, afterSave = '') {
   return `<div class="wshead">
     <button class="btn ghost icon mobile-only" id="sideBtn2" aria-label="Recents">${ico('menu')}</button>
     <span class="kind">${ico(kindIcon)}</span>
-    <div style="min-width:0;display:grid"><span class="name">${esc(name)}</span><span class="path mono">${esc(path)}</span></div>
+    <div style="min-width:0;display:grid"><span class="name">${esc(name)} <span class="unsaved-mark" ${S.dirty ? '' : 'hidden'}><span class="sdot changed"></span>unsaved</span></span><span class="path mono">${esc(path)}</span></div>
     <span style="flex:1"></span>
     <span class="saved ${S.dirty ? 'dirty' : ''}"><span class="d"></span><span class="lbl">${S.dirty ? 'Unsaved changes' : saveLabel || (S.settings.mode === 'server' ? 'Saved on the server · autosave' : 'Saved on the server')}</span></span>
     ${extra}
-    <button class="btn" id="wsSave" title="Save (Ctrl+S)" ${S.dirty ? '' : 'disabled'}>${ico('save')}<span>Save</span></button>
+    <button class="btn ${S.ws && S.ws.kind === 'doc' ? 'primary' : ''}" id="wsSave" title="Save (Ctrl+S)" ${S.dirty ? '' : 'disabled'}>${ico('save')}<span>Save</span></button>${afterSave}
     <button class="btn icon" id="compactBtn2" title="${S.compact ? 'Expand the window' : 'Collapse: Recents moves to the right'}" aria-label="${S.compact ? 'Expand window' : 'Collapse window'}">${ico(S.compact ? 'expand' : 'collapse')}</button>
     <button class="btn" id="wsClose" title="Close this tab (Ctrl+W)">${ico('x')}<span>Close</span></button>
   </div>`;
@@ -1516,9 +1544,18 @@ function mdHTML(src) {
   const inline = (s) => esc(s).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>');
   let html = '', list = null;
   const close = () => { if (list) { html += `</${list}>`; list = null; } };
-  for (const line of src.split('\n')) {
+  const lines0 = src.split('\n');
+  for (let li = 0; li < lines0.length; li++) {
+    const line = lines0[li];
     let m;
-    if ((m = /^(#{1,3})\s+(.*)/.exec(line))) { close(); html += `<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`; }
+    if (/^\s*\|.*\|\s*$/.test(line)) {
+      close();
+      const rows = []; while (li < lines0.length && /^\s*\|.*\|\s*$/.test(lines0[li])) { rows.push(lines0[li]); li++; } li--;
+      const cells = (r) => r.trim().replace(/^\||\|$/g, '').split('|').map((c) => inline(c.trim()));
+      const body = rows.filter((r, i) => !(i === 1 && /^\s*\|?\s*:?-{3,}/.test(r)));
+      html += `<div class="mdtable"><table><thead><tr>${cells(body[0]).map((c) => `<th>${c}</th>`).join('')}</tr></thead><tbody>${body.slice(1).map((r) => `<tr>${cells(r).map((c) => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    }
+    else if ((m = /^(#{1,3})\s+(.*)/.exec(line))) { close(); html += `<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`; }
     else if ((m = /^!\[([^\]]*)\]\(([^)]+)\)/.exec(line))) {
       close();
       const snip = SNIPS.find((s) => m[2].includes(slug(s.name)));
@@ -1534,11 +1571,12 @@ function mdHTML(src) {
 /* Markdown editor: Preview + Callouts, or Code + Preview. Box and circle callouts are drawn on the
    rendered page (a fixed-width page, so they stay put); Canvas snip saves a marked-up region as a markup. */
 const PAGE_W = 680;
-const DOC_TOOLS = [['select', 'pointer', 'Select', 'V'], ['box', 'square', 'Box', 'B'], ['circle', 'circle', 'Circle', 'C'], ['line', 'line', 'Line', 'L'], ['cross', 'cross', 'X mark', 'X']];
-const DOC_LABEL = { box: 'Box', circle: 'Circle', line: 'Line', cross: 'X mark' };
+const DOC_TOOLS = [['select', 'pointer', 'Select', 'V'], ['box', 'square', 'Box', 'B'], ['circle', 'circle', 'Circle', 'C'], ['line', 'line', 'Line', 'L'], ['cross', 'cross', 'X mark', 'X'], ['point', 'dot', 'Point', 'P']];
+const DOC_LABEL = { box: 'Box', circle: 'Circle', line: 'Line', cross: 'X mark', point: 'Point' };
 function docShapeSVG(m, c, sw, extra = '') {
   if (m.type === 'box') return `<rect x="${m.x}" y="${m.y}" width="${m.w}" height="${m.h}" rx="3" fill="${c}" fill-opacity=".06" stroke="${c}" stroke-width="${sw}" ${extra}/>`;
   if (m.type === 'circle') return `<ellipse cx="${m.x + m.w / 2}" cy="${m.y + m.h / 2}" rx="${Math.abs(m.w / 2)}" ry="${Math.abs(m.h / 2)}" fill="${c}" fill-opacity=".06" stroke="${c}" stroke-width="${sw}" ${extra}/>`;
+  if (m.type === 'point') return `<circle cx="${m.x}" cy="${m.y}" r="${3 + sw}" fill="${c}" stroke="#FFFFFF" stroke-width="1.5" ${extra}/>`;
   if (m.type === 'line') return `<line x1="${m.x}" y1="${m.y}" x2="${m.x + m.w}" y2="${m.y + m.h}" stroke="${c}" stroke-width="${sw}" stroke-linecap="round" ${extra}/>`;
   return `<path d="M${m.x} ${m.y}l${m.w} ${m.h}M${m.x + m.w} ${m.y}l${-m.w} ${m.h}" stroke="${c}" stroke-width="${sw}" stroke-linecap="round" fill="none" ${extra}/>`;
 }
@@ -1547,9 +1585,9 @@ function docMarksSVG() {
   const k = S.pageK || 1;
   const shapes = marks.map((m) => {
     const sel = S.dsel === m.n, c = col(m), sw = m.sw || 2.5;
-    const hit = m.type === 'line' ? `<line x1="${m.x}" y1="${m.y}" x2="${m.x + m.w}" y2="${m.y + m.h}" stroke="transparent" stroke-width="14"/>` : `<rect x="${m.x - 4}" y="${m.y - 4}" width="${m.w + 8}" height="${m.h + 8}" fill="transparent"/>`;
-    const bx = m.type === 'circle' ? m.x + m.w * 0.15 : m.x, by = m.type === 'circle' ? m.y + m.h * 0.15 : m.y;
-    const handles = sel ? (m.type === 'line' ? handlesSVG(m, ['p1', 'p2'], `data-dmh="${m.n}"`, k) : `<rect x="${m.x - 3}" y="${m.y - 3}" width="${m.w + 6}" height="${m.h + 6}" fill="none" stroke="var(--t1)" stroke-dasharray="4 3"/>` + handlesSVG(m, HANDLE_DIRS, `data-dmh="${m.n}"`, k)) : '';
+    const hit = m.type === 'point' ? `<circle cx="${m.x}" cy="${m.y}" r="12" fill="transparent"/>` : m.type === 'line' ? `<line x1="${m.x}" y1="${m.y}" x2="${m.x + m.w}" y2="${m.y + m.h}" stroke="transparent" stroke-width="14"/>` : `<rect x="${m.x - 4}" y="${m.y - 4}" width="${m.w + 8}" height="${m.h + 8}" fill="transparent"/>`;
+    const bx = m.type === 'circle' ? m.x + m.w * 0.15 : m.type === 'point' ? m.x + 14 : m.x, by = m.type === 'circle' ? m.y + m.h * 0.15 : m.type === 'point' ? m.y - 14 : m.y;
+    const handles = sel ? (m.type === 'point' ? `<circle cx="${m.x}" cy="${m.y}" r="${9}" fill="none" stroke="var(--t1)" stroke-dasharray="3 2"/>` : m.type === 'line' ? handlesSVG(m, ['p1', 'p2'], `data-dmh="${m.n}"`, k) : `<rect x="${m.x - 3}" y="${m.y - 3}" width="${m.w + 6}" height="${m.h + 6}" fill="none" stroke="var(--t1)" stroke-dasharray="4 3"/>` + handlesSVG(m, HANDLE_DIRS, `data-dmh="${m.n}"`, k)) : '';
     return `<g data-dmark="${m.n}">${hit}${docShapeSVG(m, c, sw)}<circle cx="${bx}" cy="${by}" r="11" fill="${c}"/><text x="${bx}" y="${by + 4}" text-anchor="middle" font-family="Geist Mono, monospace" font-size="11" font-weight="600" fill="${onColor(c)}">${m.n}</text>${handles}</g>`;
   }).join('');
   return `<svg id="docOverlay" aria-hidden="true">${shapes}<g id="docLive"></g></svg>`;
@@ -1576,7 +1614,10 @@ function renderDocWS() {
   const w = S.ws;
   const isMd = w.type === 'md';
   if (!w.marks) w.marks = clone((w.file && w.file.marks) || []);
-  const head = headHTML(isMd ? 'md' : 'file', w.name, w.zip + w.path.replace(w.zipId, ''), `<button class="btn" id="repack" title="Build a new zip with the same folder layout">${ico('package')}<span>Repack zip</span></button>`);
+  const vbtn = (k, l, t) => `<button data-view="${k}" aria-pressed="${S.docView === k}" title="${t}">${l}</button>`;
+  const head = headHTML(isMd ? 'md' : 'file', w.name, w.zip + w.path.replace(w.zipId, ''),
+    `${isMd ? `<span class="viewseg" role="group" aria-label="View">${vbtn('code', 'Edit', 'Edit the Markdown, with a live preview beside it')}${vbtn('preview', 'Preview', 'Preview the page and mark it up')}</span>` : ''}<button class="btn" id="repack" title="Build a new zip with the same folder layout">${ico('package')}<span>Repack zip</span></button>`,
+    undefined, `<button class="btn icon" id="docFocus" aria-pressed="${!!S.focus}" title="${S.focus ? 'Show the sidebar and callouts' : 'Full width: hide the sidebar and callouts'}" aria-label="Full width">${ico('maximize')}</button><button class="btn icon" id="docTools" aria-pressed="${!S.hideTools}" title="${S.hideTools ? 'Show the toolbar' : 'Hide the toolbar'}" aria-label="${S.hideTools ? 'Show the toolbar' : 'Hide the toolbar'}">${ico(S.hideTools ? 'chevDown' : 'chevUp')}</button>`);
   if (!isMd) {
     $('#ws').innerHTML = head + `<div class="toolbar"><span class="hint mono" style="padding:0 6px">Plain text · tabs and line endings kept</span></div>
       <div class="wsbody" style="grid-template-columns:minmax(0,1fr)"><div class="docsplit edit"><textarea class="src" id="src" spellcheck="false" aria-label="${esc(w.name)}">${esc(w.text)}</textarea></div></div>
@@ -1586,21 +1627,29 @@ function renderDocWS() {
   const pv = S.docView === 'preview';
   const v = (k, l) => `<button class="tool" data-view="${k}" aria-pressed="${S.docView === k}">${l}</button>`;
   $('#ws').innerHTML = head + `
-    <div class="toolbar" role="toolbar" aria-label="Markdown tools">
-      ${pv ? `<button class="tool" data-dtool="canvas-snip" aria-pressed="${S.dtool === 'canvas-snip'}" title="Canvas snip: drag a box over the visible page; saves the marked-up area as a markup and copies it (Esc cancels)" aria-label="Canvas snip">${ico('crop')}</button>
-      <button class="tool" id="docCopy" title="Copy the visible page with its callouts to the clipboard as a PNG (Ctrl+Shift+C)">${ico('copy')}<span>Copy PNG</span></button>
-      <span class="vsep"></span>
-      ${DOC_TOOLS.map(([k, ic, l, key]) => `<button class="tool" data-dtool="${k}" aria-pressed="${S.dtool === k}" title="${l} (${key})" aria-label="${l}">${ico(ic)}</button>`).join('')}
+    <div class="toolbar" role="toolbar" aria-label="Markdown tools" ${S.hideTools ? 'hidden' : ''}>
+      ${pv ? `${DOC_TOOLS.map(([k, ic, l, key]) => `<button class="tool" data-dtool="${k}" aria-pressed="${S.dtool === k}" title="${l} (${key})" aria-label="${l}">${ico(ic)}</button>`).join('')}
       <span class="vsep"></span>
       <span class="matgrp" role="group" aria-label="Colour for the next shape">${ROLES.map(([r, l]) => `<button class="swatch mat" data-dcolor="${r}" aria-pressed="${S.dcolor === r}" aria-label="${l}" title="${l}" style="background:${swatchBG(r)}"></button>`).join('')}</span>
       <span class="vsep"></span>
       <span role="group" aria-label="Stroke width" style="display:flex;gap:2px">${[2, 3, 5].map((w) => `<button class="stroke" data-dsw="${w}" aria-pressed="${S.sw === w}" aria-label="Stroke ${w}"><span style="height:${w}px"></span></button>`).join('')}</span>
-      <span class="vsep"></span>
+      <span style="flex:1 1 0;min-width:4px"></span>
       <button class="tool" id="docUndo" title="Undo (Ctrl+Z)" aria-label="Undo" ${(S.dhist || []).length ? '' : 'disabled style="opacity:.4"'}>${ico('undo')}</button>
-      <button class="tool" id="docRedo" title="Redo (Ctrl+Y)" aria-label="Redo" ${(S.dredo || []).length ? '' : 'disabled style="opacity:.4"'}>${ico('redo')}</button>`
-      : `<button class="tool" data-md="## " title="Heading" aria-label="Heading">${ico('h')}</button><button class="tool" data-md="**" title="Bold" aria-label="Bold">${ico('bold')}</button><button class="tool" data-md="- " title="List" aria-label="List">${ico('list')}</button><button class="tool" data-md="[](url)" title="Link" aria-label="Link">${ico('link')}</button>`}
-      <span class="vsep"></span><button class="tool" id="insertSnip">${ico('scissors')}<span>Insert snip</span></button>
-      <span style="flex:1 1 0;min-width:4px"></span>${v('preview', 'Preview')}${v('code', 'Code + preview')}
+      <button class="tool" id="docRedo" title="Redo (Ctrl+Y)" aria-label="Redo" ${(S.dredo || []).length ? '' : 'disabled style="opacity:.4"'}>${ico('redo')}</button>
+      <span class="vsep"></span>
+      <button class="tool" id="insertSnip" title="Insert snip: a saved markup goes into images/ with a link at the cursor" aria-label="Insert snip">${ico('image')}</button>
+      <button class="tool" data-dtool="canvas-snip" aria-pressed="${S.dtool === 'canvas-snip'}" title="Canvas snip: drag a box over the visible page; saves the marked-up area as a markup and copies it (Esc cancels)" aria-label="Canvas snip">${ico('crop')}</button>
+      <button class="tool" id="docCopy" title="Copy the visible page with its callouts as a PNG (Ctrl+Shift+C)" aria-label="Copy PNG">${ico('copy')}</button>
+      <button class="btn" id="docExport" style="height:28px" title="Save the visible marked-up page as a markup PNG">${ico('share', 'sm')}Export</button>`
+      : `<label class="tbtn hsel">${ico('h', 'sm')}<select id="mdHeading" aria-label="Heading"><option value="">Heading</option><option value="0">Normal text</option><option value="1">Heading 1</option><option value="2">Heading 2</option><option value="3">Heading 3</option></select></label>
+      <button class="tbtn" data-mdline="- " title="Bulleted list">${ico('list', 'sm')}List</button>
+      <button class="tbtn" id="mdTable" title="Insert a table">${ico('table', 'sm')}Table</button>
+      <button class="tbtn" data-mdline="**Label:** " title="Label line, like **Status:** PASS">${ico('tag', 'sm')}Label</button>
+      <button class="tbtn" data-mdline="1. " title="Numbered list">${ico('listNum', 'sm')}Num list</button>
+      <span class="vsep"></span>
+      <button class="tool" data-md="**" title="Bold (Ctrl+B)" aria-label="Bold">${ico('bold')}</button><button class="tool" data-md="[](url)" title="Link" aria-label="Link">${ico('link')}</button>
+      <span style="flex:1 1 0;min-width:4px"></span>
+      <button class="tool" id="insertSnip" title="Insert snip: a saved markup goes into images/ with a link at the cursor">${ico('image')}<span>Insert snip</span></button>`}
     </div>
     <div class="wsbody" style="position:relative;${pv ? '' : 'grid-template-columns:minmax(0,1fr)'}">
       <div class="docsplit mode-${S.docView}" id="docsplit">
@@ -1636,8 +1685,8 @@ function saveDocMarkup(rg) {
   const html = mdHTML(w.text);
   const now = new Date(), t = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
   const f = IW / rg.w;
-  const TYPE_TO_SNIP = { box: 'rect', circle: 'ellipse', line: 'line', cross: 'cross' };
-  const inside = (m) => { const xa = Math.min(m.x, m.x + m.w), xb = Math.max(m.x, m.x + m.w), ya = Math.min(m.y, m.y + m.h), yb = Math.max(m.y, m.y + m.h); return xa < rg.x + rg.w && xb > rg.x && ya < rg.y + rg.h && yb > rg.y; };
+  const TYPE_TO_SNIP = { box: 'rect', circle: 'ellipse', line: 'line', cross: 'cross', point: 'point' };
+  const inside = (m) => { const xa = Math.min(m.x, m.x + m.w) - 1, xb = Math.max(m.x, m.x + m.w) + 1, ya = Math.min(m.y, m.y + m.h) - 1, yb = Math.max(m.y, m.y + m.h) + 1; return xa < rg.x + rg.w && xb > rg.x && ya < rg.y + rg.h && yb > rg.y; };
   const shapes = (w.marks || []).filter(inside).map((m) => ({
     n: m.n, type: TYPE_TO_SNIP[m.type], x: Math.round((m.x - rg.x) * f), y: Math.round((m.y - rg.y) * f), w: Math.round(m.w * f), h: Math.round(m.h * f), color: m.color, sw: 3, note: m.note,
   }));
@@ -1689,6 +1738,7 @@ function renderWS() {
 function layout() {
   app.classList.toggle('ws-open', !!S.ws);
   app.classList.toggle('compact', S.compact);
+  app.classList.toggle('focus', !!S.focus && !!S.ws && S.ws.kind === 'doc');
   app.classList.toggle('maxed', S.compact && S.winMax);
   app.classList.toggle('with-canvas', !S.compact || S.winMax || !!S.ws);
   document.body.classList.toggle('compact-bg', S.compact);
@@ -1808,8 +1858,19 @@ function save() {
 function closeWS(force) { if (S.active >= 0) closeTab(S.active, force); }
 function markDirty() {
   if (S.dirty) return; S.dirty = true; refreshTabs();
-  const sv = $('.saved', $('#ws')); if (sv) { sv.classList.add('dirty'); sv.querySelector('.lbl').textContent = 'Unsaved changes'; }
+  const sv = $('#ws .wshead .saved'); if (sv) { sv.classList.add('dirty'); const l = sv.querySelector('.lbl'); if (l) l.textContent = 'Unsaved changes'; }
+  const un = $('#ws .wshead .unsaved-mark'); if (un) un.hidden = false;
   const b = $('#wsSave'); if (b) b.disabled = false;
+}
+/** Put a prefix at the start of each selected line. Toggles it off if every line already has it; headings replace any heading. */
+function mdLinePrefix(prefix, heading) {
+  const ta = $('#src'); if (!ta) return;
+  const v = ta.value, a = v.lastIndexOf('\n', ta.selectionStart - 1) + 1, e0 = v.indexOf('\n', ta.selectionEnd); const b = e0 < 0 ? v.length : e0;
+  const lines = v.slice(a, b).split('\n');
+  const strip = (l) => l.replace(/^(#{1,6}\s+|[-*]\s+|\d+\.\s+|\*\*[^*]+:\*\*\s*)/, '');
+  const all = !heading && prefix && lines.every((l) => l.startsWith(prefix) || (prefix === '1. ' && /^\d+\.\s/.test(l)));
+  const out = lines.map((l, i) => (all ? strip(l) : (prefix === '1. ' ? `${i + 1}. ` : prefix) + strip(l))).join('\n');
+  ta.setRangeText(out, a, b, 'select'); ta.dispatchEvent(new Event('input', { bubbles: true })); ta.focus();
 }
 function pushDocHist() { S.dhist = S.dhist || []; S.dhist.push(clone(S.ws.marks)); if (S.dhist.length > 50) S.dhist.shift(); S.dredo = []; }
 function pushHist() { const s = snipOf(); S.hist.push(clone(s.shapes)); if (S.hist.length > 50) S.hist.shift(); S.redo = []; }
@@ -1856,6 +1917,7 @@ document.addEventListener('click', (e) => {
   if (d.copy) { toast(`${d.copy} copied`); return; }
   if (d.sel && !e.target.closest('textarea, .hidebtn, .tog, select, input, .grip')) { S.selByDraw = false; S.sel = Number(d.sel); redrawStage(); document.querySelectorAll('#calloutList .el').forEach((el) => el.classList.toggle('sel', Number(el.dataset.sel) === S.sel)); return; }
   if (d.line !== undefined) { const ta = $('#src'); if (ta) { const lines = ta.value.split('\n'); const pos = lines.slice(0, Number(d.line)).join('\n').length + (Number(d.line) ? 1 : 0); ta.focus(); ta.setSelectionRange(pos, pos + (lines[d.line] || '').length); const lh = parseFloat(getComputedStyle(ta).lineHeight) || 20; ta.scrollTop = Math.max(0, d.line * lh - 60); } return; }
+  if (d.mdline !== undefined) { mdLinePrefix(d.mdline); return; }
   if (d.md !== undefined) { const ta = $('#src'); if (ta) { const s = ta.selectionStart, en = ta.selectionEnd, sel = ta.value.slice(s, en); const ins = d.md === '**' ? `**${sel || 'bold'}**` : d.md === '[](url)' ? `[${sel || 'link'}](url)` : d.md + sel; ta.setRangeText(ins, s, en, 'end'); ta.dispatchEvent(new Event('input', { bubbles: true })); ta.focus(); } return; }
   if (d.insert) {
     const s = SNIPS.find((x) => x.id === d.insert), sl = slug(s.name);
@@ -1870,6 +1932,11 @@ document.addEventListener('click', (e) => {
     case 'blankOpen': $('#imgFile').click(); return;
     case 'themeBtn': S.pop = !S.pop; renderSide(); return;
     case 'settingsBtn': case 'modePill': openWS({ kind: 'settings' }); return;
+    case 'mdTable': { const ta = $('#src'); if (!ta) return; const pos = ta.selectionStart; const before = ta.value.slice(0, pos); const lead = before && !before.endsWith('\n\n') ? (before.endsWith('\n') ? '\n' : '\n\n') : '';
+      ta.setRangeText(`${lead}| Item | Owner | Status |\n| --- | --- | --- |\n| [item] | [owner] | [status] |\n`, pos, ta.selectionEnd, 'end'); ta.dispatchEvent(new Event('input', { bubbles: true })); ta.focus(); return; }
+    case 'docFocus': S.focus = !S.focus; layout(); renderWS(); requestAnimationFrame(fitPage); return;
+    case 'docTools': S.hideTools = !S.hideTools; renderWS(); return;
+    case 'docExport': { const v = visibleRect(); if (v) saveDocMarkup({ x: v.x, y: v.y, w: v.w, h: v.h }); return; }
     case 'docCopy': { const v = visibleRect(); if (v) toast(`Copied the visible page and its callouts as a PNG · ${Math.round(v.w * 2)} × ${Math.round(v.h * 2)}`); return; }
     case 'docUndo': if ((S.dhist || []).length) { S.dredo.push(clone(S.ws.marks)); S.ws.marks = S.dhist.pop(); S.dsel = null; markDirty(); renderWS(); } return;
     case 'docRedo': if ((S.dredo || []).length) { S.dhist.push(clone(S.ws.marks)); S.ws.marks = S.dredo.pop(); markDirty(); renderWS(); } return;
@@ -1919,6 +1986,7 @@ document.addEventListener('change', (e) => {
   const t = e.target;
   if (t.id === 'delay') { S.delay = t.value; return; }
   if (t.id === 'addMode') { S.addMode = t.value; return; }
+  if (t.id === 'mdHeading') { const v = t.value; t.value = ''; if (v !== '') mdLinePrefix(v === '0' ? '' : '#'.repeat(Number(v)) + ' ', true); return; }
   if (t.dataset && t.dataset.dtype) { pushDocHist(); const m = S.ws.marks.find((x) => x.n === Number(t.dataset.dtype)); m.type = t.value; if (t.value !== 'line') { if (m.w < 0) { m.x += m.w; m.w = -m.w; } if (m.h < 0) { m.y += m.h; m.h = -m.h; } } markDirty(); renderWS(); return; }
   if (t.dataset && t.dataset.type) { pushHist(); const sh = snipOf().shapes.find((x) => x.n === Number(t.dataset.type)); const fp0 = fillPct(sh); sh.type = t.value; sh.fill = false; sh.fillPct = t.value === 'rect' || t.value === 'ellipse' ? fp0 : 0; if (t.value === 'point') { sh.x += sh.w / 2; sh.y += sh.h / 2; sh.w = 0; sh.h = 0; } else if (t.value !== 'line' && (sh.w < 0 || sh.h < 0)) { if (sh.w < 0) { sh.x += sh.w; sh.w = -sh.w; } if (sh.h < 0) { sh.y += sh.h; sh.h = -sh.h; } } else if (!sh.w) { sh.x -= 40; sh.y -= 25; sh.w = 80; sh.h = 50; } snipChanged(); return; }
   if (t.dataset && t.dataset.fillpct) { snipChanged(); return; }
@@ -1995,7 +2063,7 @@ document.addEventListener('pointermove', (e) => {
     return;
   }
   const c = MAT[S.dcolor || DEFAULT_COLOR][1];
-  const m = S.dtool === 'line' ? { type: 'line', x: dr.p0.x, y: dr.p0.y, w: dx, h: dy } : { type: S.dtool, x: Math.min(dr.p0.x, p.x), y: Math.min(dr.p0.y, p.y), w: Math.abs(dx), h: Math.abs(dy) };
+  const m = S.dtool === 'point' ? { type: 'point', x: p.x, y: p.y, w: 0, h: 0 } : S.dtool === 'line' ? { type: 'line', x: dr.p0.x, y: dr.p0.y, w: dx, h: dy } : { type: S.dtool, x: Math.min(dr.p0.x, p.x), y: Math.min(dr.p0.y, p.y), w: Math.abs(dx), h: Math.abs(dy) };
   live.innerHTML = docShapeSVG(m, c, S.sw);
 });
 document.addEventListener('pointerup', () => {
@@ -2005,7 +2073,8 @@ document.addEventListener('pointerup', () => {
   const dx = dr.p1.x - dr.p0.x, dy = dr.p1.y - dr.p0.y;
   let x = Math.min(dr.p0.x, dr.p1.x), y = Math.min(dr.p0.y, dr.p1.y), w = Math.abs(dx), h = Math.abs(dy);
   if (dr.kind === 'csnip') { if (w > 8 && h > 8) saveDocMarkup({ x, y, w, h }); paintPreview(); return; }
-  if (S.dtool === 'line') { x = dr.p0.x; y = dr.p0.y; w = dx; h = dy; if (Math.hypot(w, h) < 10) { w = 140; h = 0; } }
+  if (S.dtool === 'point') { x = dr.p1.x; y = dr.p1.y; w = 0; h = 0; }
+  else if (S.dtool === 'line') { x = dr.p0.x; y = dr.p0.y; w = dx; h = dy; if (Math.hypot(w, h) < 10) { w = 140; h = 0; } }
   else if (w < 10 || h < 10) { w = S.dtool === 'box' ? 140 : S.dtool === 'cross' ? 28 : 90; h = S.dtool === 'box' ? 40 : S.dtool === 'cross' ? 28 : 60; x -= w / 2; y -= h / 2; }
   pushDocHist();
   const marks = S.ws.marks; const n = marks.length ? Math.max(...marks.map((m) => m.n)) + 1 : 1;
@@ -2151,6 +2220,7 @@ document.addEventListener('keydown', (e) => {
     if (S.pop) { S.picker = false; renderWS(); } else if (S.pop) { S.pop = false; renderSide(); } else if (S.sideOpen) { S.sideOpen = false; layout(); }
   }
   const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
+  if (ctrl && k === 'b' && e.target.id === 'src') { e.preventDefault(); const bb = $('[data-md="**"]'); if (bb) bb.click(); return; }
   if (ctrl && e.altKey && k === 's') { e.preventDefault(); $('#newSnip').click(); return; }
   if (ctrl && k === 's' && S.ws) { e.preventDefault(); if (S.dirty) { save(); renderWS(); renderSide(); } return; }
   if (S.ws && S.ws.kind === 'doc' && S.docView === 'preview' && !typing) {
@@ -2158,7 +2228,7 @@ document.addEventListener('keydown', (e) => {
     if (ctrl && k === 'z') { e.preventDefault(); $('#docUndo').click(); return; }
     if (ctrl && k === 'y') { e.preventDefault(); $('#docRedo').click(); return; }
     if (ctrl && e.shiftKey && k === 'c') { e.preventDefault(); $('#docCopy').click(); return; }
-    const dm = { v: 'select', b: 'box', c: 'circle', l: 'line', x: 'cross' }; if (!ctrl && dm[k]) { S.dtool = dm[k]; renderWS(); return; }
+    const dm = { v: 'select', b: 'box', c: 'circle', l: 'line', x: 'cross', p: 'point' }; if (!ctrl && dm[k]) { S.dtool = dm[k]; renderWS(); return; }
   }
   if (!S.ws || S.ws.kind !== 'snip' || typing) return;
   if (ctrl && e.shiftKey && k === 'c') { e.preventDefault(); copyToast('Copied'); return; }
