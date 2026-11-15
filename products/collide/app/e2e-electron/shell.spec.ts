@@ -44,7 +44,22 @@ test("Electron opens the editor from the Vite dev server", async () => {
   }
 });
 
-test("the page is isolated: an empty window.collide, no Node, sandbox on", async () => {
+// RUN2.md, "Preload bridge window.collide": these and nothing else.
+const BRIDGE_KEYS = [
+  "captureMonitor",
+  "copyImage",
+  "cropCapture",
+  "hideEditor",
+  "hideOverlay",
+  "markups",
+  "onSnipRequest",
+  "overlay", // the overlay events
+  "settingsStatus",
+  "showEditor",
+  "showOverlay",
+];
+
+test("the page is isolated: window.collide has exactly the bridge, no Node, sandbox on", async () => {
   const app = await launch();
   try {
     const page = await app.firstWindow();
@@ -52,19 +67,43 @@ test("the page is isolated: an empty window.collide, no Node, sandbox on", async
 
     const inPage = await page.evaluate(() => {
       const w = window as unknown as Record<string, unknown>;
+      const collide = (w.collide ?? {}) as Record<string, unknown>;
+      const kinds = (o: unknown) =>
+        Object.fromEntries(
+          Object.entries((o ?? {}) as Record<string, unknown>)
+            .map(([k, v]) => [k, typeof v] as const)
+            .sort(([a], [b]) => a.localeCompare(b)),
+        );
       return {
         collide: typeof w.collide,
-        collideKeys: Object.keys((w.collide ?? {}) as object),
+        collideKeys: Object.keys(collide).sort(),
+        functions: Object.entries(collide)
+          .filter(([, v]) => typeof v === "function")
+          .map(([k]) => k)
+          .sort(),
+        markups: kinds(collide.markups),
+        overlay: kinds(collide.overlay),
         require: typeof w.require,
         process: typeof w.process,
+        module: typeof w.module,
+        Buffer: typeof w.Buffer,
+        ipcRenderer: typeof w.ipcRenderer,
+        electron: typeof w.electron,
         secureContext: window.isSecureContext,
       };
     });
     expect(inPage).toEqual({
       collide: "object",
-      collideKeys: [],
+      collideKeys: BRIDGE_KEYS,
+      functions: BRIDGE_KEYS.filter((k) => k !== "markups" && k !== "overlay"),
+      markups: { list: "function", open: "function", pick: "function", save: "function" },
+      overlay: { emit: "function", on: "function" },
       require: "undefined",
       process: "undefined",
+      module: "undefined",
+      Buffer: "undefined",
+      ipcRenderer: "undefined",
+      electron: "undefined",
       secureContext: true,
     });
 
@@ -90,6 +129,157 @@ test("the page is isolated: an empty window.collide, no Node, sandbox on", async
       sandbox: true,
       nodeIntegration: false,
     });
+  } finally {
+    await app.close();
+  }
+});
+
+test("capture and crop through the bridge: real screen frame, real nativeImage crop, typed errors", async () => {
+  const app = await launch();
+  try {
+    const page = await app.firstWindow();
+    await expect(page.getByTestId("canvas")).toBeVisible();
+
+    // No frame held yet: the typed error reaches the page as its cause-and-fix message.
+    const early = await page.evaluate(() => window.collide!.cropCapture({ x: 0, y: 0, w: 10, h: 10 }, 1).then(
+      () => "resolved",
+      (e: unknown) => ({ isError: e instanceof Error, message: (e as Error).message }),
+    ));
+    expect(early).toEqual({ isError: true, message: "No capture to crop — start a new snip." });
+
+    const display = await app.evaluate(({ screen }) => {
+      const d = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+      return { width: d.size.width, height: d.size.height, scaleFactor: d.scaleFactor };
+    });
+
+    const result = await page.evaluate(async () => {
+      const collide = window.collide!;
+      const load = async (src: string) => {
+        const img = new Image();
+        img.src = src;
+        await img.decode();
+        return img;
+      };
+      const pixels = (img: HTMLImageElement, x: number, y: number, w: number, h: number) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, x, y, w, h, 0, 0, w, h);
+        return ctx.getImageData(0, 0, w, h).data.join(",");
+      };
+      const message = (p: Promise<unknown>) => p.then(() => "resolved", (e: unknown) => (e as Error).message);
+
+      const cap = await collide.captureMonitor();
+      const frame = await load(cap.png);
+      const box = { x: 10, y: 20, w: 100, h: 50 };
+      const s = cap.scaleFactor;
+      const want = { x: Math.floor(box.x * s), y: Math.floor(box.y * s), w: Math.ceil((box.x + box.w) * s) - Math.floor(box.x * s), h: Math.ceil((box.y + box.h) * s) - Math.floor(box.y * s) };
+      const crop = await collide.cropCapture(box, s);
+      const cropped = await load(crop.png);
+      // The frame stays held: a second, clamped crop of the bottom-right corner still works.
+      const corner = await collide.cropCapture({ x: cap.width / s - 5, y: cap.height / s - 5, w: 500, h: 500 }, s);
+      return {
+        cap: { width: cap.width, height: cap.height, scaleFactor: s, isPng: cap.png.startsWith("data:image/png;base64,") },
+        frame: [frame.naturalWidth, frame.naturalHeight],
+        want,
+        crop: [crop.width, crop.height, cropped.naturalWidth, cropped.naturalHeight],
+        samePixels: pixels(cropped, 0, 0, crop.width, crop.height) === pixels(frame, want.x, want.y, want.w, want.h),
+        corner: [corner.width, corner.height],
+        emptyBox: await message(collide.cropCapture({ x: 10, y: 10, w: 0, h: 0 }, s)),
+        outside: await message(collide.cropCapture({ x: -500, y: 0, w: 100, h: 100 }, s)),
+        invalid: await message(collide.cropCapture({ x: 0, y: 0, w: 10, h: 10 }, 0)),
+      };
+    });
+
+    const physical = { width: Math.round(display.width * display.scaleFactor), height: Math.round(display.height * display.scaleFactor) };
+    expect(result.cap).toEqual({ ...physical, scaleFactor: display.scaleFactor, isPng: true });
+    expect(result.frame).toEqual([physical.width, physical.height]);
+    expect(result.crop).toEqual([result.want.w, result.want.h, result.want.w, result.want.h]);
+    expect(result.samePixels).toBe(true);
+    expect(result.corner).toEqual([Math.ceil(5 * display.scaleFactor), Math.ceil(5 * display.scaleFactor)]);
+    expect(result.emptyBox).toBe("The selection has no width or height — drag a larger box and release again.");
+    expect(result.outside).toBe("The selection is outside the captured screen — drag a box over the screen and release again.");
+    expect(result.invalid).toBe("The selection or display scale is not a valid number — start a new snip.");
+  } finally {
+    await app.close();
+  }
+});
+
+test("bridge stubs say which task fills them in; overlay events round-trip", async () => {
+  const app = await launch();
+  try {
+    const page = await app.firstWindow();
+    await expect(page.getByTestId("canvas")).toBeVisible();
+
+    const result = await page.evaluate(async () => {
+      const collide = window.collide!;
+      const message = (p: Promise<unknown>) => p.then(() => "resolved", (e: unknown) => (e as Error).message);
+      const ping = new Promise<unknown>((resolve) => {
+        const off = collide.overlay.on("collide:overlay-ping", (payload) => {
+          off();
+          resolve(payload);
+        });
+        collide.overlay.emit("collide:overlay-ping", { snipId: 7 });
+      });
+      let unknownEvent = "no error";
+      try {
+        collide.overlay.emit("collide:capture-monitor" as never);
+      } catch (e) {
+        unknownEvent = (e as Error).message;
+      }
+      const offSnip = collide.onSnipRequest(() => undefined);
+      return {
+        hideEditor: await message(collide.hideEditor()),
+        showOverlay: await message(collide.showOverlay({ x: 0, y: 0, width: 10, height: 10 })),
+        copyImage: await message(collide.copyImage("data:image/png;base64,AAAA")),
+        settingsStatus: await message(collide.settingsStatus()),
+        markupsList: await message(collide.markups.list()),
+        ping: await ping,
+        unknownEvent,
+        offSnip: typeof offSnip,
+      };
+    });
+    expect(result).toEqual({
+      hideEditor: "hideEditor is not available in this build yet — it arrives with T15.",
+      showOverlay: "showOverlay is not available in this build yet — it arrives with T15.",
+      copyImage: "copyImage is not available in this build yet — it arrives with T15.",
+      settingsStatus: "settingsStatus is not available in this build yet — it arrives with T15.",
+      markupsList: "markups.list is not available in this build yet — it arrives with T16.",
+      ping: { snipId: 7 },
+      unknownEvent: "Unknown overlay event: collide:capture-monitor",
+      offSnip: "function",
+    });
+  } finally {
+    await app.close();
+  }
+});
+
+test("the shell stays on the app: other dev URLs ignored, no navigation away, no new windows", async () => {
+  // COLLIDE_DEV_URL is honoured only for http on this machine.
+  const app = await launch("https://example.com/");
+  try {
+    const page = await app.firstWindow();
+    expect(page.url()).toBe("collide://app/");
+    await expect(page.getByTestId("canvas")).toBeVisible();
+
+    const opened = await page.evaluate(() => window.open("https://example.com/") === null);
+    expect(opened).toBe(true);
+    for (const target of ["https://example.com/", "file:///etc/hostname", "data:text/html,<p>away</p>"]) {
+      await page.evaluate((url) => {
+        window.location.href = url;
+      }, target);
+      await page.waitForTimeout(250);
+      expect(page.url(), target).toBe("collide://app/");
+    }
+    // Checked without Playwright's auto-wait: it keeps waiting for the navigation the shell cancelled.
+    expect(await page.getByTestId("canvas").isVisible()).toBe(true);
+    const shell = await app.evaluate(({ BrowserWindow }) => {
+      const windows = BrowserWindow.getAllWindows();
+      return { windows: windows.length, url: windows[0].webContents.getURL(), loading: windows[0].webContents.isLoading() };
+    });
+    expect(shell).toEqual({ windows: 1, url: "collide://app/", loading: false });
+    expect(await app.windows()).toHaveLength(1);
   } finally {
     await app.close();
   }

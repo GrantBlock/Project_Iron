@@ -10,7 +10,7 @@
 | ID | Task | Status | Specs prototype / app |
 | --- | --- | --- | --- |
 | T13 | Electron shell | Done (Vitest 119, Playwright 45, Electron smoke 3; Windows exe check: manual Grant/Lydia) | n/a (Phase E) |
-| T14 | Bridge, capture, crop | To do | — |
+| T14 | Bridge, capture, crop | Done (Vitest 219, Playwright 45, Electron e2e 6; capture at 100–200% and second monitor: manual Grant/Lydia) | n/a (Phase E) |
 | T15 | Snip choreography, settings | To do | — |
 | T16 | Local markup storage | To do | — |
 | T17 | Remove Tauri | To do | — |
