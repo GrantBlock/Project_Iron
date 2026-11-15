@@ -774,19 +774,35 @@ button { cursor: pointer; }
 .parity td { padding: 3px 4px; border-top: 1px solid var(--line-2); vertical-align: top; color: var(--t2); }
 .parity td:first-child { color: var(--t1); width: 46%; }
 /* Collapsed window: only Recents and Chat, side by side. The desktop app resizes its window to this width. */
+/* Collapsed window (Grant 2026-11-15): Recents and Chat dock on the right.
+   Windowed: the window shrinks to the two panels; an open or new snip adds a canvas on the left and fits it.
+   Maximized: the window stays full size and a blank canvas fills the left. */
 body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
-.app.compact { grid-template-columns: 276px 400px; width: 676px; max-width: 100%; box-shadow: var(--shadow); border-right: var(--border-w) solid var(--line-2); }
-.app.compact .main, .app.compact.ws-open .main, .app.compact.ws-open.dock-min .main { grid-template-columns: minmax(0, 1fr); }
+.app.compact { grid-template-columns: 276px 400px; width: 676px; max-width: 100%; margin-left: auto; box-shadow: var(--shadow); border-left: var(--border-w) solid var(--line-2); }
+.app.compact .main { display: contents; }
+.app.compact .side { grid-column: 1; grid-row: 1; }
+.app.compact .chat { grid-column: 2; grid-row: 1; display: flex !important; border-left: var(--border-w) solid var(--line); }
 .app.compact .ws { display: none !important; }
-.app.compact .chat { display: flex !important; border-left: var(--border-w) solid var(--line); }
+.app.compact.with-canvas { grid-template-columns: minmax(0, 1fr) 276px 400px; width: min(100%, 1296px); }
+.app.compact.with-canvas.maxed { width: 100%; box-shadow: none; border: 0; }
+.app.compact.with-canvas .ws { display: flex !important; grid-column: 1; grid-row: 1; min-width: 0; }
+.app.compact.with-canvas .side { grid-column: 2; }
+.app.compact.with-canvas .chat { grid-column: 3; }
 .app.compact .chat > :not(.dockbar) { display: revert; }
 .app.compact .chat > .dockbar { display: none !important; }
 .app.compact .chat .hbtn span { display: none; }
-.held { margin: 0 12px 10px; display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 10px; border-radius: var(--r-ctl); background: var(--accent-soft); font-size: 12.5px; }
-.held .t { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.compact-note { position: fixed; left: calc(696px + env(safe-area-inset-left, 0px)); top: 20px; max-width: 280px; color: var(--t3); font-size: 12.5px; }
+.app.compact .wsbody { grid-template-columns: minmax(0, 1fr) 240px; }
+.blank { flex: 1; display: grid; place-items: center; background-color: var(--canvas); background-image: radial-gradient(var(--canvas-dot) 1px, transparent 1.2px); background-size: 16px 16px; }
+.blank .in { display: grid; justify-items: center; gap: 10px; text-align: center; padding: 24px; max-width: 360px; color: var(--t3); }
+.blank .in b { color: var(--t1); font-size: 15px; }
+.blank svg.logo { width: 40px; height: 40px; }
+.agenthero { height: 156px !important; }
+.compact-note { position: fixed; right: calc(696px + env(safe-area-inset-right, 0px)); top: 20px; max-width: 300px; color: var(--t3); font-size: 12.5px; text-align: right; }
+.winctl { position: fixed; z-index: 41; left: calc(14px + env(safe-area-inset-left, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 6px; padding: 4px 4px 4px 10px; border-radius: 999px; background: var(--raised); border: 1px dashed var(--line-2); box-shadow: var(--shadow); font: 500 11px var(--font-mono); color: var(--t3); }
+.winctl button { height: 24px; padding: 0 9px; border-radius: 999px; border: 0; background: transparent; color: var(--t2); font: inherit; }
+.winctl button[aria-pressed="true"] { background: var(--t1); color: var(--bg); }
 @media (max-width: 1000px) { .compact-note { display: none; } }
-@media (max-width: 820px) { .app.compact { width: auto; box-shadow: none; border: 0; } .app.compact .ws { display: none !important; } }
+@media (max-width: 820px) { .app.compact, .app.compact.with-canvas { width: auto; box-shadow: none; border: 0; grid-template-columns: minmax(0, 1fr); } .app.compact .ws { display: none !important; } .app.compact .chat, .app.compact .side { grid-column: auto; } .winctl { display: none; } }
 .docsplit.mode-preview { grid-template-columns: minmax(0, 1fr); }
 .docsplit.mode-code { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .docsplit.mode-preview .preview { background: var(--canvas); background-image: radial-gradient(var(--canvas-dot) 1px, transparent 1.2px); background-size: 16px 16px; padding: 22px; }
@@ -831,8 +847,9 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
     <li><b>Workspace</b> = header (name, save state, Save, Close) + toolbar + canvas + numbered list. Chat moves to a dock on the right. Close returns to chat; unsaved changes ask first.</li>
     <li><b>Zips</b> appear in Recents and expand to their folder tree.</li>
     <li><b>Markdown files</b> open in Preview with a Callouts list, or Code + preview. In Preview, Box (B) and Circle (C) draw numbered callouts on the page; Canvas snip saves the marked-up area as a markup (Recents → Snips) and copies it.</li>
-    <li><b>Agents</b> open their Personality and Memory files, and their picture.</li>
-    <li><b>Collapse</b> (chat header, or the workspace header) shrinks the whole window to Recents and Chat side by side. An open snip or file stays open and shows in the sidebar with Expand.</li>
+    <li><b>Roles</b> (Planner, Coder, Reviewer, Tester) belong to the project, such as Project Iron, and have no personality. Each has a Role file and a Memory file, edited in the app. The chat name and picture are labels only.</li>
+    <li><b>Storage:</b> everything goes in the project's <code>Collide/</code> folder, or in Collide's storage on the server until it is deleted automatically after [number of files]. Settings → Storage.</li>
+    <li><b>Collapse</b> moves Recents and Chat to the right. Windowed: the window shrinks to those two panels; a new or opened snip adds a canvas on the left and fits to it. Maximized: the window stays full size with a blank canvas on the left. Expand returns to the full layout. Use the "Prototype · window" switch to try both.</li>
     <li><b>Themes:</b> System, Light, Dark, Aura (14 grounds). The banner redraws from the theme. The logo is never recoloured.</li>
   </ol>
   <h4>Collide Snip today (TESTER-NOTES 1–10, run 1) → here</h4>
@@ -857,7 +874,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
     <tr><td>Report card: Nightly report kicker, status chip, stats, summary, full report, Open on GitHub</td><td>Chat</td></tr>
     <tr><td>Day separators, grouped messages, typing, live updates, "latest" and "list reports"</td><td>Chat</td></tr>
     <tr><td>Connect: Server/Connected, Test connection, Save and restart, links, AI status, report endpoint, GitHub report source, Check now</td><td>Settings (gear, or the Server pill)</td></tr>
-    <tr><td>Agent picture, stored only on the server PC</td><td>Agent files → Choose picture</td></tr>
+    <tr><td>Agent picture, stored only on the server PC</td><td>Role files → Choose picture (chat label only)</td></tr>
     <tr><td>Desktop notifications for reports; access password</td><td>Settings</td></tr>
     <tr><td>Tray, close to tray, minimise, copy link and token</td><td>Desktop shell; copy buttons in Settings</td></tr>
   </table>
@@ -933,6 +950,10 @@ Object.assign(I, {
 const ico = (n, cls = '') => `<svg class="ico ${cls}" viewBox="0 0 24 24" aria-hidden="true">${I[n] || ''}</svg>`;
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const logo = (cls = 'logo') => `<svg class="${cls}" viewBox="0 0 32 32" shape-rendering="crispEdges" aria-label="Collide"><defs><clipPath id="lr"><rect width="32" height="32" rx="7.2"/></clipPath></defs><path fill="#FF3D1F" clip-path="url(#lr)" d="${LOGO_PATH}"/></svg>`;
+const PROJECT = 'Project Iron';
+/** Where Collide keeps things (Grant 2026-11-15): the project's Collide folder, or the server app's own storage until auto-deleted. */
+const storeRoot = () => (S.settings.storage === 'project' ? `${PROJECT}/Collide` : '[server app storage]');
+const storePath = (rel) => `${storeRoot()}/${rel}`;
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const clone = (o) => JSON.parse(JSON.stringify(o));
 
@@ -1015,7 +1036,7 @@ const ZIPS = [
 ];
 const AGENT_FILES = {
   lydia: {
-    personality: { path: 'agents/lydia.md', text: `# Lydia, Tester
+    personality: { path: 'roles/tester/role.md', text: `# Tester · Project Iron
 
 ## Goal
 
@@ -1036,7 +1057,7 @@ Tests written first, by a different agent, are the definition of done the coder 
 
 Writes app code; changes a test to make code pass; deletes or skips a failing test.
 ` },
-    memory: { path: '[server]/agents/lydia/memory.md', text: `# Lydia memory
+    memory: { path: 'roles/tester/memory.md', text: `# Tester memory · Project Iron
 
 ## Reports
 
@@ -1053,8 +1074,8 @@ Writes app code; changes a test to make code pass; deletes or skips a failing te
 for (const k of ['hrongar', 'farengar', 'irileth']) {
   const a = AGENTS[k];
   AGENT_FILES[k] = {
-    personality: { path: `agents/${k}.md`, text: `# ${a.name}, ${a.role}\n\n## Goal\n\n[placeholder]\n\n## Reason\n\n[placeholder]\n\n## Action\n\n1. [placeholder]\n\n## Never\n\n[placeholder]\n` },
-    memory: { path: `[server]/agents/${k}/memory.md`, text: `# ${a.name} memory\n\n- [placeholder]\n` },
+    personality: { path: `roles/${a.role.toLowerCase()}/role.md`, text: `# ${a.role} · Project Iron\n\n## Goal\n\n[placeholder]\n\n## Reason\n\n[placeholder]\n\n## Action\n\n1. [placeholder]\n\n## Never\n\n[placeholder]\n` },
+    memory: { path: `roles/${a.role.toLowerCase()}/memory.md`, text: `# ${a.role} memory · Project Iron\n\n- [placeholder]\n` },
   };
 }
 const RUN1 = { status: 'pass', title: 'Collide run 1', runDate: '2026-11-14', stats: { 'Ready to merge': 1, Blocked: 0, 'Changes requested': 0 },
@@ -1081,10 +1102,10 @@ const S = {
   open: { 'z-builder': true, 'z-builder/design': true, 'z-builder/design/specs': true },
   tool: 'select', sel: null, color: SIG, sw: 3, view: null, panning: null, drag: null, hist: [], redo: [],
   docView: 'preview', dtool: 'select', dsel: null, ddrag: null, agentTab: 'personality', pop: false, picker: false, closing: false, phoneChat: false, sideOpen: false, query: '',
-  compact: false, switchPop: false, addProject: false, typing: false, openReports: {}, pending: null, attach: null, delay: 'No delay',
-  settings: { mode: 'server', server: '', repo: 'GrantBlock/Project_Iron', issue: '2', notify: true, password: '' },
+  compact: false, winMax: true, switchPop: false, addProject: false, typing: false, openReports: {}, pending: null, attach: null, delay: 'No delay',
+  settings: { storage: 'project', keep: '', mode: 'server', server: '', repo: 'GrantBlock/Project_Iron', issue: '2', notify: true, password: '' },
 };
-try { const t = localStorage.getItem('collide-proto-theme'); const a = localStorage.getItem('collide-proto-aura'); if (t) S.theme = t; if (a) S.aura = a; S.compact = localStorage.getItem('collide-proto-compact') === '1'; } catch (e) {}
+try { const t = localStorage.getItem('collide-proto-theme'); const a = localStorage.getItem('collide-proto-aura'); if (t) S.theme = t; if (a) S.aura = a; S.compact = localStorage.getItem('collide-proto-compact') === '1'; S.winMax = localStorage.getItem('collide-proto-winmax') !== '0'; } catch (e) {}
 
 const $ = (s, r = document) => r.querySelector(s);
 const app = $('#app');
@@ -1310,7 +1331,7 @@ function renderSide() {
   const listHTML = groups.map((g) => { const n = shown.filter((r) => inGroup(r, g)).length; return n ? `<div class="sec"><span class="label" title="${esc(g)}" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(lab(g, n))}</span></div>${shown.filter((r) => inGroup(r, g)).map(rowHTML).join('')}` : ''; }).join('') || `<p class="hint" style="padding:12px 8px">Nothing matches "${esc(S.query)}".</p>`;
   const agentHTML = Object.entries(AGENTS).map(([k, a]) => {
     const active = S.ws && S.ws.kind === 'agent' && S.ws.id === k;
-    return `<button class="item ${active ? 'active' : ''}" data-agent="${k}">${avatar(k)}<span style="min-width:0"><div class="ttl">${a.name}</div><div class="meta">${a.role} · personality, memory</div></span><span class="cloud">${ico('brain', 'sm')}</span></button>`;
+    return `<button class="item ${active ? 'active' : ''}" data-agent="${k}"><span class="thumb">${ico('user')}</span><span style="min-width:0"><div class="ttl">${a.role}</div><div class="meta">Role, memory · chat: ${a.name}</div></span><span class="cloud">${ico('brain', 'sm')}</span></button>`;
   }).join('');
   const f = (id, l) => `<button class="chip" data-filter="${id}" aria-pressed="${S.filter === id}">${l}</button>`;
   const unread = CHATS.reduce((a, c) => a + c.unread, 0);
@@ -1327,12 +1348,12 @@ function renderSide() {
       <label style="display:contents"><span hidden>Snip delay</span><select class="select" id="delay" aria-label="Delay before New snip captures">${['No delay', '3 s', '5 s', '10 s'].map((d) => `<option ${S.delay === d ? 'selected' : ''}>${d}</option>`).join('')}</select></label>
       <button class="btn" id="openZip" style="grid-column:1 / -1">${ico('package')}Open zip</button>
     </div>
-    ${S.compact && S.ws ? `<div class="held">${ico(S.ws.kind === 'snip' ? 'scissors' : S.ws.kind === 'doc' ? 'md' : S.ws.kind === 'settings' ? 'settings' : 'brain', 'sm')}<span class="t">${esc(heldName())}${S.dirty ? ' · unsaved' : ''}</span><button class="btn ghost" id="expandHeld" style="height:26px;padding:0 8px">${ico('expand', 'sm')}Expand</button></div>` : ''}
+    ${false ? `<div class="held">${ico(S.ws.kind === 'snip' ? 'scissors' : S.ws.kind === 'doc' ? 'md' : S.ws.kind === 'settings' ? 'settings' : 'brain', 'sm')}<span class="t">${esc(heldName())}${S.dirty ? ' · unsaved' : ''}</span><button class="btn ghost" id="expandHeld" style="height:26px;padding:0 8px">${ico('expand', 'sm')}Expand</button></div>` : ''}
     <label class="search">${ico('search', 'sm')}<input id="q" placeholder="Search snips, notes, zips" value="${esc(S.query)}" aria-label="Search"></label>
     <div class="filters">${f('all', 'All')}${f('snips', 'Snips')}${f('zips', 'Zips')}</div>
     <div class="scroll">
       ${listHTML}
-      <div class="sec"><span class="label">${lab('Agents', 4)}</span></div>
+      <div class="sec"><span class="label" title="Agent roles in ${PROJECT}">${lab(`${PROJECT} roles`, 4)}</span></div>
       ${agentHTML}
       <div class="sec"><span class="label">Tags</span></div>
       <div class="tags">${['Line 3', 'Conveyor', 'P&ID'].map((t) => `<button class="tag" data-tag="${esc(t)}">${esc(t)}</button>`).join('')}</div>
@@ -1370,7 +1391,7 @@ function renderChat() {
   const c = CHATS.find((x) => x.id === S.chat);
   const a = c ? AGENTS[c.agent] : null;
   const msgs = c ? (MESSAGES[c.id] || []) : [];
-  const ctx = S.ws ? (S.ws.kind === 'snip' ? SNIPS.find((s) => s.id === S.ws.id).name : S.ws.kind === 'doc' ? S.ws.name : S.ws.kind === 'settings' ? 'Settings' : `${AGENTS[S.ws.id].name} · ${S.agentTab}`) : null;
+  const ctx = S.ws ? (S.ws.kind === 'snip' ? SNIPS.find((s) => s.id === S.ws.id).name : S.ws.kind === 'doc' ? S.ws.name : S.ws.kind === 'settings' ? 'Settings' : `${AGENTS[S.ws.id].role} · ${S.agentTab === 'personality' ? 'role' : 'memory'}`) : null;
   let prev = null, body = '';
   msgs.forEach((m, i) => {
     if (!prev || prev.day !== m.day) body += `<div class="day">${esc(m.day)}</div>`;
@@ -1392,9 +1413,9 @@ function renderChat() {
         <button class="hbtn mobile-only" id="sideBtn" aria-label="Recents">${ico('menu', 'sm')}</button>
         ${a ? avatar(c.agent) : logo()}
         <button class="who switcher" id="chatSwitch" aria-haspopup="dialog" aria-expanded="${S.switchPop}" title="Change chat"><div class="n"><span style="overflow:hidden;text-overflow:ellipsis">${c ? esc(a.name + ' · ' + c.title) : 'New chat'}</span><span class="chevd">${ico('chev', 'sm')}</span>${otherUnread ? `<span class="badge" aria-label="${otherUnread} unread in other chats">${otherUnread}</span>` : ''}</div><div class="s">${c ? esc(c.team) : 'Claude on the server PC'}</div></button>
-        ${a ? `<button class="hbtn" data-agent="${c.agent}" title="Edit ${a.name}'s personality, memory and picture">${ico('brain', 'sm')}<span>Agent files</span></button>` : ''}
+        ${a ? `<button class="hbtn" data-agent="${c.agent}" title="Edit the ${a.role} role and memory for ${esc(c.title)}">${ico('brain', 'sm')}<span>Role files</span></button>` : ''}
         ${S.ws && !S.compact ? `<button class="hbtn mobile-only" id="phoneBack" aria-label="Back to workspace">${ico('x', 'sm')}</button><button class="hbtn" id="dockMin" title="Minimise chat" aria-label="Minimise chat">${ico('panelRight', 'sm')}</button>` : ''}
-        <button class="hbtn" id="compactBtn" title="${S.compact ? 'Expand the window' : 'Collapse the window to Recents and Chat'}" aria-label="${S.compact ? 'Expand window' : 'Collapse window'}" aria-pressed="${S.compact}">${ico(S.compact ? 'expand' : 'collapse', 'sm')}</button>
+        <button class="hbtn" id="compactBtn" title="${S.compact ? 'Expand the window' : 'Collapse: Recents and Chat move to the right'}" aria-label="${S.compact ? 'Expand window' : 'Collapse window'}" aria-pressed="${S.compact}">${ico(S.compact ? 'expand' : 'collapse', 'sm')}</button>
       </div>
     </div>
     ${S.switchPop ? `<div class="hpop switch" role="dialog" aria-label="Change chat">${[...new Set(CHATS.map((x) => x.team))].map((team) => `<div class="sec" style="padding:8px 8px 4px"><span class="label" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(team)}</span></div>${CHATS.filter((x) => x.team === team).map((x) => `<button class="item ${x.id === S.chat ? 'active' : ''}" data-chat="${x.id}">${avatar(x.agent)}<span style="min-width:0"><div class="ttl">${esc(AGENTS[x.agent].name + ' · ' + x.title)}</div><div class="meta">${esc(x.meta)}</div></span>${x.unread ? `<span class="badge" aria-label="${x.unread} unread">${x.unread}</span>` : `<span class="meta">${x.time}</span>`}</button>`).join('')}`).join('')}<button class="btn" id="newChat" style="margin-top:6px">${ico('plus')}New chat</button></div>` : ''}
@@ -1430,7 +1451,7 @@ function headHTML(kindIcon, name, path, extra = '', saveLabel) {
     <span class="saved ${S.dirty ? 'dirty' : ''}"><span class="d"></span><span class="lbl">${S.dirty ? 'Unsaved changes' : saveLabel || (S.settings.mode === 'server' ? 'Saved on the server · autosave' : 'Saved on the server')}</span></span>
     ${extra}
     <button class="btn" id="wsSave" title="Save (Ctrl+S)" ${S.dirty ? '' : 'disabled'}>${ico('save')}<span>Save</span></button>
-    <button class="btn icon" id="compactBtn2" title="Collapse the window to Recents and Chat (keeps this open)" aria-label="Collapse window">${ico('collapse')}</button>
+    <button class="btn icon" id="compactBtn2" title="${S.compact ? 'Expand the window' : 'Collapse: Recents and Chat move to the right'}" aria-label="${S.compact ? 'Expand window' : 'Collapse window'}">${ico(S.compact ? 'expand' : 'collapse')}</button>
     <button class="btn mobile-only" id="phoneChat" aria-label="Chat">${ico('chat')}</button>
     <button class="btn" id="wsClose" title="Close and return to chat">${ico('x')}<span>Close</span></button>
   </div>
@@ -1457,7 +1478,7 @@ function redrawStage() { const z = $('#zoomer'); if (z) { z.innerHTML = snipSVG(
 function renderSnipWS() {
   const s = snipOf();
   const tools = [['select', 'pointer', 'Select', 'V'], ['rect', 'square', 'Rectangle', 'R'], ['ellipse', 'circle', 'Ellipse', 'O'], ['rect-fill', 'squareFill', 'Filled rectangle', ''], ['ellipse-fill', 'circleFill', 'Filled ellipse', ''], ['cross', 'cross', 'X mark', 'X'], ['point', 'dot', 'Point', 'P']];
-  $('#ws').innerHTML = headHTML('scissors', s.name, `Documents/Collide/Markups/${slug(s.name)}/`) + `
+  $('#ws').innerHTML = headHTML('scissors', s.name, storePath(`Markups/${slug(s.name)}/`)) + `
     <div class="toolbar" role="toolbar" aria-label="Markup tools">
       <button class="tool" data-tool="canvas-snip" aria-pressed="${S.tool === 'canvas-snip'}" title="Canvas snip: drag a box on the canvas; copies it and opens it as a new markup (Esc cancels)" aria-label="Canvas snip">${ico('crop')}</button>
       <button class="tool" id="openFile" title="Open file" aria-label="Open file">${ico('fileUp')}</button>
@@ -1583,7 +1604,7 @@ function renderDocWS() {
       </aside>` : ''}
       ${S.picker ? `<div class="picker" role="dialog" aria-label="Insert snip"><span class="label">Insert snip</span>${SNIPS.map((s) => `<button class="attach" data-insert="${s.id}">${snipSVG(s.id)}<span><b>${esc(s.name)}</b><div class="meta mono" style="color:var(--t3)">${s.shapes.length} callouts · export.png → images/</div></span></button>`).join('')}<label class="hint" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="withNotes" checked> Add callout notes as a numbered list</label><button class="btn ghost" id="pickClose">Cancel</button></div>` : ''}
     </div>
-    <div class="statusbar"><span>${esc(w.zip)}</span><span>UTF-8 · LF</span>${pv ? `<span>${w.marks.length} callouts · page ${PAGE_W} px</span>` : ''}<span style="margin-left:auto">${w.text.split('\n').length} lines</span></div>`;
+    <div class="statusbar"><span>${esc(w.zip)}</span><span>UTF-8 · LF</span>${pv ? `<span>${w.marks.length} callouts → ${esc(storePath(`callouts/${w.name.replace(/\.md$/, '')}.json`))}</span>` : ''}<span style="margin-left:auto">${w.text.split('\n').length} lines</span></div>`;
   paintPreview();
 }
 function pagePoint(e) { const pg = $('#page'), r = pg.getBoundingClientRect(), k = S.pageK || 1; return { x: (e.clientX - r.left) / k, y: (e.clientY - r.top) / k }; }
@@ -1597,7 +1618,7 @@ function saveDocMarkup(rg) {
   }));
   const s = { id: 's-' + Date.now(), art: 'doc', doc: { html, x: rg.x, y: rg.y, w: rg.w, pageW: pg.clientWidth }, name: `${w.name.replace(/\.md$/, '')} · ${t}`, w: Math.round(rg.w * 2), h: Math.round(rg.h * 2), day: 'Today', time: t, saved: S.settings.mode === 'server', tags: [], shapes };
   SNIPS.unshift(s); renderSide();
-  toast(`Saved to Markups/${slug(s.name)}/ · ${s.w} × ${s.h} · copied to clipboard`);
+  toast(`Saved to ${storePath(`Markups/${slug(s.name)}/`)} · ${s.w} × ${s.h} · copied to clipboard`);
 }
 function renderImageWS() {
   const w = S.ws;
@@ -1610,28 +1631,33 @@ function renderAgentWS() {
   const k = S.ws.id, a = AGENTS[k], f = AGENT_FILES[k][S.agentTab];
   const text = S.ws.text;
   const outline = headings(text).filter((h) => !h.img);
-  $('#ws').innerHTML = headHTML('brain', `${a.name} · ${S.agentTab === 'personality' ? 'Personality' : 'Memory'}`, f.path) + `
-    <div class="agenthero"><canvas class="banner" data-solid="0.45" data-seed="${a.hue + 11}"></canvas><div class="in">${avatar(k)}<div><h2>${a.name}</h2><div class="label" style="margin-top:6px">${a.role}</div>
+  $('#ws').innerHTML = headHTML('brain', `${PROJECT} · ${a.role} · ${S.agentTab === 'personality' ? 'Role' : 'Memory'}`, storePath(f.path)) + `
+    <div class="agenthero"><canvas class="banner" data-solid="0.45" data-seed="${a.hue + 11}"></canvas><div class="in">${avatar(k)}<div><h2>${a.role}</h2><div class="label" style="margin-top:6px">${PROJECT} · chat name ${a.name}</div>
       <div style="display:flex;gap:10px;margin-top:6px"><button class="linkbtn" id="picBtn" data-pic="${k}">Choose picture</button>${a.pic ? `<button class="linkbtn" id="picDel" data-pic="${k}">Remove</button>` : ''}</div></div><span style="flex:1"></span>
-      <div class="tabs" role="tablist"><button role="tab" data-tab="personality" aria-selected="${S.agentTab === 'personality'}">${ico('user', 'sm')} Personality</button><button role="tab" data-tab="memory" aria-selected="${S.agentTab === 'memory'}">${ico('brain', 'sm')} Memory</button></div></div></div>
+      <div class="tabs" role="tablist"><button role="tab" data-tab="personality" aria-selected="${S.agentTab === 'personality'}">${ico('user', 'sm')} Role</button><button role="tab" data-tab="memory" aria-selected="${S.agentTab === 'memory'}">${ico('brain', 'sm')} Memory</button></div></div></div>
     <div class="toolbar"><button class="tool" data-md="## " aria-label="Heading">${ico('h')}</button><button class="tool" data-md="- " aria-label="List">${ico('list')}</button><button class="tool" data-md="**" aria-label="Bold">${ico('bold')}</button>
-      <span class="vsep"></span><span class="hint">${S.agentTab === 'personality' ? 'Read at the start of every run. Changes apply to the next run.' : 'What the agent keeps between runs. You can add, edit or delete lines.'} The picture is saved only on the server PC, not in the repository.</span></div>
+      <span class="vsep"></span><span class="hint">${S.agentTab === 'personality' ? `The ${a.role} role for ${PROJECT}: read at the start of every run, no personality. Changes apply to the next run.` : `What the ${a.role} role keeps between runs in ${PROJECT}. You can add, edit or delete lines.`} The chat name and picture are labels only.</span></div>
     <div class="wsbody">
       <div class="docsplit split"><textarea class="src" id="src" spellcheck="true" aria-label="${esc(f.path)}">${esc(text)}</textarea><div class="preview" id="preview">${mdHTML(text)}</div></div>
       <aside class="numbered"><div class="head"><span class="label">Sections · ${outline.length}</span></div>
         <div class="list">${outline.map((h, i) => `<button class="el" data-line="${h.line}"><span class="num">${i + 1}</span><div style="min-width:0"><div class="k">Heading ${h.level}</div><div class="txt">${esc(h.text)}</div></div></button>`).join('')}</div>
-        <div class="foot2"><span class="hint">Draft (not yet approved by Grant): where these files live.</span></div></aside>
+        <div class="foot2"><span class="hint">Stored in ${esc(storeRoot())}/roles/</span></div></aside>
     </div>
-    <div class="statusbar"><span>${esc(f.path)}</span><span style="margin-left:auto">${text.split('\n').length} lines</span></div>`;
+    <div class="statusbar"><span>${esc(storePath(f.path))}</span><span style="margin-left:auto">${text.split('\n').length} lines</span></div>`;
   requestAnimationFrame(redrawBanners);
 }
-const SETTINGS_SECTIONS = [['mode', 'This computer', 'server'], ['links', 'Open from other computers', 'globe'], ['ai', 'AI replies', 'brain'], ['endpoint', 'Agent report endpoint', 'send'], ['github', 'GitHub report source', 'github'], ['notify', 'Notifications', 'bell'], ['access', 'Access password', 'key']];
+const SETTINGS_SECTIONS = [['storage', 'Storage', 'folder'], ['mode', 'This computer', 'server'], ['links', 'Open from other computers', 'globe'], ['ai', 'AI replies', 'brain'], ['endpoint', 'Agent report endpoint', 'send'], ['github', 'GitHub report source', 'github'], ['notify', 'Notifications', 'bell'], ['access', 'Access password', 'key']];
 function renderSettingsWS() {
   const st = S.settings, c = CHATS.find((x) => x.id === S.chat) || CHATS[0];
   const card = (id, title, icon, body) => `<section class="card" id="set-${id}"><h3>${ico(icon, 'sm')}${title}</h3>${body}</section>`;
   $('#ws').innerHTML = headHTML('settings', 'Settings', '%APPDATA%\\Collide\\config.json', '', 'Saved') + `
     <div class="wsbody">
       <div class="settings">
+        ${card('storage', 'Storage', 'folder', `
+          <label class="radio"><input type="radio" name="storage" value="project" ${st.storage === 'project' ? 'checked' : ''}> <b>Project folder</b><span class="hint">snips, markups, callouts and role files go in <code>${esc(PROJECT)}/Collide/</code></span></label>
+          <label class="radio"><input type="radio" name="storage" value="app" ${st.storage === 'app' ? 'checked' : ''}> <b>App storage on the server</b><span class="hint">kept in Collide on the server PC until deleted automatically</span></label>
+          ${st.storage === 'app' ? `<label class="field"><span class="hint">Keep the newest files, then delete the oldest automatically</span><input id="keepN" type="number" min="1" value="${esc(st.keep)}" placeholder="[number of files]"></label>` : ''}
+          <span class="hint">Applies to the project this chat works on: ${esc(PROJECT)}.</span>`)}
         ${card('mode', 'This computer', 'server', `
           <label class="radio"><input type="radio" name="mode" value="server" ${st.mode === 'server' ? 'checked' : ''}> <b>Server</b><span class="hint">keeps the chats and markups, runs the AI and receives reports</span></label>
           <label class="radio"><input type="radio" name="mode" value="client" ${st.mode === 'client' ? 'checked' : ''}> <b>Connected</b><span class="hint">opens the server PC's Collide; snips and Copy stay on this PC</span></label>
@@ -1652,7 +1678,10 @@ function renderSettingsWS() {
     </div>`;
 }
 function renderWS() {
-  if (!S.ws) { $('#ws').innerHTML = ''; return; }
+  if (!S.ws) {
+    $('#ws').innerHTML = S.compact && S.winMax ? `<div class="blank"><div class="in">${logo()}<b>Blank canvas</b><span>New snip (Ctrl+Alt+S), or open a snip, a zip file or a role from Recents. It fits to this canvas.</span><div class="btnrow" style="justify-content:center"><button class="btn primary" id="blankSnip">${ico('scissors')}New snip</button><button class="btn" id="blankOpen">${ico('fileUp')}Open file</button></div></div></div>` : '';
+    return;
+  }
   if (S.ws.kind === 'snip') renderSnipWS();
   else if (S.ws.kind === 'doc') S.ws.type === 'image' ? renderImageWS() : renderDocWS();
   else if (S.ws.kind === 'settings') renderSettingsWS();
@@ -1662,8 +1691,17 @@ function layout() {
   app.classList.toggle('ws-open', !!S.ws);
   app.classList.toggle('dock-min', !!S.ws && S.dockMin && !S.compact);
   app.classList.toggle('compact', S.compact);
+  app.classList.toggle('maxed', S.compact && S.winMax);
+  app.classList.toggle('with-canvas', S.compact && (S.winMax || !!S.ws));
   document.body.classList.toggle('compact-bg', S.compact);
-  let cn = $('#compactNote'); if (S.compact && !cn) { cn = document.createElement('div'); cn.id = 'compactNote'; cn.className = 'compact-note'; cn.textContent = 'Collapsed: the Collide window shrinks to Recents and Chat. Opening a snip, a file or an agent\u2019s files expands it again.'; document.body.appendChild(cn); } else if (!S.compact && cn) cn.remove();
+  let cn = $('#compactNote');
+  const showNote = S.compact && !(S.winMax || S.ws);
+  if (showNote && !cn) { cn = document.createElement('div'); cn.id = 'compactNote'; cn.className = 'compact-note'; document.body.appendChild(cn); }
+  if (cn) { if (showNote) cn.textContent = 'Windowed and collapsed: Collide shrinks to Recents and Chat on the right of the screen. A new or opened snip adds a canvas on the left and fits to it.'; else cn.remove(); }
+  let wc = $('#winCtl');
+  if (S.compact && !wc) { wc = document.createElement('div'); wc.id = 'winCtl'; wc.className = 'winctl'; document.body.appendChild(wc); }
+  if (wc) { if (S.compact) wc.innerHTML = `Prototype · window <button id="winMax" aria-pressed="${S.winMax}">Maximized</button><button id="winSmall" aria-pressed="${!S.winMax}">Windowed</button>`; else wc.remove(); }
+  try { localStorage.setItem('collide-proto-winmax', S.winMax ? '1' : '0'); } catch (e) {}
   try { localStorage.setItem('collide-proto-compact', S.compact ? '1' : '0'); } catch (e) {}
   app.classList.toggle('phone-chat', S.phoneChat);
   app.classList.toggle('side-open', S.sideOpen);
@@ -1673,10 +1711,9 @@ function render() { layout(); renderSide(); renderWS(); renderChat(); requestAni
 /* ---------- Actions ---------- */
 let toastT;
 function toast(t) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (el.hidden = true), 2600); }
-function heldName() { const w = S.ws; return w.kind === 'snip' ? snipOf().name : w.kind === 'doc' ? w.name : w.kind === 'settings' ? 'Settings' : `${AGENTS[w.id].name} · ${S.agentTab}`; }
-function setCompact(on) { S.compact = on; S.switchPop = false; layout(); renderSide(); renderChat(); requestAnimationFrame(fitPage); if (!on && S.ws && S.ws.kind === 'snip') requestAnimationFrame(() => (S.view && !S.view.fit ? applyView() : fitView())); }
+function heldName() { const w = S.ws; return w.kind === 'snip' ? snipOf().name : w.kind === 'doc' ? w.name : w.kind === 'settings' ? 'Settings' : `${AGENTS[w.id].role} · ${S.agentTab === 'personality' ? 'role' : 'memory'}`; }
+function setCompact(on) { S.compact = on; S.switchPop = false; layout(); renderSide(); renderWS(); renderChat(); requestAnimationFrame(() => { fitPage(); if (S.ws && S.ws.kind === 'snip') fitView(); }); }
 function openWS(ws) {
-  S.compact = false;
   if (S.ws && S.dirty) { S.closing = true; S.pending = ws; renderWS(); return; }
   S.ws = ws; S.dirty = false; S.closing = false; S.sel = null; S.picker = false; S.sideOpen = false; S.phoneChat = false; S.hist = []; S.redo = []; S.view = null; S.dsel = null; S.dtool = 'select'; S.switchPop = false;
   if (ws.kind === 'snip' && S.tool === 'canvas-snip') S.tool = 'select';
@@ -1693,7 +1730,7 @@ function save() {
   if (S.ws.kind === 'agent') AGENT_FILES[S.ws.id][S.agentTab].text = S.ws.text;
   if (S.ws.kind === 'snip') { snipOf().saved = S.settings.mode === 'server'; }
   S.dirty = false; S.closing = false;
-  toast(S.ws.kind === 'snip' ? `Saved to Markups/${slug(snipOf().name)}/ (source.png, annotations.json, export.png)` : S.ws.kind === 'settings' ? 'Saved' : 'Saved on the server');
+  toast(S.ws.kind === 'snip' ? `Saved to ${storePath(`Markups/${slug(snipOf().name)}/`)} (source.png, annotations.json, export.png)` : S.ws.kind === 'settings' ? 'Saved' : 'Saved on the server');
 }
 function closeWS(force) {
   if (S.dirty && !force) { S.closing = true; renderWS(); return; }
@@ -1778,8 +1815,12 @@ document.addEventListener('click', (e) => {
   switch (t.id) {
     case 'compactBtn': case 'compactBtn2': setCompact(!S.compact); return;
     case 'expandHeld': setCompact(false); return;
+    case 'winMax': S.winMax = true; layout(); renderWS(); requestAnimationFrame(() => { fitPage(); if (S.ws && S.ws.kind === 'snip') fitView(); }); return;
+    case 'winSmall': S.winMax = false; layout(); renderWS(); requestAnimationFrame(() => { fitPage(); if (S.ws && S.ws.kind === 'snip') fitView(); }); return;
+    case 'blankOpen': $('#imgFile').click(); return;
     case 'themeBtn': S.pop = !S.pop; renderSide(); return;
     case 'settingsBtn': case 'modePill': openWS({ kind: 'settings' }); return;
+    case 'blankSnip': $('#newSnip').click(); return;
     case 'newSnip': { const dl = S.delay; if (dl === 'No delay') { toast('Drag a box on your screen. Esc cancels.'); setTimeout(() => newSnip(false), 700); } else { toast(`Collide hides, waits ${dl}, then captures`); setTimeout(() => newSnip(false), 1600); } return; }
     case 'newChat': S.addProject = true; S.switchPop = false; if (S.ws) { S.dockMin = false; S.phoneChat = true; layout(); } renderChat(); setTimeout(() => $('#apName') && $('#apName').focus(), 30); return;
     case 'apCancel': S.addProject = false; renderChat(); return;
@@ -1801,7 +1842,7 @@ document.addEventListener('click', (e) => {
     case 'copyImg': if (S.ws && S.ws.kind === 'snip') copyToast('Copied'); else toast('Copied to this PC’s clipboard'); return;
     case 'exportBtn': { const s = snipOf(); toast(`Exported ${slug(s.name)}.png · ${s.w} × ${s.h} (source size)`); return; }
     case 'openFile': $('#imgFile').click(); return;
-    case 'openMarkup': toast('Opens a markup folder from Documents/Collide/Markups'); return;
+    case 'openMarkup': toast(`Opens a markup folder from ${storePath('Markups/')}`); return;
     case 'undo': if (S.hist.length) { const s = snipOf(); S.redo.push(clone(s.shapes)); s.shapes = S.hist.pop(); S.sel = null; snipChanged(); } return;
     case 'redoBtn': if (S.redo.length) { const s = snipOf(); S.hist.push(clone(s.shapes)); s.shapes = S.redo.pop(); snipChanged(); } return;
     case 'askSnip': case 'askDoc': S.dockMin = false; S.phoneChat = true; layout(); setTimeout(() => $('#input') && $('#input').focus(), 50); return;
@@ -1824,6 +1865,7 @@ document.addEventListener('change', (e) => {
   const t = e.target;
   if (t.id === 'delay') { S.delay = t.value; return; }
   if (t.name === 'mode') { S.settings.mode = t.value; renderWS(); return; }
+  if (t.name === 'storage') { S.settings.storage = t.value; renderWS(); renderSide(); return; }
   if (t.id === 'notifyBox') { S.settings.notify = t.checked; toast(t.checked ? 'Notifications on' : 'Notifications off'); return; }
   if ((t.id === 'picFile' || t.id === 'imgFile') && t.files && t.files[0]) {
     const file = t.files[0], r = new FileReader();
@@ -1950,6 +1992,7 @@ document.addEventListener('input', (e) => {
   if (e.target.id === 'srvAddr') { S.settings.server = e.target.value; return; }
   if (e.target.id === 'ghRepo') { S.settings.repo = e.target.value; return; }
   if (e.target.id === 'ghIssue') { S.settings.issue = e.target.value; return; }
+  if (e.target.id === 'keepN') { S.settings.keep = e.target.value; return; }
   if (e.target.id === 'accessPw') { S.settings.password = e.target.value; return; }
   if (e.target.id === 'input') { e.target.style.height = 'auto'; e.target.style.height = Math.min(140, e.target.scrollHeight) + 'px'; }
 });
@@ -1957,7 +2000,7 @@ document.addEventListener('submit', (e) => {
   e.preventDefault();
   if (e.target.id === 'addForm') {
     const name = $('#apName').value.trim(), agent = $('#apAgent').value.trim(); if (!name || !agent) return;
-    const key = slug(agent); if (!AGENTS[key]) { AGENTS[key] = { name: agent, role: 'Agent', hue: Object.keys(AGENTS).length % 4, pic: '' }; AGENT_FILES[key] = { personality: { path: `agents/${key}.md`, text: `# ${agent}\n\n[placeholder]\n` }, memory: { path: `[server]/agents/${key}/memory.md`, text: `# ${agent} memory\n\n- [placeholder]\n` } }; }
+    const key = slug(agent); if (!AGENTS[key]) { AGENTS[key] = { name: agent, role: 'Agent', hue: Object.keys(AGENTS).length % 4, pic: '' }; AGENT_FILES[key] = { personality: { path: `roles/${key}/role.md`, text: `# ${agent}\n\n[placeholder]\n` }, memory: { path: `roles/${key}/memory.md`, text: `# ${agent} memory\n\n- [placeholder]\n` } }; }
     const id = slug(name) || 'project';
     CHATS.unshift({ id, agent: key, title: name, team: $('#apTeam').value.trim() || TEAM, desc: $('#apDesc').value.trim(), meta: `${agent} · new project`, time: 'now', day: 'Today', unread: 0 });
     MESSAGES[id] = []; S.chat = id; S.addProject = false; render(); toast(`Added ${name}`); return;
