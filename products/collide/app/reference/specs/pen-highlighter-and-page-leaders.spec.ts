@@ -23,7 +23,7 @@ test("pen and highlighter strokes, resizing a stroke, page bubbles and cards, Ex
   await tool(page, "Highlighter").click();
   await drag(page, [hx, hy], [hx + 180, hy + 2], 8);
 
-  let items = (await state()).items;
+  const items = (await state()).items;
   expect(items.slice(0, 2).map((i) => i.type)).toEqual(["hl", "pen"]);
   expect(items.slice(0, 2).every((i) => i.number === null && i.bubble === null)).toBe(true);
   expect(items[1].points).toBe(13);
