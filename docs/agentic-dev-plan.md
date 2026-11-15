@@ -201,20 +201,11 @@ Grant asked (2026-11-15) for a scheduled run that turns the Collide prototype in
 4. Screenshots (desktop and phone, Dark / Light / Aura) of the app are compared with the prototype's; differences go in the morning report for Grant.
 5. Nobody changes the prototype to make a spec pass, and no spec is weakened or skipped.
 
-**Schedule (each night until the Run 3 board is done; Central time; uses the nightly windows above).**
+**Schedule.** One scheduled cloud session at **2:45 AM Central** runs the whole team in the SPEC.md task loop (Planner, then Coder → Reviewer → Tester per task), until the board is done, usage reaches 75%, or a stop condition in SPEC.md is hit. If the board is not done, the next scheduled night continues from `HANDOFF.md`.
 
-| Time | Role | Run 3 work |
-| --- | --- | --- |
-| 6pm | Lydia (Tester) | Turns the next `prototype-checks/` scripts into reference specs (T30) and confirms they pass on the prototype |
-| 8pm | Hrongar (Coder) | Builds the next Run 3 task on `collide/run-3` until its reference specs pass on the app, or usage reaches 75% |
-| 1am | Farengar (Reviewer) | Reviews the night's task branches against the prototype, the specs and the design system |
-| 3am | Hrongar (Coder) | Fixes review comments |
-| 5am | Lydia (Tester) | Runs every reference spec on both, takes the screenshot comparison, updates `TESTER-NOTES.md` |
-| 6:30am | Lydia's report | Per task: specs passing on prototype / app, screenshot differences, blocked items, usage |
+**Done when** every reference spec passes on the app, the screenshot differences are accepted by Grant, and the one pull request from `collide/run` into `development` is open for Grant to merge.
 
-**Done when** every reference spec passes on the app, the screenshot differences are accepted by Grant, and the one pull request from `collide/run-3` into `development` is open for Grant to merge.
-
-**Before it can be scheduled:** Grant approves `RUN3.md` and this section, answers its questions (storage, `.collide` layout, screenshot tolerance, Export), merges Run 2, and says which nights it runs. Then the scheduled tasks are created (one per role and time above), each pointing to its role file and `RUN3.md`.
+**Open questions** (storage count and folder, `.collide` layout, screenshot tolerance, Export) are not answered yet; the run uses the (A) defaults in `RUN3.md` and lists them in `ISSUES.md` for Grant.
 
 ## Usage limit (Draft (not yet approved by Grant))
 
