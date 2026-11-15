@@ -65,6 +65,7 @@ function seedDb() {
       description: 'Nightly feature spec runs for designengineering.ai',
       createdAt: now
     }],
+    sessions: [],
     messages: [{
       id: uid(), projectId: 'project-iron', role: 'agent', author: 'Lydia',
       text: 'Hi ' + cfg.ownerName + ', I\'m Lydia on Project Iron. My nightly feature spec run reports will show up here. Ask me about any run.',
@@ -94,21 +95,60 @@ function findProject(ref) {
   const r = String(ref).toLowerCase();
   return db.projects.find(p => p.id === r || p.name.toLowerCase() === r) || null;
 }
+// ---------- chat sessions ----------
+// Each project has one pinned "Nightly reports" session (imported reports) and any
+// number of chat sessions (New chat). Messages carry sessionId.
+function reportsSessionId(projectId) { return 'r-' + projectId; }
+function ensureReportsSession(projectId) {
+  const id = reportsSessionId(projectId);
+  if (!db.sessions.some(x => x.id === id)) db.sessions.push({ id, projectId, kind: 'reports', title: 'Nightly reports', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+  return id;
+}
+function createSession(projectId, title) {
+  const now = new Date().toISOString();
+  const sess = { id: 'c-' + uid(), projectId, kind: 'chat', title: title || 'New chat', createdAt: now, updatedAt: now };
+  db.sessions.push(sess); saveDb(); broadcast({ type: 'sessions', projectId });
+  return sess;
+}
+function latestChatSession(projectId) {
+  return db.sessions.filter(x => x.projectId === projectId && x.kind === 'chat').sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0] || null;
+}
+function migrateSessions() {
+  db.sessions = db.sessions || [];
+  let changed = false;
+  for (const pr of db.projects) {
+    if (!db.sessions.some(x => x.id === reportsSessionId(pr.id))) { ensureReportsSession(pr.id); changed = true; }
+    const loose = db.messages.filter(m => m.projectId === pr.id && !m.sessionId);
+    if (!loose.length) continue;
+    let main = null;
+    for (const m of loose) {
+      if (m.role === 'report') m.sessionId = reportsSessionId(pr.id);
+      else { if (!main) { main = { id: 'c-' + uid(), projectId: pr.id, kind: 'chat', title: 'Chat', createdAt: m.ts, updatedAt: m.ts }; db.sessions.push(main); } m.sessionId = main.id; main.updatedAt = m.ts; }
+    }
+    changed = true;
+  }
+  if (changed) saveDb();
+}
+migrateSessions();
+
 function addMessage(m) {
+  if (!m.sessionId) m.sessionId = m.role === 'report' ? ensureReportsSession(m.projectId) : ((latestChatSession(m.projectId) || createSession(m.projectId, 'Chat')).id);
   const msg = { id: uid(), ts: new Date().toISOString(), ...m };
   db.messages.push(msg);
+  const sess = db.sessions.find(x => x.id === msg.sessionId);
+  if (sess) sess.updatedAt = msg.ts;
   saveDb();
   broadcast({ type: 'message', message: msg });
-  pruneProject(msg.projectId);
+  pruneSession(msg.sessionId);
   return msg;
 }
 
-// Keep each project's chat thin: the newest `maxMessages` messages, plus the
-// newest `keepReports` reports even if they're older (the assistant reads those).
-function pruneProject(projectId) {
+// Keep each session thin: the newest `maxMessages` messages. In the reports
+// session the newest `keepReports` reports are always kept (the agent reads those).
+function pruneSession(sessionId) {
   const max = Number(cfg.maxMessages) || 30;
   const keepReports = Number(cfg.keepReports ?? 5);
-  const mine = db.messages.filter(x => x.projectId === projectId);
+  const mine = db.messages.filter(x => x.sessionId === sessionId);
   if (mine.length <= max) return;
   const keep = new Set(mine.slice(-max).map(x => x.id));
   mine.filter(x => x.role === 'report').slice(-keepReports).forEach(x => keep.add(x.id));
@@ -117,9 +157,10 @@ function pruneProject(projectId) {
   const gone = new Set(removed);
   db.messages = db.messages.filter(x => !gone.has(x.id));
   saveDb();
-  broadcast({ type: 'pruned', projectId, ids: removed });
+  const projectId = (db.sessions.find(x => x.id === sessionId) || {}).projectId;
+  broadcast({ type: 'pruned', projectId, sessionId, ids: removed });
 }
-function pruneAll() { for (const pr of db.projects) pruneProject(pr.id); }
+function pruneAll() { for (const sess of db.sessions) pruneSession(sess.id); }
 
 // ---------- live updates (SSE) ----------
 const clients = new Set();
@@ -227,9 +268,10 @@ function applyAgentWrite(project, target, newText) {
   return backup;
 }
 
-async function assistantReply(project, userText, context) {
+async function assistantReply(project, userText, context, sessionId) {
   const msgs = db.messages.filter(m => m.projectId === project.id);
   const reports = msgs.filter(m => m.role === 'report').slice(-5);
+  const convo = msgs.filter(m => m.sessionId === sessionId);
 
   if (!claudeAvailable) return offlineReply(project, reports, userText);
 
@@ -269,7 +311,7 @@ ${reportContext}`;
 
   // Recent conversation (user/assistant only), must start with user; this already
   // ends with the current user turn since it's added to the db before this runs.
-  let history = msgs.filter(m => m.role === 'user' || m.role === 'assistant').slice(-20)
+  let history = convo.filter(m => m.role === 'user' || m.role === 'assistant').slice(-20)
     .map(m => ({ role: m.role, content: m.text }));
   while (history.length && history[0].role !== 'user') history.shift();
   history = history.length ? history : [{ role: 'user', content: userText }];
@@ -510,7 +552,36 @@ const server = http.createServer(async (req, res) => {
     if (m && req.method === 'GET') {
       const pr = findProject(decodeURIComponent(m[1]));
       if (!pr) return send(res, 404, { error: 'Project not found' });
-      return send(res, 200, db.messages.filter(x => x.projectId === pr.id).slice(-200));
+      const sid = url.searchParams.get('session');
+      return send(res, 200, db.messages.filter(x => x.projectId === pr.id && (!sid || x.sessionId === sid)).slice(-200));
+    }
+
+    // Chat sessions: list (reports first, then newest chats), create, delete
+    m = p.match(/^\/api\/projects\/([^/]+)\/sessions(?:\/([\w-]+))?$/);
+    if (m) {
+      const pr = findProject(decodeURIComponent(m[1]));
+      if (!pr) return send(res, 404, { error: 'Project not found' });
+      ensureReportsSession(pr.id);
+      if (!m[2] && req.method === 'GET') {
+        const list = db.sessions.filter(x => x.projectId === pr.id)
+          .sort((a, b) => (a.kind === 'reports' ? -1 : b.kind === 'reports' ? 1 : b.updatedAt.localeCompare(a.updatedAt)))
+          .map(x => ({ ...x, count: db.messages.filter(y => y.sessionId === x.id).length }));
+        return send(res, 200, list);
+      }
+      if (!m[2] && req.method === 'POST') {
+        const b = await readBody(req);
+        return send(res, 201, createSession(pr.id, String(b.title || '').slice(0, 80) || 'New chat'));
+      }
+      const sess = db.sessions.find(x => x.id === m[2] && x.projectId === pr.id);
+      if (!sess) return send(res, 404, { error: 'Session not found' });
+      if (req.method === 'DELETE') {
+        if (sess.kind === 'reports') return send(res, 400, { error: 'The reports session can\'t be deleted' });
+        db.sessions = db.sessions.filter(x => x.id !== sess.id);
+        db.messages = db.messages.filter(x => x.sessionId !== sess.id);
+        saveDb(); broadcast({ type: 'sessions', projectId: pr.id });
+        return send(res, 200, { ok: true });
+      }
+      return send(res, 405, { error: 'Method not allowed' });
     }
 
     m = p.match(/^\/api\/projects\/([^/]+)\/github$/);
@@ -615,6 +686,65 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { ok: true });
     }
 
+    // Files in the project folder (server PC): list a folder, read and save text files
+    m = p.match(/^\/api\/projects\/([^/]+)\/(files|file|open)$/);
+    if (m) {
+      const pr = findProject(decodeURIComponent(m[1]));
+      if (!pr) return send(res, 404, { error: 'Project not found' });
+      const ws = workspaceOf(pr);
+      if (!ws) return send(res, 400, { error: 'Set the project folder first (Menu > Projects > Project folder).' });
+      const inside = rel => {
+        const abs = path.resolve(ws, String(rel || '.'));
+        const r = path.relative(ws, abs);
+        return (r.startsWith('..') || path.isAbsolute(r)) ? null : { abs, rel: r.split(path.sep).join('/') };
+      };
+      if (m[2] === 'files' && req.method === 'GET') {
+        const t = inside(url.searchParams.get('dir') || '.');
+        if (!t || !fs.existsSync(t.abs) || !fs.statSync(t.abs).isDirectory()) return send(res, 404, { error: 'Folder not found' });
+        const entries = fs.readdirSync(t.abs, { withFileTypes: true })
+          .filter(d => !d.name.startsWith('.') && d.name !== 'node_modules')
+          .map(d => {
+            let st = null; try { st = fs.statSync(path.join(t.abs, d.name)); } catch {}
+            return { name: d.name, dir: d.isDirectory(), size: st ? st.size : 0, mtime: st ? st.mtime.toISOString() : null,
+              path: (t.rel ? t.rel + '/' : '') + d.name, editable: !d.isDirectory() && WRITABLE_EXT.test(d.name) };
+          })
+          .sort((a, b) => (a.dir === b.dir ? a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) : a.dir ? -1 : 1));
+        return send(res, 200, { root: ws, dir: t.rel, entries });
+      }
+      if (m[2] === 'file') {
+        const t = inside(url.searchParams.get('path') || (req.method === 'PUT' ? '' : ''));
+        if (req.method === 'GET') {
+          if (!t || !WRITABLE_EXT.test(t.abs) || !fs.existsSync(t.abs) || !fs.statSync(t.abs).isFile()) return send(res, 404, { error: 'Only .md, .markdown and .txt files in the project folder open here' });
+          if (fs.statSync(t.abs).size > 1024 * 1024) return send(res, 413, { error: 'File is over 1 MB' });
+          return send(res, 200, { path: t.rel, content: fs.readFileSync(t.abs, 'utf8'), mtime: fs.statSync(t.abs).mtime.toISOString() });
+        }
+        if (req.method === 'PUT') {
+          const b = await readBody(req);
+          const tt = inside(b.path);
+          if (!tt || !tt.rel || !WRITABLE_EXT.test(tt.abs) || typeof b.content !== 'string') return send(res, 400, { error: 'Only .md, .markdown and .txt files in the project folder can be saved' });
+          if (fs.existsSync(tt.abs)) applyAgentWrite(pr, { abs: tt.abs }, b.content); // keeps a backup
+          else { fs.mkdirSync(path.dirname(tt.abs), { recursive: true }); fs.writeFileSync(tt.abs, b.content); }
+          broadcast({ type: 'file-changed', projectId: pr.id, file: tt.rel, by: 'user' });
+          return send(res, 200, { ok: true, mtime: fs.statSync(tt.abs).mtime.toISOString() });
+        }
+      }
+      if (m[2] === 'open' && req.method === 'POST') {
+        // Opens a window on the server PC, so only the server PC itself may ask
+        const ra = req.socket.remoteAddress || '';
+        if (!/^(::1|127\.|::ffff:127\.)/.test(ra)) return send(res, 403, { error: 'Explorer and PowerShell open on the server PC; use this from the server PC.' });
+        if (process.platform !== 'win32') return send(res, 400, { error: 'Opening Explorer and PowerShell works on Windows only.' });
+        const b = await readBody(req);
+        const t = inside(b.dir || '.');
+        if (!t || !fs.existsSync(t.abs) || !fs.statSync(t.abs).isDirectory()) return send(res, 404, { error: 'Folder not found' });
+        if (b.what === 'explorer') spawn('explorer.exe', [t.abs], { detached: true, stdio: 'ignore' }).unref();
+        // detached gives PowerShell its own console window, started in the folder
+        else if (b.what === 'terminal') spawn('powershell.exe', ['-NoExit'], { cwd: t.abs, detached: true, stdio: 'ignore', windowsHide: false }).unref();
+        else return send(res, 400, { error: 'what must be explorer or terminal' });
+        return send(res, 200, { ok: true });
+      }
+      return send(res, 405, { error: 'Method not allowed' });
+    }
+
     m = p.match(/^\/api\/projects\/([^/]+)\/chat$/);
     if (m && req.method === 'POST') {
       const pr = findProject(decodeURIComponent(m[1]));
@@ -622,18 +752,21 @@ const server = http.createServer(async (req, res) => {
       const b = await readBody(req);
       const text = String(b.text || '').trim();
       if (!text) return send(res, 400, { error: 'text required' });
-      addMessage({ projectId: pr.id, role: 'user', author: cfg.ownerName, text });
-      broadcast({ type: 'typing', projectId: pr.id, author: pr.agent });
-      // Optional: the file open in the editor, so the agent can see it
+      // Chat goes to the given chat session (the newest one if none is given)
+      let sess = b.session && db.sessions.find(x => x.id === b.session && x.projectId === pr.id && x.kind === 'chat');
+      if (!sess) sess = latestChatSession(pr.id) || createSession(pr.id, 'New chat');
+      if (sess.title === 'New chat') { sess.title = text.replace(/\s+/g, ' ').slice(0, 48); broadcast({ type: 'sessions', projectId: pr.id }); }
+      addMessage({ projectId: pr.id, sessionId: sess.id, role: 'user', author: cfg.ownerName, text });
+      broadcast({ type: 'typing', projectId: pr.id, sessionId: sess.id, author: pr.agent });
       // Optional: the file the user shared with "Read this file" (path in the project folder,
       // or one of the agent's files); the agent may rewrite only that file
       const c = b.context || null;
       const ctx = c ? { file: String(c.file || '').slice(0, 400), path: typeof c.path === 'string' ? c.path.slice(0, 1000) : '',
         agentFile: typeof c.agentFile === 'string' ? c.agentFile : '', content: String(c.content || '') } : null;
-      const reply = await assistantReply(pr, text, ctx);
-      if (reply && typeof reply === 'object') addMessage({ projectId: pr.id, role: 'assistant', author: pr.agent, text: reply.text, edit: { file: reply.edit.file, backup: path.basename(reply.edit.backup) }, editAbs: reply.edit.abs });
-      else addMessage({ projectId: pr.id, role: 'assistant', author: pr.agent, text: reply });
-      return send(res, 200, { ok: true });
+      const reply = await assistantReply(pr, text, ctx, sess.id);
+      if (reply && typeof reply === 'object') addMessage({ projectId: pr.id, sessionId: sess.id, role: 'assistant', author: pr.agent, text: reply.text, edit: { file: reply.edit.file, backup: path.basename(reply.edit.backup) }, editAbs: reply.edit.abs });
+      else addMessage({ projectId: pr.id, sessionId: sess.id, role: 'assistant', author: pr.agent, text: reply });
+      return send(res, 200, { ok: true, session: sess.id });
     }
 
     if (p === '/api/events') {
