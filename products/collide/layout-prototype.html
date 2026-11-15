@@ -2360,3 +2360,62 @@ let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTime
 applyTheme();
 render();
 </script>
+<script>
+/* Reference test hook (RUN3 T30). Read-only: window.__collide.state() returns a fresh plain JSON object
+   and changes nothing in the prototype. The app exposes the same call. Shape: prototype-checks/HOOK.md. */
+(() => {
+  const r2 = (v) => (typeof v === 'number' && isFinite(v) ? Math.round(v * 100) / 100 : null);
+  const kindOf = (w) => (!w ? 'blank' : w.kind === 'snip' ? 'snip' : w.kind === 'settings' ? 'settings' : w.type === 'md' ? 'markdown' : w.type === 'image' ? 'image' : 'file');
+  const colorOf = (sh) => (sh.type === 'image' ? null : sh.color && sh.color[0] === '#' ? sh.color : MAT[sh.color] ? sh.color : LEGACY[sh.color] || DEFAULT_COLOR);
+  function itemsOf(ctx) {
+    const nb = noteBoxes(ctx);
+    return [...ctx.shapes].reverse().map((sh) => {
+      const no = calloutNo(ctx, sh.n), b = isCallout(sh) && nb[sh.n] ? nb[sh.n].box : null;
+      return {
+        id: String(sh.n), type: sh.type.replace('-fill', ''), number: no === '' ? null : no, note: sh.note || '',
+        hidden: { text: !!sh.hideText, bubble: !!sh.hideBubble, outline: !!sh.hideOutline }, fill: fillPct(sh),
+        color: colorOf(sh), stroke: sh.type === 'image' ? null : sh.sw || 3,
+        x: r2(sh.x), y: r2(sh.y), w: r2(sh.w), h: r2(sh.h), points: sh.pts ? sh.pts.length : null,
+        bubble: b ? { x: r2(b.x), y: r2(b.y), w: r2(b.w), h: r2(b.h), moved: !!sh.box } : null,
+      };
+    });
+  }
+  function state() {
+    const w = S.ws, view = kindOf(w), editor = view === 'snip' || view === 'markdown' ? view : null;
+    let items = [], zoom = null;
+    if (view === 'snip') {
+      const s = SNIPS.find((x) => x.id === w.id);
+      if (s) {
+        // Added images wait in s.images until the next draw moves them to the back of s.shapes; list them there without moving them.
+        const first = nextId(s), waiting = (s.images || []).map((im, i) => ({ n: first + i, type: 'image', x: im.x, y: im.y, w: im.w, h: im.h, note: '' }));
+        items = itemsOf({ shapes: [...waiting, ...s.shapes], w: s.w, h: s.h, W: s.W, H: s.H });
+        if (S.view) zoom = { percent: Math.round(S.view.k * IW / s.w * 100), fit: !!S.view.fit };
+      }
+    } else if (view === 'markdown') {
+      items = itemsOf({ shapes: w.marks || [], W: PAGE_W, H: S.pageH || 900 });
+      if (S.docView === 'preview' && S.pageK) zoom = { percent: Math.round(S.pageK * 100), fit: !(S.docZoom && S.docZoom !== 1) };
+    }
+    const drawing = view === 'snip' || (view === 'markdown' && S.docView === 'preview');
+    const sel = view === 'snip' ? S.sel : view === 'markdown' ? S.dsel : null;
+    const closing = S.splash && S.tabs[S.splash.i], del = S.delAsk ? delTarget(S.delAsk) : null;
+    return JSON.parse(JSON.stringify({
+      version: 1,
+      view,
+      mode: view === 'markdown' ? (S.docView === 'preview' ? 'preview' : 'edit') : null,
+      tabs: S.tabs.map((t, i) => ({ id: tabKey(t.ws), title: tabName(t.ws), kind: kindOf(t.ws), dirty: !!tabDirty(i), active: i === S.active })),
+      editor,
+      activeTool: !drawing ? null : view === 'snip' ? S.tool : S.dtool,
+      color: !editor ? null : (view === 'snip' ? S.role : S.dcolor) || null,
+      stroke: !editor ? null : view === 'snip' ? S.sw : S.dsw,
+      items,
+      selection: sel == null ? [] : [String(sel)],
+      zoom,
+      theme: S.theme,
+      aura: S.theme === 'aura' ? S.aura : null,
+      sidebar: { delay: S.delay, addMode: S.addMode, collapsed: !!S.compact },
+      splash: del && del.item ? { kind: 'delete', title: del.item.name } : closing ? { kind: 'close', title: tabName(closing.ws) } : null,
+    }));
+  }
+  window.__collide = Object.freeze({ state });
+})();
+</script>
