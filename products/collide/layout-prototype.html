@@ -910,6 +910,8 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
     <tr><td>Canvas snip with W × H readout, Esc leaves</td><td><b>Removed from the Snip toolbar</b> (Grant 2026-11-15). Stays in the Markdown editor.</td></tr>
     <tr><td>Open file, Open markup, Save Ctrl+S, Copy Ctrl+Shift+C, Export</td><td>Open file → sidebar <b>Open</b> (zip, markup or image); <b>Add snip</b> adds a capture beside the image and the canvas grows: Current = the program that is open, Behind = Collide hides and you snip the screen behind (like New snip); select it to move it or resize it from a corner (aspect locked); Open markup, Copy, Export in the toolbar; Save in the header</td></tr>
     <tr><td>Select V, Rectangle R, Ellipse O, Filled rectangle, Filled ellipse, X mark X, Point P</td><td>Snip toolbar without the filled tools; <b>shading is a toggle in the callout card</b>; type can be changed in the card</td></tr>
+    <tr><td>Print area</td><td>Dashed frame with corner marks and its size: the image, added images, shapes and shown bubbles, plus a 12 px margin when anything goes past the image (was 24 px). Notes can go anywhere, also over the frame; it follows them. Copy takes it; Fit (Ctrl+0) zooms to it</td></tr>
+    <tr><td>Bubble stacking</td><td>When bubbles would overlap, one sits to the right, bottom, top or left of the other (closest free spot off the image). Drop a bubble near another and it snaps beside it</td></tr>
     <tr><td>Esc</td><td>Returns to the Select tool in Snip and in the Markdown page (also leaves a note box you are typing in)</td></tr>
     <tr><td>Line tool</td><td>Snip and Markdown toolbars (L); drag its ends to change it; arrows point to its middle</td></tr>
     <tr><td>Resize shapes</td><td>8 handles on a selected shape (corners and edges), sized for the zoom; Shift on a corner keeps the aspect. Added images: corner handles, aspect always locked</td></tr>
@@ -1111,9 +1113,21 @@ function noteBoxes(s) {
       box = d === 'left' ? { x: -NOTE_GAP - w, y: c.y - h / 2 - NOTE_TILT } : d === 'right' ? { x: IW + NOTE_GAP, y: c.y - h / 2 - NOTE_TILT } : d === 'top' ? { x: c.x - w / 2 + NOTE_TILT, y: -NOTE_GAP - h } : { x: c.x - w / 2 + NOTE_TILT, y: H + NOTE_GAP };
       box.w = w; box.h = h;
       const vert = d === 'left' || d === 'right';
+      // Stacking (Grant 2026-11-15): a bubble that would overlap another can sit to its right, bottom, top or left.
+      // Free spots off the image win; among them, the one closest to the shape.
+      const hits = (b) => taken.find((t) => b.x < t.x + t.w + NOTE_STACK && t.x < b.x + b.w + NOTE_STACK && b.y < t.y + t.h + NOTE_STACK && t.y < b.y + b.h + NOTE_STACK);
+      const onImage = (b) => b.x < IW && b.x + b.w > 0 && b.y < H && b.y + b.h > 0;
       for (let i = 0; i < 40; i++) {
-        const hit = taken.find((t) => box.x < t.x + t.w + NOTE_STACK && t.x < box.x + box.w + NOTE_STACK && box.y < t.y + t.h + NOTE_STACK && t.y < box.y + box.h + NOTE_STACK);
+        const hit = hits(box);
         if (!hit) break;
+        const G = NOTE_STACK;
+        const cands = [
+          { x: hit.x + hit.w + G, y: hit.y }, { x: hit.x, y: hit.y + hit.h + G },
+          { x: hit.x, y: hit.y - h - G }, { x: hit.x - w - G, y: hit.y },
+        ].map((q) => ({ ...q, w, h })).filter((q) => !hits(q));
+        const dist = (q) => Math.hypot(q.x + w / 2 - c.x, q.y + h / 2 - c.y);
+        const best = cands.filter((q) => !onImage(q)).sort((a2, b2) => dist(a2) - dist(b2))[0];
+        if (best) { box.x = best.x; box.y = best.y; break; }
         if (vert) box.y = hit.y + hit.h + NOTE_STACK; else box.x = hit.x + hit.w + NOTE_STACK;
       }
     }
@@ -1140,8 +1154,17 @@ function noteBoxes(s) {
   }
   return out;
 }
+const PRINT_MARGIN = 6; // image px (12 px at source size) around anything past the image (was 24 px)
+/** What Copy takes: the image, added images, shapes and shown note bubbles, with a tight margin when anything spills past the image. */
+function printArea(s) {
+  const b = bounds(s), H = ih(s);
+  const spill = b.x0 < 0 || b.y0 < 0 || b.x1 > IW || b.y1 > H;
+  const m = spill ? PRINT_MARGIN : 0;
+  return { x0: b.x0 - m, y0: b.y0 - m, x1: b.x1 + m, y1: b.y1 + m, spill };
+}
 function bounds(s, withNotes = true) {
   let x0 = 0, y0 = 0, x1 = IW, y1 = ih(s);
+  for (const sh of s.shapes) { const pad = (sh.sw || 3) / 2 + (sh.type === 'point' ? 6 : 0); const xa = Math.min(sh.x, sh.x + sh.w) - pad, xb = Math.max(sh.x, sh.x + sh.w) + pad, ya = Math.min(sh.y, sh.y + sh.h) - pad, yb = Math.max(sh.y, sh.y + sh.h) + pad; x0 = Math.min(x0, xa); y0 = Math.min(y0, ya); x1 = Math.max(x1, xb); y1 = Math.max(y1, yb); }
   for (const im of s.images || []) { x0 = Math.min(x0, im.x); y0 = Math.min(y0, im.y); x1 = Math.max(x1, im.x + im.w); y1 = Math.max(y1, im.y + im.h); }
   if (withNotes) { const nb = noteBoxes(s); for (const sh of s.shapes) { if (sh.hideBubble) continue; const b = nb[sh.n].box; x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.w); y1 = Math.max(y1, b.y + b.h); } }
   return { x0, y0, x1, y1 };
@@ -1239,14 +1262,19 @@ function snipSVG(id, cls = 'snipthumb', mode = 'thumb') {
   const nb = noteBoxes(s);
   const shown = s.shapes;
   const b = mode === 'export' ? bounds(s) : (S.cbox && S.ws && S.ws.id === s.id ? S.cbox : canvasBox(s));
-  const m = mode === 'export' && (b.x0 < 0 || b.y0 < 0 || b.x1 > IW || b.y1 > H) ? 12 : 0;
+  const pa = printArea(s);
+  const m = mode === 'export' && pa.spill ? PRINT_MARGIN : 0;
   const vb = `${b.x0 - m} ${b.y0 - m} ${b.x1 - b.x0 + 2 * m} ${b.y1 - b.y0 + 2 * m}`;
+  const kk = (S.view && S.view.k) || 1, f = s.w / IW;
+  const marker = mode === 'full' ? `<g class="printarea" pointer-events="none"><rect x="${pa.x0}" y="${pa.y0}" width="${pa.x1 - pa.x0}" height="${pa.y1 - pa.y0}" fill="none" stroke="var(--t3)" stroke-width="${1 / kk}" stroke-dasharray="${6 / kk} ${4 / kk}"/>
+      ${[[pa.x0, pa.y0, 1, 1], [pa.x1, pa.y0, -1, 1], [pa.x0, pa.y1, 1, -1], [pa.x1, pa.y1, -1, -1]].map(([x, y, sx, sy]) => `<path d="M${x} ${y + sy * 12 / kk}V${y}H${x + sx * 12 / kk}" fill="none" stroke="var(--t1)" stroke-width="${2 / kk}"/>`).join('')}
+      <text x="${pa.x0}" y="${pa.y0 - 6 / kk}" font-family="Geist Mono, monospace" font-size="${11 / kk}" fill="var(--t3)">Print area · ${Math.round((pa.x1 - pa.x0) * f)} × ${Math.round((pa.y1 - pa.y0) * f)}</text></g>` : '';
   return `<svg class="${cls}" viewBox="${vb}" ${mode === 'full' ? `width="${b.x1 - b.x0}" height="${b.y1 - b.y0}"` : ''} role="img" aria-label="${esc(s.name)}">
     <defs>${markers(s)}</defs>${mode === 'export' && m ? `<rect x="${b.x0 - m}" y="${b.y0 - m}" width="${b.x1 - b.x0 + 2 * m}" height="${b.y1 - b.y0 + 2 * m}" fill="${pal(s).bg}"/>` : ''}
     <g data-image="1">${artSVG(s)}</g>${layersSVG(s, mode)}
     ${shown.map((sh) => shapeSVG(sh, mode === 'full' && S.sel === sh.n, s, mode)).join('')}
     ${shown.filter((sh) => mode === 'full' || !sh.hideBubble).map((sh) => noteSVG(sh, nb[sh.n], mode === 'full' && S.sel === sh.n, s)).join('')}
-    <g id="liveRect"></g></svg>`;
+    ${marker}<g id="liveRect"></g></svg>`;
 }
 
 function drawBanner(cv, seed = 7) {
@@ -1388,9 +1416,9 @@ const snipOf = () => SNIPS.find((x) => x.id === S.ws.id);
 function zoomPct() { const s = snipOf(); return Math.round(S.view.k * IW / s.w * 100); }
 /** The editable area: the first image plus any added images, with room around them for note boxes. */
 function canvasBox(s) {
-  let x0 = 0, y0 = 0, x1 = IW, y1 = ih(s);
-  for (const im of s.images || []) { x0 = Math.min(x0, im.x); y0 = Math.min(y0, im.y); x1 = Math.max(x1, im.x + im.w); y1 = Math.max(y1, im.y + im.h); }
-  return { x0: x0 - 220, y0: y0 - 100, x1: x1 + 220, y1: y1 + 100 };
+  // Room around the print area (image, added images, shapes, bubbles) for moving bubbles and the print-area label.
+  const pa = printArea(s);
+  return { x0: Math.min(pa.x0, -200) - 60, y0: Math.min(pa.y0, -80) - 60, x1: Math.max(pa.x1, IW + 200) + 60, y1: Math.max(pa.y1, ih(s) + 80) + 60 };
 }
 /** Recompute the canvas size (not while dragging) and keep the content where it is on screen. */
 function syncBox(s) {
@@ -1402,11 +1430,12 @@ function syncBox(s) {
 function fitView() {
   const st = $('#stage'); if (!st || !S.ws || S.ws.kind !== 'snip') return;
   const s = snipOf(); S.cbox = canvasBox(s);
-  const W = S.cbox.x1 - S.cbox.x0, H = S.cbox.y1 - S.cbox.y0;
-  const r = st.getBoundingClientRect();
-  const k = Math.min(r.width / W, r.height / H) * 0.98;
-  S.view = { k, x: (r.width - W * k) / 2, y: (r.height - H * k) / 2, fit: true };
-  applyView();
+  // Autofit: zoom to the print area (image plus annotations) with a tight 28 px screen margin.
+  const pa = printArea(s), r = st.getBoundingClientRect(), M = 28;
+  const pw = pa.x1 - pa.x0, ph = pa.y1 - pa.y0;
+  const k = Math.min((r.width - 2 * M) / pw, (r.height - 2 * M - 16) / ph);
+  S.view = { k, x: (r.width - pw * k) / 2 - (pa.x0 - S.cbox.x0) * k, y: (r.height - ph * k) / 2 + 8 - (pa.y0 - S.cbox.y0) * k, fit: true };
+  applyView(); redrawStage();
 }
 function applyView() {
   const z = $('#zoomer'); if (!z || !S.view) return;
@@ -1743,10 +1772,8 @@ function pushDocHist() { S.dhist = S.dhist || []; S.dhist.push(clone(S.ws.marks)
 function pushHist() { const s = snipOf(); S.hist.push(clone(s.shapes)); if (S.hist.length > 50) S.hist.shift(); S.redo = []; }
 function snipChanged(full = true) { const s = snipOf(); s.saved = false; markDirty(); if (full) { renderWS(); renderSide(); } else redrawStage(); }
 function copyToast(what) {
-  const s = snipOf(), b = bounds(s), f = s.w / IW, hidden = s.shapes.filter((x) => x.hide).length;
-  const spill = b.x0 < 0 || b.y0 < 0 || b.x1 > IW || b.y1 > ih(s);
-  const w = Math.round((b.x1 - b.x0) * f + (spill ? 48 : 0)), h = Math.round((b.y1 - b.y0) * f + (spill ? 48 : 0));
-  toast(`${what} ${w} × ${h}${spill ? ' with note boxes' : ''}${hidden ? ` · ${hidden} hidden callout left out` : ''}`);
+  const s = snipOf(), pa = printArea(s), f = s.w / IW, hidden = s.shapes.filter((x) => x.hideBubble).length;
+  toast(`${what} the print area · ${Math.round((pa.x1 - pa.x0) * f)} × ${Math.round((pa.y1 - pa.y0) * f)}${pa.spill ? ' with note boxes' : ''}${hidden ? ` · ${hidden} hidden bubble left out` : ''}`);
 }
 function newSnip(fromCanvas) {
   const base = S.ws && S.ws.kind === 'snip' ? snipOf() : SNIPS[0];
@@ -2004,6 +2031,20 @@ document.addEventListener('pointerup', () => {
   const dr = S.drag; S.drag = null;
   if (dr.kind === 'csnip') { const ro = $('#readout'); if (ro) ro.remove(); const w = Math.abs(dr.x1 - dr.x0), h = Math.abs(dr.y1 - dr.y0); if (w > 6 && h > 6) newSnip(true); else $('#liveRect').innerHTML = ''; return; }
   if (dr.kind === 'img' || dr.kind === 'resize') { if (dr.moved) snipChanged(); else S.hist.pop(); return; }
+  if (dr.kind === 'box' && dr.moved) {
+    // Snap: dropped within reach of another bubble, it stacks to that bubble's right, left, top or bottom, aligned.
+    const s0 = snipOf(), nb = noteBoxes(s0), me = nb[dr.n].box, SNAP = 18, G = NOTE_STACK;
+    let bestSnap = null;
+    for (const o of s0.shapes) {
+      if (o.n === dr.n || o.hideBubble) continue; const b = nb[o.n].box;
+      const vOver = me.y < b.y + b.h && b.y < me.y + me.h, hOver = me.x < b.x + b.w && b.x < me.x + me.w;
+      const opts = [];
+      if (vOver) { opts.push([Math.abs(me.x - (b.x + b.w + G)), { x: b.x + b.w + G, y: b.y }]); opts.push([Math.abs(me.x + me.w - (b.x - G)), { x: b.x - G - me.w, y: b.y }]); }
+      if (hOver) { opts.push([Math.abs(me.y - (b.y + b.h + G)), { x: b.x, y: b.y + b.h + G }]); opts.push([Math.abs(me.y + me.h - (b.y - G)), { x: b.x, y: b.y - G - me.h }]); }
+      for (const [dd, pos] of opts) if (dd < SNAP && (!bestSnap || dd < bestSnap[0])) bestSnap = [dd, pos];
+    }
+    if (bestSnap) s0.shapes.find((x) => x.n === dr.n).box = { x: Math.round(bestSnap[1].x), y: Math.round(bestSnap[1].y) };
+  }
   const s = snipOf(), sh = s.shapes.find((x) => x.n === dr.n);
   if (dr.kind === 'draw') {
     if (sh.type === 'line') { if (Math.hypot(sh.w, sh.h) < 8) { sh.w = 100; sh.h = -30; } }
