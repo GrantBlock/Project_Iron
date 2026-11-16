@@ -58,6 +58,12 @@ const SUCCESS_MS = 4000;
 /** Recents reads this many of the newest saved markups for their size, callouts and notes. */
 const RECENT_DETAILS = 12;
 
+/** A small picture for a sample snip's Recents row. */
+const sampleThumb = (id: string) => {
+  const s = sampleSnip(id);
+  return s ? sampleArt(s, 120) : null;
+};
+
 const NO_SNIP: CollideTestState = { image: null, stage: null, shapes: [], shapesOnImage: [], selectedId: null };
 
 export function Shell() {
@@ -140,7 +146,9 @@ export function Shell() {
   }, [prefs.collapsed]);
 
   // ---------- Recents ----------
-  const [samples, setSamples] = useState<RecentItem[]>(() => (wantsSample() ? sampleRecents() : []));
+  const [samples, setSamples] = useState<RecentItem[]>(() =>
+    wantsSample() ? sampleRecents().map((r) => (r.kind === "snip" && r.source.from === "sample" ? { ...r, thumb: sampleThumb(r.source.sample) } : r)) : [],
+  );
   const [stored, setStored] = useState<RecentSnip[]>([]);
   const [openFolders, setOpenFolders] = useState<ReadonlySet<string>>(() => new Set(wantsSample() ? SAMPLE_OPEN : []));
   const [query, setQuery] = useState("");

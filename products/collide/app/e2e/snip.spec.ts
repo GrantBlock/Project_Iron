@@ -84,7 +84,8 @@ test("Canvas snip: Esc leaves the mode without snipping", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   await page.waitForFunction(() => !!window.__collide);
-  await expect(page.getByTestId("canvas-snip")).toBeDisabled();
+  // T31: with no image open there is no Snip tab, so no Canvas snip button at all (it was there, disabled).
+  await expect(page.getByTestId("canvas-snip")).toHaveCount(0);
   await page.evaluate(() => window.__collide!.openImage("/tests/fixtures/sample-400x300.png"));
   await page.getByTestId("canvas-snip").click();
   await page.keyboard.press("Escape");
@@ -96,11 +97,21 @@ test("snip delay: choices match Snipping Tool and the choice is remembered", asy
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   await page.waitForFunction(() => !!window.__collide);
-  const sel = page.getByTestId("snip-delay");
-  await expect(sel).toHaveValue("0");
-  await expect(sel.locator("option")).toHaveText(["No delay", "3 s", "5 s", "10 s"]);
-  await sel.selectOption("5");
+  // T31 (Grant 2026-11-15): the delay is a toggle in the sidebar, 0s / 3s / 5s / 10s (was a drop-down in the toolbar).
+  const delay = page.getByTestId("snip-delay");
+  const words = () => page.evaluate(() => window.__collide!.state().sidebar.delay);
+  await expect(delay).toHaveAttribute("data-value", "0");
+  await expect(delay.getByRole("radio", { checked: true })).toHaveText("0s");
+  await expect(delay.getByRole("radio")).toHaveText(["0s", "3s", "5s", "10s"]);
+  // The same four choices in words: No delay, 3 s, 5 s, 10 s.
+  const said: string[] = [await words()];
+  for (const c of ["3s", "10s", "5s"]) {
+    await delay.getByRole("radio", { name: c, exact: true }).click();
+    said.push(await words());
+  }
+  expect(said).toEqual(["No delay", "3 s", "10 s", "5 s"]);
   await page.reload();
   await page.waitForFunction(() => !!window.__collide);
-  await expect(page.getByTestId("snip-delay")).toHaveValue("5");
+  await expect(page.getByTestId("snip-delay")).toHaveAttribute("data-value", "5");
+  await expect(page.getByTestId("snip-delay").getByRole("radio", { checked: true })).toHaveText("5s");
 });

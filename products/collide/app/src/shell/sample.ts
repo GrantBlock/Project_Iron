@@ -258,6 +258,8 @@ export function sampleArt(s: SampleSnip, width: number = s.w): string | null {
   const key = `${s.id}@${width}`;
   const had = made.get(key);
   if (had) return had;
+  // jsdom has no canvas to draw on (and says so loudly).
+  if (typeof navigator !== "undefined" && /jsdom/i.test(navigator.userAgent)) return null;
   try {
     const el = document.createElement("canvas");
     el.width = width;

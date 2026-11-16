@@ -77,8 +77,10 @@ html, body, #root { height: 100%; }
 body { margin: 0; background: var(--bg); color: var(--t1); font: 400 13.5px/1.45 var(--font-ui); overflow: hidden; transition: background-color 240ms ease-out, color 240ms ease-out; }
 body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
 .app, .app *, .splash, .splash * { box-sizing: border-box; }
-.app button, .app input, .app textarea, .app select, .splash button { font: inherit; color: inherit; }
-.app button, .splash button { cursor: pointer; }
+/* No specificity, so each control's own class decides its font and colour. */
+:where(.app, .splash, .toasts) :where(button, input, textarea, select) { font: inherit; color: inherit; }
+:where(.app, .splash, .toasts) :where(button) { cursor: pointer; }
+.app, .splash, .toasts { letter-spacing: normal; }
 .app :focus-visible, .splash :focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; box-shadow: 0 0 0 3px var(--accent-soft); }
 @media (prefers-reduced-motion: reduce) { .app *, .splash, .splash * { transition: none !important; animation: none !important; } }
 .label { font: var(--label-weight) var(--label-size)/1 var(--font-label); letter-spacing: var(--label-track); text-transform: var(--label-case); color: var(--t3); }
