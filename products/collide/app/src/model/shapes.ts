@@ -1,9 +1,12 @@
 import { z } from "zod";
 
-export const SHAPE_TYPES = ["rect", "ellipse", "line", "point", "cross", "pen", "hl", "arrow", "text", "callout", "highlight"] as const;
+export const SHAPE_TYPES = ["rect", "ellipse", "line", "point", "cross", "pen", "hl", "image", "arrow", "text", "callout", "highlight"] as const;
 export type ShapeType = (typeof SHAPE_TYPES)[number];
 
 const num = z.number().finite();
+
+/** Added images are saved as `image-<n>.png` beside source.png (RUN3 T33). Nothing else is ever read or written. */
+export const IMAGE_FILE = /^image-[1-9][0-9]{0,5}\.png$/;
 
 const base = {
   id: z.string().min(1),
@@ -61,6 +64,9 @@ export const ShapeSchema = z.discriminatedUnion("type", [
     text: z.string(),
     fontSize: num.positive(),
   }),
+  // RUN3 T33: an image added with Add snip or paste. `src` names its file next to source.png in the markup folder
+  // (listed in the document's `images`); x, y, w, h place it in image pixels. In the list without a number or bubble.
+  z.object({ ...base, type: z.literal("image"), src: z.string().regex(IMAGE_FILE) }),
   // A callout marker always carries its number.
   z.object({ ...base, type: z.literal("callout"), callout: z.number().int().min(1) }),
 ]);
@@ -73,6 +79,8 @@ export const AnnotationsSchema = z.object({
     height: num.positive(),
   }),
   shapes: z.array(ShapeSchema),
+  /** RUN3 T33: the added images' files and their size as captured. Optional, so older markups still open. */
+  images: z.array(z.object({ file: z.string().regex(IMAGE_FILE), width: num.positive(), height: num.positive() })).optional(),
 });
 
 export type Shape = z.infer<typeof ShapeSchema>;

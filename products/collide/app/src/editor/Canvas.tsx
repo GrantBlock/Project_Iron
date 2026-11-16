@@ -41,6 +41,8 @@ interface Props {
   /** The eraser took these strokes (one step). */
   onRemoveMany?: (ids: string[]) => void;
   handleRef: React.MutableRefObject<CanvasHandle | null>;
+  /** Added images' pictures by file name (RUN3 T33). */
+  pictures?: ReadonlyMap<string, HTMLImageElement>;
 }
 
 /** Resolve a design-system CSS variable to a colour string Konva can paint. */
@@ -104,6 +106,8 @@ interface NodeProps {
   onMoved?: (id: string, x: number, y: number) => void;
   onEditText?: (id: string) => void;
   onDragMove?: (id: string, x: number, y: number) => void;
+  /** An added image's picture. */
+  picture?: HTMLImageElement;
 }
 
 /** Longest a note label grows before it wraps, in image pixels (A). */
@@ -124,7 +128,7 @@ function NoteLabel({ x, y, note }: { x: number; y: number; note: string }) {
   );
 }
 
-function ShapeNode({ shape, interactive, hidden, onSelect, onMoved, onEditText, onDragMove }: NodeProps) {
+function ShapeNode({ shape, interactive, hidden, onSelect, onMoved, onEditText, onDragMove, picture }: NodeProps) {
   const steel = cssVar("--steel-500");
   const onInk = cssVar("--ink-50");
   const badge = (cx: number, cy: number, n: number) => (
@@ -211,6 +215,14 @@ function ShapeNode({ shape, interactive, hidden, onSelect, onMoved, onEditText, 
       );
       break;
     }
+    case "image":
+      // An added image: its picture, or a plain frame while it loads (RUN3 T33).
+      main = picture ? (
+        <KonvaImage name="main" image={picture} width={shape.w} height={shape.h} />
+      ) : (
+        <Rect name="main" width={shape.w} height={shape.h} fill={cssVar("--surface-2")} stroke={cssVar("--line-2")} strokeWidth={1} />
+      );
+      break;
     case "text":
       main = <Text name="main" text={shape.text} fontSize={shape.fontSize} fontFamily={cssVar("--font-sans")} fill={paint} />;
       break;
@@ -373,7 +385,7 @@ function handlers(shape: Shape, onSelect?: (id: string) => void, onMoved?: (id: 
   };
 }
 
-export function Canvas({ image, shapes, selectedId, tool, style, view, onViewChange, onSize, onAdd, onUpdate, onRemove, onRemoveMany, onSelect, handleRef }: Props) {
+export function Canvas({ image, shapes, selectedId, tool, style, view, onViewChange, onSize, onAdd, onUpdate, onRemove, onRemoveMany, onSelect, handleRef, pictures }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const trRef = useRef<Konva.Transformer>(null);
@@ -743,7 +755,8 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
   const editBox = noteEdit ? notes.get(noteEdit.id) : undefined;
   const editBoxPos = editBox ? imageToScreen(view, { x: editBox.x + (NOTE_PAD + NOTE_BADGE + NOTE_BADGE_GAP) * unit, y: editBox.y + NOTE_PAD * unit }) : null;
   // Shift keeps the aspect (Konva flips keepRatio while Shift is held).
-  const keepRatio = selected?.type === "text";
+  // Added images: corners only, aspect always locked, Shift or not (RUN3 T33).
+  const keepRatio = selected?.type === "text" || selected?.type === "image";
   const cursor = panning ? "grabbing" : spaceDown ? "grab" : tool === "select" ? "default" : "crosshair";
   const draftShape: Shape | null = draft ? ({ ...draftShapeOf(draft, style), id: "draft" } as Shape) : null;
   const inkShape: Shape | null = ink && ink.points.length > 1 ? ({ type: ink.tool, ...fromPoints(ink.points), ...style, id: "ink" } as Shape) : null;
@@ -808,6 +821,7 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
                   }}
                   onDragMove={onShapeDragMove}
                   onEditText={editText}
+                  picture={s.type === "image" ? pictures?.get(s.src) : undefined}
                 />
               ))}
             {image &&
@@ -873,6 +887,7 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
               flipEnabled={false}
               ignoreStroke
               keepRatio={keepRatio}
+              shiftBehavior={selected?.type === "image" ? "none" : "default"}
               enabledAnchors={canResize ? (keepRatio ? ["top-left", "top-right", "bottom-left", "bottom-right"] : ["top-left", "top-center", "top-right", "middle-right", "bottom-right", "bottom-center", "bottom-left", "middle-left"]) : []}
               borderStroke={inkColor}
               borderStrokeWidth={1}

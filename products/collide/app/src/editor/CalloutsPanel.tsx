@@ -15,6 +15,7 @@ const TYPE_LABEL: Record<Shape["type"], string> = {
   cross: "X mark",
   pen: "Pen",
   hl: "Highlighter",
+  image: "Image",
   arrow: "Arrow",
   text: "Text",
   callout: "Callout",
@@ -54,7 +55,7 @@ interface Props {
 
 const tog = { flex: "none", width: 24, height: 24, display: "grid", placeItems: "center", border: "1px solid var(--line-2)", borderRadius: "var(--radius-sm)", cursor: "pointer" } as const;
 
-/** Right pane: every item front to back (RUN3 T32). Callouts get a card, strokes a plain row without a number. */
+/** Right pane: every item front to back (RUN3 T32). Callouts get a card; strokes and added images a plain row without a number. */
 export function CalloutsPanel({ shapes, selectedId, onSelect, onNote, onCommit, onPatch, onReorder, onRemove, focus, onEscape }: Props) {
   const numbers = calloutNumbers(shapes);
   const timer = useRef<number | undefined>(undefined);
@@ -152,12 +153,12 @@ export function CalloutsPanel({ shapes, selectedId, onSelect, onNote, onCommit, 
               <div key={s.id} data-testid="plain-row" {...card}>
                 {grip(s, label)}
                 <span style={{ color: paint, display: "grid", placeItems: "center", paddingTop: 3 }}>
-                  <Icon name={s.type === "hl" ? "highlighter" : "pen-line"} size={14} />
+                  <Icon name={s.type === "hl" ? "highlighter" : s.type === "image" ? "image" : "pen-line"} size={14} />
                 </span>
                 <span style={{ font: "500 12px/20px var(--font-sans)", color: "var(--text-1)" }}>{label}</span>
                 <span style={{ font: "var(--type-sm)", lineHeight: "20px", color: "var(--text-4)" }}>no number</span>
                 <span style={{ flex: 1 }} />
-                {toggle(s, "hideOutline", "square", "Stroke hidden: click to show", "Hide the stroke (Copy and Export too)", hid.outline)}
+                {s.type !== "image" && toggle(s, "hideOutline", "square", "Stroke hidden: click to show", "Hide the stroke (Copy and Export too)", hid.outline)}
                 <button
                   type="button"
                   aria-label={`Delete ${label}`}

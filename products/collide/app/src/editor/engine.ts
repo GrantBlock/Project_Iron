@@ -3,7 +3,20 @@ import type { Shape } from "../model";
 import type { Point } from "./viewport";
 
 /** Pens, highlighters and added images are in the list without a number or a bubble (Grant 2026-11-15). */
-export const isCallout = (s: Pick<Shape, "type">): boolean => s.type !== "pen" && s.type !== "hl";
+export const isCallout = (s: Pick<Shape, "type">): boolean => s.type !== "pen" && s.type !== "hl" && s.type !== "image";
+
+/** Gap between the content and an added image (RUN3 T33, as the prototype: 24 image px). */
+export const IMAGE_GAP = 24;
+
+/**
+ * Where an added image goes (RUN3 T33, Grant 2026-11-15): beside the content, right of the base image and of every
+ * image added before, at the top, as tall as the base image, its aspect kept. The canvas grows to fit (the print area).
+ */
+export function placeBeside(base: { width: number; height: number }, shapes: readonly Shape[], size: { width: number; height: number }): { x: number; y: number; w: number; h: number } {
+  const right = Math.max(base.width, ...shapes.filter((s) => s.type === "image").map((s) => s.x + s.w));
+  const h = base.height;
+  return { x: right + IMAGE_GAP, y: 0, w: Math.round((h * size.width) / size.height), h };
+}
 
 /** Freehand strokes: the eraser takes them whole. */
 export const isStroke = (s: Pick<Shape, "type">): boolean => s.type === "pen" || s.type === "hl";
