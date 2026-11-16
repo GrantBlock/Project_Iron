@@ -412,7 +412,8 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
 
   return (
     <div className="wsfill" data-theme-key={themeKey}>
-      {head({ onSave, canSave: dirty })}
+      {/* Save stays on for an open snip, changed or not, as before the tabs: saving again writes the same folder (ISSUES 21). */}
+      {head({ onSave, canSave: true })}
       <Toolbar
         tool={tool}
         setTool={setTool}

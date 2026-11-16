@@ -104,7 +104,7 @@ test("snip delay: choices match Snipping Tool and the choice is remembered", asy
   await expect(delay.getByRole("radio", { checked: true })).toHaveText("0s");
   await expect(delay.getByRole("radio")).toHaveText(["0s", "3s", "5s", "10s"]);
   // The same four choices in words: No delay, 3 s, 5 s, 10 s.
-  const said: string[] = [await words()];
+  const said: (string | null)[] = [await words()];
   for (const c of ["3s", "10s", "5s"]) {
     await delay.getByRole("radio", { name: c, exact: true }).click();
     said.push(await words());
