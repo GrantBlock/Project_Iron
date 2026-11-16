@@ -3,7 +3,11 @@
 ## Run session 1
 
 - Start (UTC): 2026-11-15T15:38Z · Planner (Irileth). Stop starting new tasks at 19:53Z (4 h 15 min).
-- Usage: the 5-hour limit hit at about 16:30Z during T15 (Grant: resets 12:40 Central = 18:40Z); work resumed 18:41Z. The T15 Coder was resumed, not restarted. New cut-off for starting tasks: 22:55Z (4 h 15 min after the resume).
+- Usage: the 5-hour limit hit three times; each time the agent in flight was resumed, not restarted, after Grant's go-ahead:
+  1. about 16:30Z during T15 (reset 18:40Z, resumed 18:41Z);
+  2. about 20:40Z during T17 (reset 23:40Z per the limit notice; Grant said it had reset and work resumed about 20:50Z);
+  3. during T31, before the Coder committed anything (reset 01:40Z, resumed 01:41Z; T31 restarted from a clean branch).
+  The Fable Coder is the heaviest user: each Coder task cost roughly 120–250k tokens, Reviewer/Tester 70–120k.
 - Merged at start (CLAUDE.md step 1): `claude/intelligent-brown-2hlzyu` (Agent Chat 0.4.x, `tools/project-chat/` only).
 
 ### Board
@@ -16,7 +20,7 @@
 | T16 | Local markup storage | Done (Vitest 319, Playwright 45, Electron e2e 15 ×2; real folder dialog, OneDrive/UNC Documents: manual Grant/Lydia) | n/a (Phase E) |
 | T17 | Remove Tauri | Done (Vitest 319, Playwright 45 (2 of 3 full runs green, see ISSUES 16), Electron e2e 15; no Rust; Reviewer doc fixes applied by Planner) | n/a (Phase E) |
 | T30 | Reference harness | Done (hook in prototype + app; `pnpm ref`; Vitest 327, Playwright 45, Electron e2e 15) | 15 specs: prototype 15/15 ✓ · app 0/15 (expected before T31) |
-| T31 | Layout shell | To do | |
+| T31 | Layout shell | In progress (`task/T31-layout-shell`) | target: tabs-and-close-splash, delete-recents-items, sidebar-toggles on both |
 | T32 | Markup engine | To do | |
 | T33 | Images on canvas | To do | |
 | T34 | Markdown editor | To do | |
@@ -24,6 +28,15 @@
 | T36 | Server storage | To do | |
 | T38 | PDF | To do | |
 | T37 | Handoff | To do | |
+
+### Next (for session 2)
+
+- **First:** finish T31 on `task/T31-layout-shell` (see the board for its state), then Reviewer → Tester → squash into `collide/run`.
+- Then T32 (markup engine), T33, T34 in board order; T35, T36, T38 if usage remains; T37 last.
+- Run the reference: `cd products/collide/app && pnpm ref` (per spec prototype ✓/✗ · app ✓/✗). Electron e2e needs `xvfb-run -a` in the cloud.
+- Playwright e2e has parallel-run flakes (ISSUES 16): rerun a single failure once before treating it as real.
+- Open for Grant: ISSUES 3–5, 8, 9, 11–13, 15, 17–20, and RUN3's questions 2–5 (run uses the (A) defaults).
+- Windows manual checks (Grant/Lydia): TESTER-NOTES items 1–10 on `pnpm electron:dev`, then `pnpm dist` and the portable `.exe` (items 1, 2, 7, 9 at 100% and 150%); real Ctrl+Alt+S; overlay on a second monitor; real folder dialog and a folder outside Markups.
 
 ---
 
