@@ -25,6 +25,7 @@ test("desktop app: no second border or title inside the native Windows frame", a
       hideOverlay: never,
       copyImage: never,
       settingsStatus: async () => null,
+      collapse: async () => ({ maximized: true }),
       onSnipRequest: () => () => undefined,
       markups: { save: never, open: never, pick: never, list: async () => [], remove: never },
       overlay: { emit: () => undefined, on: () => () => undefined },

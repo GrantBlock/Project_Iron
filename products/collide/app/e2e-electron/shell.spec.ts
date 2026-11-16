@@ -36,6 +36,7 @@ test("Electron opens the editor from the Vite dev server", async () => {
 // RUN2.md, "Preload bridge window.collide": these and nothing else.
 const BRIDGE_KEYS = [
   "captureMonitor",
+  "collapse",
   "copyImage",
   "cropCapture",
   "hideEditor",

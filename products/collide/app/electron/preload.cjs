@@ -46,6 +46,7 @@ contextBridge.exposeInMainWorld("collide", {
   hideOverlay: () => call("collide:hide-overlay"),
   copyImage: (png) => call("collide:copy-image", png),
   settingsStatus: () => call("collide:settings-status"),
+  collapse: (state) => call("collide:collapse", state),
   onSnipRequest: (cb) => subscribe(SNIP_REQUEST_CHANNEL, () => cb()),
   markups: {
     save: (folderName, files) => call("collide:markups-save", folderName, files),

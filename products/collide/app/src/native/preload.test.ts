@@ -60,6 +60,7 @@ describe("electron/preload.cjs", () => {
       cropCapture: [{ x: 1, y: 2, w: 3, h: 4 }, 1.5],
       showOverlay: [{ x: -1920, y: 0, width: 1920, height: 1080 }],
       copyImage: ["data:image/png;base64,AAAA"],
+      collapse: [{ collapsed: true, canvas: false }],
       "markups.save": ["2026-11-15_snip", { annotations: "{}" }],
       "markups.open": ["folder"],
       "markups.remove": ["folder"],

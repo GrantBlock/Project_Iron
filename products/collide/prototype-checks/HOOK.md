@@ -43,18 +43,17 @@ RUN3 task T30. The prototype (`../layout-prototype.html`) and the app (`../app/`
 
 Recents and the file tree, the Markdown source text, toasts, the status bar, the print-area frame and its size, the image size. Find these by role, label or text.
 
-## The app today (before T31 to T34)
+## The app today (after T31, before T32 to T34)
 
-The app has one image, no tabs and one editor. A concept the app does not have yet is `null` or `[]`. Until the layout and the engine are built it reports:
+The layout shell is built: tabs, views, themes, the sidebar choices and the two splash screens report the prototype's values. The markup engine inside a Snip tab is still the old one.
 
 | Field | The app today |
 | --- | --- |
-| `view`, `editor` | `"blank"` / `null`, or `"snip"` / `"snip"` while an image is open |
-| `tabs` | `[]` (no tabs) |
-| `mode`, `theme`, `aura`, `splash` | `null` |
-| `activeTool`, `color`, `stroke` | the toolbar's values as the app stores them (the colour is a design-system token), `null` on the empty canvas |
-| `items` | the shapes front to back; `type` and `color` as stored (`callout`, `highlight`, `arrow`, `text`; hex colours); `number` from the callout number; `hidden.bubble` from "Hide #"; `fill` 0 or 100; `points` and `bubble` `null` |
-| `zoom` | the status bar's percent and whether the view is fitted |
-| `sidebar` | `delay` in the prototype's words; `addMode` and `collapsed` `null` |
+| `view`, `tabs`, `splash`, `theme`, `aura`, `sidebar` | as the prototype (T31) |
+| `editor` | `"snip"` or `"markdown"` for the tab in front, else `null` |
+| `mode` | `"edit"` on a Markdown tab (a read-only placeholder until T34), else `null` |
+| `activeTool`, `color`, `stroke` | a Snip tab: the toolbar's values as the app stores them (the colour is a design-system token); `null` elsewhere |
+| `items` | a Snip tab: the shapes front to back; `type` and `color` as stored (`callout`, `highlight`, `arrow`, `text`; hex colours); `number` from the callout number; `hidden.bubble` from "Hide #"; `fill` 0 or 100; `points` and `bubble` `null`. `[]` on a Markdown tab |
+| `zoom` | a Snip tab: the status bar's percent and whether the view is fitted |
 
-The task that builds each part moves its fields to the prototype's values. The app's `window.__collide` also has older helpers (`openImage`, `seedShape`, `getState`, `getDoc`, ...) used by `app/e2e/`; reference specs never call them.
+The reference fixture opens the app with `?sample`, which loads the prototype's sample Recents (`app/src/shell/sample.ts`, dev and test only). The task that builds each remaining part moves its fields to the prototype's values. The app's `window.__collide` also has older helpers (`openImage`, `seedShape`, `getState`, `getDoc`, ...) used by `app/e2e/`; reference specs never call them.

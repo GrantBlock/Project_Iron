@@ -42,6 +42,8 @@ export interface BridgeDeps extends ElectronCaptureDeps {
   copyImage: (png: unknown) => void;
   /** What loading settings.json and registering the hotkey gave; null before that has run. */
   settingsStatus: () => SettingsStatus | null;
+  /** The collapsed window's size (collapse.ts). The argument comes from the page. */
+  collapse: (request: unknown) => { maximized: boolean };
   /** Markup folders, scoped to Documents/Collide/Markups (markups.ts). */
   markups: Markups;
   /** Defaults to the real capturer; tests and the Electron e2e pass a fake. */
@@ -81,6 +83,7 @@ export function registerBridge(deps: BridgeDeps): { state: CaptureState } {
   handle("hideOverlay", () => deps.windows.hideOverlay());
   handle("copyImage", (png) => deps.copyImage(png));
   handle("settingsStatus", () => deps.settingsStatus());
+  handle("collapse", (request) => deps.collapse(request));
 
   // The arguments come from the page: markups.ts checks their types and every path.
   handle("markups.save", (folderName, files) => deps.markups.save(folderName, files));

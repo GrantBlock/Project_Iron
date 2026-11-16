@@ -145,6 +145,34 @@ export function Shell() {
     return () => document.body.classList.remove("compact-bg");
   }, [prefs.collapsed]);
 
+  // The desktop window follows the collapsed layout: windowed, it shrinks to the Recents panel until something is open.
+  // Maximized (and in a browser, where the window cannot shrink) the canvas stays beside the panel.
+  const [maximized, setMaximized] = useState(true);
+  const hasTab = tabs.active !== null;
+  useEffect(() => {
+    const bridge = window.collide;
+    if (typeof bridge?.collapse !== "function") return;
+    let on = true;
+    let timer: number | undefined;
+    const sync = () =>
+      void bridge.collapse({ collapsed: prefs.collapsed, canvas: hasTab }).then(
+        (r) => on && setMaximized(!!r?.maximized),
+        () => undefined,
+      );
+    sync();
+    // Maximizing or restoring the window changes its size: ask again.
+    const resized = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(sync, 150);
+    };
+    window.addEventListener("resize", resized);
+    return () => {
+      on = false;
+      window.clearTimeout(timer);
+      window.removeEventListener("resize", resized);
+    };
+  }, [prefs.collapsed, hasTab]);
+
   // ---------- Recents ----------
   const [samples, setSamples] = useState<RecentItem[]>(() =>
     wantsSample() ? sampleRecents().map((r) => (r.kind === "snip" && r.source.from === "sample" ? { ...r, thumb: sampleThumb(r.source.sample) } : r)) : [],
@@ -544,8 +572,7 @@ export function Shell() {
   }
 
   const frontFile = front && file ? (front.key.startsWith("doc:") ? front.key.slice(4) : null) : null;
-  // In a browser the window cannot shrink to the panel, so a collapsed window always keeps its canvas (as when maximized).
-  const cls = ["app", prefs.collapsed ? "compact with-canvas" : "", sideOpen ? "side-open" : ""].filter(Boolean).join(" ");
+  const cls = ["app", prefs.collapsed ? "compact" : "", prefs.collapsed && (maximized || hasTab) ? "with-canvas" : "", sideOpen ? "side-open" : ""].filter(Boolean).join(" ");
   const closing = ask?.kind === "close" ? tabs.tabs.find((t) => t.id === ask.tabId) : undefined;
   const deleting = ask?.kind === "delete" ? ask.item : undefined;
   const openTabsOfDeleting = deleting ? tabs.tabs.filter((t) => t.owner === deleting.id).length : 0;
