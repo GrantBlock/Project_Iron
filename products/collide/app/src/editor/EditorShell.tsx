@@ -432,7 +432,7 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
         canUndo={canUndo}
         canRedo={canRedo}
       />
-      <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
+      <div className="snipbody">
         <Canvas
           image={image}
           shapes={shapes}

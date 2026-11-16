@@ -43,6 +43,7 @@ export function CalloutsPanel({ shapes, selectedId, onSelect, onNote, onCommit, 
   return (
     <aside
       data-testid="inspector"
+      className="snipside"
       aria-label="Callouts"
       style={{ width: "var(--layout-inspector)", flex: "none", display: "flex", flexDirection: "column", borderLeft: "1px solid var(--line-1)", background: "var(--surface-1)", boxSizing: "border-box", minHeight: 0 }}
     >

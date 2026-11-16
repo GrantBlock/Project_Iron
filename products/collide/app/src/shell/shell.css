@@ -203,6 +203,8 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
 .savedstate.dirty .d { background: var(--warn); }
 .wsbody { flex: 1; display: grid; grid-template-columns: minmax(0,1fr) 288px; min-height: 0; }
 .wsfill { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+/* A Snip tab: the canvas with the Callouts list beside it (below it on a phone). */
+.snipbody { flex: 1; min-height: 0; display: flex; }
 .blank { flex: 1; display: grid; place-items: center; position: relative; background-color: var(--canvas); background-image: radial-gradient(var(--canvas-dot) 1px, transparent 1.2px); background-size: 16px 16px; }
 .blank .in { display: grid; justify-items: center; gap: 10px; text-align: center; padding: 24px; max-width: 360px; color: var(--t3); }
 .blank .in b { color: var(--t1); font-size: 15px; }
@@ -264,5 +266,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
   .app.side-open .side { transform: none; }
   .wsbody { grid-template-columns: minmax(0,1fr); grid-template-rows: minmax(0,1fr) auto; }
   .numbered { border-left: 0; border-top: var(--border-w) solid var(--line); max-height: 38vh; }
+  .snipbody { flex-direction: column; }
+  .snipbody .snipside { width: auto !important; max-height: 38vh; border-left: 0 !important; border-top: 1px solid var(--line-1); }
   .wshead .path, .savedstate .lbl { display: none; }
 }
