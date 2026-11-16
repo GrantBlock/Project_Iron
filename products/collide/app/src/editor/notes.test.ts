@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Shape } from "../model";
-import { hasNoteBox, layoutNotes, leader, leaderTarget, nearestSide, NOTE_GAP, NOTE_PAD, NOTE_CHIP_W, NOTE_STACK_GAP, NOTE_W, noteSize, POINT_CLEARANCE, noteHeight, placeNote } from "./notes";
+import { hasNoteBox, layoutNotes, leader, leaderTarget, nearestSide, NOTE_GAP, NOTE_PAD, NOTE_CHIP_W, NOTE_STACK_GAP, NOTE_TILT, NOTE_W, noteSize, POINT_CLEARANCE, noteHeight, placeNote, snapNote } from "./notes";
 
 const img = { width: 400, height: 300 };
 const base = { stroke: "#f00", strokeWidth: 2 };
@@ -15,18 +15,31 @@ describe("note box layout", () => {
     expect(nearestSide({ x: 200, y: 295 }, img)).toBe("bottom");
   });
 
-  it("places a box outside the image, lined up with the shape", () => {
+  it("places a box outside the image, off the shape's centre line (box above the line, angled leader)", () => {
     const b = placeNote({ x: 0, y: 140, w: 20, h: 20 }, img, { w: 100, h: 30 }, []);
-    expect(b).toEqual({ x: -NOTE_GAP - 100, y: 135, w: 100, h: 30 });
+    expect(b).toEqual({ x: -NOTE_GAP - 100, y: 135 - NOTE_TILT, w: 100, h: 30, side: "left" });
+    const [x1, y1, x2, y2] = leader({ type: "rect", x: 0, y: 140, w: 20, h: 20 }, b)!;
+    const deg = (Math.atan2(Math.abs(y2 - y1), Math.abs(x2 - x1)) * 180) / Math.PI;
+    expect(deg).toBeGreaterThan(10);
+    expect(deg).toBeLessThan(30);
     const r = placeNote({ x: 380, y: 140, w: 20, h: 20 }, img, { w: 100, h: 30 }, []);
     expect(r.x).toBe(400 + NOTE_GAP);
   });
 
-  it("stacks boxes on the same side so they never overlap", () => {
+  it("stacks boxes beside each other (right, bottom, top or left) so they never overlap, off the image", () => {
     const shapes = [rect("a1", 0, 100), rect("a2", 0, 105), rect("a3", 0, 110)];
     const boxes = [...layoutNotes(shapes, img, () => 15).values()];
-    for (let i = 1; i < boxes.length; i++) expect(boxes[i].y).toBeGreaterThanOrEqual(boxes[i - 1].y + boxes[i - 1].h + NOTE_STACK_GAP);
-    expect(boxes.every((b) => b.x + b.w <= 0)).toBe(true);
+    const apart = (a: (typeof boxes)[number], b: (typeof boxes)[number]) =>
+      a.x + a.w + NOTE_STACK_GAP <= b.x || b.x + b.w + NOTE_STACK_GAP <= a.x || a.y + a.h + NOTE_STACK_GAP <= b.y || b.y + b.h + NOTE_STACK_GAP <= a.y;
+    for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) expect(apart(boxes[i], boxes[j])).toBe(true);
+    expect(boxes.every((b) => b.x + b.w <= 0 || b.y + b.h <= 0 || b.y >= img.height)).toBe(true);
+  });
+
+  it("a dropped box snaps beside a nearby box, edges lined up; far away it stays", () => {
+    const other = { x: 0, y: 0, w: 100, h: 30 };
+    expect(snapNote({ x: 110, y: 3, w: 80, h: 30 }, [other], 10)).toEqual({ x: 100 + NOTE_STACK_GAP, y: 0 });
+    expect(snapNote({ x: 2, y: 40, w: 80, h: 30 }, [other], 10)).toEqual({ x: 0, y: 30 + NOTE_STACK_GAP });
+    expect(snapNote({ x: 300, y: 300, w: 80, h: 30 }, [other], 10)).toBeNull();
   });
 
   it("keeps a box the user moved/resized and fits its height to the text", () => {

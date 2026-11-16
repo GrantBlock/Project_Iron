@@ -672,8 +672,9 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
     e.stopPropagation();
     onSelect(id);
     bubbleDrag.current = { id, x: e.clientX, y: e.clientY, box: b, moved: false };
+    const start = bubbleDrag.current;
     const at = (ev: PointerEvent) => {
-      const d = bubbleDrag.current!;
+      const d = start;
       const k = live.current.view.scale;
       return { x: d.box.x + (ev.clientX - d.x) / k, y: d.box.y + (ev.clientY - d.y) / k };
     };
