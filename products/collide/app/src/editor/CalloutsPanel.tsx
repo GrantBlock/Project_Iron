@@ -252,6 +252,7 @@ export function CalloutsPanel({ shapes, selectedId, onSelect, onNote, onCommit, 
         })}
         {front.length === 0 && <div style={{ font: "var(--type-sm)", color: "var(--text-4)" }}>Draw on the image to add a callout.</div>}
       </div>
+      <div data-testid="ai-pane" style={{ flex: "none", borderTop: "1px solid var(--line-1)" }} />
     </aside>
   );
 }

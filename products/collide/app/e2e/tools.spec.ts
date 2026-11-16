@@ -56,10 +56,13 @@ test("draws one of each tool; the doc has the expected types and bounds (100% an
   // Rectangle at 100%, dragged down-right.
   await page.keyboard.press("r");
   await drag(page, [40, 30], [140, 90]);
+  // T32: the new callout's note has the cursor; Esc leaves it.
+  await page.keyboard.press("Escape");
 
   // Ellipse at 100%, dragged up-left (bounds must still be normalised).
   await page.keyboard.press("o");
   await drag(page, [300, 200], [220, 150]);
+  await page.keyboard.press("Escape");
 
   // Zoom in around the canvas centre, then draw the rest at a non-100% zoom.
   const area = (await page.getByTestId("canvas").boundingBox())!;
@@ -85,25 +88,34 @@ test("draws one of each tool; the doc has the expected types and bounds (100% an
   // Every shape is numbered in order.
   expect(doc.shapes.map((s) => s.callout)).toEqual([1, 2, 3]);
   expect(new Set(doc.shapes.map((s) => s.id)).size).toBe(3);
-  for (const s of doc.shapes) expect(s.stroke).toMatch(/^#[0-9a-f]{6}$/i);
+  // T32: colours are stored as one of the four annotation colours.
+  for (const s of doc.shapes) expect(s.stroke).toMatch(/^(red|blue|yellow|gray)$/);
 });
 
-test("X mark, filled rectangle and filled ellipse: drawn, numbered, filled, and the X resizes", async ({ page }) => {
-  await page.getByRole("button", { name: "Filled rectangle" }).click();
+test("X mark, and a rectangle and an ellipse filled with Fill %: drawn, numbered, filled, and the X resizes", async ({ page }) => {
+  // T32 (Grant 2026-11-15): the filled tools are gone; a card's Fill % fills a rectangle or an ellipse.
+  await page.getByRole("button", { name: "Rectangle", exact: true }).click();
   await drag(page, [20, 20], [100, 70]);
-  await page.getByRole("button", { name: "Filled ellipse" }).click();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Ellipse", exact: true }).click();
   await drag(page, [150, 20], [230, 70]);
+  await page.keyboard.press("Escape");
   await page.keyboard.press("x");
   await drag(page, [260, 160], [340, 240]);
+  await page.keyboard.press("Escape");
+  await page.getByRole("slider", { name: "Fill of callout 1, percent" }).fill("100");
+  await page.getByRole("slider", { name: "Fill of callout 2, percent" }).fill("100");
   let doc = await getDoc(page);
-  expect(doc.shapes.map((s) => [s.type, (s as { fill?: boolean }).fill ?? false, s.callout])).toEqual([
-    ["rect", true, 1],
-    ["ellipse", true, 2],
-    ["cross", false, 3],
+  expect(doc.shapes.map((s) => [s.type, (s as { fillPct?: number }).fillPct ?? 0, s.callout])).toEqual([
+    ["rect", 100, 1],
+    ["ellipse", 100, 2],
+    ["cross", 0, 3],
   ]);
   for (const [k, v] of Object.entries({ x: 260, y: 160, w: 80, h: 80 })) near(doc.shapes[2][k as "x"], v, `cross.${k}`);
-  await expect(page.getByTestId("callout-row").nth(0)).toContainText("Filled rectangle");
-  await expect(page.getByTestId("callout-row").nth(2)).toContainText("X mark");
+  // The list runs front to back: the X (callout 3) first, the rectangle (callout 1) last.
+  await expect(page.getByRole("combobox", { name: "Type of callout 1" })).toHaveValue("rect");
+  await expect(page.getByRole("combobox", { name: "Type of callout 3" })).toHaveValue("cross");
+  await expect(page.getByTestId("callout-row").nth(0).getByTestId("callout-badge")).toHaveText("3");
 
   // The filled rectangle paints its colour inside (sample the canvas at its centre).
   const c = await toPage(page, 60, 45);
@@ -116,11 +128,10 @@ test("X mark, filled rectangle and filled ellipse: drawn, numbered, filled, and 
     },
     [c.x, c.y],
   );
-  expect(px[0]).toBeGreaterThan(200); // signal red fill, not the dark image underneath
+  expect(px[0]).toBeGreaterThan(200); // red fill, not the dark image underneath
   expect(px[2]).toBeLessThan(120);
 
   // Select the X on its stroke and resize it from the bottom-right corner.
-  await page.keyboard.press("v");
   const onStroke = await toPage(page, 280, 180);
   await page.mouse.click(onStroke.x, onStroke.y);
   const corner = await toPage(page, 340, 240);
@@ -136,7 +147,8 @@ test("X mark, filled rectangle and filled ellipse: drawn, numbered, filled, and 
 test("select, move, resize with a Transformer handle, and delete", async ({ page }) => {
   await page.keyboard.press("r");
   await drag(page, [100, 80], [220, 140]);
-  await page.keyboard.press("v");
+  // T32: the new note has the cursor; Esc leaves it and goes back to Select.
+  await page.keyboard.press("Escape");
 
   // Move: grab the interior and drag by (+60, +30).
   const mid = await toPage(page, 160, 110);
@@ -189,11 +201,11 @@ test("toolbar buttons select tools and the stroke width applies to new shapes", 
   await page.getByRole("button", { name: "Rectangle", exact: true }).click();
   await expect(page.getByTestId("canvas")).toHaveAttribute("data-tool", "rect");
   await page.getByRole("button", { name: "Stroke 5" }).click();
-  await page.getByTestId("swatch").nth(1).click();
+  await page.getByRole("button", { name: "Blue", exact: true }).click();
   await drag(page, [20, 20], [120, 90]);
   const [s] = (await getDoc(page)).shapes;
   expect(s.strokeWidth).toBe(5);
-  expect(s.stroke.toLowerCase()).toBe("#4c87c4");
+  expect(s.stroke).toBe("blue");
 });
 
 test("Space does not preventDefault when a toolbar button has focus", async ({ page }) => {
