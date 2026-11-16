@@ -1,5 +1,9 @@
 # Collide — Run 2 + 3 Handoff (scheduled run, `collide/run`)
 
+## Run session 2
+
+- Start (UTC): 2026-11-16T22:11Z · Planner (Irileth). Grant: use the remaining usage; when the limit is reached, park and stop (no auto-continue).
+
 ## Run session 1
 
 - Start (UTC): 2026-11-15T15:38Z · Planner (Irileth). Stop starting new tasks at 19:53Z (4 h 15 min).
