@@ -4,10 +4,10 @@ import { Arrow, Circle, Ellipse, Group, Image as KonvaImage, Label, Layer, Line,
 import Konva from "konva";
 import type { Shape } from "../model";
 import { BADGE_SIZE, isRealDrag, resizeShape, shapeFromDrag, type DrawTool, type Style } from "./geometry";
-import { hasNoteBox, layoutNotes, leader, NOTE_BADGE, NOTE_BADGE_GAP, NOTE_FONT, NOTE_MIN_W, NOTE_PAD, NOTE_W, noteSize, noteTextWidth, type Box } from "./notes";
+import { hasNoteBox, layoutNotes, leader, noteUnit, snapNote, NOTE_BADGE, NOTE_BADGE_GAP, NOTE_FONT, NOTE_MIN_W, NOTE_PAD, NOTE_W, noteSize, noteTextWidth, type Box } from "./notes";
 import type { NewShape, ShapePatch } from "./store";
 import { paintOf, type Tool } from "./tools";
-import { fillPctOf, fromPoints, hiddenOf, highlighterWidth, strokesHit } from "./engine";
+import { calloutNumbers, fillPctOf, fromPoints, hiddenOf, highlighterWidth, pixelArea, printArea, strokesHit } from "./engine";
 import { imageToScreen, panBy, screenToImage, wheelFactor, zoomAt, type Point, type Size, type View } from "./viewport";
 
 export interface LoadedImage {
@@ -20,6 +20,8 @@ export interface LoadedImage {
 export interface CanvasHandle {
   stage: () => Konva.Stage | null;
   container: () => HTMLDivElement | null;
+  /** The note bubbles as laid out now (image px). */
+  notes: () => ReadonlyMap<string, Box>;
 }
 
 interface Props {
@@ -248,6 +250,10 @@ function ShapeNode({ shape, interactive, hidden, onSelect, onMoved, onEditText, 
 
 interface NoteBoxProps {
   shape: Shape;
+  /** Display number (counted from the back). */
+  number: number;
+  /** Note unit: image px per bubble unit. */
+  u: number;
   box: Box;
   selected: boolean;
   interactive: boolean;
@@ -258,8 +264,10 @@ interface NoteBoxProps {
 }
 
 /** A numbered note box (auto-fit height, drag to move, drag the right edge to resize). */
-function NoteBox({ shape, box, selected, interactive, onSelect, onMove, onResize, onEdit }: NoteBoxProps) {
-  const note = shape.note?.trim() ?? "";
+function NoteBox({ shape, number, u, box: outer, selected, interactive, onSelect, onMove, onResize, onEdit }: NoteBoxProps) {
+  const note = hiddenOf(shape).text ? "" : (shape.note?.trim() ?? "");
+  // Drawn in bubble units inside a group scaled by u.
+  const box = { ...outer, w: outer.w / u, h: outer.h / u };
   const empty = note === "";
   const fontFamily = cssVar("--font-sans");
   const textX = NOTE_PAD + NOTE_BADGE + NOTE_BADGE_GAP;
@@ -271,8 +279,10 @@ function NoteBox({ shape, box, selected, interactive, onSelect, onMove, onResize
     <Group
       name={hiddenOf(shape).bubble ? "note-box note-hidden" : "note-box"}
       opacity={hiddenOf(shape).bubble ? 0.35 : 1}
-      x={box.x}
-      y={box.y}
+      x={outer.x}
+      y={outer.y}
+      scaleX={u}
+      scaleY={u}
       listening={interactive}
       draggable={interactive}
       onMouseDown={(e) => {
@@ -302,7 +312,7 @@ function NoteBox({ shape, box, selected, interactive, onSelect, onMove, onResize
         height={NOTE_BADGE}
         align="center"
         verticalAlign="middle"
-        text={String(shape.callout)}
+        text={String(number)}
         fontSize={10}
         fontStyle="600"
         fontFamily={cssVar("--font-mono")}
@@ -337,11 +347,11 @@ function NoteBox({ shape, box, selected, interactive, onSelect, onMove, onResize
             e.cancelBubble = true;
             const w = Math.max(NOTE_MIN_W, e.target.x() + 4);
             e.target.position({ x: w - 4, y: 0 });
-            onResize(shape.id, w, false);
+            onResize(shape.id, w * u, false);
           }}
           onDragEnd={(e) => {
             e.cancelBubble = true;
-            onResize(shape.id, Math.max(NOTE_MIN_W, e.target.x() + 4), true);
+            onResize(shape.id, Math.max(NOTE_MIN_W, e.target.x() + 4) * u, true);
           }}
         />
       )}
@@ -389,7 +399,8 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
   const live = useRef({ view, tool, style, onAdd, onRemoveMany, shapes });
   live.current = { view, tool, style, onAdd, onRemoveMany, shapes };
 
-  handleRef.current = { stage: () => stageRef.current, container: () => wrapRef.current };
+  const notesRef = useRef<ReadonlyMap<string, Box>>(new Map());
+  handleRef.current = { stage: () => stageRef.current, container: () => wrapRef.current, notes: () => notesRef.current };
 
   // Measure once before the first paint: a Snip tab mounts its canvas when it opens, and whoever opened it
   // (the test hook too) expects the stage to be there as soon as the tab is.
@@ -639,11 +650,58 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
       const b = boxes.get(moving.id);
       const s = liveShapes.find((x) => x.id === moving.id);
       if (b && s) {
-        boxes.set(moving.id, { ...b, ...(moving.box ?? {}), ...noteSize(s, moving.w ?? b.w, measureNote) });
+        const nu = noteUnit(image);
+        const size = noteSize(s, (moving.w ?? b.w) / nu, measureNote);
+        boxes.set(moving.id, { ...b, ...(moving.box ?? {}), w: size.w * nu, h: size.h * nu });
       }
     }
     return boxes;
   }, [liveShapes, image, moving]);
+  notesRef.current = notes;
+  const numbers = useMemo(() => calloutNumbers(shapes), [shapes]);
+  const unit = image ? noteUnit(image) : 1;
+  const uk = unit * view.scale;
+  const area = useMemo(() => (image ? printArea(image, shapes, notes) : null), [image, shapes, notes]);
+  const areaPx = area ? pixelArea(area) : null;
+  /** A bubble being dragged from the overlay: pointer and box at the start. */
+  const bubbleDrag = useRef<{ id: string; x: number; y: number; box: Box; moved: boolean } | null>(null);
+  const onBubbleDown = (id: string) => (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    const b = notes.get(id);
+    if (!b) return;
+    e.stopPropagation();
+    onSelect(id);
+    bubbleDrag.current = { id, x: e.clientX, y: e.clientY, box: b, moved: false };
+    const at = (ev: PointerEvent) => {
+      const d = bubbleDrag.current!;
+      const k = live.current.view.scale;
+      return { x: d.box.x + (ev.clientX - d.x) / k, y: d.box.y + (ev.clientY - d.y) / k };
+    };
+    const move = (ev: PointerEvent) => {
+      const d = bubbleDrag.current;
+      if (!d) return;
+      if (!d.moved && Math.hypot(ev.clientX - d.x, ev.clientY - d.y) < 3) return;
+      d.moved = true;
+      setMoving({ id, box: at(ev) });
+    };
+    const up = (ev: PointerEvent) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+      const d = bubbleDrag.current;
+      bubbleDrag.current = null;
+      setMoving(null);
+      if (!d || !d.moved || ev.type !== "pointerup") return;
+      const p = at(ev);
+      // Dropped near a spot beside another bubble: it snaps there.
+      const others = [...notes.entries()].filter(([k]) => k !== id).map(([, v]) => v);
+      const snap = snapNote({ ...d.box, ...p }, others, 16 / live.current.view.scale);
+      onUpdate(id, { label: { ...(snap ?? p), w: d.box.w } });
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
+  };
 
   const onShapeDragMove = (id: string, x: number, y: number) => {
     // A rect/ellipse/point node sits at (x, y); an ellipse's Group is at its top-left too.
@@ -682,7 +740,7 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
     if (cur && value !== null && value.trim() !== (shapes.find((x) => x.id === cur.id)?.note ?? "").trim()) onUpdate(cur.id, { note: value.trim() });
   };
   const editBox = noteEdit ? notes.get(noteEdit.id) : undefined;
-  const editBoxPos = editBox ? imageToScreen(view, { x: editBox.x + NOTE_PAD + NOTE_BADGE + NOTE_BADGE_GAP, y: editBox.y + NOTE_PAD }) : null;
+  const editBoxPos = editBox ? imageToScreen(view, { x: editBox.x + (NOTE_PAD + NOTE_BADGE + NOTE_BADGE_GAP) * unit, y: editBox.y + NOTE_PAD * unit }) : null;
   // Shift keeps the aspect (Konva flips keepRatio while Shift is held).
   const keepRatio = selected?.type === "text";
   const cursor = panning ? "grabbing" : spaceDown ? "grab" : tool === "select" ? "default" : "crosshair";
@@ -695,6 +753,8 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
       ref={wrapRef}
       data-testid="canvas"
       data-tool={tool}
+      role={image ? "img" : undefined}
+      aria-label={image?.name}
       onPointerDownCapture={onPointerDownCapture}
       onContextMenu={(e) => e.preventDefault()}
       onPointerDown={onPointerDown}
@@ -778,6 +838,8 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
                   <NoteBox
                     key={`note-${s.id}`}
                     shape={s}
+                    number={numbers.get(s.id) ?? 0}
+                    u={unit}
                     box={box}
                     selected={s.id === selectedId}
                     interactive={tool === "select" && noteEdit?.id !== s.id}
@@ -790,6 +852,20 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
               })}
             {draftShape && <ShapeNode shape={draftShape} interactive={false} />}
             {inkShape && <ShapeNode shape={inkShape} interactive={false} />}
+            {area && (
+              <Rect
+                name="print-area"
+                x={area.x}
+                y={area.y}
+                width={area.w}
+                height={area.h}
+                stroke={inkColor}
+                opacity={0.5}
+                strokeWidth={1 / view.scale}
+                dash={[6 / view.scale, 4 / view.scale]}
+                listening={false}
+              />
+            )}
             <Transformer
               ref={trRef}
               rotateEnabled={false}
@@ -813,6 +889,57 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
             />
           </Layer>
         </Stage>
+      )}
+      {image && (
+        <div data-testid="bubble-layer" style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
+          {areaPx && area && (() => {
+            const p = imageToScreen(view, { x: area.x, y: area.y });
+            return (
+              <span style={{ position: "absolute", left: p.x, top: Math.max(0, p.y - 16), font: "500 10px/14px var(--font-mono)", color: "var(--text-3)", whiteSpace: "nowrap" }}>
+                {`Print area · ${areaPx.width} × ${areaPx.height}`}
+              </span>
+            );
+          })()}
+          {liveShapes.map((s) => {
+            const b = notes.get(s.id);
+            if (!b || noteEdit?.id === s.id) return null;
+            const p = imageToScreen(view, b);
+            const text = hiddenOf(s).text ? "" : (s.note?.trim() ?? "");
+            return (
+              <div
+                key={s.id}
+                data-testid="bubble"
+                onPointerDown={tool === "select" ? onBubbleDown(s.id) : undefined}
+                onDoubleClick={() => editNote(s.id)}
+                style={{
+                  position: "absolute",
+                  left: p.x,
+                  top: p.y,
+                  width: Math.max(0, b.w * view.scale - 6),
+                  height: b.h * view.scale,
+                  pointerEvents: tool === "select" ? "auto" : "none",
+                  cursor: "move",
+                }}
+              >
+                {text && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      left: (NOTE_PAD + NOTE_BADGE + NOTE_BADGE_GAP) * uk,
+                      top: NOTE_PAD * uk,
+                      width: noteTextWidth(b.w / unit) * uk,
+                      font: `400 ${NOTE_FONT * uk}px/1.25 var(--font-sans)`,
+                      color: "transparent",
+                      userSelect: "none",
+                    }}
+                  >
+                    {text}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
       )}
       {edit && editPos && (
         <textarea
@@ -874,8 +1001,8 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
             position: "absolute",
             left: editBoxPos.x,
             top: editBoxPos.y,
-            width: noteTextWidth(Math.max(editBox.w, NOTE_W)) * view.scale,
-            height: Math.max(editBox.h - NOTE_PAD * 2, NOTE_BADGE) * view.scale,
+            width: noteTextWidth(Math.max(editBox.w / unit, NOTE_W)) * uk,
+            height: Math.max(editBox.h / unit - NOTE_PAD * 2, NOTE_BADGE) * uk,
             margin: 0,
             padding: 0,
             border: 0,
@@ -885,7 +1012,7 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
             overflow: "hidden",
             background: "var(--surface-2)",
             color: "var(--text-1)",
-            font: `400 ${NOTE_FONT * view.scale}px/1.25 var(--font-sans)`,
+            font: `400 ${NOTE_FONT * uk}px/1.25 var(--font-sans)`,
           }}
         />
       )}

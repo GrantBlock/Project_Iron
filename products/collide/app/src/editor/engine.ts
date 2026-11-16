@@ -93,3 +93,47 @@ export function strokesHit(shapes: readonly Shape[], a: Point, b: Point, reach: 
 
 /** A highlighter is a wide, see-through stroke (A: four times the line thickness). */
 export const highlighterWidth = (stroke: number) => stroke * 4;
+
+/** Space around anything that spills past the image, in image pixels (Grant 2026-11-15: a tight margin). */
+export const PRINT_MARGIN = 12;
+
+export interface Area {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * The print area: what Copy takes and Fit shows. The image, every shape and every shown note bubble,
+ * with PRINT_MARGIN when anything spills past the image.
+ */
+export function printArea(image: { width: number; height: number }, shapes: readonly Shape[], bubbles: ReadonlyMap<string, Area>): Area {
+  let x0 = 0;
+  let y0 = 0;
+  let x1 = image.width;
+  let y1 = image.height;
+  const add = (a: number, b: number, c: number, d: number) => {
+    x0 = Math.min(x0, a);
+    y0 = Math.min(y0, b);
+    x1 = Math.max(x1, c);
+    y1 = Math.max(y1, d);
+  };
+  for (const s of shapes) {
+    const width = s.type === "hl" ? highlighterWidth(s.strokeWidth) : s.strokeWidth;
+    const pad = width / 2 + (s.type === "point" ? Math.max(4, s.strokeWidth * 1.5) : 0);
+    add(s.x - pad, s.y - pad, s.x + s.w + pad, s.y + s.h + pad);
+    const b = bubbles.get(s.id);
+    if (b && !hiddenOf(s).bubble) add(b.x, b.y, b.x + b.w, b.y + b.h);
+  }
+  const spill = x0 < 0 || y0 < 0 || x1 > image.width || y1 > image.height;
+  const m = spill ? PRINT_MARGIN : 0;
+  return { x: x0 - m, y: y0 - m, w: x1 - x0 + 2 * m, h: y1 - y0 + 2 * m };
+}
+
+/** Whole pixels of an area, as Copy renders it. */
+export function pixelArea(a: Area): { x: number; y: number; width: number; height: number } {
+  const x = Math.floor(a.x);
+  const y = Math.floor(a.y);
+  return { x, y, width: Math.ceil(a.x + a.w) - x, height: Math.ceil(a.y + a.h) - y };
+}

@@ -10,9 +10,10 @@ import { useEditorStore } from "./useEditorStore";
 import { StatusBar } from "./StatusBar";
 import { CalloutsPanel } from "./CalloutsPanel";
 import { Toolbar } from "./Toolbar";
-import { copyPngToClipboard, dataUrlToBlob, downloadPng, exportFileName, flatten, flattenFit, type Flattened } from "../io/flatten";
+import { copyPngToClipboard, dataUrlToBlob, downloadPng, exportFileName, flatten, flattenArea, flattenFit, type Flattened } from "../io/flatten";
+import { printArea } from "./engine";
 import { isPng, MarkupError, markupFolderName, type MarkupStore } from "../io";
-import { fitView, recentre, screenToImage, type Point, type Size, type View } from "./viewport";
+import { fitArea, recentre, screenToImage, type Point, type Size, type View } from "./viewport";
 import type { RefInput } from "./refState";
 
 // The Snip editor (canvas, tools, callouts) as it lives inside a Snip tab (RUN3 T31).
@@ -168,6 +169,12 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
     pen.strokeWidth = strokeWidth;
   });
 
+  // The print area (image, shapes and shown bubbles, tight margin): Fit and Copy use it.
+  const areaNow = useCallback(
+    () => printArea(image, stateRef.current.doc?.shapes ?? [], handleRef.current?.notes() ?? new Map()),
+    [image, stateRef],
+  );
+
   // The view a tab had comes back as it was; a fitted view (and a new tab) fits to the canvas.
   const restore = useRef(session.view !== null && !session.fitted);
   const onSize = useCallback(
@@ -177,16 +184,16 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
       sizeRef.current = s;
       const first = prev.width === 0 || prev.height === 0;
       if (first && restore.current) return;
-      if (fittedRef.current || first) setViewState(fitView(s, image));
+      if (fittedRef.current || first) setViewState(fitArea(s, areaNow()));
       else setViewState((v) => recentre(v, prev, s));
     },
-    [image],
+    [areaNow],
   );
 
   const fitToWindow = useCallback(() => {
     fittedRef.current = true;
-    setViewState(fitView(sizeRef.current, image));
-  }, [image]);
+    setViewState(fitArea(sizeRef.current, areaNow()));
+  }, [areaNow]);
 
   // Unsaved changes: the document is not the one last saved or opened.
   const dirty = state.doc !== session.baseDoc;
@@ -250,18 +257,27 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
     );
   }, [exportPng, image, notify]);
 
-  // Copy: the image plus every annotation (auto-cropped, canvas background outside the image) to the clipboard.
+  // Copy: the print area (the image, shapes and shown bubbles, tight margin) to the clipboard.
+  const copyArea = useCallback(async (): Promise<Flattened> => {
+    const stage = handleRef.current?.stage();
+    if (!stage) throw new Error("Nothing to copy: no image is open.");
+    const a = areaNow();
+    return flattenArea(stage, { x: a.x, y: a.y, width: a.w, height: a.h }, cssVar("--bg-canvas"));
+  }, [areaNow]);
   const copyToClipboard = useCallback(
     (title: string) =>
-      copyFit()
-        .then((f) => copyPngToClipboard(f.dataUrl))
+      copyArea()
+        .then(async (f) => {
+          await copyPngToClipboard(f.dataUrl);
+          return f;
+        })
         .then(
-          () => notify({ tone: "success", title, description: "Paste the marked-up image into any app." }),
+          (f) => notify({ tone: "success", title, description: `${f.width} × ${f.height} with note boxes` }),
           (e: unknown) => fail(e, "Copy failed"),
         ),
-    [copyFit, fail, notify],
+    [copyArea, fail, notify],
   );
-  const onCopy = useCallback(() => void copyToClipboard("Copied to clipboard"), [copyToClipboard]);
+  const onCopy = useCallback(() => void copyToClipboard("Copied the print area"), [copyToClipboard]);
 
   // After a draw no colour stays pressed; a new callout's note takes the cursor.
   const onAdd = useCallback(
@@ -384,6 +400,7 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
         strokeWidth: live.current.strokeWidth,
         scale: live.current.view.scale,
         fitted: fittedRef.current,
+        bubbles: handleRef.current?.notes(),
       }),
       seedShape: (s) => {
         const id = nextShapeId(stateRef.current.doc?.shapes ?? []);
