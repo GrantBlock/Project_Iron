@@ -62,6 +62,6 @@ describe("Recents rows", () => {
     expect(d.source).toEqual({ kind: "image", width: 1280, height: 720 });
     expect(d.shapes.map((s) => [s.type, s.callout, s.fill ?? false])).toEqual([["rect", 1, false], ["ellipse", 2, false], ["rect", 3, true], ["point", 4, false]]);
     expect(d.shapes[0]).toMatchObject({ x: 428, y: 236, w: 192, h: 148, note: "Guard bracket cracked at the weld. Re-weld before next PM." });
-    expect(sampleDoc(SAMPLE_SNIPS[1]).shapes[1]).toMatchObject({ type: "cross", hideNumber: true });
+    expect(sampleDoc(SAMPLE_SNIPS[1]).shapes[1]).toMatchObject({ type: "cross", hideBubble: true });
   });
 });

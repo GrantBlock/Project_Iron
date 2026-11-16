@@ -4,6 +4,13 @@
 import circleFilled from "./glyphs/circle-filled.svg?url";
 import squareFilled from "./glyphs/square-filled.svg?url";
 import crop from "lucide-static/icons/crop.svg?url";
+import eraserIcon from "lucide-static/icons/eraser.svg?url";
+import gripVerticalIcon from "lucide-static/icons/grip-vertical.svg?url";
+import highlighterIcon from "lucide-static/icons/highlighter.svg?url";
+import messageSquareIcon from "lucide-static/icons/message-square.svg?url";
+import minusIcon from "lucide-static/icons/minus.svg?url";
+import penLineIcon from "lucide-static/icons/pen-line.svg?url";
+import squareDashedIcon from "lucide-static/icons/square-dashed.svg?url";
 import timer from "lucide-static/icons/timer.svg?url";
 import circleAlert from "lucide-static/icons/circle-alert.svg?url";
 import circle from "lucide-static/icons/circle.svg?url";
@@ -87,4 +94,11 @@ export const ICON_URLS: Record<string, string> = {
   "globe": globeIcon,
   "key": keyIcon,
   "copy": copyIcon,
+  "eraser": eraserIcon,
+  "grip-vertical": gripVerticalIcon,
+  "highlighter": highlighterIcon,
+  "message-square": messageSquareIcon,
+  "minus": minusIcon,
+  "pen-line": penLineIcon,
+  "square-dashed": squareDashedIcon,
 };

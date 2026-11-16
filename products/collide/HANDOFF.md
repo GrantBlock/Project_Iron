@@ -27,7 +27,7 @@
 | T17 | Remove Tauri | Done (Vitest 319, Playwright 45 (2 of 3 full runs green, see ISSUES 16), Electron e2e 15; no Rust; Reviewer doc fixes applied by Planner) | n/a (Phase E) |
 | T30 | Reference harness | Done (hook in prototype + app; `pnpm ref`; Vitest 327, Playwright 45, Electron e2e 15) | 15 specs: prototype 15/15 ✓ · app 0/15 (expected before T31) |
 | T31 | Layout shell | Done (Vitest 368, Playwright 45 ×2, Electron e2e 15; collapsed window size, DPI: manual Grant/Lydia) | prototype 15/15 · app 3/15 (tabs-and-close-splash, delete-recents-items, sidebar-toggles) |
-| T32 | Markup engine | To do | |
+| T32 | Markup engine | Done (Snip; Vitest 376, Playwright 45 ×2, Electron e2e 15) | prototype 15/15 · app 5/15 (+callout-numbering, print-area-and-bubble-stacking; Esc, click-outside, colour memory, pen-highlighter pass their Snip parts and wait for T34; order-numbers waits for T33) |
 | T33 | Images on canvas | To do | |
 | T34 | Markdown editor | To do | |
 | T35 | `.collide` files | To do | |
@@ -41,8 +41,8 @@ prototype 15/15 ✓ · app 3/15 ✓ after T31. Passing on the app: tabs-and-clos
 
 ### Next (for session 2)
 
-- **First:** T32 (markup engine), on `task/T32-markup-engine` from `collide/run`. Target: the engine specs pass on the app (callout-numbering, click-outside-returns-to-select, esc-returns-to-select, order-numbers-and-eraser, pen-colour-and-thickness-memory, pen-highlighter-and-page-leaders, print-area-and-bubble-stacking). Also remove the leftover Canvas snip button from the Snip toolbar (Grant 2026-11-15; Reviewer nit).
-- Then T33, T34 in board order; T35, T36, T38 if usage remains; T37 last.
+- **First:** T33 (images on the canvas: Add snip Current/Behind and paste beside the base image, canvas grows, move, aspect-locked resize, reorder, delete). Target spec: order-numbers-and-eraser and the Snip part of paste-image.
+- Then T34 (Markdown editor; unlocks 6 specs); T35, T36, T38 if usage remains; T37 last.
 - Run the reference: `cd products/collide/app && pnpm ref` (per spec prototype ✓/✗ · app ✓/✗). Electron e2e needs `xvfb-run -a` in the cloud.
 - Pacing: the Fable Coder hit the 5-hour limit in four of eight tasks. Have each Coder commit and push after every step, and resume a stopped agent with SendMessage rather than restarting it.
 - Playwright e2e has parallel-run flakes (ISSUES 16): rerun a single failure once before treating it as real.

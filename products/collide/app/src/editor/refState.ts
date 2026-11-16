@@ -4,6 +4,8 @@
 // Concepts the app does not have yet are null or []; the task that builds each one fills it in
 // (T31: tabs, view, theme, sidebar and splash; the items are still the old engine's until T32).
 import type { Shape } from "../model";
+import { calloutNumbers, fillPctOf, hiddenOf } from "./engine";
+import { isRole, type Role } from "./tools";
 
 export interface RefItem {
   id: string;
@@ -53,12 +55,14 @@ export interface RefInput {
   shapes: readonly Shape[];
   selectedId: string | null;
   tool: string;
-  /** The toolbar colour as stored (a design-system token or a hex value). */
-  color: string;
+  /** The pressed colour; null after a draw. */
+  color: Role | null;
   strokeWidth: number;
   /** View scale (1 = 100%) and whether it is fitted to the window. */
   scale: number;
   fitted: boolean;
+  /** Where each callout's bubble is (image px). */
+  bubbles?: BubbleMap;
 }
 
 /** What the layout shell hands over (T31). */
@@ -82,24 +86,32 @@ const r2 = (v: number) => Math.round(v * 100) / 100;
 /** The prototype's words for the delay: "No delay", "3 s", "5 s", "10 s". */
 export const delayLabel = (seconds: number): string => (seconds > 0 ? `${seconds} s` : "No delay");
 
-function item(s: Shape): RefItem {
+/** Bubble boxes as placed (image px), from the editor's layout; absent when the editor has none. */
+export type BubbleMap = ReadonlyMap<string, { x: number; y: number; w: number; h: number }>;
+
+function item(s: Shape, number: number | null, bubbles: BubbleMap | undefined): RefItem {
+  const b = number !== null ? bubbles?.get(s.id) : undefined;
   return {
     id: s.id,
     type: s.type,
-    number: s.callout ?? null,
+    number,
     note: s.note ?? "",
-    // The app has one toggle today, "Hide #": the note box and its arrow.
-    hidden: { text: false, bubble: !!s.hideNumber, outline: false },
-    fill: s.fill ? 100 : 0,
-    color: s.stroke,
+    hidden: hiddenOf(s),
+    fill: fillPctOf(s),
+    color: isRole(s.stroke) || s.stroke.startsWith("#") ? s.stroke : null,
     stroke: s.strokeWidth,
     x: r2(s.x),
     y: r2(s.y),
     w: r2(s.w),
     h: r2(s.h),
-    points: null,
-    bubble: null,
+    points: s.pts && (s.type === "pen" || s.type === "hl") ? s.pts.length / 2 : null,
+    bubble: b ? { x: r2(b.x), y: r2(b.y), w: r2(b.w), h: r2(b.h), moved: !!s.label } : null,
   };
+}
+
+function items(shapes: readonly Shape[], bubbles: BubbleMap | undefined): RefItem[] {
+  const numbers = calloutNumbers(shapes);
+  return [...shapes].reverse().map((s) => item(s, numbers.get(s.id) ?? null, bubbles));
 }
 
 /** `editor` is the Snip editor of the tab in front, or null when that tab is not a snip (or nothing is open). */
@@ -117,7 +129,7 @@ export function refState(shell: ShellRefInput, editor: RefInput | null): RefStat
     activeTool: snip ? snip.tool : null,
     color: snip ? snip.color : null,
     stroke: snip ? snip.strokeWidth : null,
-    items: snip ? [...snip.shapes].reverse().map(item) : [],
+    items: snip ? items(snip.shapes, snip.bubbles) : [],
     selection: snip && snip.selectedId !== null ? [snip.selectedId] : [],
     zoom: snip ? { percent: Math.round(snip.scale * 100), fit: snip.fitted } : null,
     theme: shell.theme,

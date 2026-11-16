@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const SHAPE_TYPES = ["rect", "ellipse", "point", "cross", "arrow", "text", "callout", "highlight"] as const;
+export const SHAPE_TYPES = ["rect", "ellipse", "line", "point", "cross", "pen", "hl", "arrow", "text", "callout", "highlight"] as const;
 export type ShapeType = (typeof SHAPE_TYPES)[number];
 
 const num = z.number().finite();
@@ -22,15 +22,29 @@ const base = {
   fill: z.boolean().optional(),
   /** "Hide #": the note box and arrow show dimmed in the editor and are left out of Copy/Export. */
   hideNumber: z.boolean().optional(),
+  // T32 markup engine. All optional, so older annotations.json files still open.
+  /** Line, pen and highlighter: points as x, y pairs, 0 to 1 inside the shape's box (so a resize scales them). */
+  pts: z.array(num).optional(),
+  /** Callout card toggles: hide the note text (keeps the number), the bubble and its leader, the outline. */
+  hideText: z.boolean().optional(),
+  hideBubble: z.boolean().optional(),
+  hideOutline: z.boolean().optional(),
+  /** Fill, percent 0 to 100 (0 = none). Replaces `fill`; an old filled shape reads as 30 %. */
+  fillPct: num.min(0).max(100).optional(),
 };
 
-const simple = (type: "rect" | "ellipse" | "point" | "cross" | "highlight") =>
+const simple = (type: "rect" | "ellipse" | "line" | "point" | "cross" | "pen" | "hl" | "highlight") =>
   z.object({ ...base, type: z.literal(type) });
 
 export const ShapeSchema = z.discriminatedUnion("type", [
   simple("rect"),
   simple("ellipse"),
   simple("highlight"),
+  // A straight line between its two `pts`.
+  simple("line"),
+  // Freehand pen and highlighter strokes (`pts`): in the list without a number or bubble.
+  simple("pen"),
+  simple("hl"),
   // A point marker at (x, y); w and h are 0.
   simple("point"),
   // An X across its bounds, marking something to remove.
