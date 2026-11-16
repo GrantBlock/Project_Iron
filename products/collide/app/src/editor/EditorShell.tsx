@@ -11,8 +11,8 @@ import { StatusBar } from "./StatusBar";
 import { CalloutsPanel } from "./CalloutsPanel";
 import { Toolbar } from "./Toolbar";
 import { copyPngToClipboard, dataUrlToBlob, downloadPng, exportFileName, flatten, flattenArea, flattenFit, type Flattened } from "../io/flatten";
-import { printArea } from "./engine";
-import { isPng, MarkupError, markupFolderName, type MarkupStore } from "../io";
+import { placeBeside, printArea } from "./engine";
+import { isPng, MarkupError, markupFolderName, type ImageFile, type MarkupStore } from "../io";
 import { fitArea, recentre, screenToImage, type Point, type Size, type View } from "./viewport";
 import type { RefInput } from "./refState";
 
@@ -45,6 +45,36 @@ export async function toPngBytes(blob: Blob): Promise<Uint8Array> {
   return new Uint8Array(await out.arrayBuffer());
 }
 
+/** An added image's picture and its PNG bytes (RUN3 T33), by file name (`image-<n>.png`). */
+export interface Picture {
+  el: HTMLImageElement;
+  png: Uint8Array;
+}
+
+/** Load added images' files (as opened from a markup folder) into pictures. A file that cannot be decoded is left out. */
+export async function loadPictures(files: readonly ImageFile[]): Promise<Map<string, Picture>> {
+  const out = new Map<string, Picture>();
+  for (const f of files) {
+    const url = URL.createObjectURL(new Blob([f.png as BlobPart], { type: "image/png" }));
+    try {
+      out.set(f.name, { el: (await loadImage(url, f.name)).el, png: f.png });
+    } catch {
+      /* the item stays, drawn as an empty frame */
+    }
+  }
+  return out;
+}
+
+/** The next free added-image file name. */
+export function nextImageFile(taken: Iterable<string>): string {
+  let max = 0;
+  for (const n of taken) {
+    const m = /^image-(\d+)\.png$/.exec(n);
+    if (m) max = Math.max(max, Number(m[1]));
+  }
+  return `image-${max + 1}.png`;
+}
+
 /** What one Snip tab keeps. The editor reads it when it mounts and writes every change back. */
 export interface SnipSession {
   image: LoadedImage;
@@ -58,13 +88,19 @@ export interface SnipSession {
   source: { bytes: Promise<Uint8Array>; folder: string | null };
   /** The document as last saved or opened. Null = never saved, so the tab has unsaved changes from the start. */
   baseDoc: AnnotationsDoc | null;
+  /** Added images' pictures by file name (RUN3 T33). Kept for undo and redo; Save writes the ones still on the canvas. */
+  pictures: Map<string, Picture>;
 }
 
 /** A session for an image: a new empty document, or `doc` (a saved markup or a sample, counted as saved). */
-export function createSnipSession(image: LoadedImage, bytes: Promise<Uint8Array>, opened?: { doc: AnnotationsDoc; folder: string | null }): SnipSession {
+export function createSnipSession(
+  image: LoadedImage,
+  bytes: Promise<Uint8Array>,
+  opened?: { doc: AnnotationsDoc; folder: string | null; pictures?: Map<string, Picture> },
+): SnipSession {
   bytes.catch(() => undefined); // awaited on save; a failure is reported there
   const history = historyReducer(initialHistory, { type: "load", width: image.width, height: image.height, doc: opened?.doc });
-  return { image, history, view: null, fitted: true, source: { bytes, folder: opened?.folder ?? null }, baseDoc: opened ? history.present.doc : null };
+  return { image, history, view: null, fitted: true, source: { bytes, folder: opened?.folder ?? null }, baseDoc: opened ? history.present.doc : null, pictures: opened?.pictures ?? new Map() };
 }
 
 /**
@@ -106,6 +142,11 @@ export interface SnipEditorApi {
   copyFit: () => Promise<Flattened>;
   /** Copy the image plus every annotation to the clipboard and say so with `title`. */
   copyToClipboard: (title: string) => Promise<void>;
+  /**
+   * RUN3 T33: add an image (Add snip, paste) beside the content: as tall as the base image, aspect kept, selected,
+   * the view fitted to the grown canvas. One undo step. Resolves with the image's own size.
+   */
+  addImage: (url: string) => Promise<{ width: number; height: number }>;
 }
 
 export interface EditorNotice {
@@ -156,6 +197,8 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
   const [focusNote, setFocusNote] = useState<{ id: string; n: number } | null>(null);
   const sizeRef = useRef<Size>({ width: 0, height: 0 });
   const handleRef = useRef<CanvasHandle | null>(null);
+  // Added images' pictures for the canvas (RUN3 T33); the session's map only grows, and a new image is a new document.
+  const pictures = useMemo(() => new Map([...session.pictures].map(([k, v]) => [k, v.el])), [session, state.doc]);
 
   // What the hook and the window-level handlers read, as of the last render; the session and the pen follow.
   const live = useRef({ view, tool, color, strokeWidth });
@@ -233,7 +276,21 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
     const flat = await exportPng();
     const exportBytes = new Uint8Array(await dataUrlToBlob(flat.dataUrl).arrayBuffer());
     const folderName = src.folder ?? markupFolderName(image.name);
-    const id = await store().save(folderName, { sourcePng: await src.bytes, annotations: doc, exportPng: exportBytes });
+    // Added images (T33): the ones still on the canvas, as files beside source.png, listed in annotations.json.
+    const used = [...new Set(doc.shapes.flatMap((s) => (s.type === "image" ? [s.src] : [])))];
+    const images = used.flatMap((name) => {
+      const p = session.pictures.get(name);
+      return p ? [{ name, png: p.png, width: p.el.naturalWidth, height: p.el.naturalHeight }] : [];
+    });
+    const { images: _old, ...plain } = doc;
+    void _old;
+    const annotations: AnnotationsDoc = images.length ? { ...plain, images: images.map((i) => ({ file: i.name, width: i.width, height: i.height })) } : plain;
+    const id = await store().save(folderName, {
+      sourcePng: await src.bytes,
+      annotations,
+      exportPng: exportBytes,
+      ...(images.length ? { images: images.map((i) => ({ name: i.name, png: i.png })) } : {}),
+    });
     src.folder = id.replace(/[\\/]+$/, "").split(/[\\/]/).pop() ?? id;
     session.baseDoc = doc;
     dirtyRef.current(stateRef.current.doc !== doc);
@@ -388,6 +445,24 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
     return () => window.removeEventListener("pointerdown", down, true);
   }, [setTool]);
 
+  const addImage = useCallback(
+    async (url: string) => {
+      const loaded = await loadImage(url, "image");
+      const png = await toPngBytes(await (await fetch(url)).blob());
+      const src = nextImageFile([...session.pictures.keys(), ...(stateRef.current.doc?.shapes ?? []).flatMap((s) => (s.type === "image" ? [s.src] : []))]);
+      session.pictures.set(src, { el: loaded.el, png });
+      const at = placeBeside(image, stateRef.current.doc?.shapes ?? [], loaded);
+      flushSync(() => {
+        setTool("select");
+        dispatch({ type: "add", shape: { type: "image", src, ...at, stroke: "gray", strokeWidth: 0 } });
+      });
+      // The canvas grew: fit the view to it (as the prototype does).
+      requestAnimationFrame(fitToWindow);
+      return { width: loaded.width, height: loaded.height };
+    },
+    [dispatch, fitToWindow, image, session, setTool, stateRef],
+  );
+
   // The shell reaches the editor in front through `apiRef`.
   useLayoutEffect(() => {
     const api: SnipEditorApi = {
@@ -417,6 +492,7 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
       exportPng,
       copyFit,
       copyToClipboard,
+      addImage,
       saveMarkup,
       screenToImage: (p) => screenToImage(live.current.view, p),
       getState: () => {
@@ -442,7 +518,7 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
     return () => {
       if (apiRef.current === api) apiRef.current = null;
     };
-  }, [apiRef, image, dispatch, stateRef, exportPng, copyFit, copyToClipboard, saveMarkup]);
+  }, [apiRef, image, dispatch, stateRef, exportPng, copyFit, copyToClipboard, saveMarkup, addImage]);
 
   return (
     <div className="wsfill" data-theme-key={themeKey}>
@@ -480,6 +556,7 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
           onRemoveMany={onRemoveMany}
           onSelect={onSelect}
           handleRef={handleRef}
+          pictures={pictures}
         />
         <CalloutsPanel
           shapes={shapes}
