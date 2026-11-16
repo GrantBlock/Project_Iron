@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { flushSync } from "react-dom";
 import type { AnnotationsDoc, Shape } from "../model";
-import { createSnipSession, defaultPen, loadImage, SnipEditor, toPngBytes, type CollideTestState, type SnipEditorApi, type SnipSession } from "../editor/EditorShell";
+import { createSnipSession, defaultPen, loadImage, loadPictures, SnipEditor, toPngBytes, type CollideTestState, type SnipEditorApi, type SnipSession } from "../editor/EditorShell";
 import { refState, type RefState } from "../editor/refState";
 import type { Point } from "../editor/viewport";
 import type { Flattened } from "../io/flatten";
@@ -299,7 +299,8 @@ export function Shell() {
           `source.png is ${img.width}×${img.height} but annotations.json says ${m.annotations.source.width}×${m.annotations.source.height}. Restore the matching source.png or re-save the markup.`,
         );
       }
-      openSnipTab(createSnipSession(img, Promise.resolve(m.sourcePng), { doc: m.annotations, folder: m.folderName }), { key, title: m.folderName, owner: key });
+      const pictures = await loadPictures(m.images);
+      openSnipTab(createSnipSession(img, Promise.resolve(m.sourcePng), { doc: m.annotations, folder: m.folderName, pictures }), { key, title: m.folderName, owner: key });
       return m.folderName;
     },
     [getStore, openSnipTab, setTabs],
@@ -369,7 +370,7 @@ export function Shell() {
   // The New snip button and the global hotkey (the shell sends a snip request) both run the same flow.
   const openSnipRef = useRef(openSnip);
   openSnipRef.current = openSnip;
-  const snipRef = useRef<ReturnType<typeof createSnipFlow>>({ start: async () => undefined, isBusy: () => false });
+  const snipRef = useRef<Pick<ReturnType<typeof createSnipFlow>, "start" | "isBusy">>({ start: async () => undefined, isBusy: () => false });
   useEffect(() => {
     const flow = createSnipFlow(electronDeps({ openImage: (url, name) => openSnipRef.current(url, name), notify, delayMs: () => live.current.prefs.snipDelay * 1000 }));
     snipRef.current = flow;
@@ -391,11 +392,76 @@ export function Shell() {
     showHint(d > 0 ? `Collide hides, waits ${d} s, then captures` : "Drag a box on your screen. Esc cancels.");
     void snipRef.current.start();
   }, [showHint]);
+  /** Add a captured or pasted image to the snip in front (T33). Resolves with the image's size, or null when no snip is in front. */
+  const addToSnip = useCallback(
+    async (url: string, tabId: string | null) => {
+      const front = activeTab(live.current.tabs);
+      if (!front || front.kind !== "snip" || (tabId !== null && front.id !== tabId) || !editor.current) return null;
+      return editor.current.addImage(url);
+    },
+    [],
+  );
   const addSnip = useCallback(() => {
-    // With no snip in front, Add snip is New snip. Adding a capture beside the open image comes with images on the canvas (T33).
-    if (activeTab(live.current.tabs)?.kind !== "snip") newSnip();
-    else showHint("Add snip beside the open image is not built yet. New snip opens a capture in its own tab.");
-  }, [newSnip, showHint]);
+    // Add snip adds a capture to the open canvas (RUN3 T33, Grant 2026-11-15). With no snip in front it is New snip.
+    const front = activeTab(live.current.tabs);
+    if (front?.kind !== "snip") return newSnip();
+    const behind = live.current.prefs.addMode === "Behind";
+    const failed = (e: unknown) => fail(e, "Add snip failed");
+    const added = (what: string) => (r: unknown) => r && showHint(`${what} added beside the image`);
+    const bridge = window.collide;
+    if (bridge) {
+      if (behind) {
+        // Behind: Collide hides and you snip the screen behind it, like New snip; the crop comes to this canvas.
+        if (snipRef.current.isBusy()) return;
+        showHint("Collide hides, then drag a box on the screen behind it. Esc cancels.");
+        void snipRef.current.start((url) => addToSnip(url, front.id).then(added("Snip from behind"), failed));
+      } else {
+        // Current: a new screenshot of the program that is open (the screen as it is, Collide not hidden).
+        void bridge
+          .captureMonitor()
+          .then((cap) => addToSnip(cap.png, front.id))
+          .then(added("Screenshot"), failed);
+      }
+      return;
+    }
+    // A browser has no screen capture. The sample (dev and test only) adds a sample picture, as the prototype does.
+    const art = wantsSample() ? sampleSnip(behind ? "s-pid" : "s-hmi") : undefined;
+    const url = art ? sampleArt(art, 1280) : null;
+    if (!url) return notify({ tone: "error", title: "Add snip needs the Collide desktop app", description: "Screen capture is not available in a browser. Paste an image (Ctrl+V) to add it beside the image." });
+    void addToSnip(url, front.id).then(added(behind ? "Snip from behind" : "Screenshot"), failed);
+  }, [addToSnip, fail, newSnip, notify, showHint]);
+
+  // ---------- Paste an image (Ctrl+V) ----------
+  // Snip: added beside the image like Add snip. Anything else open, or nothing: a new snip. Text pastes are left alone (RUN3 T33).
+  // Markdown pastes (saved to images/ and linked) come with the Markdown editor (T34).
+  const openImageRef = useRef(openImage);
+  openImageRef.current = openImage;
+  useEffect(() => {
+    const paste = (e: ClipboardEvent) => {
+      if (live.current.ask) return;
+      const item = [...(e.clipboardData?.items ?? [])].find((i) => i.kind === "file" && i.type.startsWith("image/"));
+      const file = item?.getAsFile();
+      if (!file) return;
+      const front = activeTab(live.current.tabs);
+      if (front?.kind === "markdown") return;
+      e.preventDefault();
+      const url = URL.createObjectURL(file);
+      if (front?.kind === "snip") {
+        void addToSnip(url, front.id).then(
+          (r) => r && showHint(`Pasted image added beside the image · ${r.width} × ${r.height}`),
+          (err: unknown) => fail(err, "Could not paste the image"),
+        );
+        return;
+      }
+      const now = new Date();
+      void openImageRef.current(url, `Pasted image ${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`).then(
+        (r) => showHint(`Pasted image opened as a new snip · ${r.width} × ${r.height}`),
+        (err: unknown) => fail(err, "Could not paste the image"),
+      );
+    };
+    window.addEventListener("paste", paste);
+    return () => window.removeEventListener("paste", paste);
+  }, [addToSnip, fail, showHint]);
 
   // ---------- Ask first: close, delete ----------
   const askTitle = (a: Ask) => (a.kind === "close" ? (live.current.tabs.tabs.find((t) => t.id === a.tabId)?.title ?? "") : a.item.name);
