@@ -7,10 +7,18 @@ export const FILE_SOURCE = "source.png";
 export const FILE_ANNOTATIONS = "annotations.json";
 export const FILE_EXPORT = "export.png";
 
+/** An added image's file beside source.png (RUN3 T33): `image-<n>.png`. */
+export interface ImageFile {
+  name: string;
+  png: Uint8Array;
+}
+
 export interface SaveInput {
   sourcePng: Uint8Array;
   annotations: AnnotationsDoc;
   exportPng: Uint8Array;
+  /** Added images, as the document's `images` list names them. */
+  images?: ImageFile[];
 }
 
 export interface OpenedMarkup {
@@ -18,6 +26,8 @@ export interface OpenedMarkup {
   folderName: string;
   sourcePng: Uint8Array;
   annotations: AnnotationsDoc;
+  /** The added images annotations.json lists (none for an older markup). */
+  images: ImageFile[];
 }
 
 export interface MarkupStore {
@@ -80,6 +90,8 @@ interface Entry {
   source: string; // base64
   annotations: string;
   export: string; // base64
+  /** Added images by file name, base64 (T33). */
+  images?: Record<string, string>;
   savedAt: number;
 }
 
@@ -119,6 +131,7 @@ export class MemoryMarkupStore implements MarkupStore {
       source: toB64(input.sourcePng),
       annotations: annotationsText(input.annotations),
       export: toB64(input.exportPng),
+      ...(input.images?.length ? { images: Object.fromEntries(input.images.map((i) => [i.name, toB64(i.png)])) } : {}),
       savedAt: Date.now(),
     });
     this.flush();
@@ -128,7 +141,12 @@ export class MemoryMarkupStore implements MarkupStore {
   async open(folder: string): Promise<OpenedMarkup> {
     const e = this.map.get(folder);
     if (!e) throw new MarkupError("Could not open markup", `No saved markup named "${folder}". Save one first or pick another.`);
-    return { folderName: folder, sourcePng: fromB64(e.source), annotations: parseAnnotations(e.annotations) };
+    const annotations = parseAnnotations(e.annotations);
+    const images = (annotations.images ?? []).flatMap((i) => {
+      const b = e.images?.[i.file];
+      return b === undefined ? [] : [{ name: i.file, png: fromB64(b) }];
+    });
+    return { folderName: folder, sourcePng: fromB64(e.source), annotations, images };
   }
 
   async list(): Promise<string[]> {

@@ -63,6 +63,14 @@ export interface MarkupFiles {
   /** annotations.json text. */
   annotations: string;
   exportPng: Uint8Array;
+  /** RUN3 T33: added images, `image-<n>.png` beside source.png. Open reads the ones annotations.json lists. */
+  images?: MarkupImageFile[];
+}
+
+/** One added image's file (RUN3 T33). */
+export interface MarkupImageFile {
+  name: string;
+  png: Uint8Array;
 }
 
 /** What opening a markup reads: `export.png` is written by Save and never read back. */

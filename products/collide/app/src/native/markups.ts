@@ -17,6 +17,23 @@ export const FILE_SOURCE = "source.png";
 export const FILE_ANNOTATIONS = "annotations.json";
 export const FILE_EXPORT = "export.png";
 export const PICK_TITLE = "Open markup folder";
+/**
+ * RUN3 T33: an added image's file beside source.png. The same rule as `IMAGE_FILE` in src/model/shapes.ts
+ * (repeated so the main process does not load the page's model). No other name is ever read, written or deleted.
+ */
+export const IMAGE_FILE = /^image-[1-9][0-9]{0,5}\.png$/;
+
+/** The image files annotations.json lists (`images[].file`); none for an older markup or unreadable text. */
+export function listedImages(annotations: string): string[] {
+  try {
+    const doc = JSON.parse(annotations) as { images?: unknown };
+    if (!Array.isArray(doc.images)) return [];
+    const names = doc.images.map((i) => (i as { file?: unknown } | null)?.file).filter((f): f is string => typeof f === "string" && IMAGE_FILE.test(f));
+    return [...new Set(names)];
+  } catch {
+    return [];
+  }
+}
 
 /** The part of `node:path` used here (`path`, `path.win32` or `path.posix`). */
 export interface MarkupPath {
@@ -197,7 +214,9 @@ const isBytes = (v: unknown): v is Uint8Array => ArrayBuffer.isView(v) && Object
 function isMarkupFiles(v: unknown): v is MarkupFiles {
   if (typeof v !== "object" || v === null) return false;
   const f = v as Record<string, unknown>;
-  return isBytes(f.sourcePng) && typeof f.annotations === "string" && isBytes(f.exportPng);
+  if (!(isBytes(f.sourcePng) && typeof f.annotations === "string" && isBytes(f.exportPng))) return false;
+  if (f.images === undefined) return true;
+  return Array.isArray(f.images) && f.images.every((i) => typeof i === "object" && i !== null && typeof i.name === "string" && IMAGE_FILE.test(i.name) && isBytes(i.png));
 }
 
 export function createMarkups(deps: MarkupsDeps): Markups {
@@ -263,6 +282,15 @@ export function createMarkups(deps: MarkupsDeps): Markups {
         write(FILE_SOURCE, files.sourcePng);
         write(FILE_ANNOTATIONS, files.annotations);
         write(FILE_EXPORT, files.exportPng);
+        // Added images (T33); an image deleted since the last save leaves no file behind.
+        const keep = new Set<string>();
+        for (const img of files.images ?? []) {
+          write(img.name, img.png);
+          keep.add(img.name);
+        }
+        for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+          if (!e.isDirectory() && IMAGE_FILE.test(e.name) && !keep.has(e.name)) fs.unlinkSync(scoped(rootDir, path.join(dir, e.name), dir));
+        }
       } catch (e) {
         if (e instanceof MarkupStoreError) throw e;
         throw new MarkupStoreError("WriteFailed", dir, detailOf(e));
@@ -278,7 +306,9 @@ export function createMarkups(deps: MarkupsDeps): Markups {
       const source = file(FILE_SOURCE);
       const annotations = file(FILE_ANNOTATIONS);
       try {
-        return { sourcePng: fs.readFileSync(source), annotations: fs.readFileSync(annotations, "utf8") };
+        const text = fs.readFileSync(annotations, "utf8");
+        const images = listedImages(text).map((name) => ({ name, png: fs.readFileSync(file(name)) }));
+        return { sourcePng: fs.readFileSync(source), annotations: text, ...(images.length ? { images } : {}) };
       } catch (e) {
         throw new MarkupStoreError("ReadFailed", folder, detailOf(e));
       }
@@ -312,7 +342,13 @@ export function createMarkups(deps: MarkupsDeps): Markups {
       }
       if (link) throw new MarkupStoreError("NotMarkupFolder", folder);
       try {
-        for (const name of [FILE_SOURCE, FILE_ANNOTATIONS, FILE_EXPORT]) {
+        let added: string[] = [];
+        try {
+          added = fs.readdirSync(dir, { withFileTypes: true }).filter((e) => !e.isDirectory() && IMAGE_FILE.test(e.name)).map((e) => e.name);
+        } catch {
+          /* the folder is checked again below */
+        }
+        for (const name of [FILE_SOURCE, FILE_ANNOTATIONS, FILE_EXPORT, ...added]) {
           const file = scoped(rootDir, path.join(dir, name), folder);
           try {
             fs.unlinkSync(file);

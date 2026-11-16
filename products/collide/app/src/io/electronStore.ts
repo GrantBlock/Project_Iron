@@ -22,6 +22,7 @@ export class ElectronMarkupStore implements MarkupStore {
         sourcePng: input.sourcePng,
         annotations: annotationsText(input.annotations),
         exportPng: input.exportPng,
+        ...(input.images?.length ? { images: input.images } : {}),
       });
     } catch (e) {
       throw new MarkupError(SAVE_FAILED, cause(e));
@@ -35,7 +36,8 @@ export class ElectronMarkupStore implements MarkupStore {
     } catch (e) {
       throw new MarkupError(OPEN_FAILED, cause(e));
     }
-    return { folderName: base(folder), sourcePng: new Uint8Array(files.sourcePng), annotations: parseAnnotations(files.annotations) };
+    const images = (files.images ?? []).map((i) => ({ name: i.name, png: new Uint8Array(i.png) }));
+    return { folderName: base(folder), sourcePng: new Uint8Array(files.sourcePng), annotations: parseAnnotations(files.annotations), images };
   }
 
   async pick(): Promise<string | null> {
