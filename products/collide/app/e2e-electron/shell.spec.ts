@@ -10,7 +10,8 @@ test("Electron opens the editor from the Vite build", async () => {
     await expect(page).toHaveTitle("Collide");
     expect(page.url()).toBe("collide://app/");
     await expect(page.getByTestId("app-root")).toBeVisible();
-    await expect(page.getByTestId("toolbar")).toBeVisible();
+    // T31: the app opens on the blank canvas with the sidebar; the toolbar belongs to a Snip tab.
+    await expect(page.getByTestId("sidebar")).toBeVisible();
     await expect(page.getByTestId("canvas")).toBeVisible();
     expect(await app.windows()).toHaveLength(1);
   } finally {
@@ -24,7 +25,8 @@ test("Electron opens the editor from the Vite dev server", async () => {
     const page = await app.firstWindow();
     await expect(page).toHaveTitle("Collide");
     expect(page.url()).toBe("http://localhost:1420/");
-    await expect(page.getByTestId("toolbar")).toBeVisible();
+    // T31: the app opens on the blank canvas with the sidebar; the toolbar belongs to a Snip tab.
+    await expect(page.getByTestId("sidebar")).toBeVisible();
     await expect(page.getByTestId("canvas")).toBeVisible();
   } finally {
     await close();
@@ -34,6 +36,7 @@ test("Electron opens the editor from the Vite dev server", async () => {
 // RUN2.md, "Preload bridge window.collide": these and nothing else.
 const BRIDGE_KEYS = [
   "captureMonitor",
+  "collapse",
   "copyImage",
   "cropCapture",
   "hideEditor",
@@ -83,7 +86,7 @@ test("the page is isolated: window.collide has exactly the bridge, no Node, sand
       collide: "object",
       collideKeys: BRIDGE_KEYS,
       functions: BRIDGE_KEYS.filter((k) => k !== "markups" && k !== "overlay"),
-      markups: { list: "function", open: "function", pick: "function", save: "function" },
+      markups: { list: "function", open: "function", pick: "function", remove: "function", save: "function" },
       overlay: { emit: "function", on: "function" },
       require: "undefined",
       process: "undefined",

@@ -28,6 +28,8 @@ export interface MarkupStore {
   /** Let the user choose a folder to open; null if cancelled. */
   pick(): Promise<string | null>;
   list?(): Promise<string[]>;
+  /** Delete a markup folder for good (an id returned by save/pick/list). Recents asks first (RUN3 T31). */
+  remove?(folder: string): Promise<void>;
 }
 
 /** A save/open failure whose message names the cause and the fix (shown in a Toast). */
@@ -131,6 +133,11 @@ export class MemoryMarkupStore implements MarkupStore {
 
   async list(): Promise<string[]> {
     return [...this.map.entries()].sort((a, b) => b[1].savedAt - a[1].savedAt).map(([k]) => k);
+  }
+
+  async remove(folder: string): Promise<void> {
+    if (!this.map.delete(folder)) throw new MarkupError("Could not delete markup", `No saved markup named "${folder}". It may already be deleted.`);
+    this.flush();
   }
 
   /** No dialog in the browser: opens the most recently saved markup (A). */

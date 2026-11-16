@@ -10,6 +10,7 @@ const cause = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 const SAVE_FAILED = "Could not save markup";
 const OPEN_FAILED = "Could not open markup";
+const DELETE_FAILED = "Could not delete markup";
 
 /** Real folders under Documents/Collide/Markups, through the preload bridge. */
 export class ElectronMarkupStore implements MarkupStore {
@@ -47,5 +48,13 @@ export class ElectronMarkupStore implements MarkupStore {
 
   list(): Promise<string[]> {
     return this.markups.list();
+  }
+
+  async remove(folder: string): Promise<void> {
+    try {
+      await this.markups.remove(folder);
+    } catch (e) {
+      throw new MarkupError(DELETE_FAILED, cause(e));
+    }
   }
 }

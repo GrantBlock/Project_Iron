@@ -12,6 +12,7 @@ export function StatusBar({ zoom, dims }: { zoom: number; dims: { width: number;
         gap: 6,
         padding: "0 14px",
         borderTop: "1px solid var(--line-1)",
+        background: "var(--surface-1)",
         font: "400 11px/1 var(--font-mono)",
         color: "var(--text-3)",
       }}

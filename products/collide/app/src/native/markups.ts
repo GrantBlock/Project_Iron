@@ -38,6 +38,10 @@ export interface MarkupFs {
   realpathSync(p: string): string;
   /** The entry itself (a link is not followed); throws if it does not exist. */
   lstatSync(p: string): { isSymbolicLink(): boolean };
+  /** Delete one file. */
+  unlinkSync(file: string): void;
+  /** Delete an empty folder; throws if anything is left in it. */
+  rmdirSync(dir: string): void;
 }
 
 export interface OpenFolderDialogOptions {
@@ -65,6 +69,11 @@ export interface Markups {
   pick(): Promise<string | null>;
   /** The folders directly inside Markups (full paths). */
   list(): string[];
+  /**
+   * Delete a markup for good (T31): the three files Save writes, then the folder.
+   * Only a real folder directly inside Markups; nothing Collide did not write is ever deleted.
+   */
+  remove(folder: unknown): void;
 }
 
 export type MarkupStoreErrorKind =
@@ -79,7 +88,10 @@ export type MarkupStoreErrorKind =
   /** The Documents folder could not be found. */
   | "NoDocumentsFolder"
   | "WriteFailed"
-  | "ReadFailed";
+  | "ReadFailed"
+  /** `remove` was given something that is not a markup's own folder (Markups itself, a deeper path, a link). */
+  | "NotMarkupFolder"
+  | "DeleteFailed";
 
 const detailOf = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -100,6 +112,10 @@ function storeMessage(kind: MarkupStoreErrorKind, detail: string, cause: string)
       return `Writing ${detail} failed (${cause}). Check that ${MARKUPS_LABEL} is writable and has free space, then save again.`;
     case "ReadFailed":
       return `${detail} is missing ${FILE_SOURCE} or ${FILE_ANNOTATIONS} (${cause}). Pick a folder created by Save.`;
+    case "NotMarkupFolder":
+      return `${detail} is not a markup folder directly inside ${MARKUPS_LABEL}, so Collide will not delete it. Delete it in File Explorer if it should go.`;
+    case "DeleteFailed":
+      return `Deleting ${detail} failed (${cause}). Collide deletes only ${FILE_SOURCE}, ${FILE_ANNOTATIONS} and ${FILE_EXPORT}; close anything using the folder or remove what else is in it, then delete again.`;
   }
 }
 
@@ -279,6 +295,36 @@ export function createMarkups(deps: MarkupsDeps): Markups {
       const picked = result && !result.canceled && Array.isArray(result.filePaths) ? result.filePaths[0] : undefined;
       if (typeof picked !== "string" || picked === "") return null;
       return scoped(rootDir, picked);
+    },
+
+    remove(folder) {
+      if (typeof folder !== "string" || folder === "") throw new MarkupStoreError("InvalidFolder");
+      const rootDir = root();
+      const dir = scoped(rootDir, folder);
+      // A markup's own folder only: one level below Markups, and the folder itself, not a link to one.
+      const rel = path.relative(rootDir, dir);
+      if (rel === "" || rel.split(path.sep).length !== 1) throw new MarkupStoreError("NotMarkupFolder", folder);
+      let link: boolean;
+      try {
+        link = fs.lstatSync(dir).isSymbolicLink();
+      } catch (e) {
+        throw new MarkupStoreError("DeleteFailed", folder, detailOf(e));
+      }
+      if (link) throw new MarkupStoreError("NotMarkupFolder", folder);
+      try {
+        for (const name of [FILE_SOURCE, FILE_ANNOTATIONS, FILE_EXPORT]) {
+          const file = scoped(rootDir, path.join(dir, name), folder);
+          try {
+            fs.unlinkSync(file);
+          } catch (e) {
+            if ((e as { code?: unknown } | null)?.code !== "ENOENT") throw e; // already gone is fine
+          }
+        }
+        fs.rmdirSync(dir);
+      } catch (e) {
+        if (e instanceof MarkupStoreError) throw e;
+        throw new MarkupStoreError("DeleteFailed", folder, detailOf(e));
+      }
     },
 
     list() {

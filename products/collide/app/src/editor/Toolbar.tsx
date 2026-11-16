@@ -1,10 +1,8 @@
-import { Button, Icon, IconButton, Tooltip } from "../ds";
-
-/** Snip delay choices in seconds, as in Windows Snipping Tool. */
-export const SNIP_DELAYS = [0, 3, 5, 10] as const;
+import { Button, IconButton, Tooltip } from "../ds";
 import { STROKE_WIDTHS, type Tool } from "./tools";
 
-// Ported from design-system/ui_kits/snip-markup/Toolbar.jsx. New snip, Save and Export are wired in later tasks.
+// Ported from design-system/ui_kits/snip-markup/Toolbar.jsx. The toolbar of a Snip tab (RUN3 T31):
+// New snip and its delay, Open file and Open markup are in the sidebar; Save is in the tab's header.
 const tools: [Tool, string, string, string][] = [
   ["select", "mouse-pointer-2", "Select", "V"],
   ["rect", "square", "Rectangle", "R"],
@@ -26,11 +24,6 @@ interface Props {
   strokeWidth: number;
   setStrokeWidth: (w: number) => void;
   fileName: string;
-  onOpenFile: () => void;
-  onNewSnip: () => void;
-  /** New snip delay in seconds (0 = none). */
-  snipDelay: number;
-  setSnipDelay: (s: number) => void;
   /** Toggle Canvas snip mode (drag a box on the canvas). */
   onCanvasSnip: () => void;
   canvasSnipActive: boolean;
@@ -41,52 +34,16 @@ interface Props {
   onExport: () => void;
   onCopy: () => void;
   canExport: boolean;
-  onSave: () => void;
-  onOpenMarkup: () => void;
 }
 
-export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStrokeWidth, fileName, onOpenFile, onNewSnip, snipDelay, setSnipDelay, onCanvasSnip, canvasSnipActive, onUndo, onRedo, canUndo, canRedo, onExport, onCopy, canExport, onSave, onOpenMarkup }: Props) {
+export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStrokeWidth, fileName, onCanvasSnip, canvasSnipActive, onUndo, onRedo, canUndo, canRedo, onExport, onCopy, canExport }: Props) {
   return (
     <div
       data-testid="toolbar"
-      style={{ height: 52, boxSizing: "border-box", flex: "none", display: "flex", alignItems: "center", gap: 4, padding: "0 10px", borderBottom: "1px solid var(--line-1)" }}
+      role="toolbar"
+      aria-label="Markup tools"
+      style={{ height: 52, boxSizing: "border-box", flex: "none", display: "flex", alignItems: "center", gap: 4, padding: "0 10px", borderBottom: "1px solid var(--line-1)", background: "var(--surface-1)", overflowX: "auto" }}
     >
-      <Tooltip label="New snip" shortcut="Ctrl+Alt+S">
-        <Button variant="primary" size="sm" icon="scissors" onClick={onNewSnip} data-testid="new-snip">
-          New snip
-        </Button>
-      </Tooltip>
-      <Tooltip label="Delay before New snip captures">
-        <label
-          data-testid="snip-delay-wrap"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-            height: 28,
-            padding: "0 6px",
-            borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--line-2)",
-            color: snipDelay ? "var(--text-1)" : "var(--text-3)",
-            cursor: "pointer",
-          }}
-        >
-          <Icon name="timer" size={14} />
-          <select
-            data-testid="snip-delay"
-            aria-label="Snip delay"
-            value={snipDelay}
-            onChange={(e) => setSnipDelay(Number(e.target.value))}
-            style={{ background: "transparent", border: 0, outline: "none", color: "inherit", font: "500 12px/1 var(--font-sans)", cursor: "pointer" }}
-          >
-            {SNIP_DELAYS.map((d) => (
-              <option key={d} value={d} style={{ background: "var(--surface-2)", color: "var(--text-1)" }}>
-                {d === 0 ? "No delay" : `${d} s`}
-              </option>
-            ))}
-          </select>
-        </label>
-      </Tooltip>
       <Tooltip label="Drag a box on the canvas: copies it and opens it as a new markup (Esc cancels)">
         <Button
           variant={canvasSnipActive ? "primary" : "secondary"}
@@ -100,7 +57,6 @@ export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStroke
           Canvas snip
         </Button>
       </Tooltip>
-      <IconButton icon="file-up" label="Open file" data-testid="open-file" onClick={onOpenFile} />
       <Sep />
       {tools.map(([k, ic, l, s]) => (
         <Tooltip key={k} label={l} shortcut={s}>
@@ -123,7 +79,7 @@ export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStroke
               background: c,
               border: 0,
               cursor: "pointer",
-              boxShadow: color === c ? `0 0 0 2px var(--ink-900), 0 0 0 3px ${c}` : "inset 0 1px 0 rgba(255,255,255,0.25)",
+              boxShadow: color === c ? `0 0 0 2px var(--surface-1), 0 0 0 3px ${c}` : "inset 0 1px 0 rgba(255,255,255,0.25)",
             }}
           />
         ))}
@@ -162,10 +118,6 @@ export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStroke
       <IconButton icon="undo-2" label="Undo" disabled={!canUndo} onClick={onUndo} style={canUndo ? undefined : { opacity: 0.4, cursor: "not-allowed" }} />
       <IconButton icon="redo-2" label="Redo" disabled={!canRedo} onClick={onRedo} style={canRedo ? undefined : { opacity: 0.4, cursor: "not-allowed" }} />
       <Sep />
-      <IconButton icon="folder-open" label="Open markup" data-testid="open-markup" onClick={onOpenMarkup} />
-      <Tooltip label="Save markup" shortcut="Ctrl+S">
-        <IconButton icon="save" label="Save" data-testid="save-markup" onClick={onSave} disabled={!canExport} />
-      </Tooltip>
       <Tooltip label="Copy image to clipboard" shortcut="Ctrl+Shift+C">
         <IconButton icon="clipboard-copy" label="Copy to clipboard" data-testid="copy-btn" onClick={onCopy} disabled={!canExport} />
       </Tooltip>

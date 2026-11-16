@@ -1,7 +1,8 @@
 // The reference test hook (RUN3 T30): what `window.__collide.state()` returns.
 // The prototype (../../layout-prototype.html) returns the same shape; see ../../prototype-checks/HOOK.md.
-// Read-only and cheap: a fresh plain JSON object built from the editor's real state.
-// Concepts the app does not have yet are null or []; the task that builds each one fills it in.
+// Read-only and cheap: a fresh plain JSON object built from the shell's and the open editor's real state.
+// Concepts the app does not have yet are null or []; the task that builds each one fills it in
+// (T31: tabs, view, theme, sidebar and splash; the items are still the old engine's until T32).
 import type { Shape } from "../model";
 
 export interface RefItem {
@@ -44,9 +45,9 @@ export interface RefState {
   splash: { kind: "close" | "delete"; title: string } | null;
 }
 
-/** What the editor shell hands over: its state as it is right now. */
+/** What the open Snip editor hands over: its state as it is right now. */
 export interface RefInput {
-  /** The open image, or null on the empty canvas. */
+  /** The open image. */
   image: { name: string } | null;
   /** Shapes in draw order (back to front), as stored. */
   shapes: readonly Shape[];
@@ -58,8 +59,22 @@ export interface RefInput {
   /** View scale (1 = 100%) and whether it is fitted to the window. */
   scale: number;
   fitted: boolean;
+}
+
+/** What the layout shell hands over (T31). */
+export interface ShellRefInput {
+  /** Left to right. */
+  tabs: readonly { id: string; title: string; kind: Exclude<RefState["view"], "blank">; dirty: boolean }[];
+  /** Id of the tab in front, or null on the blank canvas. */
+  active: string | null;
+  /** The theme as chosen: "system", "light", "dark" or "aura". */
+  theme: string;
+  aura: string;
   /** New snip delay in seconds (0 = none). */
   snipDelay: number;
+  addMode: string;
+  collapsed: boolean;
+  splash: RefState["splash"];
 }
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
@@ -87,23 +102,27 @@ function item(s: Shape): RefItem {
   };
 }
 
-export function refState(i: RefInput): RefState {
-  const open = i.image !== null;
+/** `editor` is the Snip editor of the tab in front, or null when that tab is not a snip (or nothing is open). */
+export function refState(shell: ShellRefInput, editor: RefInput | null): RefState {
+  const front = shell.tabs.find((t) => t.id === shell.active) ?? null;
+  const view: RefState["view"] = front ? front.kind : "blank";
+  const snip = view === "snip" && editor !== null && editor.image !== null ? editor : null;
   return {
     version: 1,
-    view: open ? "snip" : "blank",
-    mode: null,
-    tabs: [],
-    editor: open ? "snip" : null,
-    activeTool: open ? i.tool : null,
-    color: open ? i.color : null,
-    stroke: open ? i.strokeWidth : null,
-    items: open ? [...i.shapes].reverse().map(item) : [],
-    selection: open && i.selectedId !== null ? [i.selectedId] : [],
-    zoom: open ? { percent: Math.round(i.scale * 100), fit: i.fitted } : null,
-    theme: null,
-    aura: null,
-    sidebar: { delay: delayLabel(i.snipDelay), addMode: null, collapsed: null },
-    splash: null,
+    view,
+    // A Markdown file opens in Edit; Preview comes with the Markdown editor (T34).
+    mode: view === "markdown" ? "edit" : null,
+    tabs: shell.tabs.map((t) => ({ id: t.id, title: t.title, kind: t.kind, dirty: t.dirty, active: t.id === shell.active })),
+    editor: view === "snip" || view === "markdown" ? view : null,
+    activeTool: snip ? snip.tool : null,
+    color: snip ? snip.color : null,
+    stroke: snip ? snip.strokeWidth : null,
+    items: snip ? [...snip.shapes].reverse().map(item) : [],
+    selection: snip && snip.selectedId !== null ? [snip.selectedId] : [],
+    zoom: snip ? { percent: Math.round(snip.scale * 100), fit: snip.fitted } : null,
+    theme: shell.theme,
+    aura: shell.theme === "aura" ? shell.aura : null,
+    sidebar: { delay: delayLabel(shell.snipDelay), addMode: shell.addMode, collapsed: shell.collapsed },
+    splash: shell.splash ? { kind: shell.splash.kind, title: shell.splash.title } : null,
   };
 }

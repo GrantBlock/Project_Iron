@@ -5,6 +5,7 @@ export { registerBridge } from "./ipc";
 export { SNIP_REQUEST_CHANNEL } from "./bridge";
 export { APP_NAME, devServerUrl, distFile, sameOrigin } from "./shell";
 export { createChoreography } from "./windows";
+export { createCollapse } from "./collapse";
 export { setupHotkey } from "./settings";
 export { copyImage } from "./clipboard";
 export { createMarkups } from "./markups";

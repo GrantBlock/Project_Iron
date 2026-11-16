@@ -1,0 +1,654 @@
+// The layout shell (RUN3 T31), after ../../../layout-prototype.html: Recents on the left, a blank canvas as home,
+// tabs on the canvas (each keeps its own document, undo steps and zoom), the two ask-first splash screens,
+// collapse, themes and the Settings tab. The Snip editor (../editor/EditorShell.tsx) lives inside a Snip tab.
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ChangeEvent } from "react";
+import { flushSync } from "react-dom";
+import type { AnnotationsDoc, Shape } from "../model";
+import { createSnipSession, defaultPen, loadImage, SnipEditor, toPngBytes, type CollideTestState, type SnipEditorApi, type SnipSession } from "../editor/EditorShell";
+import { refState, type RefState } from "../editor/refState";
+import type { Point } from "../editor/viewport";
+import type { Flattened } from "../io/flatten";
+import { createMarkupStore, MarkupError, type MarkupStore } from "../io";
+import { createSnipFlow } from "../snip/flow";
+import { electronDeps, isDesktop } from "../snip/electronDeps";
+import { Blank, FileTab, SettingsTab, Splash, TabBar, Toasts, WsHead, type FileDoc, type Notice } from "./parts";
+import { applyTheme, loadPrefs, savePref, type Prefs } from "./prefs";
+import { flatFiles, sortFolders, storeRow, type RecentItem, type RecentSnip, type RecentZip } from "./recents";
+import { SAMPLE_OPEN, sampleArt, sampleDoc, sampleRecents, sampleSnip, wantsSample } from "./sample";
+import { Sidebar } from "./Sidebar";
+import { activateTab, activeTab, closeTab, cycleTab, noTabs, openTab, patchTab, type Tab, type TabKind, type TabsState } from "./tabs";
+
+const nameFromUrl = (url: string) => decodeURIComponent(url.split("?")[0].split("/").pop() || "image");
+
+export interface CollideHook {
+  /** The reference test hook (RUN3 T30): read-only, a fresh plain JSON object. The prototype has the same call. */
+  state: () => RefState;
+  /** Load an image from a URL into a new Snip tab, fitted to the canvas, with no shapes. Resolves with its size. */
+  openImage: (url: string, name?: string) => Promise<{ width: number; height: number }>;
+  /** Add a test rectangle (image pixels) to the snip in front. Returns its id. */
+  seedShape: (s?: Partial<Pick<Shape, "x" | "y" | "w" | "h">>) => string;
+  getState: () => CollideTestState;
+  /** The annotations doc of the snip in front (image pixels), or null when no snip is in front. */
+  getDoc: () => AnnotationsDoc | null;
+  /** Convert a point in canvas-container coordinates to image pixels using the current view. */
+  screenToImage: (p: Point) => Point;
+  /** Open a saved markup in a tab: by folder id, or the picker/most recent when omitted. Resolves with the folder name, or null if cancelled. */
+  openMarkup: (folder?: string) => Promise<string | null>;
+  /** Save the markup in front. Resolves with the folder id. */
+  saveMarkup: () => Promise<string>;
+  /** Flatten to a PNG at source size (no download). Resolves with the data URL and its size. */
+  exportPng: () => Promise<Flattened>;
+  copyFit: () => Promise<Flattened>;
+  /** What a finished snip does: open the crop in a new tab, then copy it to the clipboard. */
+  openSnip: (url: string, name: string) => Promise<unknown>;
+}
+
+declare global {
+  interface Window {
+    __collide?: CollideHook;
+  }
+}
+
+type Ask = { kind: "close"; tabId: string } | { kind: "delete"; item: RecentItem };
+
+/** How long a hint and a success message stay (the prototype's toast: 2.6 s). An error stays until dismissed. */
+const HINT_MS = 2600;
+const SUCCESS_MS = 4000;
+/** Recents reads this many of the newest saved markups for their size, callouts and notes. */
+const RECENT_DETAILS = 12;
+
+/** A small picture for a sample snip's Recents row. */
+const sampleThumb = (id: string) => {
+  const s = sampleSnip(id);
+  return s ? sampleArt(s, 120) : null;
+};
+
+const NO_SNIP: CollideTestState = { image: null, stage: null, shapes: [], shapesOnImage: [], selectedId: null };
+
+export function Shell() {
+  const [prefs, setPrefsState] = useState<Prefs>(loadPrefs);
+  const [tabs, setTabsState] = useState<TabsState>(noTabs);
+  const [ask, setAskState] = useState<Ask | null>(null);
+  // What the test hook and the window-level handlers read: always the latest, even before a re-render.
+  const live = useRef({ prefs, tabs, ask });
+  const setTabs = useCallback((update: (s: TabsState) => TabsState) => {
+    const next = update(live.current.tabs);
+    if (next === live.current.tabs) return;
+    live.current.tabs = next;
+    setTabsState(next);
+  }, []);
+  const setAsk = useCallback((a: Ask | null) => {
+    live.current.ask = a;
+    setAskState(a);
+  }, []);
+  const setPref = useCallback(<K extends keyof Prefs>(key: K, value: Prefs[K]) => {
+    live.current.prefs = { ...live.current.prefs, [key]: value };
+    setPrefsState(live.current.prefs);
+    savePref(key, value); // not remembered when storage is blocked; it still applies this session
+  }, []);
+
+  // Each tab's own state lives beside the tab list, by tab id.
+  const sessions = useRef(new Map<string, SnipSession>());
+  const files = useRef(new Map<string, FileDoc>());
+  const pen = useRef(defaultPen());
+  const editor = useRef<SnipEditorApi | null>(null);
+  const nextId = useRef(1);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const storeRef = useRef<MarkupStore | null>(null);
+  const getStore = useCallback(() => (storeRef.current ??= createMarkupStore()), []);
+
+  // ---------- Toasts ----------
+  const [hint, setHint] = useState<string | null>(null);
+  const [notice, setNoticeState] = useState<Notice | null>(null);
+  const timers = useRef<{ hint?: number; notice?: number }>({});
+  const showHint = useCallback((text: string | null) => {
+    window.clearTimeout(timers.current.hint);
+    setHint(text);
+    if (text === null) return;
+    // One status message at a time: a hint replaces the last success message (an error stays).
+    setNoticeState((n) => (n?.tone === "success" ? null : n));
+    timers.current.hint = window.setTimeout(() => setHint(null), HINT_MS);
+  }, []);
+  const notify = useCallback((n: Notice | null) => {
+    window.clearTimeout(timers.current.notice);
+    setNoticeState(n);
+    if (n?.tone !== "success") return;
+    window.clearTimeout(timers.current.hint);
+    setHint(null);
+    timers.current.notice = window.setTimeout(() => setNoticeState(null), SUCCESS_MS);
+  }, []);
+  useEffect(() => {
+    const t = timers.current;
+    return () => {
+      window.clearTimeout(t.hint);
+      window.clearTimeout(t.notice);
+    };
+  }, []);
+  const fail = useCallback(
+    (e: unknown, fallbackTitle: string) => notify({ tone: "error", title: e instanceof MarkupError ? e.title : fallbackTitle, description: e instanceof Error ? e.message : String(e) }),
+    [notify],
+  );
+
+  // ---------- Theme ----------
+  useEffect(() => {
+    applyTheme(prefs.theme, prefs.aura);
+    if (prefs.theme !== "system" || typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const follow = () => applyTheme("system", prefs.aura);
+    mq.addEventListener?.("change", follow);
+    return () => mq.removeEventListener?.("change", follow);
+  }, [prefs.theme, prefs.aura]);
+  const themeKey = `${prefs.theme}:${prefs.aura}`;
+  useEffect(() => {
+    document.body.classList.toggle("compact-bg", prefs.collapsed);
+    return () => document.body.classList.remove("compact-bg");
+  }, [prefs.collapsed]);
+
+  // The desktop window follows the collapsed layout: windowed, it shrinks to the Recents panel until something is open.
+  // Maximized (and in a browser, where the window cannot shrink) the canvas stays beside the panel.
+  const [maximized, setMaximized] = useState(true);
+  const hasTab = tabs.active !== null;
+  useEffect(() => {
+    const bridge = window.collide;
+    if (typeof bridge?.collapse !== "function") return;
+    let on = true;
+    let timer: number | undefined;
+    const sync = () =>
+      void bridge.collapse({ collapsed: prefs.collapsed, canvas: hasTab }).then(
+        (r) => on && setMaximized(!!r?.maximized),
+        () => undefined,
+      );
+    sync();
+    // Maximizing or restoring the window changes its size: ask again.
+    const resized = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(sync, 150);
+    };
+    window.addEventListener("resize", resized);
+    return () => {
+      on = false;
+      window.clearTimeout(timer);
+      window.removeEventListener("resize", resized);
+    };
+  }, [prefs.collapsed, hasTab]);
+
+  // ---------- Recents ----------
+  const [samples, setSamples] = useState<RecentItem[]>(() =>
+    wantsSample() ? sampleRecents().map((r) => (r.kind === "snip" && r.source.from === "sample" ? { ...r, thumb: sampleThumb(r.source.sample) } : r)) : [],
+  );
+  const [stored, setStored] = useState<RecentSnip[]>([]);
+  const [openFolders, setOpenFolders] = useState<ReadonlySet<string>>(() => new Set(wantsSample() ? SAMPLE_OPEN : []));
+  const [query, setQuery] = useState("");
+  const [pop, setPop] = useState(false);
+  const [sideOpen, setSideOpen] = useState(false);
+  const listing = useRef(0);
+  const refreshRecents = useCallback(async () => {
+    const run = ++listing.current;
+    const store = getStore();
+    let folders: string[];
+    try {
+      folders = sortFolders((await store.list?.()) ?? []);
+    } catch {
+      return; // Recents stays as it was; Open still reports the problem
+    }
+    if (run !== listing.current) return;
+    const today = new Date();
+    setStored((old) => folders.map((f) => old.find((r) => r.source.from === "store" && r.source.folder === f) ?? storeRow(f, today)));
+    // The newest few also show their size, callouts and notes (for Search). A folder that cannot be read keeps its plain row.
+    for (const f of folders.slice(0, RECENT_DETAILS)) {
+      try {
+        const m = await store.open(f);
+        if (run !== listing.current) return;
+        const row = storeRow(f, today, m.annotations);
+        setStored((old) => old.map((r) => (r.id === row.id ? row : r)));
+      } catch {
+        /* plain row */
+      }
+    }
+  }, [getStore]);
+  useEffect(() => {
+    void refreshRecents();
+    return () => {
+      listing.current++;
+    };
+  }, [refreshRecents]);
+  const rows = useMemo<RecentItem[]>(() => [...stored, ...samples], [stored, samples]);
+
+  // ---------- Tabs ----------
+  const addTab = useCallback(
+    (tab: Omit<Tab, "id">, fill?: (id: string) => void) => {
+      const had = live.current.tabs.tabs.find((t) => t.key === tab.key);
+      const id = had?.id ?? `t${nextId.current++}`;
+      if (!had) fill?.(id);
+      // Commit synchronously so the tab's editor is on screen when this returns (the test hook relies on it).
+      flushSync(() => {
+        setTabs((s) => openTab(s, { ...tab, id }));
+        setSideOpen(false);
+      });
+      return id;
+    },
+    [setTabs],
+  );
+  const findTab = (key: string) => live.current.tabs.tabs.find((t) => t.key === key) ?? null;
+  const dropTab = useCallback(
+    (id: string) => {
+      setTabs((s) => closeTab(s, id));
+      sessions.current.delete(id);
+      files.current.delete(id);
+    },
+    [setTabs],
+  );
+  /** Close a tab; one with unsaved changes asks first. */
+  const requestClose = useCallback(
+    (id: string) => {
+      const t = live.current.tabs.tabs.find((x) => x.id === id);
+      if (!t) return;
+      if (t.dirty) setAsk({ kind: "close", tabId: id });
+      else dropTab(id);
+    },
+    [dropTab, setAsk],
+  );
+  const setDirty = useCallback((id: string, dirty: boolean) => setTabs((s) => patchTab(s, id, { dirty })), [setTabs]);
+
+  const openSnipTab = useCallback(
+    (session: SnipSession, tab: { key: string; title: string; owner?: string }) =>
+      addTab({ ...tab, kind: "snip", dirty: session.baseDoc === null }, (id) => sessions.current.set(id, session)),
+    [addTab],
+  );
+
+  const openImage = useCallback(
+    async (url: string, name: string) => {
+      const img = await loadImage(url, name);
+      // Keep the original bytes so source.png is the untouched source image (fetched lazily, awaited on save).
+      const bytes = fetch(url).then((r) => r.blob()).then(toPngBytes);
+      openSnipTab(createSnipSession(img, bytes), { key: `image:${nextId.current}`, title: name });
+      return { width: img.width, height: img.height };
+    },
+    [openSnipTab],
+  );
+
+  // A finished snip opens in a new tab and goes straight to the clipboard, like Snipping Tool.
+  // A failed copy only shows its own toast; the snip itself still counts as done.
+  const openSnip = useCallback(
+    async (url: string, name: string) => {
+      const size = await openImage(url, name);
+      await editor.current?.copyToClipboard("Snip copied to clipboard");
+      return size;
+    },
+    [openImage],
+  );
+
+  const openMarkup = useCallback(
+    async (folder?: string): Promise<string | null> => {
+      const store = getStore();
+      const id = folder ?? (await store.pick());
+      if (!id) return null;
+      const m = await store.open(id);
+      const key = `markup:${m.folderName}`;
+      const had = findTab(key);
+      if (had) {
+        setTabs((s) => activateTab(s, had.id));
+        return m.folderName;
+      }
+      const blob = new Blob([m.sourcePng as BlobPart], { type: "image/png" });
+      const img = await loadImage(URL.createObjectURL(blob), m.folderName);
+      if (img.width !== m.annotations.source.width || img.height !== m.annotations.source.height) {
+        throw new MarkupError(
+          "Could not open markup",
+          `source.png is ${img.width}×${img.height} but annotations.json says ${m.annotations.source.width}×${m.annotations.source.height}. Restore the matching source.png or re-save the markup.`,
+        );
+      }
+      openSnipTab(createSnipSession(img, Promise.resolve(m.sourcePng), { doc: m.annotations, folder: m.folderName }), { key, title: m.folderName, owner: key });
+      return m.folderName;
+    },
+    [getStore, openSnipTab, setTabs],
+  );
+
+  const openSample = useCallback(
+    async (sampleId: string) => {
+      const s = sampleSnip(sampleId);
+      const key = `sample:${sampleId}`;
+      const had = findTab(key);
+      if (had) return setTabs((t) => activateTab(t, had.id));
+      const art = s && sampleArt(s);
+      if (!s || !art) throw new Error("The sample picture could not be drawn.");
+      const img = await loadImage(art, s.name);
+      const bytes = fetch(art).then((r) => r.blob()).then(toPngBytes);
+      openSnipTab(createSnipSession(img, bytes, { doc: sampleDoc(s), folder: null }), { key, title: s.name, owner: s.id });
+    },
+    [openSnipTab, setTabs],
+  );
+
+  const openFile = useCallback(
+    (zip: RecentZip, path: string) => {
+      const f = flatFiles(zip.tree, zip.id).find((x) => x.path === path);
+      if (!f) return;
+      const kind: TabKind = f.type === "md" ? "markdown" : f.type === "image" ? "image" : "file";
+      const doc: FileDoc = { name: f.name, path: zip.name + path.slice(zip.id.length), type: f.type ?? "code", text: f.text ?? "" };
+      addTab({ key: `doc:${path}`, kind, title: f.name, dirty: false, owner: zip.id }, (id) => files.current.set(id, doc));
+    },
+    [addTab],
+  );
+
+  const openSettings = useCallback(() => void addTab({ key: "settings", kind: "settings", title: "Settings", dirty: false }), [addTab]);
+
+  const openItem = useCallback(
+    (item: RecentItem) => {
+      if (item.kind === "zip") {
+        setOpenFolders((o) => {
+          const n = new Set(o);
+          if (!n.delete(item.id)) n.add(item.id);
+          return n;
+        });
+        return;
+      }
+      notify(null);
+      const src = item.source;
+      const done = src.from === "sample" ? openSample(src.sample) : openMarkup(src.folder);
+      done.catch((e: unknown) => fail(e, "Could not open markup"));
+    },
+    [openSample, openMarkup, notify, fail],
+  );
+
+  const onOpen = useCallback(() => {
+    notify(null);
+    openMarkup().then(
+      (n) => n && notify({ tone: "success", title: "Markup opened", description: n }),
+      (e: unknown) => fail(e, "Could not open markup"),
+    );
+  }, [openMarkup, notify, fail]);
+
+  const onFile = (e: ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) void openImage(URL.createObjectURL(f), f.name).catch((err: unknown) => fail(err, "Could not open the image"));
+    e.target.value = "";
+  };
+
+  // ---------- New snip, Add snip ----------
+  // The New snip button and the global hotkey (the shell sends a snip request) both run the same flow.
+  const openSnipRef = useRef(openSnip);
+  openSnipRef.current = openSnip;
+  const snipRef = useRef<ReturnType<typeof createSnipFlow>>({ start: async () => undefined, isBusy: () => false });
+  useEffect(() => {
+    const flow = createSnipFlow(electronDeps({ openImage: (url, name) => openSnipRef.current(url, name), notify, delayMs: () => live.current.prefs.snipDelay * 1000 }));
+    snipRef.current = flow;
+    const bridge = window.collide;
+    if (!bridge) return;
+    const off = bridge.onSnipRequest(() => void flow.start());
+    void bridge.settingsStatus().then(
+      (s) => {
+        const warning = s?.warning;
+        if (warning) notify({ tone: "error", title: "Hotkey setting not used", description: warning });
+      },
+      () => undefined,
+    );
+    return off;
+  }, [notify]);
+  const newSnip = useCallback(() => {
+    if (snipRef.current.isBusy()) return;
+    const d = live.current.prefs.snipDelay;
+    showHint(d > 0 ? `Collide hides, waits ${d} s, then captures` : "Drag a box on your screen. Esc cancels.");
+    void snipRef.current.start();
+  }, [showHint]);
+  const addSnip = useCallback(() => {
+    // With no snip in front, Add snip is New snip. Adding a capture beside the open image comes with images on the canvas (T33).
+    if (activeTab(live.current.tabs)?.kind !== "snip") newSnip();
+    else showHint("Add snip beside the open image is not built yet. New snip opens a capture in its own tab.");
+  }, [newSnip, showHint]);
+
+  // ---------- Ask first: close, delete ----------
+  const askTitle = (a: Ask) => (a.kind === "close" ? (live.current.tabs.tabs.find((t) => t.id === a.tabId)?.title ?? "") : a.item.name);
+  const cancelAsk = useCallback(() => setAsk(null), [setAsk]);
+  const settingsSave = useRef<(() => void) | null>(null);
+  const saveAndClose = useCallback(async () => {
+    const a = live.current.ask;
+    if (a?.kind !== "close") return;
+    const t = live.current.tabs.tabs.find((x) => x.id === a.tabId);
+    setAsk(null);
+    if (!t) return;
+    // Bring it to the front: its editor saves it.
+    flushSync(() => setTabs((s) => activateTab(s, t.id)));
+    try {
+      if (t.kind === "snip") {
+        const id = await editor.current?.saveMarkup();
+        if (id === undefined) throw new MarkupError("Could not save markup", "The tab's editor is not open. Go to the tab, then save.");
+        notify({ tone: "success", title: "Markup saved", description: id });
+      } else if (t.kind === "settings") settingsSave.current?.();
+      dropTab(t.id);
+    } catch (e) {
+      fail(e, "Could not save markup"); // the tab stays, with its changes
+    }
+  }, [dropTab, fail, notify, setAsk, setTabs]);
+  const discardAndClose = useCallback(() => {
+    const a = live.current.ask;
+    setAsk(null);
+    if (a?.kind === "close") dropTab(a.tabId);
+  }, [dropTab, setAsk]);
+  const doDelete = useCallback(async () => {
+    const a = live.current.ask;
+    if (a?.kind !== "delete") return;
+    setAsk(null);
+    const item = a.item;
+    try {
+      if (item.kind === "snip" && item.source.from === "store") {
+        const store = getStore();
+        if (!store.remove) throw new MarkupError("Could not delete markup", "This build cannot delete saved markups. Delete the folder in Documents/Collide/Markups.");
+        await store.remove(item.source.folder);
+      }
+    } catch (e) {
+      fail(e, "Could not delete markup");
+      return;
+    }
+    // Its tabs close without asking: the user just chose to delete it.
+    for (const t of live.current.tabs.tabs.filter((x) => x.owner === item.id)) dropTab(t.id);
+    setSamples((s) => s.filter((x) => x.id !== item.id));
+    setStored((s) => s.filter((x) => x.id !== item.id));
+    notify({ tone: "success", title: `Deleted ${item.name}`, description: "" });
+  }, [dropTab, fail, getStore, notify, setAsk]);
+
+  // ---------- Keys ----------
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (live.current.ask) return; // the splash has the keyboard
+      const ctrl = e.ctrlKey || e.metaKey;
+      const k = e.key.toLowerCase();
+      const front = live.current.tabs.active;
+      if (ctrl && !e.altKey && k === "w" && front) {
+        e.preventDefault();
+        requestClose(front);
+      } else if (e.ctrlKey && e.key === "Tab" && live.current.tabs.tabs.length > 1) {
+        e.preventDefault();
+        setTabs((s) => cycleTab(s, e.shiftKey ? -1 : 1));
+      } else if (ctrl && e.altKey && k === "s") {
+        e.preventDefault();
+        newSnip();
+      } else if (e.key === "Escape") {
+        setPop(false);
+        setSideOpen(false);
+      }
+    };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, [newSnip, requestClose, setTabs]);
+
+  // ---------- The test hook ----------
+  useEffect(() => {
+    const need = (): SnipEditorApi => {
+      if (!editor.current) throw new MarkupError("Could not save markup", "No image is open. Open an image, then save.");
+      return editor.current;
+    };
+    const hook: CollideHook = {
+      state: () => {
+        const { prefs: p, tabs: t, ask: a } = live.current;
+        return refState(
+          { tabs: t.tabs, active: t.active, theme: p.theme, aura: p.aura, snipDelay: p.snipDelay, addMode: p.addMode, collapsed: p.collapsed, splash: a ? { kind: a.kind, title: askTitle(a) } : null },
+          activeTab(t)?.kind === "snip" ? (editor.current?.refInput() ?? null) : null,
+        );
+      },
+      openImage: (url, name) => openImage(url, name ?? nameFromUrl(url)),
+      openSnip,
+      openMarkup,
+      seedShape: (s) => need().seedShape(s),
+      getDoc: () => editor.current?.getDoc() ?? null,
+      getState: () => editor.current?.getState() ?? NO_SNIP,
+      screenToImage: (p) => need().screenToImage(p),
+      saveMarkup: async () => need().saveMarkup(),
+      exportPng: async () => {
+        if (!editor.current) throw new Error("Nothing to export: no image is open.");
+        return editor.current.exportPng();
+      },
+      copyFit: async () => {
+        if (!editor.current) throw new Error("Nothing to copy: no image is open.");
+        return editor.current.copyFit();
+      },
+    };
+    window.__collide = hook;
+    return () => {
+      delete window.__collide;
+    };
+  }, [openImage, openSnip, openMarkup]);
+
+  // ---------- Render ----------
+  const front = activeTab(tabs);
+  const collapse = useCallback(() => setPref("collapsed", !live.current.prefs.collapsed), [setPref]);
+  const headBase = front && {
+    kind: front.kind,
+    dirty: front.dirty,
+    collapsed: prefs.collapsed,
+    onCollapse: collapse,
+    onClose: () => requestClose(front.id),
+    onMenu: () => setSideOpen((o) => !o),
+  };
+  const session = front ? sessions.current.get(front.id) : undefined;
+  const file = front ? files.current.get(front.id) : undefined;
+  const [password, setPassword] = useState("");
+
+  let body = <Blank onNewSnip={newSnip} onOpenFile={() => fileRef.current?.click()} onMenu={() => setSideOpen((o) => !o)} />;
+  if (front && headBase && front.kind === "snip" && session) {
+    body = (
+      <SnipEditor
+        key={front.id}
+        session={session}
+        pen={pen.current}
+        store={getStore}
+        apiRef={editor}
+        notify={notify}
+        themeKey={themeKey}
+        onDirty={(d) => setDirty(front.id, d)}
+        onSaved={(_, folderName) => {
+          // A saved snip is a markup of the store from now on: opening that markup goes to this tab.
+          const key = `markup:${folderName}`;
+          if (!front.key.startsWith("sample:")) setTabs((s) => patchTab(s, front.id, { key, owner: key }));
+          void refreshRecents();
+        }}
+        onOpenSnip={openSnip}
+        head={(save) => (
+          <WsHead {...headBase} name={front.title} path={session.source.folder ? `Documents/Collide/Markups/${session.source.folder}` : `${session.image.width} × ${session.image.height} · not saved yet`} savedLabel="Saved" {...save} />
+        )}
+      />
+    );
+  } else if (front && headBase && front.kind === "settings") {
+    body = (
+      <SettingsTab
+        key={front.id}
+        saved={prefs.settings}
+        password={password}
+        onPassword={setPassword}
+        onDirty={(d) => setDirty(front.id, d)}
+        onSave={(s) => {
+          setPref("settings", s);
+          notify({ tone: "success", title: "Saved", description: "" });
+        }}
+        notify={showHint}
+        head={(save) => {
+          settingsSave.current = save.onSave;
+          return <WsHead {...headBase} name="Settings" path="This computer" savedLabel="Saved" {...save} />;
+        }}
+      />
+    );
+  } else if (front && headBase && file) {
+    body = <FileTab key={front.id} doc={file} kind={front.kind} head={<WsHead {...headBase} name={file.name} path={file.path} />} />;
+  }
+
+  const frontFile = front && file ? (front.key.startsWith("doc:") ? front.key.slice(4) : null) : null;
+  const cls = ["app", prefs.collapsed ? "compact" : "", prefs.collapsed && (maximized || hasTab) ? "with-canvas" : "", sideOpen ? "side-open" : ""].filter(Boolean).join(" ");
+  const closing = ask?.kind === "close" ? tabs.tabs.find((t) => t.id === ask.tabId) : undefined;
+  const deleting = ask?.kind === "delete" ? ask.item : undefined;
+  const openTabsOfDeleting = deleting ? tabs.tabs.filter((t) => t.owner === deleting.id).length : 0;
+
+  return (
+    <div className={cls} data-testid="app-root" data-frame={isDesktop() ? "native" : "browser"}>
+      <Sidebar
+        prefs={prefs}
+        onDelay={(s) => setPref("snipDelay", s)}
+        onAddMode={(m) => setPref("addMode", m)}
+        onTheme={(t) => setPref("theme", t)}
+        onAura={(a) => setPref("aura", a)}
+        onCollapse={collapse}
+        onNewSnip={newSnip}
+        onAddSnip={addSnip}
+        onOpen={onOpen}
+        onSettings={openSettings}
+        rows={rows}
+        query={query}
+        onQuery={setQuery}
+        openFolders={openFolders}
+        onToggleFolder={(id) =>
+          setOpenFolders((o) => {
+            const n = new Set(o);
+            if (!n.delete(id)) n.add(id);
+            return n;
+          })
+        }
+        activeOwner={front?.owner ?? null}
+        activeFile={frontFile}
+        onOpenItem={openItem}
+        onOpenFile={openFile}
+        onDelete={(item) => setAsk({ kind: "delete", item })}
+        pop={pop}
+        onPop={setPop}
+      />
+      <section className="ws" aria-label="Workspace">
+        <TabBar tabs={tabs.tabs} active={tabs.active} onActivate={(id) => setTabs((s) => activateTab(s, id))} onClose={requestClose} />
+        {body}
+      </section>
+      <Toasts hint={hint} notice={notice} onDismiss={() => notify(null)} />
+      {closing && (
+        <Splash
+          title={`Save changes to ${closing.title}?`}
+          body={`This ${closing.kind === "snip" ? "markup" : closing.kind === "settings" ? "settings" : "file"} has changes that are not saved. If you close without saving, they are lost.`}
+          hint="Enter saves · Esc cancels"
+          changed
+          seed={9}
+          themeKey={themeKey}
+          onEnter={() => void saveAndClose()}
+          onCancel={cancelAsk}
+          buttons={[
+            { label: "Save and close", variant: "primary", icon: "save", autoFocus: true, onClick: () => void saveAndClose() },
+            { label: "Close without saving", onClick: discardAndClose },
+            { label: "Cancel", variant: "ghost", onClick: cancelAsk },
+          ]}
+        />
+      )}
+      {deleting && (
+        <Splash
+          title={`Delete ${deleting.name}?`}
+          body={`The ${deleting.kind === "snip" ? `markup and its ${deleting.callouts ?? 0} callout${deleting.callouts === 1 ? "" : "s"}` : "zip file and its unpacked folder"} are deleted${
+            deleting.kind === "snip" && deleting.source.from === "store" ? " from Documents/Collide/Markups" : ""
+          }. This can't be undone.${openTabsOfDeleting ? ` ${openTabsOfDeleting} open tab${openTabsOfDeleting > 1 ? "s close" : " closes"} without saving.` : ""}`}
+          hint="Enter deletes · Esc cancels"
+          seed={13}
+          themeKey={themeKey}
+          onEnter={() => void doDelete()}
+          onCancel={cancelAsk}
+          buttons={[
+            { label: "Delete", variant: "danger", icon: "trash-2", onClick: () => void doDelete() },
+            { label: "Cancel", variant: "ghost", onClick: cancelAsk },
+          ]}
+        />
+      )}
+      <input ref={fileRef} type="file" accept="image/*" hidden data-testid="file-input" onChange={onFile} />
+    </div>
+  );
+}

@@ -1,5 +1,5 @@
-import { EditorShell } from "./editor/EditorShell";
+import { Shell } from "./shell/Shell";
 
 export function App() {
-  return <EditorShell />;
+  return <Shell />;
 }

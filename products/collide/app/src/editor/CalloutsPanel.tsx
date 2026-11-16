@@ -41,9 +41,11 @@ export function CalloutsPanel({ shapes, selectedId, onSelect, onNote, onCommit, 
     onCommit();
   };
   return (
-    <div
+    <aside
       data-testid="inspector"
-      style={{ width: "var(--layout-inspector)", flex: "none", display: "flex", flexDirection: "column", borderLeft: "1px solid var(--line-1)", boxSizing: "border-box", minHeight: 0 }}
+      className="snipside"
+      aria-label="Callouts"
+      style={{ width: "var(--layout-inspector)", flex: "none", display: "flex", flexDirection: "column", borderLeft: "1px solid var(--line-1)", background: "var(--surface-1)", boxSizing: "border-box", minHeight: 0 }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10, height: 40, flex: "none", padding: "0 12px", borderBottom: "1px solid var(--line-1)" }}>
         <span style={{ flex: 1, font: "500 10.5px/1 var(--font-mono)", letterSpacing: "var(--tracking-label)", textTransform: "uppercase", color: "var(--text-3)" }}>Callouts</span>
@@ -66,7 +68,7 @@ export function CalloutsPanel({ shapes, selectedId, onSelect, onNote, onCommit, 
                 padding: "6px 8px",
                 borderRadius: "var(--radius-sm)",
                 cursor: "pointer",
-                background: selected ? "rgba(255,255,255,0.06)" : "transparent",
+                background: selected ? "var(--surface-3)" : "transparent",
                 boxShadow: selected ? "inset 0 0 0 1px var(--steel-500)" : "none",
               }}
             >
@@ -122,6 +124,6 @@ export function CalloutsPanel({ shapes, selectedId, onSelect, onNote, onCommit, 
         {callouts.length === 0 && <div style={{ font: "var(--type-sm)", color: "var(--text-4)" }}>Draw on the image to add a callout.</div>}
       </div>
       <div data-testid="ai-pane" style={{ flex: 1, minHeight: 0, borderTop: "1px solid var(--line-1)" }} />
-    </div>
+    </aside>
   );
 }

@@ -20,7 +20,7 @@
 | T16 | Local markup storage | Done (Vitest 319, Playwright 45, Electron e2e 15 ×2; real folder dialog, OneDrive/UNC Documents: manual Grant/Lydia) | n/a (Phase E) |
 | T17 | Remove Tauri | Done (Vitest 319, Playwright 45 (2 of 3 full runs green, see ISSUES 16), Electron e2e 15; no Rust; Reviewer doc fixes applied by Planner) | n/a (Phase E) |
 | T30 | Reference harness | Done (hook in prototype + app; `pnpm ref`; Vitest 327, Playwright 45, Electron e2e 15) | 15 specs: prototype 15/15 ✓ · app 0/15 (expected before T31) |
-| T31 | Layout shell | In progress (`task/T31-layout-shell`) | target: tabs-and-close-splash, delete-recents-items, sidebar-toggles on both |
+| T31 | Layout shell | Done (Vitest 368, Playwright 45 ×2, Electron e2e 15; collapsed window size, DPI: manual Grant/Lydia) | prototype 15/15 · app 3/15 (tabs-and-close-splash, delete-recents-items, sidebar-toggles) |
 | T32 | Markup engine | To do | |
 | T33 | Images on canvas | To do | |
 | T34 | Markdown editor | To do | |
@@ -31,8 +31,8 @@
 
 ### Next (for session 2)
 
-- **First:** finish T31 on `task/T31-layout-shell` (see the board for its state), then Reviewer → Tester → squash into `collide/run`.
-- Then T32 (markup engine), T33, T34 in board order; T35, T36, T38 if usage remains; T37 last.
+- **First:** T32 (markup engine), on `task/T32-markup-engine` from `collide/run`. Target: the engine specs pass on the app (callout-numbering, click-outside-returns-to-select, esc-returns-to-select, order-numbers-and-eraser, pen-colour-and-thickness-memory, pen-highlighter-and-page-leaders, print-area-and-bubble-stacking). Also remove the leftover Canvas snip button from the Snip toolbar (Grant 2026-11-15; Reviewer nit).
+- Then T33, T34 in board order; T35, T36, T38 if usage remains; T37 last.
 - Run the reference: `cd products/collide/app && pnpm ref` (per spec prototype ✓/✗ · app ✓/✗). Electron e2e needs `xvfb-run -a` in the cloud.
 - Playwright e2e has parallel-run flakes (ISSUES 16): rerun a single failure once before treating it as real.
 - Open for Grant: ISSUES 3–5, 8, 9, 11–13, 15, 17–20, and RUN3's questions 2–5 (run uses the (A) defaults).

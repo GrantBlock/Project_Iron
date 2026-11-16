@@ -26,10 +26,12 @@ export const INVOKE_CHANNELS = {
   hideOverlay: "collide:hide-overlay",
   copyImage: "collide:copy-image",
   settingsStatus: "collide:settings-status",
+  collapse: "collide:collapse",
   "markups.save": "collide:markups-save",
   "markups.open": "collide:markups-open",
   "markups.pick": "collide:markups-pick",
   "markups.list": "collide:markups-list",
+  "markups.remove": "collide:markups-remove",
 } as const;
 export type InvokeMethod = keyof typeof INVOKE_CHANNELS;
 
@@ -82,6 +84,11 @@ export interface CollideBridge {
   copyImage(png: string): Promise<void>;
   /** The hotkey in use, and a warning when settings.json or the registration had a problem. */
   settingsStatus(): Promise<SettingsStatus | null>;
+  /**
+   * T31: fit the window to the collapsed layout. Windowed and collapsed with nothing open (`canvas` false), it shrinks to
+   * the Recents panel at the right of its screen; otherwise it gets its size back. Says whether the window is maximized.
+   */
+  collapse(state: { collapsed: boolean; canvas: boolean }): Promise<{ maximized: boolean }>;
   /** Call `cb` when the global shortcut asks for a snip Returns the unsubscribe function. */
   onSnipRequest(cb: () => void): () => void;
   /** Markup folders under Documents/Collide/Markups. The main process refuses any path outside that folder. */
@@ -94,6 +101,8 @@ export interface CollideBridge {
     pick(): Promise<string | null>;
     /** The folders directly inside Markups (full paths). */
     list(): Promise<string[]>;
+    /** Delete a markup folder inside Markups for good (its three files, then the folder). Recents asks first. */
+    remove(folder: string): Promise<void>;
   };
   /** The overlay events: sent to every Collide window, the sender included (as the Rust shell's emit/listen did). */
   overlay: {
@@ -106,6 +115,7 @@ export interface CollideBridge {
 /** `Object.keys(window.collide)`, sorted. The preload exposes exactly these. */
 export const BRIDGE_KEYS = [
   "captureMonitor",
+  "collapse",
   "copyImage",
   "cropCapture",
   "hideEditor",

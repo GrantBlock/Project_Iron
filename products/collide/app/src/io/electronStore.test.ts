@@ -54,6 +54,7 @@ function bridge() {
     open: (folder) => overIpc(() => main.open(folder)),
     pick: () => overIpc(() => main.pick()),
     list: () => overIpc(() => main.list()),
+    remove: (folder) => overIpc(() => main.remove(folder)),
   };
   return { markups, base, root, pick: (p: string | null) => void (picked = p) };
 }
@@ -89,6 +90,22 @@ describe("ElectronMarkupStore", () => {
     expect(await s.list!()).toEqual([id]);
   });
 
+  it("remove deletes the folder on disk; a refusal comes back as a MarkupError with the main process's text (T31)", async () => {
+    const { markups, root } = bridge();
+    const s = new ElectronMarkupStore(markups);
+    const id = await s.save("2026-11-15_gone", { sourcePng: bytes(1), annotations: doc, exportPng: bytes(2) });
+    await s.remove(id);
+    expect(fs.existsSync(id)).toBe(false);
+    expect(await s.list()).toEqual([]);
+    const e = await s.remove(root).then(
+      () => null,
+      (err: unknown) => err,
+    );
+    expect(e).toBeInstanceOf(MarkupError);
+    expect((e as MarkupError).title).toBe("Could not delete markup");
+    expect((e as MarkupError).message).toContain("is not a markup folder directly inside Documents/Collide/Markups");
+  });
+
   it("the folder name is the last segment, with either slash and a trailing one", async () => {
     const opened: string[] = [];
     const s = new ElectronMarkupStore({
@@ -99,6 +116,7 @@ describe("ElectronMarkupStore", () => {
       },
       pick: async () => null,
       list: async () => [],
+      remove: async () => undefined,
     });
     expect((await s.open("C:\\Users\\g\\Documents\\Collide\\Markups\\2026-11-13_x")).folderName).toBe("2026-11-13_x");
     expect((await s.open("/home/g/Documents/Collide/Markups/plan/")).folderName).toBe("plan");

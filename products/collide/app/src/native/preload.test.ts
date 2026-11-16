@@ -49,7 +49,7 @@ describe("electron/preload.cjs", () => {
     const { exposed, collide, required } = loadPreload();
     expect(Object.keys(exposed)).toEqual(["collide"]);
     expect(Object.keys(collide).sort()).toEqual([...BRIDGE_KEYS]);
-    expect(Object.keys(collide.markups).sort()).toEqual(["list", "open", "pick", "save"]);
+    expect(Object.keys(collide.markups).sort()).toEqual(["list", "open", "pick", "remove", "save"]);
     expect(Object.keys(collide.overlay).sort()).toEqual(["emit", "on"]);
     expect(required).toEqual(["electron"]);
   });
@@ -60,8 +60,10 @@ describe("electron/preload.cjs", () => {
       cropCapture: [{ x: 1, y: 2, w: 3, h: 4 }, 1.5],
       showOverlay: [{ x: -1920, y: 0, width: 1920, height: 1080 }],
       copyImage: ["data:image/png;base64,AAAA"],
+      collapse: [{ collapsed: true, canvas: false }],
       "markups.save": ["2026-11-15_snip", { annotations: "{}" }],
       "markups.open": ["folder"],
+      "markups.remove": ["folder"],
     };
     for (const name of Object.keys(INVOKE_CHANNELS) as InvokeMethod[]) {
       invoked.length = 0;

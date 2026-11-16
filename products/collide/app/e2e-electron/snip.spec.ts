@@ -207,7 +207,8 @@ test("snip delay: the editor hides at once, the capture and overlay come after t
   try {
     const page = await app.firstWindow();
     await expect(page.getByTestId("canvas")).toBeVisible();
-    await page.getByTestId("snip-delay").selectOption("3");
+    // T31: the delay is a toggle in the sidebar (was a drop-down in the toolbar).
+    await page.getByTestId("snip-delay").getByRole("radio", { name: "3s", exact: true }).click();
 
     const started = Date.now();
     const opened = app.waitForEvent("window");

@@ -99,11 +99,12 @@ export const test = base.extend<Fixtures & RefOptions>({
     { auto: true },
   ],
 
-  open: async ({ page, targetUrl }, use) => {
+  open: async ({ page, target, targetUrl }, use) => {
     await use(async () => {
       // Every test has its own browser context, so nothing is saved from an earlier test.
-      // T31 onward: when the app needs the prototype's sample Recents to start from, load them here.
-      await page.goto(targetUrl);
+      // The app starts from the prototype's sample Recents: `?sample` loads them (src/shell/sample.ts, dev and test only).
+      // The prototype has them built in. A reload keeps the address, so the samples are there again.
+      await page.goto(target === "app" ? `${targetUrl}?sample` : targetUrl);
       await ready(page);
     });
   },

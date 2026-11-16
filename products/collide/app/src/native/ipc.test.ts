@@ -15,6 +15,7 @@ function setup(capturer?: Capturer, settings: SettingsStatus | null = { hotkey: 
   const moves: unknown[][] = [];
   const copied: unknown[] = [];
   const stored: unknown[][] = [];
+  const collapsed: unknown[] = [];
   const handlers = new Map<string, (event: IpcEventLike, ...args: unknown[]) => unknown>();
   const listeners = new Map<string, (event: IpcEventLike, ...args: unknown[]) => void>();
   const sent: unknown[][] = [];
@@ -50,6 +51,10 @@ function setup(capturer?: Capturer, settings: SettingsStatus | null = { hotkey: 
       copied.push(png);
     },
     settingsStatus: () => settings,
+    collapse: (request) => {
+      collapsed.push(request);
+      return { maximized: true };
+    },
     markups: {
       save: (folderName, files) => {
         stored.push(["save", folderName, files]);
@@ -69,12 +74,16 @@ function setup(capturer?: Capturer, settings: SettingsStatus | null = { hotkey: 
         stored.push(["list"]);
         return ["/docs/Collide/Markups/2026-11-15_snip"];
       },
+      remove: (folder) => {
+        stored.push(["remove", folder]);
+        if (folder !== "/docs/Collide/Markups/2026-11-15_snip") throw new MarkupStoreError("NotMarkupFolder", String(folder));
+      },
     },
     capturer: capturer ?? { captureAt: async () => ({ image: TestImage.marked(90, 60), monitor, display: { id: 2, bounds: { x: -60, y: -40, width: 60, height: 40 } } }) },
   });
   const invoke = <T>(method: InvokeMethod, event: IpcEventLike, ...args: unknown[]) =>
     handlers.get(INVOKE_CHANNELS[method])!(event, ...args) as Promise<IpcReply<T>>;
-  return { handlers, listeners, sent, state, invoke, moves, copied, stored };
+  return { handlers, listeners, sent, state, invoke, moves, copied, stored, collapsed };
 }
 
 describe("registerBridge", () => {
@@ -126,6 +135,12 @@ describe("registerBridge", () => {
     expect(failing.state.frame).toBeNull();
   });
 
+  it("T31: collapse reaches the window code with the page's request and answers whether the window is maximized", async () => {
+    const { invoke, collapsed } = setup();
+    expect(await invoke("collapse", fromApp, { collapsed: true, canvas: false })).toEqual({ ok: true, value: { maximized: true } });
+    expect(collapsed).toEqual([{ collapsed: true, canvas: false }]);
+  });
+
   it("T16: no stubs are left; the markups channels reach the store with the page's arguments, and its typed errors come back as messages", async () => {
     const { invoke, stored } = setup();
     const files = { sourcePng: new Uint8Array([1]), annotations: "{}", exportPng: new Uint8Array([2]) };
@@ -134,6 +149,9 @@ describe("registerBridge", () => {
     expect(await invoke("markups.pick", fromApp)).toEqual({ ok: true, value: null });
     expect(await invoke("markups.list", fromApp)).toEqual({ ok: true, value: ["/docs/Collide/Markups/2026-11-15_snip"] });
     expect(stored).toEqual([["save", "2026-11-15_snip", files], ["open", "/docs/Collide/Markups/2026-11-15_snip"], ["pick"], ["list"]]);
+    // T31: delete, for Recents.
+    expect(await invoke("markups.remove", fromApp, "/docs/Collide/Markups/2026-11-15_snip")).toEqual({ ok: true, value: undefined });
+    expect(await invoke("markups.remove", fromApp, "/docs/Collide/Markups")).toMatchObject({ ok: false, error: expect.stringContaining("is not a markup folder directly inside Documents/Collide/Markups") });
 
     expect(await invoke("markups.open", fromApp, "/etc")).toEqual({
       ok: false,
@@ -181,7 +199,7 @@ describe("registerBridge", () => {
     const { invoke, state, listeners, sent, moves, copied, stored } = setup();
     for (const event of [{ senderFrame: { url: "https://example.com/" } }, { senderFrame: null }, {}] as IpcEventLike[]) {
       expect(await invoke("captureMonitor", event)).toEqual({ ok: false, error: UNTRUSTED_SENDER });
-      for (const method of ["hideEditor", "showEditor", "showOverlay", "hideOverlay", "copyImage", "settingsStatus", "markups.save", "markups.open", "markups.pick", "markups.list"] as const) {
+      for (const method of ["hideEditor", "showEditor", "showOverlay", "hideOverlay", "copyImage", "settingsStatus", "collapse", "markups.save", "markups.open", "markups.pick", "markups.list", "markups.remove"] as const) {
         expect(await invoke(method, event, PNG), method).toEqual({ ok: false, error: UNTRUSTED_SENDER });
       }
       listeners.get(OVERLAY_EVENT_CHANNEL)!(event, "collide:overlay-ping", undefined);
