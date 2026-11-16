@@ -248,7 +248,8 @@ test("Copy falls back to the shell's clipboard when the web clipboard refuses", 
       return [...ctx.getImageData(0, 0, 1, 1).data].slice(0, 3);
     });
     await page.getByTestId("copy-btn").click();
-    await expect(page.getByTestId("notice")).toContainText("Copied to clipboard");
+    // T32: Copy takes the print area (here just the image) and says its size.
+    await expect(page.getByTestId("notice")).toContainText("Copied the print area · 64 × 48 with note boxes");
     expect(await clipboardImage(app)).toEqual({ width: 64, height: 48, corners: [corner, corner, corner, corner] });
   } finally {
     await close();

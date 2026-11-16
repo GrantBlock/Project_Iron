@@ -51,14 +51,17 @@ async function openAnnotatedImage(page: Page, name: string) {
   const box = (await page.getByTestId("canvas").boundingBox())!;
   const stage = await page.evaluate(() => window.__collide!.getState().stage!);
   const at = (ix: number, iy: number) => [box.x + stage.x + ix * stage.scale, box.y + stage.y + iy * stage.scale] as const;
-  await page.getByRole("button", { name: "Filled ellipse" }).click();
+  // T32 (Grant 2026-11-15): no filled tools; an ellipse filled with its card's Fill %.
+  await page.getByRole("button", { name: "Ellipse", exact: true }).click();
   await page.mouse.move(...at(190, 20));
   await page.mouse.down();
   await page.mouse.move(...at(240, 50), { steps: 4 });
   await page.mouse.move(...at(290, 80), { steps: 4 });
   await page.mouse.up();
+  // The list runs front to back: the ellipse just drawn (callout 2) is first.
   await page.getByTestId("callout-note").first().fill("Valve handle clashes with the rail");
   await page.getByTestId("callout-note").first().blur();
+  await page.getByRole("slider", { name: "Fill of callout 2, percent" }).fill("100");
 }
 
 /** A hash of a PNG's pixels (decoded on the page) and its size. */
