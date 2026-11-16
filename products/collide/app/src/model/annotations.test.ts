@@ -43,7 +43,7 @@ describe("annotations", () => {
   it("rejects an unknown shape type naming the path and allowed types", () => {
     const msg = err(withShape({ ...shapes[0], type: "star" }));
     expect(msg).toContain("shapes[0].type");
-    expect(msg).toContain("rect, ellipse, line, point, cross, pen, hl, arrow, text, callout, highlight");
+    expect(msg).toContain("rect, ellipse, line, point, cross, pen, hl, image, arrow, text, callout, highlight");
   });
 
   it("rejects wrong version and missing type-specific fields", () => {
