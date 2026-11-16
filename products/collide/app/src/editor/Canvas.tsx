@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { Arrow, Circle, Ellipse, Group, Image as KonvaImage, Label, Layer, Rect, Shape as KonvaShape, Stage, Tag, Text, Transformer } from "react-konva";
 import Konva from "konva";
@@ -368,6 +368,17 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
 
   handleRef.current = { stage: () => stageRef.current, container: () => wrapRef.current };
 
+  // Measure once before the first paint: a Snip tab mounts its canvas when it opens, and whoever opened it
+  // (the test hook too) expects the stage to be there as soon as the tab is.
+  useLayoutEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const s = { width: el.clientWidth, height: el.clientHeight };
+    if (s.width <= 0 || s.height <= 0) return;
+    setSize(s);
+    onSize(s);
+  }, [onSize]);
+
   useEffect(() => {
     const el = wrapRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
@@ -623,7 +634,8 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
         minWidth: 0,
         minHeight: 0,
         overflow: "hidden",
-        background: "var(--pattern-dots), var(--ink-950)",
+        // The prototype's stage: the theme's canvas colour with a 16 px dot grid.
+        background: "radial-gradient(var(--canvas-dot) 1px, transparent 1.2px) 0 0 / 16px 16px, var(--bg-canvas)",
         cursor,
         touchAction: "none",
       }}
