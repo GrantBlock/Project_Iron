@@ -3,6 +3,8 @@
 ## Run session 2
 
 - Start (UTC): 2026-11-16T22:11Z · Planner (Irileth). Grant: use the remaining usage; when the limit is reached, park and stop (no auto-continue).
+- T32 merged 22:40Z. The 5-hour limit hit during T33 (Coder on Opus); T33 parked at 22:51Z and the session stopped (Grant: check only, do not continue).
+- T33 parked on `task/T33-canvas-images` (6 commits, not merged, no Reviewer or Tester yet). Planner check at park: lint and build pass; Vitest 388; Electron e2e 15/15; Playwright 47/48: the new `e2e/images.spec.ts:87` (pasted image beside, move, aspect-locked resize, delete, undo) fails, and that spec was committed WIP and unverified. Reference app 5/15 (order-numbers-and-eraser not passing yet). Next: fix images.spec, then Reviewer → Tester → squash.
 
 ## Run session 1
 
@@ -28,7 +30,7 @@
 | T30 | Reference harness | Done (hook in prototype + app; `pnpm ref`; Vitest 327, Playwright 45, Electron e2e 15) | 15 specs: prototype 15/15 ✓ · app 0/15 (expected before T31) |
 | T31 | Layout shell | Done (Vitest 368, Playwright 45 ×2, Electron e2e 15; collapsed window size, DPI: manual Grant/Lydia) | prototype 15/15 · app 3/15 (tabs-and-close-splash, delete-recents-items, sidebar-toggles) |
 | T32 | Markup engine | Done (Snip; Vitest 376, Playwright 45 ×2, Electron e2e 15) | prototype 15/15 · app 5/15 (+callout-numbering, print-area-and-bubble-stacking; Esc, click-outside, colour memory, pen-highlighter pass their Snip parts and wait for T34; order-numbers waits for T33) |
-| T33 | Images on canvas | To do | |
+| T33 | Images on canvas | Parked (`task/T33-canvas-images`; images.spec fails, see session 2 notes) | app 5/15 |
 | T34 | Markdown editor | To do | |
 | T35 | `.collide` files | To do | |
 | T36 | Server storage | To do | |
@@ -41,7 +43,7 @@ prototype 15/15 ✓ · app 3/15 ✓ after T31. Passing on the app: tabs-and-clos
 
 ### Next (for session 2)
 
-- **First:** T33 (images on the canvas: Add snip Current/Behind and paste beside the base image, canvas grows, move, aspect-locked resize, reorder, delete). Target spec: order-numbers-and-eraser and the Snip part of paste-image.
+- **First:** finish T33 on `task/T33-canvas-images` (fix `e2e/images.spec.ts:87`; then Reviewer → Tester → squash). T33 is images on the canvas: Add snip Current/Behind and paste beside the base image, canvas grows, move, aspect-locked resize, reorder, delete). Target spec: order-numbers-and-eraser and the Snip part of paste-image.
 - Then T34 (Markdown editor; unlocks 6 specs); T35, T36, T38 if usage remains; T37 last.
 - Run the reference: `cd products/collide/app && pnpm ref` (per spec prototype ✓/✗ · app ✓/✗). Electron e2e needs `xvfb-run -a` in the cloud.
 - Pacing: the Fable Coder hit the 5-hour limit in four of eight tasks. Have each Coder commit and push after every step, and resume a stopped agent with SendMessage rather than restarting it.
