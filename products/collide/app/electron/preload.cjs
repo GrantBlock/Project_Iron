@@ -52,6 +52,7 @@ contextBridge.exposeInMainWorld("collide", {
     open: (folder) => call("collide:markups-open", folder),
     pick: () => call("collide:markups-pick"),
     list: () => call("collide:markups-list"),
+    remove: (folder) => call("collide:markups-remove", folder),
   },
   overlay: {
     emit: (event, payload) => {

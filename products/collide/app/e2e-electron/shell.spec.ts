@@ -85,7 +85,7 @@ test("the page is isolated: window.collide has exactly the bridge, no Node, sand
       collide: "object",
       collideKeys: BRIDGE_KEYS,
       functions: BRIDGE_KEYS.filter((k) => k !== "markups" && k !== "overlay"),
-      markups: { list: "function", open: "function", pick: "function", save: "function" },
+      markups: { list: "function", open: "function", pick: "function", remove: "function", save: "function" },
       overlay: { emit: "function", on: "function" },
       require: "undefined",
       process: "undefined",

@@ -75,6 +75,13 @@ async function failure(run: () => unknown): Promise<{ kind: MarkupStoreErrorKind
   throw new Error("expected a MarkupStoreError, but the call succeeded");
 }
 
+/** The call fails with this kind of error; resolves with it for a closer look at its message. */
+async function rejected(kind: MarkupStoreErrorKind, run: () => unknown) {
+  const f = await failure(run);
+  expect(f.kind).toBe(kind);
+  return f;
+}
+
 /** Every file and folder under `dir`, relative, sorted. */
 function tree(dir: string): string[] {
   return (fs.readdirSync(dir, { recursive: true }) as string[]).map((p) => p.split(path.sep).join("/")).sort();
@@ -544,5 +551,84 @@ describe("createMarkups: links inside Markups must not lead out of it", () => {
     expect(markups.open(dir).annotations).toBe(files().annotations);
     expect(markups.list()).toEqual([dir]);
     expect(tree(documents)).toContain("Collide/Markups/plan/source.png");
+  });
+});
+
+describe("createMarkups: remove (T31: delete from Recents)", () => {
+  it("deletes the markup's three files and its folder, by path or by name, and nothing else", () => {
+    const { documents, root } = sandbox();
+    const { markups } = store(documents);
+    const a = markups.save("a", files());
+    markups.save("b", files());
+    fs.writeFileSync(path.join(root, "notes.txt"), "not a markup");
+    markups.remove(a);
+    expect(fs.existsSync(a)).toBe(false);
+    expect(tree(root)).toEqual(["b", "b/annotations.json", "b/export.png", "b/source.png", "notes.txt"]);
+    markups.remove("b");
+    expect(tree(root)).toEqual(["notes.txt"]);
+    expect(markups.list()).toEqual([]);
+  });
+
+  it("a folder with a file missing still goes; a folder holding anything else is kept, with the cause and the fix", async () => {
+    const { documents } = sandbox();
+    const { markups } = store(documents);
+    const partial = markups.save("partial", files());
+    fs.rmSync(path.join(partial, "export.png"));
+    markups.remove(partial);
+    expect(fs.existsSync(partial)).toBe(false);
+
+    const mixed = markups.save("mixed", files());
+    fs.writeFileSync(path.join(mixed, "my-notes.txt"), "keep me");
+    const e = await rejected("DeleteFailed", () => markups.remove(mixed));
+    expect(e.message).toContain(`Deleting ${mixed} failed (`);
+    expect(e.message).toContain("Collide deletes only source.png, annotations.json and export.png");
+    // Collide's own files are gone; the user's file and the folder are still there.
+    expect(tree(mixed)).toEqual(["my-notes.txt"]);
+    expect(fs.readFileSync(path.join(mixed, "my-notes.txt"), "utf8")).toBe("keep me");
+  });
+
+  it("refuses the Markups folder itself, anything deeper, anything outside and anything that is not a folder name or path", async () => {
+    const { base, documents, root } = sandbox();
+    const { markups } = store(documents);
+    const kept = markups.save("kept", files());
+    fs.mkdirSync(path.join(kept, "deep"));
+    const outside = path.join(base, "elsewhere");
+    fs.mkdirSync(outside);
+    fs.writeFileSync(path.join(outside, "source.png"), "x");
+
+    for (const target of [root, ".", path.join(kept, "deep"), "kept/deep"]) {
+      const e = await rejected("NotMarkupFolder", () => markups.remove(target));
+      expect(e.message).toBe(`${target} is not a markup folder directly inside ${MARKUPS_LABEL}, so Collide will not delete it. Delete it in File Explorer if it should go.`);
+    }
+    for (const target of [outside, base, documents, "..", "../..", path.join(root, "..", "..", "..", "elsewhere")]) await rejected("OutsideMarkups", () => markups.remove(target));
+    for (const target of [undefined, null, "", 7, {}, ["kept"]]) await rejected("InvalidFolder", () => markups.remove(target));
+    await rejected("DeleteFailed", () => markups.remove("never-saved"));
+
+    expect(tree(kept)).toEqual(["annotations.json", "deep", "export.png", "source.png"]);
+    expect(tree(outside)).toEqual(["source.png"]);
+  });
+
+  it("a link inside Markups is never followed: one leading outside is refused, one to another markup is not deleted through", async () => {
+    const { base, documents, root } = sandbox();
+    const { markups } = store(documents);
+    const real = markups.save("real", files());
+    const outside = path.join(base, "outside");
+    fs.mkdirSync(outside);
+    for (const f of [FILE_SOURCE, FILE_ANNOTATIONS, FILE_EXPORT]) fs.writeFileSync(path.join(outside, f), "x");
+    fs.symlinkSync(outside, path.join(root, "leads-out"), "dir");
+    fs.symlinkSync(real, path.join(root, "alias"), "dir");
+
+    await rejected("OutsideMarkups", () => markups.remove(path.join(root, "leads-out")));
+    await rejected("NotMarkupFolder", () => markups.remove("alias"));
+    expect(tree(outside)).toEqual(["annotations.json", "export.png", "source.png"]);
+    expect(tree(real)).toEqual(["annotations.json", "export.png", "source.png"]);
+
+    // A linked file inside a real markup folder: the link goes, its target outside stays.
+    const target = path.join(outside, "target.png");
+    fs.writeFileSync(target, "outside bytes");
+    fs.rmSync(path.join(real, FILE_EXPORT));
+    fs.symlinkSync(target, path.join(real, FILE_EXPORT), "file");
+    await rejected("OutsideMarkups", () => markups.remove(real));
+    expect(fs.readFileSync(target, "utf8")).toBe("outside bytes");
   });
 });

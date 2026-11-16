@@ -30,6 +30,7 @@ export const INVOKE_CHANNELS = {
   "markups.open": "collide:markups-open",
   "markups.pick": "collide:markups-pick",
   "markups.list": "collide:markups-list",
+  "markups.remove": "collide:markups-remove",
 } as const;
 export type InvokeMethod = keyof typeof INVOKE_CHANNELS;
 
@@ -94,6 +95,8 @@ export interface CollideBridge {
     pick(): Promise<string | null>;
     /** The folders directly inside Markups (full paths). */
     list(): Promise<string[]>;
+    /** Delete a markup folder inside Markups for good (its three files, then the folder). Recents asks first. */
+    remove(folder: string): Promise<void>;
   };
   /** The overlay events: sent to every Collide window, the sender included (as the Rust shell's emit/listen did). */
   overlay: {

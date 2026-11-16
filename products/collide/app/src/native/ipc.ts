@@ -87,6 +87,7 @@ export function registerBridge(deps: BridgeDeps): { state: CaptureState } {
   handle("markups.open", (folder) => deps.markups.open(folder));
   handle("markups.pick", () => deps.markups.pick());
   handle("markups.list", () => deps.markups.list());
+  handle("markups.remove", (folder) => deps.markups.remove(folder));
 
   // Overlay events go to every window, the sender included (the Rust shell's emit did the same).
   deps.ipcMain.on(OVERLAY_EVENT_CHANNEL, (event, name, payload) => {
