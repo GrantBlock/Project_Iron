@@ -6,7 +6,9 @@
 - Usage: the 5-hour limit hit three times; each time the agent in flight was resumed, not restarted, after Grant's go-ahead:
   1. about 16:30Z during T15 (reset 18:40Z, resumed 18:41Z);
   2. about 20:40Z during T17 (reset 23:40Z per the limit notice; Grant said it had reset and work resumed about 20:50Z);
-  3. during T31, before the Coder committed anything (reset 01:40Z, resumed 01:41Z; T31 restarted from a clean branch).
+  3. during T31, before the Coder committed anything (reset 01:40Z, resumed 01:41Z; T31 restarted from a clean branch);
+  4. again during T31, after 5 commits (reset 06:40Z, resumed 06:41Z); T31 merged 06:52Z.
+- Session 1 stopped at 06:53Z (2026-11-16) after T31: four limit hits and well past 4 h 15 min, so no new task was started (pacing rule).
   The Fable Coder is the heaviest user: each Coder task cost roughly 120–250k tokens, Reviewer/Tester 70–120k.
 - Merged at start (CLAUDE.md step 1): `claude/intelligent-brown-2hlzyu` (Agent Chat 0.4.x, `tools/project-chat/` only).
 
@@ -29,13 +31,18 @@
 | T38 | PDF | To do | |
 | T37 | Handoff | To do | |
 
+### Reference specs (app column)
+
+prototype 15/15 ✓ · app 3/15 ✓ after T31. Passing on the app: tabs-and-close-splash, delete-recents-items, sidebar-toggles. The other 12 wait for T32 (engine), T33 (images and paste), T34 (Markdown) and T35 (`.collide`). Screenshot comparison (2% tolerance (A)) not reported yet; T37 does it.
+
 ### Next (for session 2)
 
 - **First:** T32 (markup engine), on `task/T32-markup-engine` from `collide/run`. Target: the engine specs pass on the app (callout-numbering, click-outside-returns-to-select, esc-returns-to-select, order-numbers-and-eraser, pen-colour-and-thickness-memory, pen-highlighter-and-page-leaders, print-area-and-bubble-stacking). Also remove the leftover Canvas snip button from the Snip toolbar (Grant 2026-11-15; Reviewer nit).
 - Then T33, T34 in board order; T35, T36, T38 if usage remains; T37 last.
 - Run the reference: `cd products/collide/app && pnpm ref` (per spec prototype ✓/✗ · app ✓/✗). Electron e2e needs `xvfb-run -a` in the cloud.
+- Pacing: the Fable Coder hit the 5-hour limit in four of eight tasks. Have each Coder commit and push after every step, and resume a stopped agent with SendMessage rather than restarting it.
 - Playwright e2e has parallel-run flakes (ISSUES 16): rerun a single failure once before treating it as real.
-- Open for Grant: ISSUES 3–5, 8, 9, 11–13, 15, 17–20, and RUN3's questions 2–5 (run uses the (A) defaults).
+- Open for Grant: ISSUES 3–5, 8, 9, 11–13, 15, 17–20, 25–30 (25–30 from T31: dirty dot on new snips, splash rules, default theme System or Dark, the reversed frame test and two new bridge keys, what Recents/Add snip/Zip/Markdown tabs do for now, collapse sizing), and 21–24 (RUN3 questions 2–5; the run uses the (A) defaults).
 - Windows manual checks (Grant/Lydia): TESTER-NOTES items 1–10 on `pnpm electron:dev`, then `pnpm dist` and the portable `.exe` (items 1, 2, 7, 9 at 100% and 150%); real Ctrl+Alt+S; overlay on a second monitor; real folder dialog and a folder outside Markups.
 
 ---
