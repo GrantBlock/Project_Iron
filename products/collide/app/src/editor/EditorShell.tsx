@@ -5,14 +5,13 @@ import type { AnnotationsDoc, Shape } from "../model";
 import { Canvas, cssVar, type CanvasHandle, type LoadedImage } from "./Canvas";
 import { historyReducer, initialHistory, type HistoryState } from "./history";
 import { nextShapeId, type NewShape, type ShapePatch } from "./store";
-import { DEFAULT_STROKE_WIDTH, TOOL_KEYS, type Tool } from "./tools";
+import { drawsWithColor, loadPenMemory, savePenMemory, TOOL_KEYS, type Role, type Tool } from "./tools";
 import { useEditorStore } from "./useEditorStore";
 import { StatusBar } from "./StatusBar";
 import { CalloutsPanel } from "./CalloutsPanel";
 import { Toolbar } from "./Toolbar";
-import { copyPngToClipboard, dataUrlToBlob, downloadPng, exportFileName, flatten, flattenArea, flattenFit, type Flattened } from "../io/flatten";
+import { copyPngToClipboard, dataUrlToBlob, downloadPng, exportFileName, flatten, flattenFit, type Flattened } from "../io/flatten";
 import { isPng, MarkupError, markupFolderName, type MarkupStore } from "../io";
-import { snipName } from "../snip/flow";
 import { fitView, recentre, screenToImage, type Point, type Size, type View } from "./viewport";
 import type { RefInput } from "./refState";
 
@@ -21,11 +20,6 @@ import type { RefInput } from "./refState";
 // the image, the document with its undo history, the view and where it is saved. Only the tab in front
 // has an editor on screen; switching tabs mounts the editor again from the session.
 
-/** Resolve a swatch value ("var(--token)") to the hex string stored in the doc. */
-const resolveColor = (c: string) => {
-  const m = /^var\((--[\w-]+)\)$/.exec(c);
-  return m ? cssVar(m[1]) : c;
-};
 
 export function loadImage(url: string, name: string): Promise<LoadedImage> {
   return new Promise((resolve, reject) => {
@@ -72,13 +66,20 @@ export function createSnipSession(image: LoadedImage, bytes: Promise<Uint8Array>
   return { image, history, view: null, fitted: true, source: { bytes, folder: opened?.folder ?? null }, baseDoc: opened ? history.present.doc : null };
 }
 
-/** The tool, colour and line thickness: one set for every Snip tab. */
+/**
+ * The tool, colour and line thickness: one set for every Snip tab. `color` is the pressed colour (none after a draw);
+ * `lastColor` and the thickness are remembered across reloads (RUN3 T32, Grant 2026-11-15).
+ */
 export interface Pen {
   tool: Tool;
-  color: string;
+  color: Role | null;
+  lastColor: Role;
   strokeWidth: number;
 }
-export const defaultPen = (): Pen => ({ tool: "select", color: "var(--signal-500)", strokeWidth: DEFAULT_STROKE_WIDTH });
+export const defaultPen = (): Pen => {
+  const m = loadPenMemory("snip");
+  return { tool: "select", color: null, lastColor: m.role, strokeWidth: m.stroke };
+};
 
 export interface CollideTestState {
   image: { name: string; width: number; height: number } | null;
@@ -123,15 +124,13 @@ interface Props {
   onDirty: (dirty: boolean) => void;
   /** Saved: the folder id the store gave, and the folder's name. */
   onSaved: (id: string, folderName: string) => void;
-  /** Canvas snip: open the dragged area as a new markup and copy it. */
-  onOpenSnip: (url: string, name: string) => Promise<unknown>;
   /** The tab's header (name, Save, Close), given the editor's Save. */
   head: (save: { onSave: () => void; canSave: boolean }) => ReactNode;
   /** Changes when the theme does, so the canvas repaints with the theme's colours. */
   themeKey: string;
 }
 
-export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSaved, onOpenSnip, head, themeKey }: Props) {
+export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSaved, head, themeKey }: Props) {
   const image = session.image;
   const { state, dispatch, stateRef, canUndo, canRedo } = useEditorStore(session.history, (h) => (session.history = h));
   const shapes = useMemo(() => state.doc?.shapes ?? [], [state.doc]);
@@ -142,10 +141,18 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
     fittedRef.current = false;
     setViewState(update);
   }, []);
-  const [tool, setToolState] = useState<Tool>(pen.tool === "canvas-snip" ? "select" : pen.tool);
-  const [color, setColorState] = useState(pen.color);
+  const [tool, setToolState] = useState<Tool>(pen.tool);
+  const [color, setColorState] = useState<Role | null>(pen.color);
+  const [lastColor, setLastColor] = useState<Role>(pen.lastColor);
   const [strokeWidth, setStrokeWidthState] = useState<number>(pen.strokeWidth);
-  const setTool = useCallback((t: Tool | ((t: Tool) => Tool)) => setToolState(t), []);
+  const lastColorRef = useRef(lastColor);
+  lastColorRef.current = lastColor;
+  // Picking a drawing tool with no colour pressed brings back the last colour.
+  const setTool = useCallback((t: Tool) => {
+    setToolState(t);
+    if (drawsWithColor(t)) setColorState((c) => c ?? lastColorRef.current);
+  }, []);
+  const [focusNote, setFocusNote] = useState<{ id: string; n: number } | null>(null);
   const sizeRef = useRef<Size>({ width: 0, height: 0 });
   const handleRef = useRef<CanvasHandle | null>(null);
 
@@ -157,6 +164,7 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
     session.fitted = fittedRef.current;
     pen.tool = tool;
     pen.color = color;
+    pen.lastColor = lastColor;
     pen.strokeWidth = strokeWidth;
   });
 
@@ -255,22 +263,37 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
   );
   const onCopy = useCallback(() => void copyToClipboard("Copied to clipboard"), [copyToClipboard]);
 
-  const onAdd = useCallback((shape: NewShape, numbered: boolean) => dispatch({ type: "add", shape, numbered }), [dispatch]);
+  // After a draw no colour stays pressed; a new callout's note takes the cursor.
+  const onAdd = useCallback(
+    (shape: NewShape, numbered: boolean) => {
+      const id = nextShapeId(stateRef.current.doc?.shapes ?? []);
+      dispatch({ type: "add", shape, numbered });
+      setColorState(null);
+      if (numbered) setFocusNote((f) => ({ id, n: (f?.n ?? 0) + 1 }));
+    },
+    [dispatch, stateRef],
+  );
+  const onRemoveMany = useCallback((ids: string[]) => dispatch({ type: "removeMany", ids }), [dispatch]);
+  const onPatch = useCallback((id: string, patch: ShapePatch) => dispatch({ type: "update", id, patch }), [dispatch]);
+  const onReorder = useCallback((id: string, index: number) => dispatch({ type: "reorder", id, index }), [dispatch]);
   const onUpdate = useCallback((id: string, patch: ShapePatch) => dispatch({ type: "update", id, patch }), [dispatch]);
   const onRemove = useCallback((id: string) => dispatch({ type: "remove", id }), [dispatch]);
   const onSelect = useCallback((id: string | null) => dispatch({ type: "select", id }), [dispatch]);
 
-  // Changing colour or stroke width also restyles the selected shape (not callout badges, which stay steel).
+  // Changing colour or stroke width also restyles the selected shape (not callout badges); both are remembered.
   const selectedShape = shapes.find((s) => s.id === state.selectedId);
   const restyle = (patch: ShapePatch) => {
-    if (selectedShape && selectedShape.type !== "callout") dispatch({ type: "update", id: selectedShape.id, patch });
+    if (tool === "select" && selectedShape && selectedShape.type !== "callout") dispatch({ type: "update", id: selectedShape.id, patch });
   };
-  const setColor = (c: string) => {
+  const setColor = (c: Role) => {
     setColorState(c);
-    restyle({ stroke: resolveColor(c) });
+    setLastColor(c);
+    savePenMemory("snip", { role: c, stroke: strokeWidth });
+    restyle({ stroke: c });
   };
   const setStrokeWidth = (w: number) => {
     setStrokeWidthState(w);
+    savePenMemory("snip", { role: lastColor, stroke: w });
     restyle({ strokeWidth: w });
   };
 
@@ -325,7 +348,7 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
         return;
       }
       if (e.key === "Escape") {
-        setTool((t) => (t === "canvas-snip" ? "select" : t));
+        setTool("select");
         dispatch({ type: "select", id: null });
         return;
       }
@@ -336,24 +359,18 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
     return () => window.removeEventListener("keydown", key);
   }, [dispatch, stateRef, setTool]);
 
-  // Canvas snip: the dragged area of the canvas (image + markups) becomes a new markup and is copied.
-  const onCanvasSnip = useCallback(
-    (area: { x: number; y: number; w: number; h: number }) => {
+  // With a drawing tool on, a press outside the canvas (not on the toolbar) goes back to Select and still lands.
+  useEffect(() => {
+    const down = (e: PointerEvent) => {
+      if (live.current.tool === "select") return;
+      const t = e.target;
+      if (!(t instanceof Element)) return;
+      if (t.closest('[data-testid="canvas"]') || t.closest('[role="toolbar"]')) return;
       setTool("select");
-      pen.tool = "select";
-      const stage = handleRef.current?.stage();
-      if (!stage) return;
-      let flat: Flattened;
-      try {
-        flat = flattenArea(stage, { x: area.x, y: area.y, width: area.w, height: area.h }, cssVar("--bg-canvas"));
-      } catch (e) {
-        fail(e, "Canvas snip failed");
-        return;
-      }
-      void onOpenSnip(flat.dataUrl, snipName(new Date()).replace(/^snip-/, "canvas-snip-")).catch((e: unknown) => fail(e, "Canvas snip failed"));
-    },
-    [onOpenSnip, fail, pen, setTool],
-  );
+    };
+    window.addEventListener("pointerdown", down, true);
+    return () => window.removeEventListener("pointerdown", down, true);
+  }, [setTool]);
 
   // The shell reaches the editor in front through `apiRef`.
   useLayoutEffect(() => {
@@ -374,7 +391,7 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
         flushSync(() =>
           dispatch({
             type: "add",
-            shape: { type: "rect", x: s?.x ?? 100, y: s?.y ?? 80, w: s?.w ?? 120, h: s?.h ?? 60, stroke: cssVar("--signal-500"), strokeWidth: 2 },
+            shape: { type: "rect", x: s?.x ?? 100, y: s?.y ?? 80, w: s?.w ?? 120, h: s?.h ?? 60, stroke: "red", strokeWidth: 2 },
           }),
         );
         return id;
@@ -422,8 +439,6 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
         strokeWidth={strokeWidth}
         setStrokeWidth={setStrokeWidth}
         fileName={image.name}
-        onCanvasSnip={() => setTool((t) => (t === "canvas-snip" ? "select" : "canvas-snip"))}
-        canvasSnipActive={tool === "canvas-snip"}
         onExport={onExport}
         onCopy={onCopy}
         canExport
@@ -438,15 +453,15 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
           shapes={shapes}
           selectedId={state.selectedId}
           tool={tool}
-          style={{ stroke: resolveColor(color), strokeWidth }}
+          style={{ stroke: color ?? lastColor, strokeWidth }}
           view={view}
           onViewChange={setView}
           onSize={onSize}
           onAdd={onAdd}
           onUpdate={onUpdate}
           onRemove={onRemove}
+          onRemoveMany={onRemoveMany}
           onSelect={onSelect}
-          onCanvasSnip={onCanvasSnip}
           handleRef={handleRef}
         />
         <CalloutsPanel
@@ -455,7 +470,11 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
           onSelect={onSelect}
           onNote={onNote}
           onCommit={onCommit}
-          onToggleHide={(id) => dispatch({ type: "update", id, patch: { hideNumber: !shapes.find((s) => s.id === id)?.hideNumber } })}
+          onPatch={onPatch}
+          onReorder={onReorder}
+          onRemove={onRemove}
+          focus={focusNote}
+          onEscape={() => setTool("select")}
         />
       </div>
       <StatusBar zoom={view.scale} dims={{ width: image.width, height: image.height }} />

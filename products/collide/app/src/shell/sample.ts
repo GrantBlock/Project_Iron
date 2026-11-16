@@ -124,8 +124,6 @@ export const SAMPLE_OPEN = ["z-builder", "z-builder/design", "z-builder/design/s
 
 /** The prototype's drawing space is 640 wide. */
 const IW = 640;
-// The annotation colours the editor has today (design-system values); T32 moves them to the four material colours.
-const COLOR = { red: "#FF3D1F", blue: "#4C87C4", gray: "#F3F2EF" } as const;
 
 /** A sample snip's shapes as an annotations doc, in picture pixels, numbered from the back. */
 export function sampleDoc(s: SampleSnip): AnnotationsDoc {
@@ -138,12 +136,12 @@ export function sampleDoc(s: SampleSnip): AnnotationsDoc {
       y: sh.y * k,
       w: sh.w * k,
       h: sh.h * k,
-      stroke: COLOR[sh.color],
+      stroke: sh.color,
       strokeWidth: 3,
       callout: i + 1,
       note: sh.note,
       ...(sh.fill ? { fill: true } : {}),
-      ...(sh.hideBubble ? { hideNumber: true } : {}),
+      ...(sh.hideBubble ? { hideBubble: true } : {}),
     }),
   );
   return { version: 1, source: { kind: "image", width: s.w, height: s.h }, shapes };

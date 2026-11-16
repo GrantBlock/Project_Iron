@@ -45,9 +45,11 @@ describe("note box layout", () => {
     expect(noteSize({ ...s, note: "hi" } as Shape, undefined, () => 15).w).toBe(NOTE_W);
   });
 
-  it("only rects, ellipses and points with a number get boxes", () => {
+  it("callout shapes get boxes (numbers come from the order, T32); pens and old badges do not", () => {
     expect(hasNoteBox(rect("a1", 0, 0))).toBe(true);
-    expect(hasNoteBox({ ...rect("a1", 0, 0), callout: undefined } as Shape)).toBe(false);
+    expect(hasNoteBox({ ...rect("a1", 0, 0), callout: undefined } as Shape)).toBe(true);
+    expect(hasNoteBox({ ...rect("a1", 0, 0), type: "line", pts: [0, 0, 1, 1] } as Shape)).toBe(true);
+    expect(hasNoteBox({ ...rect("a1", 0, 0), type: "pen", pts: [0, 0, 1, 1] } as Shape)).toBe(false);
     expect(hasNoteBox({ id: "a2", type: "callout", x: 0, y: 0, w: 24, h: 24, callout: 1, ...base })).toBe(false);
   });
 });

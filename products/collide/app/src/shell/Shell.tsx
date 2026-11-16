@@ -542,7 +542,6 @@ export function Shell() {
           if (!front.key.startsWith("sample:")) setTabs((s) => patchTab(s, front.id, { key, owner: key }));
           void refreshRecents();
         }}
-        onOpenSnip={openSnip}
         head={(save) => (
           <WsHead {...headBase} name={front.title} path={session.source.folder ? `Documents/Collide/Markups/${session.source.folder}` : `${session.image.width} × ${session.image.height} · not saved yet`} savedLabel="Saved" {...save} />
         )}

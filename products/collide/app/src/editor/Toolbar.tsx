@@ -1,32 +1,19 @@
 import { Button, IconButton, Tooltip } from "../ds";
-import { STROKE_WIDTHS, type Tool } from "./tools";
+import { ROLES, STROKE_WIDTHS, swatchBackground, TOOL_BUTTONS, type Role, type Tool } from "./tools";
 
-// Ported from design-system/ui_kits/snip-markup/Toolbar.jsx. The toolbar of a Snip tab (RUN3 T31):
-// New snip and its delay, Open file and Open markup are in the sidebar; Save is in the tab's header.
-const tools: [Tool, string, string, string][] = [
-  ["select", "mouse-pointer-2", "Select", "V"],
-  ["rect", "square", "Rectangle", "R"],
-  ["ellipse", "circle", "Ellipse", "O"],
-  ["rect-fill", "square-filled", "Filled rectangle", ""],
-  ["ellipse-fill", "circle-filled", "Filled ellipse", ""],
-  ["cross", "x", "X mark (remove)", "X"],
-  ["point", "map-pin", "Point", "P"],
-];
-const colors = ["var(--signal-500)", "var(--steel-500)", "var(--amber-500)", "var(--ink-50)"];
-
+// Ported from design-system/ui_kits/snip-markup/Toolbar.jsx. The toolbar of a Snip tab (RUN3 T31, T32):
+// tools, the four colours, stroke; undo/redo and actions on the right. Canvas snip is gone (Grant 2026-11-15).
 const Sep = () => <span style={{ width: 1, height: 20, background: "var(--line-2)", margin: "0 6px" }} />;
 
 interface Props {
   tool: Tool;
   setTool: (t: Tool) => void;
-  color: string;
-  setColor: (c: string) => void;
+  /** The pressed colour; null after a draw (nothing pressed). */
+  color: Role | null;
+  setColor: (c: Role) => void;
   strokeWidth: number;
   setStrokeWidth: (w: number) => void;
   fileName: string;
-  /** Toggle Canvas snip mode (drag a box on the canvas). */
-  onCanvasSnip: () => void;
-  canvasSnipActive: boolean;
   onUndo: () => void;
   onRedo: () => void;
   canUndo: boolean;
@@ -36,7 +23,7 @@ interface Props {
   canExport: boolean;
 }
 
-export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStrokeWidth, fileName, onCanvasSnip, canvasSnipActive, onUndo, onRedo, canUndo, canRedo, onExport, onCopy, canExport }: Props) {
+export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStrokeWidth, fileName, onUndo, onRedo, canUndo, canRedo, onExport, onCopy, canExport }: Props) {
   return (
     <div
       data-testid="toolbar"
@@ -44,42 +31,31 @@ export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStroke
       aria-label="Markup tools"
       style={{ height: 52, boxSizing: "border-box", flex: "none", display: "flex", alignItems: "center", gap: 4, padding: "0 10px", borderBottom: "1px solid var(--line-1)", background: "var(--surface-1)", overflowX: "auto" }}
     >
-      <Tooltip label="Drag a box on the canvas: copies it and opens it as a new markup (Esc cancels)">
-        <Button
-          variant={canvasSnipActive ? "primary" : "secondary"}
-          size="sm"
-          icon="crop"
-          onClick={onCanvasSnip}
-          disabled={!canExport}
-          aria-pressed={canvasSnipActive}
-          data-testid="canvas-snip"
-        >
-          Canvas snip
-        </Button>
-      </Tooltip>
-      <Sep />
-      {tools.map(([k, ic, l, s]) => (
+      {TOOL_BUTTONS.map(([k, ic, l, s]) => (
         <Tooltip key={k} label={l} shortcut={s}>
-          <IconButton icon={ic} label={l} active={tool === k} onClick={() => setTool(k)} />
+          <IconButton icon={ic} label={l} active={tool === k} aria-pressed={tool === k} onClick={() => setTool(k)} />
         </Tooltip>
       ))}
       <Sep />
-      <div style={{ display: "flex", gap: 6, padding: "0 4px" }}>
-        {colors.map((c) => (
+      <div role="group" aria-label="Colour for the next shape" style={{ display: "flex", gap: 6, padding: "6px 8px", borderRadius: "var(--radius-sm)", background: "var(--annot-box, #FFFFFF)" }}>
+        {ROLES.map(([r, label]) => (
           <button
-            key={c}
-            onClick={() => setColor(c)}
-            aria-label="Color"
-            aria-pressed={color === c}
+            key={r}
+            type="button"
+            onClick={() => setColor(r)}
+            aria-label={label}
+            title={color ? label : `${label} (pick a colour for the next shape)`}
+            aria-pressed={color === r}
             data-testid="swatch"
+            data-role={r}
             style={{
               width: 18,
               height: 18,
               borderRadius: 999,
-              background: c,
+              background: swatchBackground(r),
               border: 0,
               cursor: "pointer",
-              boxShadow: color === c ? `0 0 0 2px var(--surface-1), 0 0 0 3px ${c}` : "inset 0 1px 0 rgba(255,255,255,0.25)",
+              boxShadow: color === r ? "0 0 0 2px #FFFFFF, 0 0 0 4px #424242" : "inset 0 1px 0 rgba(255,255,255,0.35)",
             }}
           />
         ))}

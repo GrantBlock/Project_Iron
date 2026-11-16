@@ -7,8 +7,9 @@ const shapes: Shape[] = [
   { id: "a1", type: "rect", x: 10, y: 20, w: 30.456, h: 40, callout: 1, note: "First", ...style },
   { id: "a2", type: "ellipse", x: 0, y: 0, w: 5, h: 5, fill: true, ...style },
   { id: "a3", type: "point", x: 7, y: 8, w: 0, h: 0, callout: 2, hideNumber: true, stroke: "#4C87C4", strokeWidth: 5 },
+  { id: "a4", type: "pen", x: 1, y: 2, w: 10, h: 4, pts: [0, 0, 0.5, 1, 1, 0], stroke: "blue", strokeWidth: 2 },
 ];
-const base: RefInput = { image: { name: "guard.png" }, shapes, selectedId: "a2", tool: "rect", color: "var(--signal-500)", strokeWidth: 3, scale: 0.4949, fitted: true };
+const base: RefInput = { image: { name: "guard.png" }, shapes, selectedId: "a2", tool: "rect", color: "blue", strokeWidth: 3, scale: 0.4949, fitted: true };
 const blank: ShellRefInput = { tabs: [], active: null, theme: "system", aura: "sage", snipDelay: 0, addMode: "Current", collapsed: false, splash: null };
 /** A shell with one Snip tab in front. */
 const shell: ShellRefInput = { ...blank, tabs: [{ id: "t1", title: "guard.png", kind: "snip", dirty: false }], active: "t1" };
@@ -36,19 +37,22 @@ describe("reference test hook: window.__collide.state()", () => {
 
   it("open image: the snip editor with its tool, colour, thickness, selection and zoom", () => {
     const s = refState(shell, base);
-    expect(s).toMatchObject({ version: 1, view: "snip", editor: "snip", activeTool: "rect", color: "var(--signal-500)", stroke: 3, selection: ["a2"], zoom: { percent: 49, fit: true } });
+    expect(s).toMatchObject({ version: 1, view: "snip", editor: "snip", activeTool: "rect", color: "blue", stroke: 3, selection: ["a2"], zoom: { percent: 49, fit: true } });
   });
 
-  it("items are front to back, with number, note, hide toggles and fill", () => {
+  it("items are front to back; callouts numbered from the back; pens without a number; hide toggles and fill", () => {
     const items = refState(shell, base).items;
     expect(items.map((x) => [x.id, x.type, x.number])).toEqual([
-      ["a3", "point", 2],
-      ["a2", "ellipse", null],
+      ["a4", "pen", null],
+      ["a3", "point", 3],
+      ["a2", "ellipse", 2],
       ["a1", "rect", 1],
     ]);
-    expect(items[0]).toEqual({ id: "a3", type: "point", number: 2, note: "", hidden: { text: false, bubble: true, outline: false }, fill: 0, color: "#4C87C4", stroke: 5, x: 7, y: 8, w: 0, h: 0, points: null, bubble: null });
-    expect(items[1].fill).toBe(100);
-    expect(items[2]).toMatchObject({ note: "First", w: 30.46, hidden: { text: false, bubble: false, outline: false } });
+    expect(items[0]).toMatchObject({ color: "blue", points: 3, bubble: null });
+    expect(items[1]).toEqual({ id: "a3", type: "point", number: 3, note: "", hidden: { text: false, bubble: true, outline: false }, fill: 0, color: "#4C87C4", stroke: 5, x: 7, y: 8, w: 0, h: 0, points: null, bubble: null });
+    // An old filled shape reads as 30 %.
+    expect(items[2].fill).toBe(30);
+    expect(items[3]).toMatchObject({ note: "First", w: 30.46, hidden: { text: false, bubble: false, outline: false } });
   });
 
   it("no selection is an empty list", () => {

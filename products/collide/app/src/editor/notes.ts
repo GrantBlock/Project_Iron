@@ -29,7 +29,7 @@ export type Side = "left" | "right" | "top" | "bottom";
 
 /** Shapes that get a note box + arrow (callout badges, arrows and text keep their older look). */
 export const hasNoteBox = (s: Shape): boolean =>
-  (s.type === "rect" || s.type === "ellipse" || s.type === "point" || s.type === "cross") && s.callout !== undefined;
+  s.type === "rect" || s.type === "ellipse" || s.type === "point" || s.type === "cross" || s.type === "line";
 
 /** An empty note is just its number: a chip this wide (and `noteHeight(0)` tall). */
 export const NOTE_CHIP_W = NOTE_PAD * 2 + NOTE_BADGE;
