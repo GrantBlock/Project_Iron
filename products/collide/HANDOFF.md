@@ -6,7 +6,7 @@
 - T32 merged 22:40Z. The 5-hour limit hit during T33 (Coder on Opus); T33 parked at 22:51Z and the session stopped (Grant: check only, do not continue).
 - Wake (hourly scheduled task) 2026-11-17T07:02Z: resuming at T33.
 - Wake 07:02Z: T33 resumed and merged 07:11Z; T34 merged 07:45Z (Reviewer's crash fix applied by the Planner); T35 merged 08:09Z; T36 merged 08:28Z.
-- The 5-hour limit hit during T38, after 08:28Z (reset 11:50Z); the 09:02, 10:02 and 11:02 wakes could not run. Resumed 11:51Z; T38 merged 12:04Z; T37 12:04–12:45Z.
+- The 5-hour limit hit during T38, after 08:28Z (reset 11:50Z); the 09:02, 10:02 and 11:02 wakes could not run. Resumed 11:51Z; T38 merged 12:04Z; T37 merged 12:07Z.
 - Session 2 result: every board task Done; reference specs prototype 15/15 · app 15/15; Vitest 480, Playwright 56, Electron e2e 21. Nothing blocked.
 
 ## Run session 1
