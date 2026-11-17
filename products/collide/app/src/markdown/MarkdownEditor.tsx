@@ -608,10 +608,7 @@ export function MarkdownEditor(p: Props) {
             tool={tool}
             style={{ stroke: color ?? lastColor, strokeWidth }}
             view={view}
-            onViewChange={(u) => {
-              fittedRef.current = false;
-              setViewState(u);
-            }}
+            onViewChange={setViewState /* a right-drag or Space-drag pan: the zoom stays as it was */}
             onSize={onSize}
             onAdd={onAdd}
             onUpdate={onUpdate}
