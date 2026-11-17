@@ -17,12 +17,14 @@
     "lint": "eslint .",
     "e2e": "pnpm build && node scripts/e2e.mjs",
     "dist": "pnpm build && electron-builder --win portable --x64 --publish never",
-    "ref": "node scripts/ref.mjs"
+    "ref": "node scripts/ref.mjs",
+    "models": "node scripts/sample-models.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.65.1",
     "@types/node": "26.6.6",
+    "@types/three": "0.187.0",
     "electron": "33.4.11",
     "electron-builder": "25.1.8",
     "eslint": "10.15.0",
@@ -56,5 +58,8 @@
     "directories": {
       "output": "release"
     }
+  },
+  "dependencies": {
+    "three": "0.187.0"
   }
 }
