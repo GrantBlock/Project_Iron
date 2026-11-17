@@ -10,8 +10,8 @@
 | ID | Task | Status | Specs prototype / app |
 | --- | --- | --- | --- |
 | L01 | Scaffold | Done (Vitest 12, Playwright 2, Electron e2e 6; Reviewer fix: UNC paths blocked; plain TS + DOM, no React (A)) | n/a |
-| L02 | Reference harness | In progress (part 1 merged: 47 specs, prototype 47/47; app wiring next) | prototype 47/47 · app — |
-| L03 | Layout shell | To do | |
+| L02 | Reference harness | Done (47 specs; `pnpm ref`; screenshot diff report) | prototype 47/47 · app 19/47 |
+| L03 | Layout shell | Done (Vitest 39, e2e 13; Electron keeps the system title bar for now, ISSUES 7) | shell 7/7 · tree 6/6 · tabs 4/7 |
 | L04 | Views | To do | |
 | L05 | Search | To do | |
 | L06 | 3D viewer | To do | |

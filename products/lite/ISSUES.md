@@ -8,3 +8,5 @@
 | 4 | L02 | Prototype quirk: search highlights show only after a result is opened, and only on pages with the term | App copies the prototype | Open: Planner suggests keeping |
 | 5 | L01 | Renderer is plain TypeScript + DOM (React is not on the dependency allowlist) | Plain TS + DOM | (A) |
 | 6 | L01 | Window does not remember its size yet; `.exe` has no icon; `pnpm dist` not run (needs Windows) | Later | (A) |
+| 7 | L03 | Frameless window with the prototype's drawn window buttons, or the normal Windows title bar? | Normal Windows title bar; drawn buttons left out in Electron | Open: Planner suggests frameless |
+| 8 | L02 | Screenshot pixel counts as different above 2/255 per channel | 2/255 | (A) |
