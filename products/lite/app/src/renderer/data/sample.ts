@@ -4,11 +4,24 @@
 // L03 uses the package, projects and items (tree, path bar); L04 the pages, parts and note
 // text; L05 searches them; L07 uses the canned answers and suggestions.
 
+import type { FileKind } from "../../native/folder";
+
 export type ItemType = "document" | "model" | "note";
+
+/** Where an item opened from disk comes from (L08). Sample items have none. */
+export interface DiskSource {
+  readonly kind: FileKind;
+  /** Relative to the opened folder, "/"-separated. */
+  readonly path: string;
+  readonly size: number;
+  /** Why the file is listed but not opened (other types, too large, unreadable). */
+  readonly problem?: string;
+}
 export type ViewType = "about" | ItemType;
 
 export interface DocumentItem {
   readonly id: string;
+  readonly source?: DiskSource;
   readonly type: "document";
   readonly title: string;
   /** Page texts, page 1 first. */
@@ -23,6 +36,7 @@ export interface ModelPart {
 
 export interface ModelItem {
   readonly id: string;
+  readonly source?: DiskSource;
   readonly type: "model";
   readonly title: string;
   readonly parts: readonly ModelPart[];
@@ -30,6 +44,7 @@ export interface ModelItem {
 
 export interface NoteItem {
   readonly id: string;
+  readonly source?: DiskSource;
   readonly type: "note";
   readonly title: string;
   /** Read-only text; paragraphs separated by a blank line. */

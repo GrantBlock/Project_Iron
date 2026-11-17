@@ -82,8 +82,24 @@ export function modelView(item: ModelItem): Node[] {
   ];
 }
 
+/** A note; from an opened folder also Markdown and text files (plain read-only text, A) and files Lite lists but does not open. */
 export function noteView(item: NoteItem): Node[] {
-  return [el("h1", {}, item.title), el("div", { class: "sub" }, "Note"), el("div", { class: "l-note" }, item.text)];
+  const src = item.source;
+  if (src?.problem) return unopenedView(item.title, src.problem, src.size);
+  const sub = src?.kind === "markdown" ? "Markdown · read only" : src?.kind === "text" ? "Text · read only" : "Note";
+  return [el("h1", {}, item.title), el("div", { class: "sub" }, sub), el("div", { class: "l-note" }, item.text)];
+}
+
+/** A file that is listed but not opened (other types, too large, unreadable). */
+export function unopenedView(title: string, reason: string, size: number): Node[] {
+  return [el("h1", {}, title), el("div", { class: "sub" }, `File · ${formatSize(size)} · not opened`), el("div", { class: "l-note" }, reason)];
+}
+
+/** "512 bytes", "12.3 KB", "4.0 MB". */
+export function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} bytes`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
 /**
