@@ -438,4 +438,29 @@ body{background:var(--bc-backdrop)}
  tree();view();
 })();
 </script>
+<!-- LITE TEST HOOK (L02): read-only window.__lite.state(). Reads the existing DOM only; changes no behaviour or visuals. -->
+<script>
+(function(){
+ var $=function(i){return document.getElementById(i)};
+ function txt(el){return el?el.textContent.replace(/\s+/g,' ').trim():''}
+ window.__lite={state:function(){
+  var view=$('view'),on=document.querySelector('#tree .l-top.is-on, #tree .l-it.is-on'),crumb=$('crumb');
+  var type=view.querySelector('.l-paper')?'document':view.querySelector('.l-viewport')?'model':view.querySelector('.l-note')?'note':'about';
+  var h1=view.querySelector('h1'),pn=view.querySelector('.pn'),m=pn&&/Page (\d+) of (\d+)/.exec(pn.textContent);
+  var folders=[].filter.call(document.querySelectorAll('#tree .l-grp'),function(g){return !g.classList.contains('is-closed')}).map(function(g){return txt(g.querySelector('.l-gh span'))});
+  var q=$('q').value,marks=view.querySelectorAll('mark').length;
+  var msgs=[].map.call($('msgs').querySelectorAll('.l-m'),function(d){
+   var c=d.cloneNode(true);[].forEach.call(c.querySelectorAll('.who,.l-src,.l-cite'),function(n){n.remove()});
+   return {role:d.classList.contains('u')?'user':'assistant',text:txt(c),citations:d.querySelectorAll('.l-cite').length,sources:d.querySelectorAll('.l-src button').length}});
+  return {
+   selected:{id:on?on.dataset.s:null,type:type==='about'?'about':type,title:txt(h1),path:txt(crumb)},
+   openFolders:folders,
+   view:{type:type,page:m?+m[1]:null,pageCount:m?+m[2]:null},
+   search:{query:q,matchCount:document.querySelectorAll('#tree .l-it').length,highlights:marks},
+   assistantShown:!$('right').hidden&&$('chatbtn').getAttribute('aria-pressed')==='true',
+   tab:window.matchMedia('(max-width:900px)').matches?($('body').dataset.p==='chat'?'assistant':$('body').dataset.p):null,
+   messages:msgs};
+ }};
+})();
+</script>
 </body></html>
