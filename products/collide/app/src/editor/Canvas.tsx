@@ -88,8 +88,14 @@ const withAlpha = (hex: string, a: number) => {
 export const NOTE_PLACEHOLDER = "Describe…";
 
 /** Height of `text` wrapped to `width` at the note font size. */
-const measureNote = (text: string, width: number) =>
-  new Konva.Text({ text: text || " ", fontSize: NOTE_FONT, fontFamily: cssVar("--font-sans"), width, wrap: "word", lineHeight: 1.25 }).height();
+const measureNote = (text: string, width: number) => {
+  try {
+    return new Konva.Text({ text: text || " ", fontSize: NOTE_FONT, fontFamily: cssVar("--font-sans"), width, wrap: "word", lineHeight: 1.25 }).height();
+  } catch {
+    // No 2D canvas to measure with (a test's DOM): an estimate, about half an em per character.
+    return Math.max(1, Math.ceil(((text || " ").length * NOTE_FONT * 0.55) / Math.max(1, width))) * NOTE_FONT * 1.25;
+  }
+};
 
 interface Draft {
   tool: DrawTool | "line";
