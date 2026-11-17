@@ -60,6 +60,7 @@
     }
   },
   "dependencies": {
+    "pdfjs-dist": "4.10.38",
     "three": "0.187.0"
   }
 }
