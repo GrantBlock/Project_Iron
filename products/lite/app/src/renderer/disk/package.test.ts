@@ -51,7 +51,14 @@ describe("loadPackage", async () => {
   it("turns each kind into an item the views and search understand", () => {
     const by = (id: string) => packageItems(pkg).find((i) => i.id === id)!;
     expect(by("f:report.pdf")).toMatchObject({ type: "document", pages: ["Torque check, page one", "Flange bolts on page two"], source: { kind: "pdf" } });
-    expect(by("f:guide.md")).toMatchObject({ type: "note", text: "# Guide\n\nCheck the sprocket. <b>not bold</b>", source: { kind: "markdown" } });
+    // Markdown (L10): the source for the view, its visible text for search (raw HTML stays text).
+    expect(by("f:guide.md")).toMatchObject({
+      type: "note",
+      markdown: "# Guide\n\nCheck the sprocket. <b>not bold</b>",
+      text: "Guide\nCheck the sprocket. <b>not bold</b>",
+      source: { kind: "markdown" },
+    });
+    expect(by("f:log.txt")).not.toHaveProperty("markdown");
     expect(by("f:log.txt")).toMatchObject({ type: "note", text: "Shift log" });
     expect(by("f:drawings/guard.glb")).toMatchObject({ type: "model", parts: [{ name: "Guard panel", bodies: "4 bodies" }, { name: "Door interlock", bodies: "2 bodies" }] });
     expect(by("f:data.bin")).toMatchObject({ type: "note", source: { kind: "other", problem: NOT_OPENED } });

@@ -2,6 +2,7 @@ import { expect, test, type ElectronApplication, type Page } from "@playwright/t
 import { createHash } from "node:crypto";
 import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import zlib from "node:zlib";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { launch } from "./launch";
@@ -42,7 +43,10 @@ function makeFixture() {
   const root = path.join(base, "Site files");
   mkdirSync(path.join(root, "drawings"), { recursive: true });
   writeFileSync(path.join(root, "report.pdf"), makePdf(["Torque check on page one", "Flange bolts on page two"]));
-  writeFileSync(path.join(root, "guide.md"), "# Guide\n\nCheck the **sprocket** alignment.\n\n<script>document.title='pwned'</script><img src=x onerror=alert(1)>\n");
+  writeFileSync(
+    path.join(root, "guide.md"),
+    "# Guide\n\nCheck the **sprocket** alignment.\n\n## Steps\n\n- Lock out\n- Check the chain\n\n<script>document.title='pwned'</script><img src=x onerror=alert(1)>\n",
+  );
   writeFileSync(path.join(root, "log.txt"), "Shift log: conveyor restarted.\n");
   writeFileSync(path.join(root, "data.bin"), Buffer.from([0, 1, 2, 3, 255]));
   copyFileSync(path.join(appDir, "src/renderer/assets/models/m2.glb"), path.join(root, "drawings", "guard.glb"));
@@ -126,12 +130,28 @@ test("Open folder: the fixture shows as a second package; each type opens; searc
     await expect(viewer(page).getByRole("button", { name: "Next" })).toBeDisabled();
     expect((await state(page)).view).toEqual({ type: "document", page: 2, pageCount: 2 });
 
-    // Markdown: plain read-only text; its HTML is text, never markup.
+    // Markdown (L10): formatted with markdown-it; its raw HTML is text, never markup, and does not run.
     await tree(page).getByRole("button", { name: "guide.md", exact: true }).click();
     await expect(viewer(page).getByText("Markdown · read only")).toBeVisible();
-    await expect(viewer(page).locator(".l-note")).toContainText("Check the **sprocket** alignment.");
-    await expect(viewer(page).locator(".l-note")).toContainText("<script>document.title='pwned'</script>");
+    const md = viewer(page).locator(".l-md");
+    await expect(md.getByRole("heading", { name: "Guide", level: 2 })).toBeVisible();
+    await expect(md.getByRole("heading", { name: "Steps", level: 3 })).toBeVisible();
+    await expect(md.locator("strong")).toHaveText("sprocket");
+    await expect(md.getByRole("listitem")).toHaveText(["Lock out", "Check the chain"]);
+    await expect(md).toContainText("Check the sprocket alignment.");
+    await expect(md).not.toContainText("**");
+    await expect(md).toContainText("<script>document.title='pwned'</script><img src=x onerror=alert(1)>");
     await expect(viewer(page).locator("script, img")).toHaveCount(0);
+    // Styled with the design tokens: the h2 is bold and larger than the text.
+    const looks = await md.evaluate((m) => ({
+      h2: Number.parseFloat(getComputedStyle(m.querySelector("h2")!).fontSize),
+      p: Number.parseFloat(getComputedStyle(m.querySelector("p")!).fontSize),
+      weight: getComputedStyle(m.querySelector("h2")!).fontWeight,
+      bullet: getComputedStyle(m.querySelector("ul")!).listStyleType,
+    }));
+    expect(looks.h2).toBeGreaterThan(looks.p);
+    expect(looks).toMatchObject({ weight: "700", bullet: "disc" });
+    await page.waitForTimeout(300);
     await expect(page).toHaveTitle("Lite");
 
     await tree(page).getByRole("button", { name: "log.txt", exact: true }).click();
@@ -157,6 +177,11 @@ test("Open folder: the fixture shows as a second package; each type opens; searc
     await box.fill("sprocket");
     await expect(tree(page).getByRole("button", { name: "guide.md", exact: true })).toBeVisible();
     expect((await state(page)).search.matchCount).toBe(1);
+    // Search looks through the Markdown's visible text: a phrase across formatting matches.
+    await box.fill("the sprocket alignment");
+    await expect(tree(page).getByRole("button", { name: "guide.md", exact: true })).toBeVisible();
+    await box.fill("check the chain");
+    expect((await state(page)).search.matchCount).toBe(1);
     await box.fill("");
 
     // The page cannot read outside the folder through the bridge.
@@ -172,6 +197,96 @@ test("Open folder: the fixture shows as a second package; each type opens; searc
   } finally {
     await close();
     // Read only: every file is byte-identical (and untouched) afterwards.
+    expect(snapshotFiles(base)).toEqual(before);
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+/** A 2 × 2 PNG, all one colour. */
+function makePng(): Buffer {
+  const chunk = (type: string, data: Buffer) => {
+    const body = Buffer.concat([Buffer.from(type, "latin1"), data]);
+    const len = Buffer.alloc(4);
+    len.writeUInt32BE(data.length);
+    const crc = Buffer.alloc(4);
+    crc.writeUInt32BE(zlib.crc32(body));
+    return Buffer.concat([len, body, crc]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(2, 0);
+  ihdr.writeUInt32BE(2, 4);
+  ihdr[8] = 8; // bit depth
+  ihdr[9] = 2; // RGB
+  const row = Buffer.from([0, 70, 130, 180, 70, 130, 180]);
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    chunk("IHDR", ihdr),
+    chunk("IDAT", zlib.deflateSync(Buffer.concat([row, row]))),
+    chunk("IEND", Buffer.alloc(0)),
+  ]);
+}
+
+test("L10 Markdown: images show only from inside the opened folder; links show but do not open", async () => {
+  const base = realpathSync(mkdtempSync(path.join(tmpdir(), "lite-md-e2e-")));
+  const root = path.join(base, "Notes");
+  mkdirSync(path.join(root, "docs", "img"), { recursive: true });
+  writeFileSync(path.join(root, "docs", "img", "pump.png"), makePng());
+  writeFileSync(path.join(base, "outside.png"), makePng());
+  writeFileSync(
+    path.join(root, "docs", "pump.md"),
+    [
+      "# Pump",
+      "![Pump photo](img/pump.png)",
+      "![Outside photo](../../outside.png)",
+      "![Remote photo](https://example.com/x.png)",
+      "![Data photo](data:image/png;base64,iVBORw0KGgo=)",
+      "See the [manual](https://example.com/manual) and [local](img/pump.png).",
+      "| Part | Qty |\n| --- | --: |\n| Seal | 2 |",
+    ].join("\n\n"),
+  );
+  const before = snapshotFiles(base);
+  const { app, page, output, close } = await launch();
+  const requests: string[] = [];
+  page.on("request", (r) => requests.push(r.url()));
+  try {
+    await stubDialog(app, root);
+    await page.getByRole("button", { name: "Open folder" }).click();
+    await tree(page).getByRole("button", { name: "pump.md", exact: true }).click();
+    const md = viewer(page).locator(".l-md");
+    await expect(md.getByRole("heading", { name: "Pump", level: 2 })).toBeVisible();
+
+    // Inside the folder: drawn from a blob: URL.
+    const img = md.getByRole("img", { name: "Pump photo" });
+    await expect(img).toBeVisible();
+    const blobUrl = (await img.getAttribute("src"))!;
+    expect(blobUrl).toMatch(/^blob:lite:\/\/app\//);
+    expect(await img.evaluate((i: HTMLImageElement) => i.naturalWidth)).toBe(2);
+    // Outside the folder, remote, data: the alt text only.
+    await expect(md.locator("img")).toHaveCount(1);
+    for (const alt of ["Outside photo", "Remote photo", "Data photo"]) await expect(md.locator(".l-md-alt", { hasText: alt })).toBeVisible();
+
+    // Links: text, no href; clicking goes nowhere.
+    const link = md.locator(".l-md-link", { hasText: "manual" });
+    await expect(link).toBeVisible();
+    expect(await md.locator("a[href]").count()).toBe(0);
+    await link.click();
+    await md.locator(".l-md-link", { hasText: "local" }).click();
+    await page.waitForTimeout(300);
+    expect(page.url()).toBe("lite://app/");
+    expect(await app.windows()).toHaveLength(1);
+
+    await expect(md.locator("td")).toHaveText(["Seal", "2"]);
+    await expect(md.locator("td").nth(1)).toHaveCSS("text-align", "right");
+
+    // Another file: the image's blob URL is let go.
+    const fetchBlob = () => page.evaluate((u) => fetch(u).then(() => "live", () => "revoked"), blobUrl);
+    expect(await fetchBlob()).toBe("live");
+    await page.getByRole("button", { name: "About this package" }).click();
+    expect(await fetchBlob()).toBe("revoked");
+    expect(requests.filter((u) => !/^(lite:\/\/app\/|data:|blob:)/.test(u))).toEqual([]);
+    expect(output()).not.toContain("[lite] blocked");
+  } finally {
+    await close();
     expect(snapshotFiles(base)).toEqual(before);
     rmSync(base, { recursive: true, force: true });
   }

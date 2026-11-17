@@ -1,11 +1,12 @@
 // An opened folder as a second package (L08): its listing (from the main process) turned into
 // a tree of folders and items the views, the tree and search (search.ts) already understand.
-// PDFs become documents (page texts for search), Markdown and text become notes (shown as
-// plain read-only text, A), GLBs become models (parts from the file), anything else is listed
+// PDFs become documents (page texts for search), Markdown and text become notes (text shown as
+// plain read-only text, A; Markdown formatted, L10, its visible text searched), GLBs become models (parts from the file), anything else is listed
 // but not opened (A). Readers are passed in, so this is unit-tested without Electron or pdf.js.
 import type { FolderListing } from "../bridge";
 import { MAX_FILE_BYTES } from "../../native/folder";
 import type { DiskSource, Item } from "../data/sample";
+import { markdownText } from "../markdown/markdown";
 import { bodiesLabel, glbParts, readGlbJson } from "../viewer/glb";
 
 export interface DiskFolder {
@@ -70,7 +71,9 @@ async function loadItem(path: string, title: string, kind: DiskSource["kind"], s
       const parts = glbParts(readGlbJson(bytes)).map((p) => ({ name: p.name, bodies: bodiesLabel(p.bodies) }));
       return { id, type: "model", title, parts, source };
     }
-    return { id, type: "note", title, text: new TextDecoder("utf-8").decode(bytes), source };
+    const text = new TextDecoder("utf-8").decode(bytes);
+    if (kind === "markdown") return { id, type: "note", title, text: markdownText(text), markdown: text, source };
+    return { id, type: "note", title, text, source };
   } catch {
     return unopened(`Lite could not read this ${kind === "glb" ? "GLB" : kind === "pdf" ? "PDF" : "file"}.`);
   }

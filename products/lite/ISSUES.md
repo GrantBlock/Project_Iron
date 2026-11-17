@@ -14,3 +14,5 @@
 | 10 | L08 | Open folder: other file types and files over 50 MB are listed but not opened; symlinks are not listed; listing stops at 5000 entries and 12 levels (the deepest folder is listed, not opened) | As stated | (A) |
 | 11 | L08 | Opening a new folder replaces the previous one; Open folder is in the Electron app only | As stated | (A) |
 | 12 | L08 | Search finds text in PDFs but does not highlight it on the PDF page | No PDF highlights | (A) |
+| 13 | L10 | Frameless window: minimum size, and the prototype's backdrop margin and rounded frame in the app | Minimum 400 × 500 (the phone-width tabs still fit); in the Electron app the window edge is the frame (no backdrop margin, no rounded corners), and the window buttons show under 900px too (the prototype hides its drawn ones there); the web build is unchanged | (A) |
+| 14 | L10 | Markdown details not in the decision | Headings shifted down one level (the file name is the view's h1); images: png, jpg, gif, webp inside the opened folder only (others, SVG, remote and data: show the alt text); links show as link text, never open; search looks through the visible text | (A) |

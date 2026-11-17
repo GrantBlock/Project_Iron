@@ -47,8 +47,10 @@ export interface NoteItem {
   readonly source?: DiskSource;
   readonly type: "note";
   readonly title: string;
-  /** Read-only text; paragraphs separated by a blank line. */
+  /** Read-only text; paragraphs separated by a blank line. For Markdown, its visible text (what search looks through). */
   readonly text: string;
+  /** Markdown source (a .md file of an opened folder, L10): the view formats it (markdown/markdown.ts). */
+  readonly markdown?: string;
 }
 
 export type Item = DocumentItem | ModelItem | NoteItem;
