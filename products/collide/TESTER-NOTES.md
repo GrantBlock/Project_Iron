@@ -30,6 +30,23 @@ Run: `cd products/collide/app && pnpm install && pnpm test && pnpm e2e --trace o
 10. **Right-drag pans the canvas** in every tool (Space + left-drag still works). A right-press never selects, moves or draws, and the browser/WebView context menu is suppressed on the canvas (`e2e/editor.spec.ts`).
    - Windows: right-drag over a shape and over empty canvas with a mouse; also try a touchpad two-finger click.
 
+## Run 2+3 (Electron) — Windows manual checks (Grant/Lydia)
+
+Do these on Windows. Note pass/fail and attach a screenshot for each.
+
+1. In `products/collide/app`: `pnpm install && pnpm electron:dev`. The app opens in an Electron window.
+2. Run TESTER-NOTES items 1-10 above on Electron.
+3. `pnpm dist`, then run the portable `.exe` from `release/`. Check items 1, 2, 7 and 9 at 100% and at 150% display scaling.
+4. Press the real Ctrl+Alt+S from another app (not Collide). The overlay must appear and the snip must open in Collide.
+5. Overlay on a second monitor: place it left of or above the primary monitor (negative origin) and use mixed scaling (e.g. 100% and 150%). The capture must match the area you dragged.
+6. Add snip, Current and Behind: both toggles, with a snip added to an open markup.
+7. Collapse the window in both sizes, windowed and maximized, and check the sidebar and toolbar layout.
+8. Open dialogs: the folder Open dialog and the file Open dialog; also open a folder outside Markups.
+9. Save as .collide, close, and reopen the file. Markups, notes and order must be unchanged.
+10. Markdown in a zip: save a Markdown markup with images and open the zip to check its contents.
+11. Settings -> Storage with a retention period set: old items go as set and recent ones stay.
+12. Open a real PDF, mark it up, Export PDF, and Copy PNG; paste the PNG into another app.
+
 ## Known gaps / watch for
 
 - **Export still saves at the source image size**, so note boxes outside the image are cut off in Export and `export.png`. Grant hasn't decided yet whether Export should crop like Copy. Report it, don't file it as a bug.
