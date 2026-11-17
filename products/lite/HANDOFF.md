@@ -15,6 +15,6 @@
 | L04 | Views | Done (Vitest 44, e2e 15; About signed notice is sample text (A)) | views 7/7 · app total 29/47 |
 | L05 | Search | Done (Vitest 54, e2e 16; generic search module for L08) | search 9/9 · app total 35/47 |
 | L06 | 3D viewer | To do | |
-| L07 | Assistant (canned) | To do | |
+| L07 | Assistant (canned) | Done (Vitest 61, e2e 17; answer engine behind an interface; offline test flake fixed) | assistant 11/11 · app total 47/47 |
 | L08 | Open a folder | To do | |
 | L09 | Handoff | To do | |

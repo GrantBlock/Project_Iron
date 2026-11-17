@@ -92,3 +92,13 @@ test("L05 search: regex and HTML characters are plain text; the highlight is a <
   await box.fill("");
   await expect(page.locator("#tree .l-it")).toHaveCount(7);
 });
+
+test("L07 Assistant: a typed question is shown as text, never parsed as HTML", async ({ page }) => {
+  await page.goto("/");
+  const input = page.getByPlaceholder("Ask about this package");
+  await input.fill("<img src=x onerror=alert(1)> torque?");
+  await input.press("Enter");
+  await expect(page.locator(".l-m.u")).toHaveText("<img src=x onerror=alert(1)> torque?");
+  await expect(page.locator("#msgs img")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Open source 2" })).toBeVisible();
+});

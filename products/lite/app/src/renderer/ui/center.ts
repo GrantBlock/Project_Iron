@@ -21,7 +21,7 @@ export function createCenter(store: Store): Area<AppState> {
   return {
     element,
     render(s, prev) {
-      if (prev && prev.selected === s.selected && prev.page === s.page && prev.highlight === s.highlight) return;
+      if (prev && prev.opened === s.opened && prev.selected === s.selected && prev.page === s.page && prev.highlight === s.highlight) return;
       const item = selectedItem(s);
       const project = item && projectOf(item.id);
       crumb.replaceChildren(...(item && project ? [`${project.name} / `, el("b", {}, item.title)] : [el("b", {}, pathText(s))]));
@@ -33,7 +33,7 @@ export function createCenter(store: Store): Area<AppState> {
         const other = view.querySelector<HTMLButtonElement>(focused === "pp" ? "#pn" : "#pp");
         (same && !same.disabled ? same : other)?.focus();
       }
-      if (!prev || prev.selected !== s.selected) view.scrollTop = 0;
+      if (!prev || prev.opened !== s.opened) view.scrollTop = 0;
     },
   };
 }
