@@ -2,8 +2,10 @@
 // Package layout is Draft (not yet approved by Grant), as in ../../../layout-prototype.html:
 //   manifest.json  format, version, kind (snip | markdown), the tab title and every item (shape, bubble, note,
 //                  card settings) in draw order, back to front; the callout list shows them front to back
+//                  (RUN3 T38: a PDF package lists its pages, each with its size in points and its own items, and
+//                  the page that was in front)
 //   sources/       the sources in their own formats: a snip's source.png and its added image-<n>.png files,
-//                  or the .md file and the pictures it links (images/...)
+//                  the .md file and the pictures it links (images/...), or the original PDF's bytes (source.pdf)
 //   preview.png    what Copy gives, for thumbnails
 // Pure: encode and decode bytes here; the shell reads and writes the file (Electron: the main process, scoped).
 // Decoding never trusts the package: every entry name is checked before anything is unpacked (no zip-slip),
@@ -59,7 +61,31 @@ export interface MarkdownPackage {
   preview: Uint8Array;
 }
 
-export type CollidePackage = SnipPackage | MarkdownPackage;
+/** RUN3 T38: a PDF with its markup, page by page. The PDF goes in unchanged. */
+export interface PdfPackage {
+  kind: "pdf";
+  title: string;
+  /** The PDF's own file name (shown in the tab and the status bar). */
+  name: string;
+  /** The original PDF, byte for byte. */
+  pdf: Uint8Array;
+  /** The page in front, from 0. */
+  page: number;
+  /** Every page: its size as shown (PDF points) and its items in shown points, back to front. */
+  pages: { width: number; height: number; shapes: Shape[] }[];
+  preview: Uint8Array;
+}
+
+export type CollidePackage = SnipPackage | MarkdownPackage | PdfPackage;
+
+/** A PDF's bytes start with `%PDF-` (some writers put a few bytes before it; the format allows up to 1024). */
+export function isPdf(b: Uint8Array): boolean {
+  const head = [0x25, 0x50, 0x44, 0x46, 0x2d];
+  const end = Math.min(b.length - head.length, 1024);
+  for (let i = 0; i <= end; i++) if (head.every((c, k) => b[i + k] === c)) return true;
+  return false;
+}
+export const PDF_SOURCE = `${SOURCES}source.pdf`;
 
 // ---------- Entry names ----------
 
@@ -89,12 +115,12 @@ export function picturePath(link: string): string | null {
 }
 
 /** A file name for the package on disk: `<name>.collide` from the tab title (a snip) or the .md file's name. */
-export function collideFileName(p: { kind: "snip" | "markdown"; title: string; file?: string }): string {
+export function collideFileName(p: { kind: "snip" | "markdown" | "pdf"; title: string; file?: string }): string {
   const stem =
-    p.kind === "markdown"
-      ? (p.file ?? p.title).replace(/\.md$/i, "").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^[-.]+|[-.]+$/g, "")
+    p.kind !== "snip"
+      ? (p.file ?? p.title).replace(/\.(md|pdf)$/i, "").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^[-.]+|[-.]+$/g, "")
       : p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  return `${stem.slice(0, 96) || (p.kind === "markdown" ? "document" : "snip")}${COLLIDE_EXT}`;
+  return `${stem.slice(0, 96) || (p.kind === "snip" ? "snip" : "document")}${COLLIDE_EXT}`;
 }
 
 // ---------- The manifest ----------
@@ -123,7 +149,18 @@ const MarkdownManifest = z.object({
   items: z.array(ShapeSchema),
   preview: z.literal(PREVIEW),
 });
-export const ManifestSchema = z.discriminatedUnion("kind", [SnipManifest, MarkdownManifest]);
+const PdfManifest = z.object({
+  format: z.literal(FORMAT),
+  version: z.literal(VERSION),
+  kind: z.literal("pdf"),
+  title,
+  order: z.literal("back-to-front"),
+  source: z.object({ file: z.literal(PDF_SOURCE), name: z.string().min(1).max(260) }),
+  page: z.number().int().min(0),
+  pages: z.array(z.object({ width: num.positive(), height: num.positive(), items: z.array(ShapeSchema) })).min(1).max(5000),
+  preview: z.literal(PREVIEW),
+});
+export const ManifestSchema = z.discriminatedUnion("kind", [SnipManifest, MarkdownManifest, PdfManifest]);
 export type Manifest = z.infer<typeof ManifestSchema>;
 
 const refuse = (why: string) => new MarkupError(OPEN_FAILED, `${why} Save it again from Collide, or open another file.`);
@@ -158,6 +195,20 @@ export function encodeCollide(pkg: CollidePackage): Uint8Array {
     };
     files[SNIP_SOURCE] = stored(pkg.source);
     for (const i of images) files[`${SOURCES}${i.meta.file}`] = stored(i.png);
+  } else if (pkg.kind === "pdf") {
+    if (!isPdf(pkg.pdf)) throw new MarkupError(SAVE_FAILED, "The PDF to save is not a PDF. Open the PDF again, then save.");
+    manifest = {
+      format: FORMAT,
+      version: VERSION,
+      kind: "pdf",
+      title: pkg.title,
+      order: "back-to-front",
+      source: { file: PDF_SOURCE, name: pkg.name },
+      page: Math.max(0, Math.min(pkg.page, pkg.pages.length - 1)),
+      pages: pkg.pages.map((p) => ({ width: p.width, height: p.height, items: p.shapes })),
+      preview: PREVIEW,
+    };
+    files[PDF_SOURCE] = stored(pkg.pdf);
   } else {
     const md = `${SOURCES}${pkg.file}`;
     if (!/\.md$/i.test(pkg.file) || !isSafeEntryName(md)) throw new MarkupError(SAVE_FAILED, `"${pkg.file}" cannot be used as the .md file's name in a Collide file. Rename the file, then save again.`);
@@ -232,13 +283,15 @@ export function decodeCollide(bytes: Uint8Array): CollidePackage {
   const parsed = ManifestSchema.safeParse(raw);
   if (!parsed.success) throw refuse(describe(parsed.error.issues[0]));
   const m = parsed.data;
-  const ids = new Set<string>();
-  for (const s of m.items) {
-    if (ids.has(s.id)) throw refuse(`${MANIFEST}: two items have the id "${s.id}".`);
-    ids.add(s.id);
+  for (const items of m.kind === "pdf" ? m.pages.map((p) => p.items) : [m.items]) {
+    const ids = new Set<string>();
+    for (const s of items) {
+      if (ids.has(s.id)) throw refuse(`${MANIFEST}: two items have the id "${s.id}".`);
+      ids.add(s.id);
+    }
   }
   const preview = take(PREVIEW, "The preview");
-  const listed = new Set([MANIFEST, PREVIEW, m.source.file, ...(m.kind === "snip" ? m.images : m.pictures).map((x) => x.file)]);
+  const listed = new Set([MANIFEST, PREVIEW, m.source.file, ...(m.kind === "snip" ? m.images : m.kind === "markdown" ? m.pictures : []).map((x) => x.file)]);
   const extra = Object.keys(entries).find((n) => !listed.has(n));
   if (extra !== undefined) throw refuse(`It has a file the manifest does not list (${extra}).`);
 
@@ -262,6 +315,14 @@ export function decodeCollide(bytes: Uint8Array): CollidePackage {
     return { kind: "snip", title: m.title, doc, source, images, preview };
   }
 
+  if (m.kind === "pdf") {
+    const pdf = take(PDF_SOURCE, "The PDF");
+    if (!isPdf(pdf)) throw refuse(`${PDF_SOURCE} is not a PDF.`);
+    if (m.page >= m.pages.length) throw refuse(`${MANIFEST}: page ${m.page + 1} is in front, but the PDF has ${m.pages.length} page${m.pages.length === 1 ? "" : "s"}.`);
+    const pic = m.pages.flatMap((p) => p.items).find((s) => s.type === "image");
+    if (pic) throw refuse(`${MANIFEST}: item "${pic.id}" is an image, which a PDF page cannot hold.`);
+    return { kind: "pdf", title: m.title, name: m.source.name, pdf, page: m.page, pages: m.pages.map((p) => ({ width: p.width, height: p.height, shapes: p.items })), preview };
+  }
   const img = m.items.find((s) => s.type === "image");
   if (img) throw refuse(`${MANIFEST}: item "${img.id}" is an image, which a Markdown page cannot hold.`);
   const pictures = m.pictures.map((p) => {
@@ -287,6 +348,11 @@ export function snipSummary(shapes: readonly Shape[]): string {
 export function markdownSummary(text: string, shapes: readonly Shape[]): string {
   const pasted = (text.match(/\]\(images\/pasted-[^)]+\)/g) ?? []).length;
   return `the .md file${pasted ? ` and ${pasted} pasted image${pasted > 1 ? "s" : ""}` : ""} with ${plural(shapes.length, "item")}`;
+}
+
+/** `the PDF (2 pages) with 3 items`. */
+export function pdfSummary(pages: readonly { shapes: readonly Shape[] }[]): string {
+  return `the PDF (${plural(pages.length, "page")}) with ${plural(pages.reduce((n, p) => n + p.shapes.length, 0), "item")}`;
 }
 
 /** The picture links (`![alt](path)`) of a Markdown text, by path, each once. */

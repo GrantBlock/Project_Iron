@@ -30,10 +30,10 @@ export interface RefItem {
 
 export interface RefState {
   version: 1;
-  view: "blank" | "snip" | "markdown" | "image" | "file" | "settings";
+  view: "blank" | "snip" | "markdown" | "pdf" | "image" | "file" | "settings";
   mode: "edit" | "preview" | null;
   tabs: { id: string; title: string; kind: RefState["view"]; dirty: boolean; active: boolean }[];
-  editor: "snip" | "markdown" | null;
+  editor: "snip" | "markdown" | "pdf" | null;
   activeTool: string | null;
   color: string | null;
   stroke: number | null;
@@ -45,6 +45,8 @@ export interface RefState {
   aura: string | null;
   sidebar: { delay: string | null; addMode: string | null; collapsed: boolean | null };
   splash: { kind: "close" | "delete"; title: string } | null;
+  /** RUN3 T38, app only (the prototype has no PDF): the PDF tab in front, its page (from 0) and how many it has. */
+  pdf: { pageIndex: number; pageCount: number } | null;
 }
 
 /** What the open Snip editor hands over: its state as it is right now. */
@@ -75,6 +77,20 @@ export interface MdRefInput {
   strokeWidth: number;
   /** Preview's zoom; null in Edit. */
   scale: number | null;
+  fitted: boolean;
+  bubbles?: BubbleMap;
+}
+
+/** What the open PDF editor hands over (RUN3 T38): the page in front's items in PDF points, and the page. */
+export interface PdfRefInput {
+  pageIndex: number;
+  pageCount: number;
+  shapes: readonly Shape[];
+  selectedId: string | null;
+  tool: string;
+  color: Role | null;
+  strokeWidth: number;
+  scale: number;
   fitted: boolean;
   bubbles?: BubbleMap;
 }
@@ -133,11 +149,13 @@ function items(shapes: readonly Shape[], bubbles: BubbleMap | undefined): RefIte
  * `editor` is the Snip editor of the tab in front, or null when that tab is not a snip (or nothing is open);
  * `md` the Markdown editor of the tab in front (T34).
  */
-export function refState(shell: ShellRefInput, editor: RefInput | null, md: MdRefInput | null = null): RefState {
+export function refState(shell: ShellRefInput, editor: RefInput | null, md: MdRefInput | null = null, pdfEditor: PdfRefInput | null = null): RefState {
   const front = shell.tabs.find((t) => t.id === shell.active) ?? null;
   const view: RefState["view"] = front ? front.kind : "blank";
   const snip = view === "snip" && editor !== null && editor.image !== null ? editor : null;
-  const doc = view === "markdown" ? md : null;
+  // RUN3 T38: a PDF page reads like a Markdown page in Preview (items in PDF points instead of page pixels).
+  const pdf = view === "pdf" ? pdfEditor : null;
+  const doc = view === "markdown" ? md : pdf ? { ...pdf, mode: "preview" as const } : null;
   const page = doc?.mode === "preview" ? doc : null;
   const zoom = snip ? { percent: Math.round(snip.scale * 100), fit: snip.fitted } : page && page.scale !== null ? { percent: Math.round(page.scale * 100), fit: page.fitted } : null;
   return {
@@ -146,7 +164,7 @@ export function refState(shell: ShellRefInput, editor: RefInput | null, md: MdRe
     // A Markdown file opens in Preview (T34); without its editor on screen the tab reads as Edit (source only).
     mode: view === "markdown" ? (doc?.mode ?? "edit") : null,
     tabs: shell.tabs.map((t) => ({ id: t.id, title: t.title, kind: t.kind, dirty: t.dirty, active: t.id === shell.active })),
-    editor: view === "snip" || view === "markdown" ? view : null,
+    editor: view === "snip" || view === "markdown" || view === "pdf" ? view : null,
     activeTool: snip ? snip.tool : page ? page.tool : null,
     color: snip ? snip.color : doc ? doc.color : null,
     stroke: snip ? snip.strokeWidth : doc ? doc.strokeWidth : null,
@@ -157,5 +175,6 @@ export function refState(shell: ShellRefInput, editor: RefInput | null, md: MdRe
     aura: shell.theme === "aura" ? shell.aura : null,
     sidebar: { delay: delayLabel(shell.snipDelay), addMode: shell.addMode, collapsed: shell.collapsed },
     splash: shell.splash ? { kind: shell.splash.kind, title: shell.splash.title } : null,
+    pdf: pdf ? { pageIndex: pdf.pageIndex, pageCount: pdf.pageCount } : null,
   };
 }

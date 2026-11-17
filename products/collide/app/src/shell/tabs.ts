@@ -2,7 +2,7 @@
 // Pure functions over the tab list; the shell keeps each tab's document, undo history and zoom beside it.
 
 /** What a tab shows. The same words as `view` in the reference hook (refState.ts). */
-export type TabKind = "snip" | "markdown" | "image" | "file" | "settings";
+export type TabKind = "snip" | "markdown" | "pdf" | "image" | "file" | "settings";
 
 export interface Tab {
   /** Opaque, unique in this window. */

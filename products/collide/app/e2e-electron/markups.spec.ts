@@ -150,7 +150,7 @@ test("save, close, open: identical annotations and image, from real folders unde
       await expect.poll(() => dialogAsked(app)).toEqual([
         {
           onWindow: true,
-          options: { title: "Open a Collide file or a saved markup", defaultPath: root, properties: ["openFile"], filters: [{ name: "Collide files and saved markups", extensions: ["collide", "json"] }] },
+          options: { title: "Open a PDF, a Collide file or a saved markup", defaultPath: root, properties: ["openFile"], filters: [{ name: "PDFs, Collide files and saved markups", extensions: ["pdf", "collide", "json"] }] },
         },
       ]);
       await expect(page.getByTestId("notice")).toHaveCount(0);

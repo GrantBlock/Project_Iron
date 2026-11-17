@@ -11,7 +11,7 @@ import type { Tab, TabKind } from "./tabs";
 
 export const Logo = () => <img className="logo" src={logoUrl} alt="Collide" draggable={false} />;
 
-const TAB_ICON: Record<TabKind, string> = { snip: "scissors", markdown: "file-text", image: "image", file: "file", settings: "settings" };
+const TAB_ICON: Record<TabKind, string> = { snip: "scissors", markdown: "file-text", pdf: "file-type", image: "image", file: "file", settings: "settings" };
 export const tabIcon = (kind: TabKind) => TAB_ICON[kind];
 
 /** Tabs on the canvas: a dot for changed (amber) or saved (green), × or a middle click closes. */

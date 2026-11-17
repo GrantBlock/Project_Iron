@@ -106,6 +106,9 @@ export function registerBridge(deps: BridgeDeps): { state: CaptureState } {
   handle("collideFiles.save", (name, bytes, replace) => files().save(name, bytes, replace));
   handle("collideFiles.open", (file) => files().open(file));
   handle("collideFiles.pick", () => files().pick());
+  // RUN3 T38: a PDF Open picked (or one in Markups), and Export's PDF into Markups.
+  handle("collideFiles.openPdf", (file) => files().openPdf(file));
+  handle("collideFiles.exportPdf", (name, bytes) => files().exportPdf(name, bytes));
 
   // RUN3 T36: storage. storage.ts checks the arguments and every path.
   const storage = (): Storage => {

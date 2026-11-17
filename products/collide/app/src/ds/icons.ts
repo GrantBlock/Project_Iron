@@ -35,6 +35,9 @@ import plusIcon from "lucide-static/icons/plus.svg?url";
 import packageIcon from "lucide-static/icons/package.svg?url";
 import folderIcon from "lucide-static/icons/folder.svg?url";
 import chevronRightIcon from "lucide-static/icons/chevron-right.svg?url";
+// RUN3 T38: the PDF tab and its page arrows.
+import chevronLeftIcon from "lucide-static/icons/chevron-left.svg?url";
+import fileTypeIcon from "lucide-static/icons/file-type.svg?url";
 import fileIcon from "lucide-static/icons/file.svg?url";
 import fileTextIcon from "lucide-static/icons/file-text.svg?url";
 import imageIcon from "lucide-static/icons/image.svg?url";
@@ -107,6 +110,8 @@ export const ICON_URLS: Record<string, string> = {
   "package": packageIcon,
   "folder": folderIcon,
   "chevron-right": chevronRightIcon,
+  "chevron-left": chevronLeftIcon,
+  "file-type": fileTypeIcon,
   "file": fileIcon,
   "file-text": fileTextIcon,
   "image": imageIcon,

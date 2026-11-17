@@ -15,7 +15,10 @@ import {
   pictureLinks,
   picturePath,
   snipSummary,
+  isPdf,
+  pdfSummary,
   type MarkdownPackage,
+  type PdfPackage,
   type SnipPackage,
 } from "./collideFile";
 import { MarkupError } from "./markupStore";
@@ -155,7 +158,7 @@ describe(".collide refuses bad packages", () => {
     expect(bad({ ...manifest, version: 2 })).toMatch(/^manifest\.json: version /);
     expect(bad({ ...manifest, format: "other" })).toMatch(/^manifest\.json: format /);
     expect(bad({ ...manifest, items: [{ ...SHAPES[0], w: -1 }] })).toMatch(/^manifest\.json: items\[0\]\.w /);
-    expect(bad({ ...manifest, kind: "pdf" })).toMatch(/^manifest\.json: kind /);
+    expect(bad({ ...manifest, kind: "video" })).toMatch(/^manifest\.json: kind /);
     // An added image's path in the manifest is checked too: it must be sources/image-<n>.png.
     expect(bad({ ...manifest, images: [{ file: "sources/../x.png", width: 1, height: 1 }] })).toMatch(/^manifest\.json: images\[0\]\.file /);
     expect(bad({ ...manifest, items: [SHAPES[0], SHAPES[0]] })).toMatch(/two items have the id "a1"/);
@@ -216,5 +219,62 @@ describe(".collide words and names", () => {
     expect([...dataUrlBytes(url)!]).toEqual([...png(1)]);
     expect(pictureDataUrl("a.bmp", png(1))).toBeNull();
     expect(dataUrlBytes("nope")).toBeNull();
+  });
+});
+
+// RUN3 T38: a PDF package: the original PDF in sources/, the pages with their own items, the page in front.
+describe(".collide with a PDF", () => {
+  const pdfBytes = () => new Uint8Array([...strToU8("%PDF-1.7\n%âã\n1 0 obj\n<<>>\nendobj\n%%EOF\n")]);
+  const PAGE2: Shape[] = [
+    { id: "s1", type: "rect", x: 40, y: 50, w: 120, h: 60, stroke: "red", strokeWidth: 3, note: "Check the guard", label: { x: 300, y: 20, w: 150 } },
+    { id: "s2", type: "pen", x: 200, y: 200, w: 80, h: 40, stroke: "blue", strokeWidth: 2, pts: [0, 0, 0.5, 1, 1, 0] },
+  ];
+  const pdf = (): PdfPackage => ({
+    kind: "pdf",
+    title: "two-pages.pdf",
+    name: "two-pages.pdf",
+    pdf: pdfBytes(),
+    page: 1,
+    pages: [
+      { width: 612, height: 792, shapes: [] },
+      { width: 500, height: 360, shapes: PAGE2 },
+    ],
+    preview: png(6),
+  });
+
+  it("round trip: the PDF byte for byte, each page's items in order, sizes and the page in front", () => {
+    const bytes = encodeCollide(pdf());
+    const entries = unzipSync(bytes);
+    expect(Object.keys(entries).sort()).toEqual(["manifest.json", "preview.png", "sources/source.pdf"]);
+    const m = JSON.parse(new TextDecoder().decode(entries["manifest.json"]));
+    expect(m).toMatchObject({ format: "collide", version: 1, kind: "pdf", page: 1, source: { file: "sources/source.pdf", name: "two-pages.pdf" } });
+    expect(m.pages.map((p: { width: number; height: number; items: Shape[] }) => [p.width, p.height, p.items.length])).toEqual([
+      [612, 792, 0],
+      [500, 360, 2],
+    ]);
+    expect(decodeCollide(bytes)).toEqual(pdf());
+  });
+
+  it("refuses a source that is not a PDF, a page in front past the end, an image item, and two items with one id", () => {
+    const m = JSON.parse(new TextDecoder().decode(unzipSync(encodeCollide(pdf()))["manifest.json"]));
+    const open = (manifest: unknown, source: Uint8Array = pdfBytes()) => () => decodeCollide(zip({ "manifest.json": JSON.stringify(manifest), "preview.png": png(6), "sources/source.pdf": source }));
+    expect(open(m, png(1))).toThrow("sources/source.pdf is not a PDF.");
+    expect(open({ ...m, page: 2 })).toThrow("page 3 is in front, but the PDF has 2 pages");
+    expect(open({ ...m, pages: [{ width: 10, height: 10, items: [{ id: "i", type: "image", src: "image-1.png", x: 0, y: 0, w: 1, h: 1, stroke: "gray", strokeWidth: 0 }] }], page: 0 })).toThrow("which a PDF page cannot hold");
+    expect(open({ ...m, pages: [{ width: 10, height: 10, items: [PAGE2[0], PAGE2[0]] }], page: 0 })).toThrow('two items have the id "s1"');
+    expect(open({ ...m, pages: [] })).toThrow("manifest.json: pages");
+    // The same id on two pages is fine: each page is its own markup.
+    expect(() => open({ ...m, pages: [{ width: 10, height: 10, items: [PAGE2[0]] }, { width: 10, height: 10, items: [PAGE2[0]] }] })()).not.toThrow();
+    expect(() => encodeCollide({ ...pdf(), pdf: png(1) })).toThrow("The PDF to save is not a PDF");
+  });
+
+  it("an older package (snip, Markdown) still opens, the words and the file name", () => {
+    expect(decodeCollide(encodeCollide(snip())).kind).toBe("snip");
+    expect(decodeCollide(encodeCollide(md())).kind).toBe("markdown");
+    expect(pdfSummary(pdf().pages)).toBe("the PDF (2 pages) with 2 items");
+    expect(collideFileName({ kind: "pdf", title: "Pump skid P&ID.pdf", file: "Pump skid P&ID.pdf" })).toBe("Pump-skid-P-ID.collide");
+    expect(isPdf(pdfBytes())).toBe(true);
+    expect(isPdf(new Uint8Array([1, 2, ...pdfBytes()]))).toBe(true);
+    expect(isPdf(png(1))).toBe(false);
   });
 });

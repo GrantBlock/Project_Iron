@@ -25,6 +25,7 @@ Beyond the Tech stack table and test tooling:
 - `lucide-static@0.460.0` — bundled locally so icons work offline (SPEC success criterion); replaces the design system's CDN load. Approved 2026-11-14 (T03).
 - `xcap` 0.9, `image` 0.25 (png only) — Tech stack table; `base64`, `serde` as direct Rust deps (already transitive via Tauri). Approved 2026-11-14 (T08). Linux build needs extra -dev packages (listed in `app/CLAUDE.md`).
 - `markdown-it` 14 — RUN3 T34 Markdown rendering (types: a local declaration, `app/src/types/markdown-it.d.ts`, no `@types` package); `fflate` approved for zip read/write if needed. Approved by the Planner for the Collide run (T34 brief, 2026-11-17).
+- `pdfjs-dist` 4.10.38 (pinned: the last 4.x, for Electron 33's Chromium; worker bundled by Vite, no CDN) and `pdf-lib` 1.17 — RUN3 T38 PDF open/draw and Export. Approved by Grant (T38 scope, 2026-11-15; named in the T38 brief).
 - Fonts: Geist via Google Fonts link, as the design system's `tokens/fonts.css` does (⚠ substitute, per readme).
 
 ## Usage budget

@@ -35,7 +35,7 @@
 | T34 | Markdown editor | Done (Vitest 410, Playwright 52 ×2, Electron e2e 16; zip storage on disk not built, ISSUES 35) | prototype 15/15 · app 14/15 (only save-collide-file left → T35) |
 | T35 | `.collide` files | Done (Vitest 441, Playwright 52 ×2, Electron e2e 19 ×2; adds fflate) | prototype 15/15 · app 15/15 |
 | T36 | Server storage | Done (Server mode, smallest version: Settings → Storage with real values, retention off by default; Vitest 459, Playwright 52 ×2, Electron e2e 20 ×2; ISSUES 39–42) | prototype 15/15 · app 15/15 |
-| T38 | PDF | To do | |
+| T38 | PDF | Done (smallest version: open, mark up per page in PDF points, .collide, Export PDF, Copy PNG; Vitest 480, Playwright 56, Electron e2e 21; adds pdfjs-dist 4.10.38, pdf-lib 1.17.1; real PDFs on Windows: manual Grant/Lydia) | no prototype spec; fixture round trip and export e2e pass |
 | T37 | Handoff | To do | |
 
 ### Reference specs (app column)

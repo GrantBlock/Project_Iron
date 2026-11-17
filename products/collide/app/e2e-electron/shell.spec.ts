@@ -33,7 +33,7 @@ test("Electron opens the editor from the Vite dev server", async () => {
   }
 });
 
-// RUN2.md, "Preload bridge window.collide": these and nothing else (RUN3 T35 adds collideFiles: .collide save, open, pick; T36 adds storage: info, setKeep, prune).
+// RUN2.md, "Preload bridge window.collide": these and nothing else (RUN3 T35 adds collideFiles: .collide save, open, pick; T36 adds storage: info, setKeep, prune; T38 adds collideFiles.openPdf and exportPdf).
 const BRIDGE_KEYS = [
   "captureMonitor",
   "collapse",
@@ -91,7 +91,7 @@ test("the page is isolated: window.collide has exactly the bridge, no Node, sand
       collideKeys: BRIDGE_KEYS,
       functions: BRIDGE_KEYS.filter((k) => k !== "markups" && k !== "overlay" && k !== "collideFiles" && k !== "storage"),
       markups: { list: "function", open: "function", pick: "function", remove: "function", save: "function" },
-      collideFiles: { open: "function", pick: "function", save: "function" },
+      collideFiles: { exportPdf: "function", open: "function", openPdf: "function", pick: "function", save: "function" },
       storage: { info: "function", prune: "function", setKeep: "function" },
       overlay: { emit: "function", on: "function" },
       require: "undefined",
