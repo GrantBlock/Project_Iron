@@ -180,8 +180,8 @@ test("Export writes a PDF with the same 2 pages and the markup drawn on page 2",
       edge: scan(290, 150, 1, 0, (p) => p[0] - p[1]),
       // The pen stroke passes (120, 280) at its lowest point, over the green block.
       pen: scan(120, 280, 0, 1, (p) => p[0] - p[1]),
-      // The yellow block, well inside the rectangle: unchanged.
-      inside: [...ctx.getImageData(Math.round(365 * k), Math.round(150 * k), 1, 1).data.slice(0, 3)],
+      // The yellow block inside the rectangle, clear of the bubble Export moves onto the page's right edge: unchanged.
+      inside: [...ctx.getImageData(Math.round(315 * k), Math.round(195 * k), 1, 1).data.slice(0, 3)],
     };
   });
   expect(px.edge[0]).toBeGreaterThan(180);
