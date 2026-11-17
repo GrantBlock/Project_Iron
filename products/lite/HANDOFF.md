@@ -14,7 +14,7 @@
 | L03 | Layout shell | Done (Vitest 39, e2e 13; Electron keeps the system title bar for now, ISSUES 7) | shell 7/7 · tree 6/6 · tabs 4/7 |
 | L04 | Views | Done (Vitest 44, e2e 15; About signed notice is sample text (A)) | views 7/7 · app total 29/47 |
 | L05 | Search | Done (Vitest 54, e2e 16; generic search module for L08) | search 9/9 · app total 35/47 |
-| L06 | 3D viewer | To do | |
+| L06 | 3D viewer | Done (three 0.187.0; sample GLBs via pnpm models; Vitest 71, e2e 25; Reviewer fixes: WebGL disposal, no-WebGL and 40-switch tests) | ref 47/47 (parts list both; viewer app-only e2e) |
 | L07 | Assistant (canned) | Done (Vitest 61, e2e 17; answer engine behind an interface; offline test flake fixed) | assistant 11/11 · app total 47/47 |
 | L08 | Open a folder | To do | |
 | L09 | Handoff | To do | |

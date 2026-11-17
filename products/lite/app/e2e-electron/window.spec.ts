@@ -111,3 +111,32 @@ test("the shell shows in the app; the system frame has the window controls, so t
     await close();
   }
 });
+
+test("L06: the model view renders the sample GLB in the app, from lite://app/ only", async () => {
+  const { page, output, close } = await launch();
+  const requests: string[] = [];
+  page.on("request", (r) => requests.push(r.url()));
+  try {
+    await page.getByRole("button", { name: "Palletizer frame v4", exact: true }).click();
+    await expect(page.locator(".l-viewport")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    // Non-blank: some canvas pixels differ from its corner (the viewport background shows through).
+    const drawn = await page.evaluate(() => {
+      const c = document.querySelector<HTMLCanvasElement>(".l-viewport canvas")!;
+      const copy = document.createElement("canvas");
+      copy.width = c.width;
+      copy.height = c.height;
+      const g = copy.getContext("2d")!;
+      g.drawImage(c, 0, 0);
+      const d = g.getImageData(0, 0, c.width, c.height).data;
+      let n = 0;
+      for (let i = 3; i < d.length; i += 4) if (d[i] > 0) n++;
+      return n / (c.width * c.height);
+    });
+    expect(drawn).toBeGreaterThan(0.05);
+    expect(requests.some((u) => /^lite:\/\/app\/assets\/m1-[\w-]+\.glb$/.test(u))).toBe(true);
+    expect(requests.filter((u) => !/^(lite:\/\/app\/|data:|blob:)/.test(u))).toEqual([]);
+    expect(output()).not.toContain("[lite] blocked");
+  } finally {
+    await close();
+  }
+});

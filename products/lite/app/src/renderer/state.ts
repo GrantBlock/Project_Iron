@@ -34,6 +34,8 @@ export interface AppState {
   readonly messages: readonly Message[];
   /** The three suggested questions show until the first question is asked. */
   readonly suggestionsShown: boolean;
+  /** The part selected in a model view (parts list or viewer); cleared when another item opens. */
+  readonly part: string | null;
   /** Counts every open (tree row, citation, source row): the view redraws and scrolls to the top on each, as the prototype's open(). */
   readonly opened: number;
 }
@@ -51,6 +53,7 @@ export function initialState(): AppState {
     pane: "files",
     messages: [{ role: "assistant", text: ASSISTANT_TEXT.greeting, sources: [] }],
     suggestionsShown: true,
+    part: null,
     opened: 0,
   };
 }
@@ -73,8 +76,14 @@ export function select(s: AppState, id: SelectionId, options: { page?: number; h
     highlight: options.highlight ?? "",
     closedFolders: [],
     pane: options.narrow ? "view" : s.pane,
+    part: null,
     opened: s.opened + 1,
   };
+}
+
+/** Selects a part of the open model (null clears). */
+export function selectPart(s: AppState, part: string | null): AppState {
+  return part === s.part ? s : { ...s, part };
 }
 
 /** Asking a question: the user's message goes in and the suggestions go away. */

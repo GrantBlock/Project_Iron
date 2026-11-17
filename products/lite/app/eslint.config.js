@@ -7,7 +7,7 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   {
     files: ["scripts/**/*.mjs"],
-    languageOptions: { globals: { URL: "readonly", console: "readonly", process: "readonly" } },
+    languageOptions: { globals: { URL: "readonly", console: "readonly", process: "readonly", Buffer: "readonly" } },
   },
   {
     // Electron main and preload: plain CommonJS run by Electron, not bundled by Vite.
