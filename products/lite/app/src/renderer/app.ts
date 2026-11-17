@@ -4,8 +4,10 @@
 // ui/right.ts). State lives in state.ts, the sample content in data/sample.ts; each area
 // re-renders from the state. The Assistant's answers come from an AnswerEngine (assistant/engine.ts). `window.__lite.state()` (hook.ts) is the read-only test hook.
 import { createCannedEngine, type AnswerEngine } from "./assistant/engine";
+import { loadPackage } from "./disk/package";
 import { installHook } from "./hook";
-import { createStore, type AppState, type Store } from "./state";
+import { pdfPageTexts } from "./pdf/pdf";
+import { createStore, openDisk, type AppState, type Store } from "./state";
 import { createCenter } from "./ui/center";
 import { el, type Area } from "./ui/dom";
 import { createLeft } from "./ui/left";
@@ -22,8 +24,19 @@ export function mountApp(root: HTMLElement, store: Store = createStore(), engine
   const isNarrow = () => narrow.matches;
   const titleBar = createTitleBar(store, { desktop: window.lite?.desktop === true });
   const tabs = createTabs(store);
-  const left = createLeft(store, isNarrow);
-  const center = createCenter(store);
+  // L08: Open folder, only in the Electron app (the preload bridge). Read only.
+  const bridge = window.lite;
+  const readFile = bridge ? (path: string) => bridge.readFile(path) : undefined;
+  const openFolder = bridge
+    ? async () => {
+        const listing = await bridge.openFolder();
+        if (!listing) return;
+        const pkg = await loadPackage(listing, { read: (path) => bridge.readFile(path), pdfPages: pdfPageTexts });
+        store.update((s) => openDisk(s, pkg));
+      }
+    : undefined;
+  const left = createLeft(store, isNarrow, openFolder);
+  const center = createCenter(store, readFile);
   const right = createRight(store, engine, isNarrow);
   const body = el("div", { class: "l-body", id: "body" }, left.element, center.element, right.element);
   const areas: Area<AppState>[] = [titleBar, tabs, left, center, right];

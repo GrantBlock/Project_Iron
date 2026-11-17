@@ -13,6 +13,9 @@ export const ICONS = {
   minimize: "M5 12h14",
   maximize: "M6 6h12v12H6z",
   close: "M6 6l12 12M18 6L6 18",
+  // L08 (shared shell.js icon set): Open folder, and files Lite lists but does not open.
+  folder: "M3 6h6l2 2h10v11H3z",
+  file: "M7 3h7l5 5v13H7zM14 3v5h5",
 } as const;
 
 export type IconName = keyof typeof ICONS;

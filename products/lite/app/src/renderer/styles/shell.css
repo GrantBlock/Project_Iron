@@ -156,3 +156,12 @@ button.l-part:last-child{border-bottom:none}
 button.l-part:hover{background:var(--bc-surface-raised)}
 button.l-part.is-on{background:var(--bc-surface-raised);box-shadow:inset 3px 0 0 var(--bc-steel-blue)}
 button.l-part:focus-visible{outline:2px solid var(--bc-steel-blue-text);outline-offset:-2px}
+
+/* L08: the opened folder as a second package, and Open folder (Electron app only; tokens only). */
+.l-sep{display:block;padding:18px 10px 2px;border-top:1px solid var(--bc-hairline);margin-top:var(--bc-space-3)}
+.l-kids .l-grp{margin-top:2px}
+.l-foot .l-open{display:inline-flex;align-items:center;gap:6px;margin-left:auto;flex-shrink:0}
+.l-pdf{padding:0;min-height:0;overflow:hidden}
+.l-pdf canvas{display:block;width:100%;height:auto}
+.l-pdf[data-state=loading]{min-height:380px}
+.l-pdf-error{padding:28px 32px;margin:0}
