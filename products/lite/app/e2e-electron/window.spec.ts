@@ -95,3 +95,19 @@ test("the window stays on the app: no navigation away, no new windows", async ()
     await close();
   }
 });
+
+test("the shell shows in the app; the system frame has the window controls, so the drawn ones are left out", async () => {
+  const { page, close } = await launch();
+  try {
+    await expect(page.getByRole("complementary", { name: "Package files" })).toBeVisible();
+    await expect(page.getByRole("main", { name: "Viewer" })).toBeVisible();
+    await expect(page.getByRole("complementary", { name: "Assistant" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Assistant", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator(".l-title .l-wc")).toHaveCount(0);
+    const s = await page.evaluate(() => (window as unknown as { __lite: { state(): { selected: { id: string }; tab: unknown } } }).__lite.state());
+    expect(s.selected.id).toBe("about");
+    expect(s.tab).toBeNull();
+  } finally {
+    await close();
+  }
+});
