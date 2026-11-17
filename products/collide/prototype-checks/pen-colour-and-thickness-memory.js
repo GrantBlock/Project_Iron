@@ -1,0 +1,22 @@
+const { chromium } = require('playwright');
+(async () => {
+  const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1440, height: 860 } });
+  const errs = []; p.on('pageerror', e => errs.push(e.message));
+  await p.goto('file://' + process.argv[2]); await p.evaluate(() => { try{localStorage.clear()}catch(e){} }); await p.reload(); await p.waitForTimeout(400);
+  await p.click('#side [data-snip="s-line3"]'); await p.waitForTimeout(300);
+  await p.click('[data-tool="rect"]'); await p.click('[data-role="blue"]'); await p.click('[data-sw="5"]');
+  const st = await (await p.$('#stage')).boundingBox();
+  await p.mouse.move(st.x + 300, st.y + 420); await p.mouse.down(); await p.mouse.move(st.x + 360, st.y + 460, {steps:3}); await p.mouse.up();
+  const afterDraw = await p.evaluate(() => [S.role, document.querySelectorAll('#ws [data-role][aria-pressed="true"]').length]);
+  await p.click('[data-tool="select"]'); await p.click('[data-tool="ellipse"]');
+  const back = await p.evaluate(() => [S.role, S.sw, document.querySelector('#ws [data-role="blue"]').getAttribute('aria-pressed'), document.querySelector('#ws [data-sw="5"]').getAttribute('aria-pressed')]);
+  await p.reload(); await p.waitForTimeout(400); await p.click('#side [data-snip="s-line3"]'); await p.waitForTimeout(300); await p.click('[data-tool="ellipse"]');
+  const reload = await p.evaluate(() => [S.role, S.sw]);
+  await p.evaluate(() => [...document.querySelectorAll('[data-file]')].find(x => x.dataset.file.includes('P06')).click()); await p.waitForTimeout(300);
+  await p.click('[data-dtool="rect"]'); await p.click('[data-dcolor="yellow"]'); await p.click('[data-dsw="2"]');
+  const pg = await (await p.$('#page')).boundingBox(); await p.mouse.move(pg.x + 100, pg.y + 500); await p.mouse.down(); await p.mouse.move(pg.x + 200, pg.y + 540, {steps:3}); await p.mouse.up();
+  await p.keyboard.press('Escape'); await p.keyboard.press('c');
+  const md = await p.evaluate(() => [S.dcolor, S.dsw, S.sw]);
+  console.log(JSON.stringify({ errs, afterDraw, back, reload, md }));
+  await b.close();
+})();
