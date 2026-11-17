@@ -102,3 +102,9 @@ test("L07 Assistant: a typed question is shown as text, never parsed as HTML", a
   await expect(page.locator("#msgs img")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Open source 2" })).toBeVisible();
 });
+
+test("L08: Open folder exists only in the Electron app (the web build has no bridge)", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: "Open folder" })).toHaveCount(0);
+  await expect(page.getByText("Opened folder")).toHaveCount(0);
+});

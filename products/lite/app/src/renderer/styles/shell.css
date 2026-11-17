@@ -160,7 +160,8 @@ button.l-part:focus-visible{outline:2px solid var(--bc-steel-blue-text);outline-
 /* L08: the opened folder as a second package, and Open folder (Electron app only; tokens only). */
 .l-sep{display:block;padding:18px 10px 2px;border-top:1px solid var(--bc-hairline);margin-top:var(--bc-space-3)}
 .l-kids .l-grp{margin-top:2px}
-.l-foot .l-open{display:inline-flex;align-items:center;gap:6px;margin-left:auto;flex-shrink:0}
+.l-foot:has(.l-open){flex-wrap:wrap}
+.l-foot .l-open{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:var(--bc-space-1)}
 .l-pdf{padding:0;min-height:0;overflow:hidden}
 .l-pdf canvas{display:block;width:100%;height:auto}
 .l-pdf[data-state=loading]{min-height:380px}
