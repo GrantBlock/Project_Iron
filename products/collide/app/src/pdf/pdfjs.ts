@@ -28,13 +28,13 @@ export const NOT_A_PDF = "Could not open the PDF";
 export async function openPdfDoc(bytes: Uint8Array): Promise<PDFDocumentProxy> {
   const m = await pdfjs();
   const task = m.getDocument({ data: bytes.slice(), isEvalSupported: false, useSystemFonts: true, stopAtErrors: false });
-  try {
-    return await task.promise;
-  } catch (e) {
-    const why = e instanceof Error ? e.message : String(e);
-    if (/password/i.test(why)) throw new Error("This PDF needs a password, so Collide cannot open it. Save a copy without a password, then open that copy.", { cause: e });
-    throw new Error(`The file is not a PDF Collide can read (${why}). Open another file.`, { cause: e });
-  }
+  const r = await task.promise.then(
+    (doc) => ({ doc, why: "" }),
+    (e: unknown) => ({ doc: null, why: e instanceof Error ? e.message : String(e) }),
+  );
+  if (r.doc) return r.doc;
+  if (/password/i.test(r.why)) throw new Error("This PDF needs a password, so Collide cannot open it. Save a copy without a password, then open that copy.");
+  throw new Error(`The file is not a PDF Collide can read (${r.why}). Open another file.`);
 }
 
 /** Every page's shown size, in points. */

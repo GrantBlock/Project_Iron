@@ -53,7 +53,7 @@ test("open the 2-page PDF: pages are drawn by pdf.js, the arrows and Page Up/Dow
   expect(s).toMatchObject({ view: "pdf", editor: "pdf", pdf: { pageIndex: 0, pageCount: 2 }, items: [], activeTool: "select" });
   expect(s.tabs).toEqual([expect.objectContaining({ title: "two-pages.pdf", kind: "pdf", dirty: false, active: true })]);
   // Page 1 is US Letter, drawn at its size in points (the canvas holds the pixels).
-  const p1 = await page.getByTestId("pdf-page").evaluate((el) => ({ w: el.offsetWidth, h: el.offsetHeight }));
+  const p1 = await page.getByTestId("pdf-page").evaluate((el) => ({ w: (el as HTMLElement).offsetWidth, h: (el as HTMLElement).offsetHeight }));
   expect(p1).toEqual({ w: 612, h: 792 });
   await expect(ws(page).getByRole("button", { name: "Previous page" })).toBeDisabled();
   await expect(ws(page).getByText("Page 1 of 2", { exact: true })).toBeVisible();
@@ -61,7 +61,7 @@ test("open the 2-page PDF: pages are drawn by pdf.js, the arrows and Page Up/Dow
   await expect(drawnPage(page, 2)).toBeVisible();
   s = await state(page);
   expect(s.pdf).toEqual({ pageIndex: 1, pageCount: 2 });
-  expect(await page.getByTestId("pdf-page").evaluate((el) => ({ w: el.offsetWidth, h: el.offsetHeight }))).toEqual({ w: 500, h: 360 });
+  expect(await page.getByTestId("pdf-page").evaluate((el) => ({ w: (el as HTMLElement).offsetWidth, h: (el as HTMLElement).offsetHeight }))).toEqual({ w: 500, h: 360 });
   await expect(ws(page).getByRole("button", { name: "Next page" })).toBeDisabled();
   await page.keyboard.press("PageUp");
   await expect(drawnPage(page, 1)).toBeVisible();
