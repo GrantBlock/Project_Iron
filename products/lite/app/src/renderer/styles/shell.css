@@ -142,3 +142,17 @@ body{background:var(--bc-backdrop)}
 /* The prototype's inline styles on the Assistant button and the panel tag. */
 #chatbtn{height:32px}
 .l-ch .de-tag{margin-left:6px}
+
+/* L06: the 3D viewer in the prototype's viewport, and selectable parts rows (app only; tokens only). */
+.l-viewport{overflow:hidden}
+.l-viewport .l-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab}
+.l-viewport .l-canvas:active{cursor:grabbing}
+.l-viewport[data-state=ready] > .de-icon{display:none}
+.l-viewport .hint{pointer-events:none}
+.l-fit{position:absolute;top:var(--bc-space-3);right:var(--bc-space-3)}
+.l-sample{position:absolute;top:var(--bc-space-3);left:14px;pointer-events:none}
+button.l-part{width:100%;border:none;border-bottom:1px solid var(--bc-hairline);border-radius:0;background:none;color:inherit;font:inherit;font-size:14px;text-align:left;cursor:pointer}
+button.l-part:last-child{border-bottom:none}
+button.l-part:hover{background:var(--bc-surface-raised)}
+button.l-part.is-on{background:var(--bc-surface-raised);box-shadow:inset 3px 0 0 var(--bc-steel-blue)}
+button.l-part:focus-visible{outline:2px solid var(--bc-steel-blue-text);outline-offset:-2px}

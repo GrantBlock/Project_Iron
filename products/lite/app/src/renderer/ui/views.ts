@@ -1,6 +1,6 @@
 // The views in the center (L04), as the prototype draws them: About (sample signed notice and
 // package details), a document as page sheets with Previous / Next and the page count, a model
-// (viewport placeholder and parts list; L06 puts the 3D viewer in the viewport) and a note as
+// (viewport and parts list; ui/model-view.ts adds the 3D viewer, L06) and a note as
 // read-only text. Every text goes in as a text node (L08 will show file names and file text
 // from disk here): no innerHTML.
 import { PACKAGE, PROJECTS, contentsSummary, type DocumentItem, type Item, type ModelItem, type NoteItem } from "../data/sample";
@@ -64,12 +64,21 @@ export function documentView(item: DocumentItem, page: number, highlight: string
   ];
 }
 
+/**
+ * The model view's frame: the prototype's viewport (placeholder icon and hint) and parts list.
+ * ui/model-view.ts puts the 3D viewer in the viewport and makes the parts selectable; the
+ * rows are buttons for that, styled as the prototype's rows.
+ */
 export function modelView(item: ModelItem): Node[] {
   return [
     el("h1", {}, item.title),
     el("div", { class: "sub" }, "3D model · read only"),
-    el("div", { class: "l-viewport" }, icon("model", 96), el("span", { class: "hint" }, "Drag to orbit · scroll to zoom")),
-    el("div", { class: "l-parts" }, ...item.parts.map((p) => el("div", { class: "l-part" }, el("span", {}, p.name), el("span", {}, p.bodies)))),
+    el("div", { class: "l-viewport", "data-state": "loading" }, icon("model", 96), el("span", { class: "hint" }, "Drag to orbit · scroll to zoom")),
+    el(
+      "div",
+      { class: "l-parts" },
+      ...item.parts.map((p) => el("button", { class: "l-part", type: "button", "data-part": p.name, "aria-pressed": "false" }, el("span", {}, p.name), el("span", {}, p.bodies))),
+    ),
   ];
 }
 

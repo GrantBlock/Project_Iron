@@ -2,6 +2,7 @@
 import { projectOf } from "../data/sample";
 import { pathText, selectedItem, turnPage, type AppState, type Store } from "../state";
 import { el, type Area } from "./dom";
+import { createModelView, type ViewHandle } from "./model-view";
 import { renderView } from "./views";
 
 export function createCenter(store: Store): Area<AppState> {
@@ -18,16 +19,21 @@ export function createCenter(store: Store): Area<AppState> {
     el("div", { class: "l-bar" }, crumb, el("span", { class: "sp" }), el("span", { class: "de-tag" }, "Read only")),
     view,
   );
+  let handle: ViewHandle | null = null;
   return {
     element,
     render(s, prev) {
+      handle?.update(s);
       if (prev && prev.opened === s.opened && prev.selected === s.selected && prev.page === s.page && prev.highlight === s.highlight) return;
       const item = selectedItem(s);
       const project = item && projectOf(item.id);
       crumb.replaceChildren(...(item && project ? [`${project.name} / `, el("b", {}, item.title)] : [el("b", {}, pathText(s))]));
       // Keep the keyboard on Previous / Next across page turns (the other one when it is now disabled).
       const focused = view.contains(document.activeElement) ? document.activeElement?.id : undefined;
-      view.replaceChildren(...renderView(s));
+      handle?.dispose();
+      handle = item?.type === "model" ? createModelView(item, store) : null;
+      view.replaceChildren(...(handle ? handle.nodes : renderView(s)));
+      handle?.update(s);
       if (focused === "pp" || focused === "pn") {
         const same = view.querySelector<HTMLButtonElement>(`#${focused}`);
         const other = view.querySelector<HTMLButtonElement>(focused === "pp" ? "#pn" : "#pp");
