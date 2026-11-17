@@ -83,7 +83,9 @@ export function createSnipFlow(deps: SnipDeps) {
   let busy = false;
   let lastSnipId = 0;
 
-  async function run(invoke: NonNullable<SnipDeps["invoke"]>, snipId: number) {
+  type Deliver = SnipDeps["openImage"];
+
+  async function run(invoke: NonNullable<SnipDeps["invoke"]>, snipId: number, deliver: Deliver) {
     await invoke("hide_editor");
     const delay = deps.delayMs?.() ?? 0;
     if (delay > 0) await (deps.wait ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms))))(delay);
@@ -112,11 +114,14 @@ export function createSnipFlow(deps: SnipDeps) {
     const crop = (await invoke("crop_capture", { x: box.x, y: box.y, w: box.w, h: box.h, scale })) as CropInfo;
     await invoke("hide_overlay");
     await invoke("show_editor");
-    await deps.openImage(crop.png, snipName(deps.now()));
+    await deliver(crop.png, snipName(deps.now()));
   }
 
-  /** Start a snip. Ignored while one is already in progress. Never throws. */
-  async function start(): Promise<void> {
+  /**
+   * Start a snip. Ignored while one is already in progress. Never throws.
+   * `deliver` takes the crop instead of opening it in a new tab (Add snip, Behind: RUN3 T33).
+   */
+  async function start(deliver: Deliver = deps.openImage): Promise<void> {
     if (busy) return;
     const invoke = deps.invoke;
     if (!invoke) {
@@ -125,7 +130,7 @@ export function createSnipFlow(deps: SnipDeps) {
     }
     busy = true;
     try {
-      await run(invoke, ++lastSnipId);
+      await run(invoke, ++lastSnipId, deliver);
     } catch (e) {
       deps.notify({
         tone: "error",

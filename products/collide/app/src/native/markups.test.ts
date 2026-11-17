@@ -632,3 +632,38 @@ describe("createMarkups: remove (T31: delete from Recents)", () => {
     expect(fs.readFileSync(target, "utf8")).toBe("outside bytes");
   });
 });
+
+describe("added images (RUN3 T33)", () => {
+  const listed = (...names: string[]) => JSON.stringify({ version: 1, images: names.map((file) => ({ file, width: 2, height: 1 })) });
+  const png = (n: number) => new Uint8Array([137, 80, 78, 71, n]);
+
+  it("save writes them beside source.png; open reads the ones annotations.json lists", () => {
+    const { documents, root } = sandbox();
+    const { markups } = store(documents);
+    const dir = markups.save("m", { ...files(), annotations: listed("image-1.png", "image-2.png"), images: [{ name: "image-1.png", png: png(1) }, { name: "image-2.png", png: png(2) }] });
+    expect(tree(root)).toEqual(["m", "m/annotations.json", "m/export.png", "m/image-1.png", "m/image-2.png", "m/source.png"]);
+    const opened = markups.open(dir);
+    expect(opened.images?.map((i) => [i.name, [...i.png]])).toEqual([["image-1.png", [...png(1)]], ["image-2.png", [...png(2)]]]);
+  });
+
+  it("saving again drops the files of images that were deleted; an older markup opens with none", () => {
+    const { documents, root } = sandbox();
+    const { markups } = store(documents);
+    markups.save("m", { ...files(), annotations: listed("image-1.png", "image-2.png"), images: [{ name: "image-1.png", png: png(1) }, { name: "image-2.png", png: png(2) }] });
+    fs.writeFileSync(path.join(root, "m", "notes.txt"), "mine");
+    const dir = markups.save("m", { ...files(), annotations: listed("image-2.png"), images: [{ name: "image-2.png", png: png(2) }] });
+    expect(tree(root)).toEqual(["m", "m/annotations.json", "m/export.png", "m/image-2.png", "m/notes.txt", "m/source.png"]);
+    markups.save("m", files());
+    expect(markups.open(dir).images).toBeUndefined();
+  });
+
+  it("refuses any other file name, and delete removes the image files too", async () => {
+    const { documents, root } = sandbox();
+    const { markups } = store(documents);
+    await rejected("InvalidFiles", () => markups.save("m", { ...files(), images: [{ name: "../escape.png", png: png(1) }] }));
+    await rejected("InvalidFiles", () => markups.save("m", { ...files(), images: [{ name: "source.png", png: png(1) }] }));
+    const dir = markups.save("m", { ...files(), annotations: listed("image-1.png"), images: [{ name: "image-1.png", png: png(1) }] });
+    markups.remove(dir);
+    expect(tree(root)).toEqual([]);
+  });
+});
