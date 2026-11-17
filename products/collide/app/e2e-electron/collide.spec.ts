@@ -95,7 +95,7 @@ test("a snip saved as .collide reopens in a new process with the same items, ord
     const manifest = JSON.parse(new TextDecoder().decode(entries["manifest.json"]));
     expect(manifest).toMatchObject({ format: "collide", version: 1, kind: "snip", title: "Pump skid", order: "back-to-front" });
     expect(manifest.items.map((s: { id: string }) => s.id)).toEqual([...before.items].reverse().map((i) => i.id));
-    expect(manifest.items.find((s: { note?: string }) => s.note)).toMatchObject({ note: "Valve handle clashes with the rail", fillPct: 40 });
+    expect(manifest.items.find((s: { note?: string }) => s.note)).toMatchObject({ note: "Valve handle clashes with the rail", type: "ellipse" });
 
     const second = await launch({ documents });
     try {
@@ -108,7 +108,7 @@ test("a snip saved as .collide reopens in a new process with the same items, ord
       const after = await snapshot(page);
       expect(after).toEqual({ ...before, dirty: false });
       expect(await picture(page)).toBe(look);
-      await expect(page.getByTestId("callout-note").nth(1)).toHaveValue("Valve handle clashes with the rail");
+      await expect(page.getByTestId("callout-note").first()).toHaveValue("Valve handle clashes with the rail");
 
       // Editable: a change, then Save as goes back to the same file.
       await page.evaluate(() => window.__collide!.seedShape({ x: 10, y: 150, w: 40, h: 30 }));
@@ -195,7 +195,7 @@ test("Open refuses a bad package and a file outside Documents/Collide/Markups, a
 
     // A manifest zod refuses.
     const bad = join(root, "bad.collide");
-    writeFileSync(bad, zipSync({ "manifest.json": strToU8(JSON.stringify({ format: "collide", version: 9 })) }));
+    writeFileSync(bad, zipSync({ "manifest.json": strToU8(JSON.stringify({ format: "collide", version: 9, kind: "snip" })) }));
     await answerDialog(app, [bad]);
     await page.getByTestId("open-markup").click();
     await expect(notice).toContainText("manifest.json: version");
