@@ -9,8 +9,8 @@
 
 | ID | Task | Status | Specs prototype / app |
 | --- | --- | --- | --- |
-| L01 | Scaffold | To do | |
-| L02 | Reference harness | To do | |
+| L01 | Scaffold | Done (Vitest 12, Playwright 2, Electron e2e 6; Reviewer fix: UNC paths blocked; plain TS + DOM, no React (A)) | n/a |
+| L02 | Reference harness | In progress (part 1 merged: 47 specs, prototype 47/47; app wiring next) | prototype 47/47 · app — |
 | L03 | Layout shell | To do | |
 | L04 | Views | To do | |
 | L05 | Search | To do | |
