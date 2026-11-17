@@ -9,4 +9,5 @@ export { createCollapse } from "./collapse";
 export { setupHotkey } from "./settings";
 export { copyImage } from "./clipboard";
 export { createMarkups } from "./markups";
+export { createCollideFiles } from "./collideFiles";
 export { fakeCapturer } from "./fakeCapturer";

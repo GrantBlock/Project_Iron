@@ -2,6 +2,7 @@
 // (electron/preload.cjs) exposes to the page, and the IPC channel names behind it.
 // T15: the snip, the overlay page and the settings warning use it.
 // T16: markups (src/native/markups.ts in the main process, src/io/electronStore.ts in the page).
+// RUN3 T35: Collide files (src/native/collideFiles.ts in the main process, src/io/collideFile.ts packs them).
 
 import type { LogicalRect } from "../snip/crop";
 import type { CaptureInfo, CropInfo } from "../snip/flow";
@@ -32,6 +33,9 @@ export const INVOKE_CHANNELS = {
   "markups.pick": "collide:markups-pick",
   "markups.list": "collide:markups-list",
   "markups.remove": "collide:markups-remove",
+  "collideFiles.save": "collide:collide-files-save",
+  "collideFiles.open": "collide:collide-files-open",
+  "collideFiles.pick": "collide:collide-files-pick",
 } as const;
 export type InvokeMethod = keyof typeof INVOKE_CHANNELS;
 
@@ -112,6 +116,18 @@ export interface CollideBridge {
     /** Delete a markup folder inside Markups for good (its three files, then the folder). Recents asks first. */
     remove(folder: string): Promise<void>;
   };
+  /**
+   * RUN3 T35: Collide files (`.collide`), in Documents/Collide/Markups beside the markup folders (A). Only bytes cross:
+   * the page packs and checks the package. The main process refuses any path outside that folder.
+   */
+  collideFiles: {
+    /** Write the package as `name` (a file name ending in .collide). Without `replace`, a taken name gets `-2`, `-3`, ... Resolves with the path. */
+    save(name: string, bytes: Uint8Array, replace: boolean): Promise<string>;
+    /** Read a Collide file inside Markups. */
+    open(file: string): Promise<Uint8Array>;
+    /** The Open dialog (sidebar Open): a .collide file, or a saved markup (its folder or its annotations.json). Null if cancelled. */
+    pick(): Promise<{ kind: "collide"; file: string } | { kind: "markup"; folder: string } | null>;
+  };
   /** The overlay events: sent to every Collide window, the sender included (as the Rust shell's emit/listen did). */
   overlay: {
     emit(event: OverlayEvent, payload?: unknown): void;
@@ -124,6 +140,7 @@ export interface CollideBridge {
 export const BRIDGE_KEYS = [
   "captureMonitor",
   "collapse",
+  "collideFiles",
   "copyImage",
   "cropCapture",
   "hideEditor",

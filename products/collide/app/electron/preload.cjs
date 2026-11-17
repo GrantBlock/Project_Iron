@@ -55,6 +55,11 @@ contextBridge.exposeInMainWorld("collide", {
     list: () => call("collide:markups-list"),
     remove: (folder) => call("collide:markups-remove", folder),
   },
+  collideFiles: {
+    save: (name, bytes, replace) => call("collide:collide-files-save", name, bytes, replace),
+    open: (file) => call("collide:collide-files-open", file),
+    pick: () => call("collide:collide-files-pick"),
+  },
   overlay: {
     emit: (event, payload) => {
       ipcRenderer.send(OVERLAY_EVENT_CHANNEL, overlayEvent(event), payload);
