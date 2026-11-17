@@ -82,7 +82,7 @@ export function modelView(item: ModelItem): Node[] {
   ];
 }
 
-/** A note; from an opened folder also Markdown and text files (plain read-only text, A) and files Lite lists but does not open. */
+/** A note; from an opened folder also text files (plain read-only text, A) and files Lite lists but does not open. Markdown: ui/markdown-view.ts. */
 export function noteView(item: NoteItem): Node[] {
   const src = item.source;
   if (src?.problem) return unopenedView(item.title, src.problem, src.size);

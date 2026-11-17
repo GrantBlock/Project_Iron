@@ -2,6 +2,7 @@
 import type { Item } from "../data/sample";
 import { pathParts, selectedItem, turnPage, type AppState, type Store } from "../state";
 import { el, type Area } from "./dom";
+import { createMarkdownView } from "./markdown-view";
 import { createModelView, type ViewHandle } from "./model-view";
 import { createPdfView } from "./pdf-view";
 import { renderView } from "./views";
@@ -50,11 +51,12 @@ export function createCenter(store: Store, readFile?: FileReader): Area<AppState
   };
 }
 
-/** Views that load and follow the state themselves: models (3D viewer) and PDFs. */
+/** Views that load and follow the state themselves: models (3D viewer), PDFs and Markdown (its images). */
 function viewHandle(item: Item, store: Store, readFile: FileReader | undefined): ViewHandle | null {
   const src = item.source;
   const read = src && readFile ? () => readFile(src.path) : undefined;
   if (item.type === "model") return createModelView(item, store, src ? read : undefined);
   if (item.type === "document" && src?.kind === "pdf" && read) return createPdfView(item, read);
+  if (item.type === "note" && item.markdown !== undefined && !src?.problem) return createMarkdownView(item, readFile);
   return null;
 }

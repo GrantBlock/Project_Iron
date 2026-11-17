@@ -5,14 +5,29 @@ import { addAnswer, askQuestion, initialState, select, viewInfo } from "../state
 import { cannedAnswerFor, citationPieces, createCannedEngine } from "./engine";
 
 describe("canned answer engine (the prototype's matching)", () => {
-  it("suggested questions, quirks included", () => {
+  it("suggested questions (ISSUES.md 2 kept, ISSUES.md 1 fixed)", () => {
     const oil = cannedAnswerFor(SUGGESTIONS[0]);
     expect(oil.sources.map((s) => [s.itemId, s.page, s.label])).toEqual([["d2", 3, "p. 4"], ["d3", 2, "p. 3"]]);
     // ISSUES.md 2: [1] appears twice, so three chips for two sources.
     expect(citationPieces(oil.text, oil.sources.length).filter((p) => "cite" in p)).toEqual([{ cite: 1 }, { cite: 1 }, { cite: 2 }]);
-    // ISSUES.md 1: "servicing" does not match /service/.
-    expect(cannedAnswerFor(SUGGESTIONS[1])).toEqual({ text: ASSISTANT_TEXT.fallback, sources: [] });
+    // ISSUES.md 1 (Grant 2026-11-17): "servicing" gets the lockout answer, one chip, LOTO-004 p. 3.
+    const lockout = cannedAnswerFor(SUGGESTIONS[1]);
+    expect(lockout.text).toBe(
+      "Apply lockout at the main disconnect, release stored energy at the pneumatic dump valve, and verify zero energy before you open any guard [1].",
+    );
+    expect(lockout.sources).toEqual([{ itemId: "d3", page: 2, label: "p. 3" }]);
+    expect(citationPieces(lockout.text, lockout.sources.length).filter((p) => "cite" in p)).toEqual([{ cite: 1 }]);
     expect(cannedAnswerFor(SUGGESTIONS[2]).sources).toEqual([{ itemId: "n1", page: 0, label: "note" }]);
+  });
+
+  it("the servicing fix changes no other answer", () => {
+    const lockout = cannedAnswerFor("LOTO");
+    for (const q of ["Before SERVICING?", "service the gearbox", "When is it serviced?", "Services needed"]) expect(cannedAnswerFor(q)).toEqual(lockout);
+    // Earlier answers still win where they did; unmatched questions still fall back.
+    expect(cannedAnswerFor("Servicing: what oil?").text).toContain("GB-220 gearbox oil");
+    expect(cannedAnswerFor("What is the gearbox oil change interval?").sources).toHaveLength(2);
+    expect(cannedAnswerFor("What is the servo rating?")).toEqual({ text: ASSISTANT_TEXT.fallback, sources: [] });
+    expect(cannedAnswerFor("Who is the service-desk contact?")).toEqual(lockout); // "service" matched before too
   });
 
   it("first matching answer wins, keywords ignore case", () => {

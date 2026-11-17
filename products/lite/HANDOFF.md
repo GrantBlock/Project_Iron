@@ -32,7 +32,8 @@ Every task went Coder → Reviewer (Farengar) → merge. Reviewer fixes applied:
 
 ### Next (for Grant)
 
+- **L10 (Grant 2026-11-17), Done:** frameless window with drawn buttons; ISSUES 1 and 3 fixed; Markdown via markdown-it 15.0.3 (raw HTML off, links inert, images only from inside the opened folder). Reviewed by Farengar: approved, no fixes. Vitest 108 · e2e 32 · ref prototype 49/49 (3 marked Grant overrides) · app 49/49 · screenshots 0 of 24 above 2%.
 - **Pull request** `lite/run` → `development`: draft until Grant's Windows pass.
 - **Windows manual checks:** `TESTER-NOTES.md`. Nothing Windows-only was checked from the cloud; `pnpm dist` has not been run.
-- **Open for Grant:** ISSUES 1–4 (prototype quirks), 7 (frameless window), 9 (Markdown as plain text), and the (A) defaults in ISSUES 5, 6, 8, 10–12.
+- **Open for Grant:** the (A) defaults in ISSUES 5, 6, 8, 10–14 (ISSUES 1–4, 7 and 9 decided 2026-11-17).
 - **Not built (by design this run):** on-device AI (D12), real package format and signature check (App Plan 3.2, Builder), window size memory, `.exe` icon.

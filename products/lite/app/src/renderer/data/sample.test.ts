@@ -68,9 +68,9 @@ describe("sample package (as the prototype)", () => {
     }
   });
 
-  it("canned answers match as the prototype, quirks included (ISSUES.md 1)", () => {
+  it("canned answers match as the prototype, with ISSUES.md 1 fixed (Grant 2026-11-17)", () => {
     expect(cannedAnswer(SUGGESTIONS[0])?.sources).toHaveLength(2);
-    expect(cannedAnswer(SUGGESTIONS[1])).toBeUndefined();
+    expect(cannedAnswer(SUGGESTIONS[1])?.sources).toEqual([{ itemId: "d3", page: 2, label: "p. 3" }]);
     expect(cannedAnswer(SUGGESTIONS[2])?.text).toContain("63 mm");
     expect(cannedAnswer("What is the torque and ratio?")?.sources.map((s) => s.page)).toEqual([0, 4]);
     expect(cannedAnswer("What colour is the building?")).toBeUndefined();

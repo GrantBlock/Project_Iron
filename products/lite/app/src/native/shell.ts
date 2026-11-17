@@ -13,13 +13,24 @@ export const CANVAS_COLOR = "#1e1e20";
 /** RUN.md open question 1 (A): 1280 × 800 by default, resizable. */
 export const WINDOW_SIZE = { width: 1280, height: 800 } as const;
 
-/** The options of the main window. The page is locked down: context isolation and sandbox on, no Node. */
+/** Smallest window (A): the phone-width layout (Files / View / Assistant tabs) still fits. */
+export const MIN_WINDOW_SIZE = { width: 400, height: 500 } as const;
+
+/**
+ * The options of the main window. Frameless (Grant 2026-11-17, ISSUES.md 7): the page draws the
+ * title bar and the prototype's window buttons. `thickFrame` keeps the Windows resize edges, the
+ * shadow and Snap. The page is locked down: context isolation and sandbox on, no Node.
+ */
 export function windowOptions(preload: string) {
   return {
     title: APP_NAME,
     width: WINDOW_SIZE.width,
     height: WINDOW_SIZE.height,
+    minWidth: MIN_WINDOW_SIZE.width,
+    minHeight: MIN_WINDOW_SIZE.height,
     resizable: true,
+    frame: false,
+    thickFrame: true,
     show: false,
     backgroundColor: CANVAS_COLOR,
     webPreferences: {
@@ -88,4 +99,35 @@ export function distFile(path: PathLike, dist: string, requestUrl: string): stri
   const rel = path.relative(dist, file);
   if (rel === "" || rel.split(path.sep)[0] === ".." || path.isAbsolute(rel)) return null;
   return file;
+}
+
+/** The drawn window buttons' actions, sent by the page on the `lite:window` channel. */
+export const WINDOW_ACTIONS = ["minimize", "toggle-maximize", "close"] as const;
+export type WindowAction = (typeof WINDOW_ACTIONS)[number];
+
+/** The part of a BrowserWindow the window buttons use. */
+export interface WindowLike {
+  minimize(): void;
+  maximize(): void;
+  unmaximize(): void;
+  isMaximized(): boolean;
+  close(): void;
+}
+
+/** Applies a window button's action; anything else is ignored. Returns whether it was one. */
+export function applyWindowAction(win: WindowLike, action: unknown): boolean {
+  switch (action) {
+    case "minimize":
+      win.minimize();
+      return true;
+    case "toggle-maximize":
+      if (win.isMaximized()) win.unmaximize();
+      else win.maximize();
+      return true;
+    case "close":
+      win.close();
+      return true;
+    default:
+      return false;
+  }
 }

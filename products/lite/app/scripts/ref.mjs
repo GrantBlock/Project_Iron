@@ -4,7 +4,9 @@
 //   2. against the app: the renderer build (dist/) under `vite preview` on a free local port, in Chromium
 // Each run saves its screenshots in ../reference/shots/<target>/. Then it prints a table per
 // spec (prototype ✓ ✗, app ✓ ✗), compares the screenshot pairs and writes
-// ../reports/screenshot-diff.md (pairs above 2% are listed, not failed).
+// ../reports/screenshot-diff.md (pairs above 2% are listed, not failed). A test that is expected to
+// fail on the prototype (`test.fail`, a Grant decision that overrides it; ../reference/README.md)
+// shows as "✓ Grant override" in the prototype column.
 //
 // Options: --no-build (reuse dist/), --strict (exit 1 when an app spec fails as well),
 // --only=prototype|app; anything else goes to `playwright test` (e.g. a spec file name).
@@ -61,21 +63,27 @@ function runSpecs(target, url) {
   });
 }
 
-/** Flattens Playwright's JSON report to { "<file> › <title path>": passed }. */
+/**
+ * Flattens Playwright's JSON report to { "<file> › <title path>": { ok, override } }. `override`:
+ * the test was expected to fail here (test.fail: a Grant decision that overrides the prototype).
+ */
 function readResults(json) {
   if (!existsSync(json)) return null;
   const report = JSON.parse(readFileSync(json, "utf8"));
   const out = new Map();
   const walk = (suite, titles) => {
     const here = suite.title && !suite.title.endsWith(".ts") ? [...titles, suite.title] : titles;
-    for (const spec of suite.specs || []) out.set(`${spec.file} › ${[...here, spec.title].join(" › ")}`, spec.ok === true);
+    for (const spec of suite.specs || []) {
+      const override = (spec.tests || []).some((t) => t.expectedStatus === "failed");
+      out.set(`${spec.file} › ${[...here, spec.title].join(" › ")}`, { ok: spec.ok === true, override });
+    }
     for (const child of suite.suites || []) walk(child, here);
   };
   for (const suite of report.suites || []) walk(suite, []);
   return out;
 }
 
-const mark = (v) => (v === undefined ? "—" : v ? "✓" : "✗");
+const mark = (v) => (v === undefined ? "—" : !v.ok ? "✗" : v.override ? "✓ Grant override" : "✓");
 
 mkdirSync(resultsDir, { recursive: true });
 const results = {};
@@ -98,19 +106,22 @@ if (targets.includes("app")) {
 // Table: one row per spec, grouped by file.
 const keys = [...new Set([...(results.prototype?.keys() ?? []), ...(results.app?.keys() ?? [])])];
 const width = Math.min(96, Math.max(...keys.map((k) => k.length), 10));
-console.log(`\n${"Spec".padEnd(width)}  prototype  app`);
+const col = Math.max(9, ...keys.map((k) => mark(results.prototype?.get(k)).length));
+console.log(`\n${"Spec".padEnd(width)}  ${"prototype".padEnd(col)}  app`);
 for (const k of keys) {
-  console.log(`${(k.length > width ? k.slice(0, width - 1) + "…" : k).padEnd(width)}  ${mark(results.prototype?.get(k)).padEnd(9)}  ${mark(results.app?.get(k))}`);
+  console.log(`${(k.length > width ? k.slice(0, width - 1) + "…" : k).padEnd(width)}  ${mark(results.prototype?.get(k)).padEnd(col)}  ${mark(results.app?.get(k))}`);
 }
 const files = [...new Set(keys.map((k) => k.split(" › ")[0]))];
 const count = (map, file) => {
   if (!map) return "—";
   const rows = [...map].filter(([k]) => !file || k.startsWith(file + " › "));
-  return `${rows.filter(([, ok]) => ok).length}/${rows.length}`;
+  const overrides = rows.filter(([, v]) => v.override).length;
+  return `${rows.filter(([, v]) => v.ok).length}/${rows.length}${overrides ? ` (${overrides} Grant override${overrides > 1 ? "s" : ""})` : ""}`;
 };
-console.log(`\n${"File".padEnd(20)}  prototype  app`);
-for (const f of files) console.log(`${f.padEnd(20)}  ${count(results.prototype, f).padEnd(9)}  ${count(results.app, f)}`);
-console.log(`${"Total".padEnd(20)}  ${count(results.prototype).padEnd(9)}  ${count(results.app)}`);
+const fileCol = Math.max(9, ...[undefined, ...files].map((f) => count(results.prototype, f).length));
+console.log(`\n${"File".padEnd(20)}  ${"prototype".padEnd(fileCol)}  app`);
+for (const f of files) console.log(`${f.padEnd(20)}  ${count(results.prototype, f).padEnd(fileCol)}  ${count(results.app, f)}`);
+console.log(`${"Total".padEnd(20)}  ${count(results.prototype).padEnd(fileCol)}  ${count(results.app)}`);
 
 // Screenshots: only when both targets ran.
 if (results.prototype && results.app) {
@@ -124,7 +135,7 @@ if (results.prototype && results.app) {
   console.log(`Report: ${path.relative(process.cwd(), report)}`);
 }
 
-const protoBad = !results.prototype && targets.includes("prototype") ? true : [...(results.prototype?.values() ?? [])].some((ok) => !ok);
-const appBad = !results.app && targets.includes("app") ? true : [...(results.app?.values() ?? [])].some((ok) => !ok);
+const protoBad = !results.prototype && targets.includes("prototype") ? true : [...(results.prototype?.values() ?? [])].some((v) => !v.ok);
+const appBad = !results.app && targets.includes("app") ? true : [...(results.app?.values() ?? [])].some((v) => !v.ok);
 if (protoBad) console.error("\n[ref] A spec fails on the prototype: that is a bad spec, not an app bug.");
 process.exit(protoBad || (flag("--strict") && appBad) ? 1 : 0);

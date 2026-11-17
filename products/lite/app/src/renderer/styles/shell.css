@@ -166,3 +166,45 @@ button.l-part:focus-visible{outline:2px solid var(--bc-steel-blue-text);outline-
 .l-pdf canvas{display:block;width:100%;height:auto}
 .l-pdf[data-state=loading]{min-height:380px}
 .l-pdf-error{padding:28px 32px;margin:0}
+
+/* L10: the frameless Electron window (Grant 2026-11-17). The window's edge is the frame, so the
+   prototype's backdrop margin and rounded frame are left out there (A); the web build is unchanged.
+   The title bar drags the window; its buttons (window buttons, Assistant) do not. The window
+   buttons show at every width (the prototype hides its drawn ones under 900px: there is no
+   other way to close a frameless window). */
+.is-desktop .l-win{padding:0}
+.is-desktop .l-frame{border:none;border-radius:0;box-shadow:none}
+.is-desktop .l-title{-webkit-app-region:drag;user-select:none}
+.is-desktop .l-title button{-webkit-app-region:no-drag}
+.is-desktop .l-wc{display:flex}
+.l-wb{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:center;width:40px;height:32px;border-radius:var(--bc-radius-control);color:var(--bc-muted);cursor:default}
+.l-wb:hover{background:var(--bc-surface-raised);color:var(--bc-ink)}
+.l-wb:focus-visible{outline:2px solid var(--bc-steel-blue-text);outline-offset:-2px}
+
+/* L10: Markdown of an opened folder, formatted (markdown-it, raw HTML off). Tokens only. The
+   headings start at h2 (the view title is the h1). Links show as text and do not open. */
+.l-md{max-width:var(--bc-content-width);font-size:15px;line-height:1.65;color:var(--bc-ink);overflow-wrap:anywhere}
+.l-md>:first-child{margin-top:0}
+.l-md h2,.l-md h3,.l-md h4,.l-md h5,.l-md h6{margin:var(--bc-space-6) 0 var(--bc-space-2);line-height:1.25;font-weight:700;color:var(--bc-ink)}
+.l-md h2{font-size:22px;padding-bottom:var(--bc-space-1);border-bottom:1px solid var(--bc-hairline)}
+.l-md h3{font-size:18px}
+.l-md h4{font-size:16px}
+.l-md h5,.l-md h6{font-size:14px;color:var(--bc-muted)}
+.l-md p{margin:0 0 var(--bc-space-3)}
+.l-md ul,.l-md ol{margin:0 0 var(--bc-space-3);padding-left:var(--bc-space-6)}
+.l-md li{margin:var(--bc-space-1) 0}
+.l-md li::marker{color:var(--bc-steel-blue-text)}
+.l-md li>p{margin:0}
+.l-md blockquote>:last-child{margin-bottom:0}
+.l-md blockquote{margin:0 0 var(--bc-space-3);padding:var(--bc-space-1) var(--bc-space-4);border-left:3px solid var(--bc-steel-blue);color:var(--bc-muted)}
+.l-md hr{border:none;border-top:1px solid var(--bc-hairline);margin:var(--bc-space-6) 0}
+.l-md code{font-family:var(--font-mono);font-size:.9em;padding:1px var(--bc-space-1);border-radius:var(--bc-radius-bar);background:var(--bc-surface-raised)}
+.l-md pre{margin:0 0 var(--bc-space-3);padding:var(--bc-space-3) var(--bc-space-4);border:1px solid var(--bc-hairline);border-radius:var(--bc-radius-control);background:var(--bc-surface);overflow-x:auto;line-height:1.5}
+.l-md pre code{padding:0;background:none;font-size:13px;white-space:pre}
+.l-md table{border-collapse:collapse;margin:0 0 var(--bc-space-3);font-size:14px;display:block;max-width:100%;overflow-x:auto}
+.l-md th,.l-md td{padding:var(--bc-space-1) var(--bc-space-3);border:1px solid var(--bc-hairline);text-align:left}
+.l-md th{background:var(--bc-surface);font-weight:600}
+.l-md [data-align=center]{text-align:center}.l-md [data-align=right]{text-align:right}
+.l-md-link{color:var(--bc-steel-blue-text);text-decoration:underline;text-underline-offset:2px;cursor:default}
+.l-md-alt{color:var(--bc-muted);font-style:italic}
+.l-md-img{display:block;max-width:100%;height:auto;margin:var(--bc-space-2) 0;border-radius:var(--bc-radius-control)}

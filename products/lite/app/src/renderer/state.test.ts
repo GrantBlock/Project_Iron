@@ -58,10 +58,21 @@ describe("state", () => {
     expect(treeFolders(s).map((f) => f.open)).toEqual([true, false]);
   });
 
-  it("prototype quirk (ISSUES.md 3): selecting or searching opens every folder again", () => {
+  it("folders keep their open/closed state on select, search and clearing the search (Grant 2026-11-17, ISSUES.md 3)", () => {
     const closed = toggleFolder(initialState(), "Engineering resources");
-    expect(select(closed, "d1").closedFolders).toEqual([]);
-    expect(setQuery(closed, "oil").closedFolders).toEqual([]);
+    expect(select(closed, "d1").closedFolders).toEqual(["Engineering resources"]);
+    expect(select(closed, "d3").closedFolders).toEqual(["Engineering resources"]); // an item inside the closed folder
+    expect(select(closed, "about").closedFolders).toEqual(["Engineering resources"]);
+    const searching = setQuery(closed, "oil");
+    expect(searching.closedFolders).toEqual(["Engineering resources"]);
+    expect(treeFolders(searching).map((f) => [f.project.name, f.open])).toEqual([
+      ["Palletizer retrofit", true],
+      ["Engineering resources", false],
+    ]);
+    const cleared = setQuery(searching, "");
+    expect(treeFolders(cleared).map((f) => f.open)).toEqual([true, false]);
+    // Opening a result from the search keeps them too.
+    expect(select(searching, "d2", { highlight: "oil" }).closedFolders).toEqual(["Engineering resources"]);
   });
 
   it("toggles the Assistant and switches panes", () => {

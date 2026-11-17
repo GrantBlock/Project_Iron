@@ -1,4 +1,4 @@
-import { test, expect, state, shots, tree, viewer } from "./fixture";
+import { test, expect, state, shots, tree, viewer, grantOverride, TARGET_NAME } from "./fixture";
 
 const box = (page: any) => page.getByLabel("Search this package");
 
@@ -71,6 +71,20 @@ test.describe("search", () => {
     expect(s.search).toMatchObject({ query: "", matchCount: 7 });
     await expect(tree(page).getByRole("button", { name: "Handoff log template" })).toBeVisible();
     await expect(tree(page).getByRole("button", { name: /^Palletizer retrofit/ })).toContainText("4");
+  });
+
+  test("a closed folder stays closed while searching and after clearing [Grant 2026-11-17]", grantOverride("ISSUES 3"), async ({ lite: page }) => {
+    test.fail(TARGET_NAME === "prototype", "Grant 2026-11-17 overrides the prototype");
+    const folder = (n: string) => tree(page).getByRole("button", { name: new RegExp("^" + n) });
+    await folder("Palletizer retrofit").click();
+    await box(page).fill("gearbox");
+    await expect(folder("Palletizer retrofit")).toHaveAttribute("aria-expanded", "false");
+    await expect(tree(page).getByRole("button", { name: "GB-220 gearbox data sheet" })).toBeHidden();
+    expect((await state(page)).openFolders).toEqual(["Engineering resources"]);
+    await box(page).fill("");
+    await expect(folder("Palletizer retrofit")).toHaveAttribute("aria-expanded", "false");
+    await expect(folder("Engineering resources")).toHaveAttribute("aria-expanded", "true");
+    expect((await state(page)).openFolders).toEqual(["Engineering resources"]);
   });
 
   test("screenshots", async ({ lite: page }) => {
