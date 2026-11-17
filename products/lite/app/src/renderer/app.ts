@@ -2,7 +2,8 @@
 // the Files / View / Assistant tabs (under 900px only), and three panes: left (package and
 // tree, ui/left.ts), center (path bar and view, ui/center.ts), right (the Assistant,
 // ui/right.ts). State lives in state.ts, the sample content in data/sample.ts; each area
-// re-renders from the state. `window.__lite.state()` (hook.ts) is the read-only test hook.
+// re-renders from the state. The Assistant's answers come from an AnswerEngine (assistant/engine.ts). `window.__lite.state()` (hook.ts) is the read-only test hook.
+import { createCannedEngine, type AnswerEngine } from "./assistant/engine";
 import { installHook } from "./hook";
 import { createStore, type AppState, type Store } from "./state";
 import { createCenter } from "./ui/center";
@@ -16,14 +17,14 @@ import { createTitleBar } from "./ui/titlebar";
 export const NARROW_QUERY = "(max-width:900px)";
 
 /** Builds the app inside `root`, replacing whatever was there. Returns the app's element. */
-export function mountApp(root: HTMLElement, store: Store = createStore()): HTMLElement {
+export function mountApp(root: HTMLElement, store: Store = createStore(), engine: AnswerEngine = createCannedEngine()): HTMLElement {
   const narrow = window.matchMedia(NARROW_QUERY);
   const isNarrow = () => narrow.matches;
   const titleBar = createTitleBar(store, { desktop: window.lite?.desktop === true });
   const tabs = createTabs(store);
   const left = createLeft(store, isNarrow);
   const center = createCenter(store);
-  const right = createRight();
+  const right = createRight(store, engine, isNarrow);
   const body = el("div", { class: "l-body", id: "body" }, left.element, center.element, right.element);
   const areas: Area<AppState>[] = [titleBar, tabs, left, center, right];
 

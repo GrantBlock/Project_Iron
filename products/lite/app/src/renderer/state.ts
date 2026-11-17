@@ -1,7 +1,7 @@
 // The app's state and the changes to it, as pure functions (unit-tested in Node), plus a
 // tiny store the render modules subscribe to. Behaviour follows the prototype
 // (prototype/exports/P16-lite/index.html), including its quirks listed in ../ISSUES.md.
-import { ABOUT_LABEL, PROJECTS, findItem, projectOf, type Item, type Project, type Source, type ViewType } from "./data/sample";
+import { ABOUT_LABEL, ASSISTANT_TEXT, PROJECTS, findItem, projectOf, type Item, type Project, type Source, type ViewType } from "./data/sample";
 import { filterItems } from "./search";
 
 /** The panes under 900px. "chat" is the Assistant pane (the prototype's name). */
@@ -30,14 +30,29 @@ export interface AppState {
   readonly assistantShown: boolean;
   /** The pane shown under 900px; kept above 900px too, as in the prototype. */
   readonly pane: Pane;
-  /** The Assistant conversation (L07). */
+  /** The Assistant conversation, greeting first. */
   readonly messages: readonly Message[];
+  /** The three suggested questions show until the first question is asked. */
+  readonly suggestionsShown: boolean;
+  /** Counts every open (tree row, citation, source row): the view redraws and scrolls to the top on each, as the prototype's open(). */
+  readonly opened: number;
 }
 
 export const ABOUT = "about";
 
 export function initialState(): AppState {
-  return { selected: ABOUT, page: 0, query: "", highlight: "", closedFolders: [], assistantShown: true, pane: "files", messages: [] };
+  return {
+    selected: ABOUT,
+    page: 0,
+    query: "",
+    highlight: "",
+    closedFolders: [],
+    assistantShown: true,
+    pane: "files",
+    messages: [{ role: "assistant", text: ASSISTANT_TEXT.greeting, sources: [] }],
+    suggestionsShown: true,
+    opened: 0,
+  };
 }
 
 /** The selected item, or undefined for About (or an unknown id). */
@@ -58,7 +73,18 @@ export function select(s: AppState, id: SelectionId, options: { page?: number; h
     highlight: options.highlight ?? "",
     closedFolders: [],
     pane: options.narrow ? "view" : s.pane,
+    opened: s.opened + 1,
   };
+}
+
+/** Asking a question: the user's message goes in and the suggestions go away. */
+export function askQuestion(s: AppState, question: string): AppState {
+  return { ...s, messages: [...s.messages, { role: "user", text: question, sources: [] }], suggestionsShown: false };
+}
+
+/** The Assistant's answer arrives. */
+export function addAnswer(s: AppState, answer: { text: string; sources: readonly Source[] }): AppState {
+  return { ...s, messages: [...s.messages, { role: "assistant", text: answer.text, sources: answer.sources }] };
 }
 
 /** Collapses or expands a folder; the selection stays. */

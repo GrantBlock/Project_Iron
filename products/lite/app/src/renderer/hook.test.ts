@@ -13,7 +13,14 @@ describe("window.__lite.state() snapshot (HOOK.md)", () => {
       search: { query: "", matchCount: 7, highlights: 0 },
       assistantShown: true,
       tab: null,
-      messages: [],
+      messages: [
+        {
+          role: "assistant",
+          text: "I answer from this package only, and everything runs on this computer. Ask about the documents, models or notes.",
+          citations: 0,
+          sources: 0,
+        },
+      ],
     });
   });
 
