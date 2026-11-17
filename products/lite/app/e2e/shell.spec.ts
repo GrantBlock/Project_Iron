@@ -78,3 +78,17 @@ test("L04 views: the model view keeps the prototype's viewport placeholder and p
   await expect(page.locator(".l-viewport .hint")).toHaveText("Drag to orbit · scroll to zoom");
   await expect(page.locator(".l-part")).toHaveText(["Guard panel4 bodies", "Door interlock2 bodies"]);
 });
+
+test("L05 search: regex and HTML characters are plain text; the highlight is a <mark> around the page's own text", async ({ page }) => {
+  await page.goto("/");
+  const box = page.getByLabel("Search this package");
+  await box.fill("(A)");
+  await expect(page.getByRole("button", { name: "Process document, rev 3", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Process document, rev 3", exact: true }).click();
+  await expect(page.locator(".l-paper mark")).toHaveText(["(A)"]);
+  await box.fill("<b>x</b>");
+  await expect(page.getByText("Nothing in this package matches.")).toBeVisible();
+  await expect(page.locator("#tree b")).toHaveCount(0);
+  await box.fill("");
+  await expect(page.locator("#tree .l-it")).toHaveCount(7);
+});
