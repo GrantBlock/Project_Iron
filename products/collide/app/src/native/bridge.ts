@@ -3,6 +3,7 @@
 // T15: the snip, the overlay page and the settings warning use it.
 // T16: markups (src/native/markups.ts in the main process, src/io/electronStore.ts in the page).
 // RUN3 T35: Collide files (src/native/collideFiles.ts in the main process, src/io/collideFile.ts packs them).
+// RUN3 T36: storage (src/native/storage.ts): the folder's size and item count, and keep the newest N.
 
 import type { LogicalRect } from "../snip/crop";
 import type { CaptureInfo, CropInfo } from "../snip/flow";
@@ -36,6 +37,9 @@ export const INVOKE_CHANNELS = {
   "collideFiles.save": "collide:collide-files-save",
   "collideFiles.open": "collide:collide-files-open",
   "collideFiles.pick": "collide:collide-files-pick",
+  "storage.info": "collide:storage-info",
+  "storage.setKeep": "collide:storage-set-keep",
+  "storage.prune": "collide:storage-prune",
 } as const;
 export type InvokeMethod = keyof typeof INVOKE_CHANNELS;
 
@@ -59,6 +63,17 @@ export interface SettingsStatus {
   hotkey: string;
   /** Cause + fix text for a Toast, when the configured hotkey could not be used. */
   warning: string | null;
+}
+
+/** RUN3 T36: what Settings → Storage shows (src/native/storage.ts). */
+export interface StorageInfo {
+  /** The storage folder's path. */
+  folder: string;
+  /** Saved snips (markup folders) and Collide files in it. */
+  items: number;
+  bytes: number;
+  /** Keep the newest this many; null = off, every item is kept. */
+  keep: number | null;
 }
 
 /** The three files of a markup folder, as they cross the bridge. */
@@ -128,6 +143,17 @@ export interface CollideBridge {
     /** The Open dialog (sidebar Open): a .collide file, or a saved markup (its folder or its annotations.json). Null if cancelled. */
     pick(): Promise<{ kind: "collide"; file: string } | { kind: "markup"; folder: string } | null>;
   };
+  /**
+   * RUN3 T36: storage on the server PC (Server mode): the folder that holds the saved snips and Collide files, its size
+   * and item count, and "keep the newest N" (off until set). The main process keeps the setting and deletes.
+   */
+  storage: {
+    info(): Promise<StorageInfo>;
+    /** A whole number from 1, or null for off (keep every file). Deletes nothing by itself. */
+    setKeep(keep: number | null): Promise<StorageInfo>;
+    /** After a save: delete the oldest items beyond N, never the open ones (names or paths of the items open in tabs). */
+    prune(open: string[]): Promise<{ deleted: string[]; info: StorageInfo }>;
+  };
   /** The overlay events: sent to every Collide window, the sender included (as the Rust shell's emit/listen did). */
   overlay: {
     emit(event: OverlayEvent, payload?: unknown): void;
@@ -151,6 +177,7 @@ export const BRIDGE_KEYS = [
   "settingsStatus",
   "showEditor",
   "showOverlay",
+  "storage",
 ] as const;
 
 declare global {

@@ -9,6 +9,7 @@ import { createSnipSession, defaultPen, loadImage, loadPictures, SnipEditor, toP
 import { refState, type RefState } from "../editor/refState";
 import type { Point } from "../editor/viewport";
 import type { Flattened } from "../io/flatten";
+import type { StorageInfo } from "../native/bridge";
 import { createMarkupStore, MarkupError, type MarkupStore } from "../io";
 import {
   collideFileName,
@@ -262,6 +263,49 @@ export function Shell() {
     };
   }, [refreshRecents]);
   const rows = useMemo<RecentItem[]>(() => [...stored, ...samples], [stored, samples]);
+
+  // ---------- Storage on the server PC (RUN3 T36) ----------
+  // The desktop app's main process keeps "keep the newest N" and deletes; Settings → Storage shows its numbers.
+  const [storageInfo, setStorageInfo] = useState<StorageInfo | null>(null);
+  useEffect(() => {
+    const storage = window.collide?.storage;
+    if (!storage) return;
+    let alive = true;
+    storage.info().then(
+      (info) => {
+        if (!alive) return;
+        setStorageInfo(info);
+        // The main process holds the number: what this page remembered is replaced by it.
+        const keep = info.keep === null ? "" : String(info.keep);
+        if (live.current.prefs.settings.keep !== keep) setPref("settings", { ...live.current.prefs.settings, keep });
+      },
+      () => undefined, // Settings shows the folder without numbers
+    );
+    return () => {
+      alive = false;
+    };
+  }, [setPref]);
+  /** After each save: the main process deletes the oldest beyond N, never what is open in a tab. */
+  const pruneStorage = useCallback(async () => {
+    const storage = window.collide?.storage;
+    if (!storage) return;
+    const open: string[] = [];
+    for (const t of live.current.tabs.tabs) {
+      const snip = sessions.current.get(t.id);
+      const md = mdSessions.current.get(t.id);
+      for (const name of [snip?.source.folder, snip?.collideFile, md?.collideFile]) if (name) open.push(name);
+    }
+    try {
+      const r = await storage.prune(open);
+      setStorageInfo(r.info);
+      if (r.deleted.length) {
+        showHint(`Deleted the ${r.deleted.length === 1 ? "oldest item" : `${r.deleted.length} oldest items`} to keep the newest ${r.info.keep} · ${r.deleted.join(", ")}`);
+        void refreshRecents();
+      }
+    } catch {
+      /* the save itself worked; retention runs again after the next save */
+    }
+  }, [refreshRecents, showHint]);
 
   // ---------- A zip's files (RUN3 T34): the Markdown editor's pictures and saves, kept in memory this session ----------
   const samplesRef = useRef(samples);
@@ -519,7 +563,8 @@ export function Shell() {
     }
     session.collideFile = saved;
     showHint(`Saved ${baseName(saved)} · ${summary} · ${place}`);
-  }, [showHint]);
+    void pruneStorage();
+  }, [pruneStorage, showHint]);
   const onSaveCollide = useCallback(() => {
     notify(null);
     saveCollide().catch((e: unknown) => fail(e, COLLIDE_SAVE_FAILED));
@@ -812,6 +857,20 @@ export function Shell() {
 
   // ---------- Render ----------
   const front = activeTab(tabs);
+  // RUN3 T36: Settings → Storage reads the folder's numbers afresh each time it comes to the front.
+  const settingsInFront = front?.kind === "settings" ? front.id : null;
+  useEffect(() => {
+    const storage = window.collide?.storage;
+    if (!settingsInFront || !storage) return;
+    let alive = true;
+    storage.info().then(
+      (info) => alive && setStorageInfo(info),
+      () => undefined,
+    );
+    return () => {
+      alive = false;
+    };
+  }, [settingsInFront]);
   const collapse = useCallback(() => setPref("collapsed", !live.current.prefs.collapsed), [setPref]);
   const headBase = front && {
     kind: front.kind,
@@ -854,7 +913,7 @@ export function Shell() {
           // A saved snip is a markup of the store from now on: opening that markup goes to this tab.
           const key = `markup:${folderName}`;
           if (!front.key.startsWith("sample:")) setTabs((s) => patchTab(s, front.id, { key, owner: key }));
-          void refreshRecents();
+          void refreshRecents().then(pruneStorage);
         }}
         head={(save) => (
           <WsHead {...headBase} name={front.title} path={session.source.folder ? `Documents/Collide/Markups/${session.source.folder}` : `${session.image.width} × ${session.image.height} · not saved yet`} savedLabel="Saved" {...save} />
@@ -869,9 +928,15 @@ export function Shell() {
         password={password}
         onPassword={setPassword}
         onDirty={(d) => setDirty(front.id, d)}
+        storage={storageInfo}
         onSave={(s) => {
           setPref("settings", s);
           notify({ tone: "success", title: "Saved", description: "" });
+          // RUN3 T36: the desktop app's main process keeps the number (empty = off: every file is kept).
+          const storage = window.collide?.storage;
+          if (storage && s.keep !== (storageInfo?.keep == null ? "" : String(storageInfo.keep))) {
+            storage.setKeep(s.keep === "" ? null : Number(s.keep)).then(setStorageInfo, (e: unknown) => fail(e, "Could not save the storage setting"));
+          }
         }}
         notify={showHint}
         head={(save) => {

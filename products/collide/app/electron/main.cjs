@@ -6,6 +6,7 @@
 // hotkey, copyImage.
 // T16: markup folders under Documents/Collide/Markups and the Open folder dialog.
 // RUN3 T35: Collide files (.collide) in the same folder, and the Open dialog for them and for markups.
+// RUN3 T36: storage on the server PC (Server mode): this main process is the Node side; no network port yet.
 // This file only creates windows and passes Electron's modules on: the logic
 // lives in src/native/ and src/snip/crop.ts (TypeScript, unit-tested) and is
 // bundled to dist-electron/native.cjs by `pnpm build:electron`.
@@ -152,6 +153,12 @@ app.whenReady().then(() => {
   // `screen` can only be used once the app is ready.
   const { screen } = require("electron");
   const decodePng = (png) => nativeImage.createFromBuffer(Buffer.from(png.buffer, png.byteOffset, png.byteLength));
+  const markups = native.createMarkups({
+    fs,
+    path,
+    documents: () => app.getPath("documents"),
+    showOpenDialog: (options) => (editor && !editor.isDestroyed() ? dialog.showOpenDialog(editor, options) : dialog.showOpenDialog(options)),
+  });
   const collapse = native.createCollapse({ editor: () => editor, workArea: (bounds) => screen.getDisplayMatching(bounds).workArea });
   native.registerBridge({
     ipcMain,
@@ -172,12 +179,7 @@ app.whenReady().then(() => {
     // T31: the collapsed window shrinks to the Recents panel at the right of its screen (src/native/collapse.ts).
     collapse: collapse.apply,
     // Files only under Documents/Collide/Markups: src/native/markups.ts checks every path.
-    markups: native.createMarkups({
-      fs,
-      path,
-      documents: () => app.getPath("documents"),
-      showOpenDialog: (options) => (editor && !editor.isDestroyed() ? dialog.showOpenDialog(editor, options) : dialog.showOpenDialog(options)),
-    }),
+    markups,
     // RUN3 T35: .collide files in the same folder, checked the same way (src/native/collideFiles.ts).
     collideFiles: native.createCollideFiles({
       fs,
@@ -185,6 +187,8 @@ app.whenReady().then(() => {
       documents: () => app.getPath("documents"),
       showOpenDialog: (options) => (editor && !editor.isDestroyed() ? dialog.showOpenDialog(editor, options) : dialog.showOpenDialog(options)),
     }),
+    // RUN3 T36: the storage folder's size and count, and keep the newest N (storage.json and storage.log in user data).
+    storage: native.createStorage({ fs, path, documents: () => app.getPath("documents"), userData: () => app.getPath("userData"), now: () => new Date(), markups }),
     capturer: fakeCapture
       ? native.fakeCapturer({
           screen,

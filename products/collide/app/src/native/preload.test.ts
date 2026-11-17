@@ -67,6 +67,8 @@ describe("electron/preload.cjs", () => {
       "markups.remove": ["folder"],
       "collideFiles.save": ["line-3.collide", new Uint8Array([0x50, 0x4b]), false],
       "collideFiles.open": ["line-3.collide"],
+      "storage.setKeep": [3],
+      "storage.prune": [["2026-11-17_snip", "line-3.collide"]],
     };
     for (const name of Object.keys(INVOKE_CHANNELS) as InvokeMethod[]) {
       invoked.length = 0;

@@ -10,4 +10,5 @@ export { setupHotkey } from "./settings";
 export { copyImage } from "./clipboard";
 export { createMarkups } from "./markups";
 export { createCollideFiles } from "./collideFiles";
+export { createStorage } from "./storage";
 export { fakeCapturer } from "./fakeCapturer";

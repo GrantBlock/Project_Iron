@@ -60,6 +60,11 @@ contextBridge.exposeInMainWorld("collide", {
     open: (file) => call("collide:collide-files-open", file),
     pick: () => call("collide:collide-files-pick"),
   },
+  storage: {
+    info: () => call("collide:storage-info"),
+    setKeep: (keep) => call("collide:storage-set-keep", keep),
+    prune: (open) => call("collide:storage-prune", open),
+  },
   overlay: {
     emit: (event, payload) => {
       ipcRenderer.send(OVERLAY_EVENT_CHANNEL, overlayEvent(event), payload);

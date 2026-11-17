@@ -6,6 +6,7 @@ import { Icon } from "../ds";
 // The logo is the design system's file, never redrawn or recoloured.
 import logoUrl from "../../../design-system/assets/logo/favicon.svg?url";
 import type { Settings } from "./prefs";
+import type { StorageInfo } from "../native/bridge";
 import type { Tab, TabKind } from "./tabs";
 
 export const Logo = () => <img className="logo" src={logoUrl} alt="Collide" draggable={false} />;
@@ -346,10 +347,28 @@ interface SettingsProps {
   /** The password typed this session. Never stored: there is no server to ask for it yet. */
   password: string;
   onPassword: (p: string) => void;
+  /** RUN3 T36: the storage folder's real numbers in the desktop app; absent in a browser, where Storage is a display only. */
+  storage?: StorageInfo | null;
 }
 
-/** Settings: storage, this computer, links, access password. The layout only: the server comes later (T36). */
-export function SettingsTab({ saved, onSave, onDirty, notify, head, password, onPassword }: SettingsProps) {
+/** A size for people: 0 B, 812 B, 14.2 KB, 3.1 MB, 1.25 GB. */
+export function formatBytes(bytes: number): string {
+  if (!(bytes > 0)) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let n = bytes;
+  let u = 0;
+  while (n >= 1024 && u < units.length - 1) {
+    n /= 1024;
+    u++;
+  }
+  return u === 0 ? `${n} B` : `${n >= 100 ? n.toFixed(0) : n >= 10 ? n.toFixed(1) : n.toFixed(2)} ${units[u]}`;
+}
+
+/**
+ * Settings: storage, this computer, links, access password. Storage is real in the desktop app (RUN3 T36: the folder,
+ * its size and item count, keep the newest N); the rest is the layout only until the network server comes.
+ */
+export function SettingsTab({ saved, onSave, onDirty, notify, head, password, onPassword, storage }: SettingsProps) {
   const [draft, setDraft] = useState(saved);
   const dirty = draft.keep !== saved.keep || draft.mode !== saved.mode || draft.server !== saved.server;
   const live = useRef({ onDirty, onSave, draft, dirty });
@@ -385,13 +404,31 @@ export function SettingsTab({ saved, onSave, onDirty, notify, head, password, on
               <Icon name="folder" size={14} />
               Storage
             </h3>
-            <span>
-              Snips, markups, zip files and Markdown callouts are stored on the server PC: <code>%APPDATA%\Collide\</code> (A).
-            </span>
+            {storage ? (
+              <>
+                <span>
+                  Saved snips and Collide files (snips, Markdown pages and their callouts) are stored on this PC, the server: <code data-testid="storage-folder">{storage.folder}</code>
+                </span>
+                <span className="hint" data-testid="storage-usage">
+                  {storage.items} {storage.items === 1 ? "item" : "items"} · {formatBytes(storage.bytes)} used
+                </span>
+              </>
+            ) : (
+              <span>
+                Snips, markups, zip files and Markdown callouts are stored on the server PC: <code>%APPDATA%\Collide\</code> (A).
+              </span>
+            )}
             <label className="field">
               <span className="hint">Delete the oldest automatically after this many files</span>
               <input type="number" min={1} value={draft.keep} placeholder="[number of files]" onChange={(e) => set({ keep: e.target.value.replace(/\D/g, "") })} />
             </label>
+            {storage && (
+              <span className="hint" data-testid="storage-keep">
+                {storage.keep === null
+                  ? "Off: every file is kept."
+                  : `On: after each save, items past the newest ${storage.keep} are deleted, oldest first. An item open in a tab is never deleted.`}
+              </span>
+            )}
             <span className="hint">On a Connected PC, new work is held only until it reaches the server, then the local copy is removed.</span>
           </section>
           <section className="card" data-section="mode" aria-labelledby="set-mode">

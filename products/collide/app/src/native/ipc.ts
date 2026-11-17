@@ -17,6 +17,7 @@ import { CaptureState, cropFromState, type Capturer, type FrameImage } from "./c
 import { captureMonitor, electronCapturer, type ElectronCaptureDeps } from "./electronCapturer";
 import type { Markups } from "./markups";
 import type { CollideFiles } from "./collideFiles";
+import type { Storage } from "./storage";
 import { overlayBoundsFor, type Choreography } from "./windows";
 import type { LogicalRect } from "../snip/crop";
 
@@ -49,6 +50,8 @@ export interface BridgeDeps extends ElectronCaptureDeps {
   markups: Markups;
   /** RUN3 T35: Collide files, scoped to the same folder (collideFiles.ts). Absent = the channels answer that this build cannot. */
   collideFiles?: CollideFiles;
+  /** RUN3 T36: storage on the server PC (storage.ts). Absent = the channels answer that this build cannot. */
+  storage?: Storage;
   /** Defaults to the real capturer; tests and the Electron e2e pass a fake. */
   capturer?: Capturer;
   state?: CaptureState;
@@ -103,6 +106,15 @@ export function registerBridge(deps: BridgeDeps): { state: CaptureState } {
   handle("collideFiles.save", (name, bytes, replace) => files().save(name, bytes, replace));
   handle("collideFiles.open", (file) => files().open(file));
   handle("collideFiles.pick", () => files().pick());
+
+  // RUN3 T36: storage. storage.ts checks the arguments and every path.
+  const storage = (): Storage => {
+    if (!deps.storage) throw new Error("This build of Collide cannot manage its storage folder. Update Collide.");
+    return deps.storage;
+  };
+  handle("storage.info", () => storage().info());
+  handle("storage.setKeep", (keep) => storage().setKeep(keep));
+  handle("storage.prune", (open) => storage().prune(open));
 
   // Overlay events go to every window, the sender included (the Rust shell's emit did the same).
   deps.ipcMain.on(OVERLAY_EVENT_CHANNEL, (event, name, payload) => {
