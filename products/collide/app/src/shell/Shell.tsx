@@ -857,6 +857,20 @@ export function Shell() {
 
   // ---------- Render ----------
   const front = activeTab(tabs);
+  // RUN3 T36: Settings → Storage reads the folder's numbers afresh each time it comes to the front.
+  const settingsInFront = front?.kind === "settings" ? front.id : null;
+  useEffect(() => {
+    const storage = window.collide?.storage;
+    if (!settingsInFront || !storage) return;
+    let alive = true;
+    storage.info().then(
+      (info) => alive && setStorageInfo(info),
+      () => undefined,
+    );
+    return () => {
+      alive = false;
+    };
+  }, [settingsInFront]);
   const collapse = useCallback(() => setPref("collapsed", !live.current.prefs.collapsed), [setPref]);
   const headBase = front && {
     kind: front.kind,
