@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { PointerEvent as ReactPointerEvent } from "react";
+import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { Arrow, Circle, Ellipse, Group, Image as KonvaImage, Label, Layer, Line, Rect, Shape as KonvaShape, Stage, Tag, Text, Transformer } from "react-konva";
 import Konva from "konva";
 import type { Shape } from "../model";
@@ -43,6 +43,13 @@ interface Props {
   handleRef: React.MutableRefObject<CanvasHandle | null>;
   /** Added images' pictures by file name (RUN3 T33). */
   pictures?: ReadonlyMap<string, HTMLImageElement>;
+  /**
+   * RUN3 T34: a page drawn under the shapes (the Markdown page), in image pixels at the view's zoom and pan.
+   * The image is then only the page's size: it is not drawn, there is no print-area frame and the canvas is no picture.
+   */
+  underlay?: ReactNode;
+  /** Takes the wheel instead of the canvas's own zoom (the Markdown page scrolls; Ctrl + wheel zooms). */
+  onWheelAt?: (e: WheelEvent, cursor: Point) => void;
 }
 
 /** Resolve a design-system CSS variable to a colour string Konva can paint. */
@@ -81,8 +88,14 @@ const withAlpha = (hex: string, a: number) => {
 export const NOTE_PLACEHOLDER = "Describe…";
 
 /** Height of `text` wrapped to `width` at the note font size. */
-const measureNote = (text: string, width: number) =>
-  new Konva.Text({ text: text || " ", fontSize: NOTE_FONT, fontFamily: cssVar("--font-sans"), width, wrap: "word", lineHeight: 1.25 }).height();
+const measureNote = (text: string, width: number) => {
+  try {
+    return new Konva.Text({ text: text || " ", fontSize: NOTE_FONT, fontFamily: cssVar("--font-sans"), width, wrap: "word", lineHeight: 1.25 }).height();
+  } catch {
+    // No 2D canvas to measure with (a test's DOM): an estimate, about half an em per character.
+    return Math.max(1, Math.ceil(((text || " ").length * NOTE_FONT * 0.55) / Math.max(1, width))) * NOTE_FONT * 1.25;
+  }
+};
 
 interface Draft {
   tool: DrawTool | "line";
@@ -385,7 +398,7 @@ function handlers(shape: Shape, onSelect?: (id: string) => void, onMoved?: (id: 
   };
 }
 
-export function Canvas({ image, shapes, selectedId, tool, style, view, onViewChange, onSize, onAdd, onUpdate, onRemove, onRemoveMany, onSelect, handleRef, pictures }: Props) {
+export function Canvas({ image, shapes, selectedId, tool, style, view, onViewChange, onSize, onAdd, onUpdate, onRemove, onRemoveMany, onSelect, handleRef, pictures, underlay, onWheelAt }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const trRef = useRef<Konva.Transformer>(null);
@@ -488,10 +501,11 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
       const rect = wrapRef.current?.getBoundingClientRect();
       if (!rect) return;
       const cursor = { x: e.evt.clientX - rect.left, y: e.evt.clientY - rect.top };
+      if (onWheelAt) return onWheelAt(e.evt, cursor);
       const factor = wheelFactor(e.evt.deltaY);
       onViewChange((v) => zoomAt(v, cursor, v.scale * factor));
     },
-    [onViewChange],
+    [onViewChange, onWheelAt],
   );
 
   // Pan: right-drag, or Space + left-drag.
@@ -673,7 +687,7 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
   const numbers = useMemo(() => calloutNumbers(shapes), [shapes]);
   const unit = image ? noteUnit(image) : 1;
   const uk = unit * view.scale;
-  const area = useMemo(() => (image ? printArea(image, shapes, notes) : null), [image, shapes, notes]);
+  const area = useMemo(() => (image && !underlay ? printArea(image, shapes, notes) : null), [image, shapes, notes, underlay]);
   const areaPx = area ? pixelArea(area) : null;
   /** A bubble being dragged from the overlay: pointer and box at the start. */
   const bubbleDrag = useRef<{ id: string; x: number; y: number; box: Box; moved: boolean } | null>(null);
@@ -767,8 +781,8 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
       ref={wrapRef}
       data-testid="canvas"
       data-tool={tool}
-      role={image ? "img" : undefined}
-      aria-label={image?.name}
+      role={image && !underlay ? "img" : undefined}
+      aria-label={underlay ? undefined : image?.name}
       onPointerDownCapture={onPointerDownCapture}
       onContextMenu={(e) => e.preventDefault()}
       onPointerDown={onPointerDown}
@@ -787,6 +801,22 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
         touchAction: "none",
       }}
     >
+      {underlay && image && (
+        <div
+          data-testid="underlay"
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: image.width,
+            transformOrigin: "0 0",
+            transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
+            pointerEvents: "none",
+          }}
+        >
+          {underlay}
+        </div>
+      )}
       {size.width > 0 && size.height > 0 && (
         <Stage
           ref={stageRef}
@@ -806,7 +836,7 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
           }}
         >
           <Layer>
-            {image && <KonvaImage name="background" image={image.el} width={image.width} height={image.height} listening={false} />}
+            {image && !underlay && <KonvaImage name="background" image={image.el} width={image.width} height={image.height} listening={false} />}
             {image &&
               shapes.map((s) => (
                 <ShapeNode

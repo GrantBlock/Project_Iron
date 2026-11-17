@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Button, IconButton, Tooltip } from "../ds";
 import { ROLES, STROKE_WIDTHS, swatchBackground, TOOL_BUTTONS, type Role, type Tool } from "./tools";
 
@@ -21,21 +22,33 @@ interface Props {
   onExport: () => void;
   onCopy: () => void;
   canExport: boolean;
+  /** The toolbar's name: "Markup tools" (Snip) or "Markdown tools" (RUN3 T34). */
+  label?: string;
+  /** The Copy button's name and tip. */
+  copyLabel?: string;
+  copyTip?: string;
+  /** Buttons after the tools (the Markdown editor's Insert image). */
+  extra?: ReactNode;
+  hidden?: boolean;
 }
 
-export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStrokeWidth, fileName, onUndo, onRedo, canUndo, canRedo, onExport, onCopy, canExport }: Props) {
+export function Toolbar(props: Props) {
+  const { tool, setTool, color, setColor, strokeWidth, setStrokeWidth, fileName, onUndo, onRedo, canUndo, canRedo, onExport, onCopy, canExport } = props;
+  const { label = "Markup tools", copyLabel = "Copy to clipboard", copyTip = "Copy image to clipboard", extra, hidden } = props;
   return (
     <div
       data-testid="toolbar"
       role="toolbar"
-      aria-label="Markup tools"
-      style={{ height: 52, boxSizing: "border-box", flex: "none", display: "flex", alignItems: "center", gap: 4, padding: "0 10px", borderBottom: "1px solid var(--line-1)", background: "var(--surface-1)", overflowX: "auto" }}
+      aria-label={label}
+      hidden={hidden}
+      style={{ height: 52, boxSizing: "border-box", flex: "none", display: hidden ? "none" : "flex", alignItems: "center", gap: 4, padding: "0 10px", borderBottom: "1px solid var(--line-1)", background: "var(--surface-1)", overflowX: "auto" }}
     >
       {TOOL_BUTTONS.map(([k, ic, l, s]) => (
         <Tooltip key={k} label={l} shortcut={s}>
           <IconButton icon={ic} label={l} active={tool === k} aria-pressed={tool === k} onClick={() => setTool(k)} />
         </Tooltip>
       ))}
+      {extra}
       <Sep />
       <div role="group" aria-label="Colour for the next shape" style={{ display: "flex", gap: 6, padding: "6px 8px", borderRadius: "var(--radius-sm)", background: "var(--annot-box, #FFFFFF)" }}>
         {ROLES.map(([r, label]) => (
@@ -94,8 +107,8 @@ export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStroke
       <IconButton icon="undo-2" label="Undo" disabled={!canUndo} onClick={onUndo} style={canUndo ? undefined : { opacity: 0.4, cursor: "not-allowed" }} />
       <IconButton icon="redo-2" label="Redo" disabled={!canRedo} onClick={onRedo} style={canRedo ? undefined : { opacity: 0.4, cursor: "not-allowed" }} />
       <Sep />
-      <Tooltip label="Copy image to clipboard" shortcut="Ctrl+Shift+C">
-        <IconButton icon="clipboard-copy" label="Copy to clipboard" data-testid="copy-btn" onClick={onCopy} disabled={!canExport} />
+      <Tooltip label={copyTip} shortcut="Ctrl+Shift+C">
+        <IconButton icon="clipboard-copy" label={copyLabel} data-testid="copy-btn" onClick={onCopy} disabled={!canExport} />
       </Tooltip>
       <Button size="sm" icon="share" onClick={onExport} disabled={!canExport} data-testid="export-btn">
         Export

@@ -1,6 +1,6 @@
 // Recents (RUN3 T31): the snips and zip files in the left panel, grouped Today / Earlier.
 // Real rows come from the markup store (T16); the reference fixture loads the prototype's sample rows (sample.ts).
-import type { AnnotationsDoc } from "../model";
+import type { AnnotationsDoc, Shape } from "../model";
 
 export type Day = "Today" | "Earlier";
 
@@ -31,6 +31,12 @@ export interface TreeNode {
   kids?: TreeNode[];
   type?: "md" | "image" | "code";
   text?: string;
+  /** A picture's data URL (pasted or inserted into the zip's images/ folder this session, RUN3 T34). */
+  url?: string;
+  /** Sample zips only: the sample snip whose picture this file is. */
+  sample?: string;
+  /** A Markdown file's page markup (page pixels), as last saved (RUN3 T34). */
+  marks?: Shape[];
 }
 
 export interface RecentZip {
@@ -102,3 +108,45 @@ export function storeRow(folder: string, today: Date, doc?: AnnotationsDoc, thum
 export const sortFolders = (folders: readonly string[]) => [...folders].sort((a, b) => folderBase(b).localeCompare(folderBase(a)));
 
 export const snipMeta = (r: RecentSnip) => (r.callouts === null || r.width === null || r.height === null ? "Markup" : `${r.callouts} callout${r.callouts === 1 ? "" : "s"} · ${r.width} × ${r.height}`);
+
+// ---------- A zip's files (RUN3 T34: the Markdown editor reads its pictures and writes its pictures and saves) ----------
+
+/** The file at `rel` (a path from the zip's root, `images/x.png`), or null. */
+export function zipFile(tree: TreeNode, rel: string): TreeNode | null {
+  let node: TreeNode | undefined = tree;
+  for (const part of rel.split("/").filter(Boolean)) {
+    node = node?.kids?.find((k) => k.name === part);
+    if (!node) return null;
+  }
+  return node && !node.kids ? node : null;
+}
+
+/** The tree with the file at `rel` changed by `patch` (a new tree; the old one is left as it was). */
+export function patchZipFile(tree: TreeNode, rel: string, patch: Partial<TreeNode>): TreeNode {
+  const [head, ...rest] = rel.split("/").filter(Boolean);
+  if (!head || !tree.kids) return tree;
+  return {
+    ...tree,
+    kids: tree.kids.map((k) => (k.name !== head ? k : rest.length === 0 ? (k.kids ? k : { ...k, ...patch }) : patchZipFile(k, rest.join("/"), patch))),
+  };
+}
+
+/** The zip's pictures folder, at its root (the prototype's `images/`). */
+export const PICTURES = "images";
+
+/** File names already in the pictures folder. */
+export function pictureNames(tree: TreeNode): Set<string> {
+  const folder = tree.kids?.find((k) => k.name === PICTURES && k.kids);
+  return new Set((folder?.kids ?? []).map((k) => k.name));
+}
+
+/** The tree with a picture added to its pictures folder (made when missing). */
+export function withPicture(tree: TreeNode, name: string, url: string): TreeNode {
+  const kids = tree.kids ?? [];
+  const file: TreeNode = { name, type: "image", url };
+  const has = kids.some((k) => k.name === PICTURES && k.kids);
+  return {
+    ...tree,
+    kids: has ? kids.map((k) => (k.name === PICTURES && k.kids ? { ...k, kids: [...k.kids.filter((x) => x.name !== name), file] } : k)) : [...kids, { name: PICTURES, kids: [file] }],
+  };
+}

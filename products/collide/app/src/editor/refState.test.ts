@@ -115,3 +115,20 @@ describe("reference test hook: window.__collide.state()", () => {
     expect(refState({ ...blank, splash: { kind: "delete", title: "builder-v0.1.zip" } }, null).splash).toEqual({ kind: "delete", title: "builder-v0.1.zip" });
   });
 });
+
+describe("reference test hook: a Markdown tab (RUN3 T34)", () => {
+  const md: ShellRefInput = { ...blank, tabs: [{ id: "t2", title: "P06.md", kind: "markdown", dirty: true }], active: "t2" };
+  const page = { mode: "preview" as const, shapes, selectedId: "a1", tool: "pen", color: "yellow" as const, strokeWidth: 2, scale: 0.7531, fitted: false };
+
+  it("Preview: the page's tool, colour, items in page pixels, selection and zoom", () => {
+    const s = refState(md, null, page);
+    expect(s).toMatchObject({ view: "markdown", editor: "markdown", mode: "preview", activeTool: "pen", color: "yellow", stroke: 2, selection: ["a1"], zoom: { percent: 75, fit: false } });
+    expect(s.items.map((i) => `${i.type}:${i.number ?? "-"}`)).toEqual(["pen:-", "point:3", "ellipse:2", "rect:1"]);
+  });
+
+  it("Edit: no drawing surface, no zoom; the colour and thickness are still the editor's", () => {
+    const s = refState(md, null, { ...page, mode: "edit", scale: null });
+    expect(s).toMatchObject({ mode: "edit", activeTool: null, color: "yellow", stroke: 2, selection: [], zoom: null });
+    expect(s.items).toHaveLength(4);
+  });
+});

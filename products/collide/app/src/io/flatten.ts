@@ -1,5 +1,6 @@
 import type Konva from "konva";
 import { Rect as KonvaRect } from "konva/lib/shapes/Rect";
+import { Image as KonvaImageNode } from "konva/lib/shapes/Image";
 
 export interface Flattened {
   /** PNG data URL, exactly `width` x `height` pixels. */
@@ -72,11 +73,20 @@ export function contentBounds(image: { width: number; height: number }, rects: B
   return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
 }
 
+/** A picture drawn under the shapes for one flatten (the Markdown page, RUN3 T34), at (0, 0) in image pixels. */
+export interface Under {
+  image: HTMLImageElement | HTMLCanvasElement;
+  width: number;
+  height: number;
+}
+
 /**
  * Render any area of the canvas (image pixels, may extend past the image) at source
- * resolution, with `background` behind the image. Same exclusions as Export.
+ * resolution (or `pixelRatio` times it), with `background` behind the image, and `under` above the background.
+ * Same exclusions as Export.
  */
-export function flattenArea(stage: Konva.Stage, area: Box, background: string): Flattened {
+export function flattenArea(stage: Konva.Stage, area: Box, background: string, opts: { under?: Under; pixelRatio?: number } = {}): Flattened {
+  const ratio = opts.pixelRatio ?? 1;
   const box = { x: Math.floor(area.x), y: Math.floor(area.y), width: 0, height: 0 };
   box.width = Math.ceil(area.x + area.width) - box.x;
   box.height = Math.ceil(area.y + area.height) - box.y;
@@ -86,19 +96,26 @@ export function flattenArea(stage: Konva.Stage, area: Box, background: string): 
   const wasVisible = hidden.map((t) => t.visible());
   const layer = stage.getLayers()[0];
   let bg: Konva.Rect | null = null;
+  let under: KonvaImageNode | null = null;
   try {
     hidden.forEach((t) => t.visible(false));
     stage.position({ x: 0, y: 0 });
     stage.scale({ x: 1, y: 1 });
     if (layer) {
+      if (opts.under) {
+        under = new KonvaImageNode({ x: 0, y: 0, image: opts.under.image, width: opts.under.width, height: opts.under.height, listening: false });
+        layer.add(under);
+        under.moveToBottom();
+      }
       bg = new KonvaRect({ ...box, fill: background, listening: false });
       layer.add(bg);
       bg.moveToBottom();
     }
-    const dataUrl = stage.toDataURL({ ...box, pixelRatio: 1, mimeType: "image/png" });
-    return { dataUrl, width: box.width, height: box.height };
+    const dataUrl = stage.toDataURL({ ...box, pixelRatio: ratio, mimeType: "image/png" });
+    return { dataUrl, width: Math.round(box.width * ratio), height: Math.round(box.height * ratio) };
   } finally {
     bg?.destroy();
+    under?.destroy();
     stage.position({ x: saved.x, y: saved.y });
     stage.scale({ x: saved.sx, y: saved.sy });
     hidden.forEach((t, i) => t.visible(wasVisible[i]));

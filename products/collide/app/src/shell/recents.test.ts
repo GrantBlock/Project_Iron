@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AnnotationsDoc } from "../model";
-import { filterRecents, flatFiles, folderBase, groupRecents, snipMeta, sortFolders, storeRow, type RecentItem } from "./recents";
+import { filterRecents, flatFiles, folderBase, groupRecents, patchZipFile, pictureNames, snipMeta, sortFolders, storeRow, withPicture, zipFile, type RecentItem } from "./recents";
 import { sampleRecents, sampleDoc, SAMPLE_SNIPS } from "./sample";
 
 const today = new Date(2026, 10, 15, 9, 30);
@@ -63,5 +63,32 @@ describe("Recents rows", () => {
     expect(d.shapes.map((s) => [s.type, s.callout, s.fill ?? false])).toEqual([["rect", 1, false], ["ellipse", 2, false], ["rect", 3, true], ["point", 4, false]]);
     expect(d.shapes[0]).toMatchObject({ x: 428, y: 236, w: 192, h: 148, note: "Guard bracket cracked at the weld. Re-weld before next PM." });
     expect(sampleDoc(SAMPLE_SNIPS[1]).shapes[1]).toMatchObject({ type: "cross", hideBubble: true });
+  });
+});
+
+describe("a zip's files for the Markdown editor (RUN3 T34)", () => {
+  const zip = sampleRecents().find((r) => r.kind === "zip" && r.id === "z-builder");
+  if (zip?.kind !== "zip") throw new Error("sample zip missing");
+
+  it("finds a file by its path from the zip's root", () => {
+    expect(zipFile(zip.tree, "images/line-3-conveyor-guard.png")?.sample).toBe("s-line3");
+    expect(zipFile(zip.tree, "design/specs/P06-Project-Workspace-Spec.md")?.marks).toHaveLength(2);
+    expect(zipFile(zip.tree, "images")).toBeNull(); // a folder is no file
+    expect(zipFile(zip.tree, "images/none.png")).toBeNull();
+  });
+
+  it("adds a picture to images/ (made when missing) without changing the old tree", () => {
+    const t = withPicture(zip.tree, "pasted-1.png", "data:image/png;base64,AA");
+    expect(pictureNames(t)).toEqual(new Set(["line-3-conveyor-guard.png", "pasted-1.png"]));
+    expect(pictureNames(zip.tree).has("pasted-1.png")).toBe(false);
+    const bare = withPicture({ name: "z", kids: [{ name: "a.md", type: "md", text: "" }] }, "p.png", "data:image/png;base64,AA");
+    expect(zipFile(bare, "images/p.png")?.url).toBe("data:image/png;base64,AA");
+  });
+
+  it("saves a file's text and marks into the tree", () => {
+    const t = patchZipFile(zip.tree, "design/specs/P06-Project-Workspace-Spec.md", { text: "# New", marks: [] });
+    expect(zipFile(t, "design/specs/P06-Project-Workspace-Spec.md")).toMatchObject({ text: "# New", marks: [] });
+    expect(zipFile(zip.tree, "design/specs/P06-Project-Workspace-Spec.md")?.text).not.toBe("# New");
+    expect(patchZipFile(zip.tree, "design/specs", { text: "x" })).toEqual(zip.tree); // folders are left alone
   });
 });

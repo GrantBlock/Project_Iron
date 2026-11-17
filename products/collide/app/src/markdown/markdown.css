@@ -1,0 +1,49 @@
+/* The Markdown editor (RUN3 T34), after ../../../layout-prototype.html: Edit / Preview in the header, the text tools,
+   the source beside a live preview, and the page (680 px wide) that Preview marks up. App tokens only (shell.css). */
+.viewseg { display: inline-flex; align-items: stretch; height: 32px; padding: 2px; gap: 2px; border-radius: var(--r-btn); background: var(--sunk); border: var(--border-w) solid var(--line-2); }
+.viewseg button { padding: 0 12px; border: 0; border-radius: calc(var(--r-btn) - 2px); background: transparent; color: var(--t3); font-weight: 500; }
+.viewseg button:hover { color: var(--t1); }
+.viewseg button[aria-pressed="true"] { background: var(--raised); color: var(--t1); box-shadow: var(--toggle-shadow); }
+.wshead .btn.icon[aria-label="Full width"][aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+
+.mdtools { display: flex; align-items: center; gap: 2px; height: 52px; padding: 0 10px; border-bottom: var(--border-w) solid var(--line); background: var(--panel); flex: none; overflow-x: auto; }
+.mdtools[hidden] { display: none; }
+.mdtools > * { flex: none; }
+.mdtools .grow { flex: 1 1 0; min-width: 4px; }
+.mdtools .vsep { width: 1px; height: 20px; background: var(--line-2); margin: 0 4px; }
+.mdedit .tool { height: 32px; min-width: 30px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r-ctl); border: 0; background: transparent; color: var(--t2); }
+.mdedit .tool:hover, .mdedit .tbtn:hover { background: var(--hover); color: var(--t1); }
+.mdedit .tbtn { height: 30px; padding: 0 9px; display: inline-flex; align-items: center; gap: 6px; border-radius: var(--r-ctl); border: 0; background: transparent; color: var(--t2); font-size: 12.5px; white-space: nowrap; }
+.mdedit .hsel select { border: 0; background: transparent; color: inherit; font-size: 12.5px; outline-offset: 2px; }
+.mdedit .hsel select option { background: var(--raised); color: var(--t1); }
+
+.mdbody { flex: 1; min-height: 0; display: flex; }
+.mdsplit { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.mdsrc { border: 0; outline: none; resize: none; padding: 20px 22px; background: var(--panel); color: var(--t1); font: 12.5px/1.65 var(--font-mono); tab-size: 4; min-width: 0; border-right: var(--border-w) solid var(--line); overflow: auto; }
+.mdlive { overflow: auto; padding: 20px 26px; background: var(--raised); min-width: 0; }
+.mdlive .mdpage { padding: 0; box-shadow: none; width: auto; max-width: 680px; }
+
+/* The page: the same in the live preview and under Preview's markup. */
+.mdpage { width: 680px; padding: 28px 34px 40px; background: var(--raised); color: var(--t1); border-radius: 6px; box-shadow: var(--shadow); font: 400 13.5px/1.45 var(--font-ui); overflow-wrap: anywhere; }
+.mdpage h1, .mdpage h2, .mdpage h3, .mdpage h4 { letter-spacing: var(--title-track); font-weight: var(--title-weight); line-height: 1.15; margin: 18px 0 8px; }
+.mdpage h1 { font-size: 24px; margin-top: 0; }
+.mdpage h2 { font-size: 17px; }
+.mdpage h3 { font-size: 14.5px; }
+.mdpage p, .mdpage li { color: var(--t2); max-width: 68ch; }
+.mdpage p { margin: 0 0 10px; }
+.mdpage ul, .mdpage ol { margin: 0 0 10px; padding-left: 22px; }
+.mdpage a { color: var(--accent); }
+.mdpage code { font: 12px var(--font-mono); background: var(--sunk); padding: 1px 5px; border-radius: 4px; }
+.mdpage pre { background: var(--sunk); padding: 10px 12px; border-radius: 6px; overflow-x: auto; }
+.mdpage pre code { padding: 0; background: none; }
+.mdpage blockquote { margin: 0 0 10px; padding-left: 12px; border-left: 3px solid var(--line-2); color: var(--t3); }
+.mdpage img { max-width: 100%; border-radius: 6px; display: block; margin: 10px 0 14px; }
+.mdpage .mdimg-missing { display: grid; place-items: center; height: 120px; max-width: 520px; margin: 10px 0 14px; border-radius: 6px; background: var(--sunk); color: var(--t4); font: 12px var(--font-mono); }
+.mdpage .mdtable { overflow-x: auto; margin: 8px 0 12px; }
+.mdpage table { border-collapse: collapse; font-size: 12.5px; min-width: 60%; }
+.mdpage th, .mdpage td { border: 1px solid var(--line-2); padding: 5px 9px; text-align: left; }
+.mdpage th { background: var(--sunk); font-weight: 600; }
+
+/* Full width: the sidebar and the callouts make room for the page. */
+.app.focus { grid-template-columns: minmax(0, 1fr); }
+.app.focus .side { display: none; }
