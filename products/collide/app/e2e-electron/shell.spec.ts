@@ -33,7 +33,7 @@ test("Electron opens the editor from the Vite dev server", async () => {
   }
 });
 
-// RUN2.md, "Preload bridge window.collide": these and nothing else (RUN3 T35 adds collideFiles: .collide save, open, pick).
+// RUN2.md, "Preload bridge window.collide": these and nothing else (RUN3 T35 adds collideFiles: .collide save, open, pick; T36 adds storage: info, setKeep, prune).
 const BRIDGE_KEYS = [
   "captureMonitor",
   "collapse",
@@ -48,6 +48,7 @@ const BRIDGE_KEYS = [
   "settingsStatus",
   "showEditor",
   "showOverlay",
+  "storage",
 ];
 
 test("the page is isolated: window.collide has exactly the bridge, no Node, sandbox on", async () => {
@@ -74,6 +75,7 @@ test("the page is isolated: window.collide has exactly the bridge, no Node, sand
           .sort(),
         markups: kinds(collide.markups),
         collideFiles: kinds(collide.collideFiles),
+        storage: kinds(collide.storage),
         overlay: kinds(collide.overlay),
         require: typeof w.require,
         process: typeof w.process,
@@ -87,9 +89,10 @@ test("the page is isolated: window.collide has exactly the bridge, no Node, sand
     expect(inPage).toEqual({
       collide: "object",
       collideKeys: BRIDGE_KEYS,
-      functions: BRIDGE_KEYS.filter((k) => k !== "markups" && k !== "overlay" && k !== "collideFiles"),
+      functions: BRIDGE_KEYS.filter((k) => k !== "markups" && k !== "overlay" && k !== "collideFiles" && k !== "storage"),
       markups: { list: "function", open: "function", pick: "function", remove: "function", save: "function" },
       collideFiles: { open: "function", pick: "function", save: "function" },
+      storage: { info: "function", prune: "function", setKeep: "function" },
       overlay: { emit: "function", on: "function" },
       require: "undefined",
       process: "undefined",
