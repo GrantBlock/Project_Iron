@@ -6,8 +6,13 @@ const isLocal = (url: string) => /^(lite:\/\/app\/|data:|blob:)/.test(url);
 test("offline: starting Lite makes no request that leaves the machine", async () => {
   const { page, output, close } = await launch();
   const requests: string[] = [];
-  page.on("request", (request) => requests.push(request.url()));
   try {
+    // Since L03 the first load shows text, so it fetches the fonts itself: let it finish before
+    // recording, or its font requests can land in the list next to the reload's.
+    await expect(page.getByTestId("app-root")).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    await page.waitForLoadState("networkidle");
+    page.on("request", (request) => requests.push(request.url()));
     // A reload with the recorder in place, so the whole start is seen: page, script, styles, fonts.
     await page.reload();
     await expect(page.getByTestId("app-root")).toBeVisible();
