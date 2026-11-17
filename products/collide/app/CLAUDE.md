@@ -6,7 +6,7 @@ Electron (Node main process) + React 18 + TypeScript (strict) + Vite. Package ma
 - `pnpm install` — install deps
 - `pnpm dev` — Vite dev server on :1420 (browser)
 - `pnpm electron:dev` — Electron window on the Vite dev server (needs a display; as root on Linux add `--no-sandbox`)
-- `pnpm dist` — build + portable Windows `.exe` in `release/` (electron-builder)
+- `pnpm dist` — build + the Windows installer (`Collide-Setup-<version>.exe`, per-user, no admin) and the portable `Collide-<version>-portable.exe` in `release/` (electron-builder). From Linux it needs Wine (`apt-get install -y wine64 wine`) so the exe gets Collide's icon, name and version; unsigned (Windows shows "Windows protected your PC" → More info → Run anyway). What to send coworkers: `../INSTALL.md`
 - `pnpm build` — typecheck + production build to `dist/`, then `pnpm build:electron`
 - `pnpm build:electron` — main-process bundle: `src/native/` + `src/snip/crop.ts` → `dist-electron/native.cjs` (`electron/main.cjs` loads it; `pnpm electron:dev` builds it first)
 - `pnpm lint` — ESLint (flat config, typescript-eslint)

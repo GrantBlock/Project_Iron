@@ -20,7 +20,8 @@
     "ref:app": "node scripts/ref.mjs app",
     "lint": "eslint .",
     "electron:dev": "node scripts/electron-dev.mjs",
-    "dist": "pnpm build && electron-builder --win portable --x64"
+    "dist": "pnpm build && electron-builder --win --x64",
+    "dist:portable": "pnpm build && electron-builder --win portable --x64"
   },
   "dependencies": {
     "fflate": "^0.8.2",
@@ -66,15 +67,44 @@
       "!node_modules"
     ],
     "win": {
-      "target": "portable",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "electron/icons/icon.ico",
-      "signAndEditExecutable": false
+      "signAndEditExecutable": true
     },
     "portable": {
-      "artifactName": "Collide-${version}.exe"
+      "artifactName": "Collide-${version}-portable.exe"
     },
     "directories": {
       "output": "release"
-    }
+    },
+    "copyright": "Copyright © 2026 Block Concepts LLC",
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Collide",
+      "uninstallDisplayName": "Collide",
+      "installerIcon": "electron/icons/icon.ico",
+      "uninstallerIcon": "electron/icons/icon.ico",
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "Collide-Setup-${version}.exe"
+    },
+    "publish": null
   }
 }
