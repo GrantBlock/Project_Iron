@@ -37,6 +37,8 @@ export const INVOKE_CHANNELS = {
   "collideFiles.save": "collide:collide-files-save",
   "collideFiles.open": "collide:collide-files-open",
   "collideFiles.pick": "collide:collide-files-pick",
+  "collideFiles.openPdf": "collide:collide-files-open-pdf",
+  "collideFiles.exportPdf": "collide:collide-files-export-pdf",
   "storage.info": "collide:storage-info",
   "storage.setKeep": "collide:storage-set-keep",
   "storage.prune": "collide:storage-prune",
@@ -140,8 +142,12 @@ export interface CollideBridge {
     save(name: string, bytes: Uint8Array, replace: boolean): Promise<string>;
     /** Read a Collide file inside Markups. */
     open(file: string): Promise<Uint8Array>;
-    /** The Open dialog (sidebar Open): a .collide file, or a saved markup (its folder or its annotations.json). Null if cancelled. */
-    pick(): Promise<{ kind: "collide"; file: string } | { kind: "markup"; folder: string } | null>;
+    /** The Open dialog (sidebar Open): a PDF (RUN3 T38, any folder), a .collide file, or a saved markup (its folder or its annotations.json). Null if cancelled. */
+    pick(): Promise<{ kind: "collide"; file: string } | { kind: "markup"; folder: string } | { kind: "pdf"; file: string } | null>;
+    /** RUN3 T38: read a PDF that Open picked this run, or one inside Markups; any other path is refused. */
+    openPdf(file: string): Promise<Uint8Array>;
+    /** RUN3 T38: write an exported PDF as `name` (ending in .pdf) in Markups; a taken name gets `-2`, ... Resolves with the path. */
+    exportPdf(name: string, bytes: Uint8Array): Promise<string>;
   };
   /**
    * RUN3 T36: storage on the server PC (Server mode): the folder that holds the saved snips and Collide files, its size

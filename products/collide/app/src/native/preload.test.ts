@@ -50,7 +50,7 @@ describe("electron/preload.cjs", () => {
     expect(Object.keys(exposed)).toEqual(["collide"]);
     expect(Object.keys(collide).sort()).toEqual([...BRIDGE_KEYS]);
     expect(Object.keys(collide.markups).sort()).toEqual(["list", "open", "pick", "remove", "save"]);
-    expect(Object.keys(collide.collideFiles).sort()).toEqual(["open", "pick", "save"]);
+    expect(Object.keys(collide.collideFiles).sort()).toEqual(["exportPdf", "open", "openPdf", "pick", "save"]);
     expect(Object.keys(collide.overlay).sort()).toEqual(["emit", "on"]);
     expect(required).toEqual(["electron"]);
   });
@@ -67,6 +67,8 @@ describe("electron/preload.cjs", () => {
       "markups.remove": ["folder"],
       "collideFiles.save": ["line-3.collide", new Uint8Array([0x50, 0x4b]), false],
       "collideFiles.open": ["line-3.collide"],
+      "collideFiles.openPdf": ["/home/me/Desktop/pump.pdf"],
+      "collideFiles.exportPdf": ["pump-markup.pdf", new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d])],
       "storage.setKeep": [3],
       "storage.prune": [["2026-11-17_snip", "line-3.collide"]],
     };

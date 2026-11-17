@@ -107,7 +107,7 @@ describe("Collide files (main process)", () => {
     const { files, asked, answer } = store(documents);
     expect(await files.pick()).toBeNull();
     expect(asked).toEqual([
-      { title: OPEN_TITLE, defaultPath: root, properties: ["openFile"], filters: [{ name: "Collide files and saved markups", extensions: ["collide", "json"] }] },
+      { title: OPEN_TITLE, defaultPath: root, properties: ["openFile"], filters: [{ name: "PDFs, Collide files and saved markups", extensions: ["pdf", "collide", "json"] }] },
     ]);
     const saved = files.save("plan.collide", pkg(1), false);
     answer({ canceled: false, filePaths: [saved] });
@@ -122,6 +122,51 @@ describe("Collide files (main process)", () => {
     expect(await message(() => files.pick())).toMatch(/is not a Collide file or a saved markup/);
     answer({ canceled: false, filePaths: [path.join(base, "x.collide")] });
     expect(await message(() => files.pick())).toMatch(/is outside Documents\/Collide\/Markups/);
+  });
+
+  // RUN3 T38: PDFs.
+  const pdf = (tag: number) => new Uint8Array([...Buffer.from("%PDF-1.7\n"), tag, tag, tag, ...Buffer.from("\n%%EOF\n")]);
+
+  it("a PDF picked in Open from any folder can be read; no other PDF outside Markups can", async () => {
+    const { base, documents, root } = sandbox();
+    const { files, answer } = store(documents);
+    const desk = path.join(base, "Desktop");
+    fs.mkdirSync(desk);
+    const chosen = path.join(desk, "Pump skid.pdf");
+    const other = path.join(desk, "other.pdf");
+    fs.writeFileSync(chosen, pdf(1));
+    fs.writeFileSync(other, pdf(2));
+    // Not picked yet: refused like any path outside Markups.
+    expect(await message(() => files.openPdf(chosen))).toMatch(/is outside Documents\/Collide\/Markups/);
+    answer({ canceled: false, filePaths: [chosen] });
+    expect(await files.pick()).toEqual({ kind: "pdf", file: chosen });
+    expect([...files.openPdf(chosen)]).toEqual([...pdf(1)]);
+    expect(await message(() => files.openPdf(other))).toMatch(/is outside Documents\/Collide\/Markups/);
+    expect(await message(() => files.openPdf(path.join(desk, "..", "Desktop", "other.pdf")))).toMatch(/is outside Documents\/Collide\/Markups/);
+    // Inside Markups a PDF opens without the dialog (an exported one, say).
+    fs.mkdirSync(root, { recursive: true });
+    fs.writeFileSync(path.join(root, "in.pdf"), pdf(3));
+    expect([...files.openPdf(path.join(root, "in.pdf"))]).toEqual([...pdf(3)]);
+    // Not a PDF: by name, and by its bytes.
+    expect(await message(() => files.openPdf(path.join(root, "x.collide")))).toMatch(/is not a PDF/);
+    fs.writeFileSync(path.join(root, "fake.pdf"), "hello, not a pdf");
+    expect(await message(() => files.openPdf(path.join(root, "fake.pdf")))).toMatch(/is not a PDF \(it does not start with %PDF-\)/);
+    expect(await message(() => files.openPdf(path.join(root, "missing.pdf")))).toMatch(/Reading .*missing\.pdf failed/);
+    expect(await message(() => files.openPdf(7))).toMatch(/No PDF was given/);
+  });
+
+  it("Export writes a PDF into Markups only, never over another file", async () => {
+    const { documents, root } = sandbox();
+    const { files } = store(documents);
+    const a = files.exportPdf("pump-markup.pdf", pdf(1));
+    expect(a).toBe(path.join(root, "pump-markup.pdf"));
+    expect(files.exportPdf("pump-markup.pdf", pdf(2))).toBe(path.join(root, "pump-markup-2.pdf"));
+    expect([...fs.readFileSync(a)]).toEqual([...pdf(1)]);
+    for (const name of ["../x.pdf", "a/b.pdf", "x.collide", ".pdf", 3]) {
+      expect(await message(() => files.exportPdf(name, pdf(1))), String(name)).toMatch(/cannot be used as a PDF file name/);
+    }
+    expect(await message(() => files.exportPdf("x.pdf", pkg(1)))).toMatch(/is not a PDF/);
+    expect(fs.readdirSync(root).sort()).toEqual(["pump-markup-2.pdf", "pump-markup.pdf"]);
   });
 
   it("the IPC channels reach the files with the page's arguments, only from Collide's own pages", async () => {
@@ -154,7 +199,11 @@ describe("Collide files (main process)", () => {
     expect(read.ok && [...(read.value as Uint8Array)]).toEqual([...pkg(4)]);
     expect(await invoke("collideFiles.pick", app)).toEqual({ ok: true, value: null });
     expect(await invoke("collideFiles.save", app, "../a.collide", pkg(4), false)).toMatchObject({ ok: false, error: expect.stringContaining("cannot be used as a Collide file name") });
-    for (const c of ["collideFiles.save", "collideFiles.open", "collideFiles.pick"] as const) {
+    const exported = await invoke("collideFiles.exportPdf", app, "e.pdf", pdf(9));
+    expect(exported).toMatchObject({ ok: true, value: expect.stringMatching(/e\.pdf$/) });
+    const pdfRead = await invoke("collideFiles.openPdf", app, (exported as { value: string }).value);
+    expect(pdfRead.ok && [...(pdfRead.value as Uint8Array)]).toEqual([...pdf(9)]);
+    for (const c of ["collideFiles.save", "collideFiles.open", "collideFiles.pick", "collideFiles.openPdf", "collideFiles.exportPdf"] as const) {
       expect(await invoke(c, { senderFrame: { url: "https://example.com/" } }, "a.collide", pkg(4), true)).toMatchObject({ ok: false });
     }
   });

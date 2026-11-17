@@ -59,6 +59,8 @@ contextBridge.exposeInMainWorld("collide", {
     save: (name, bytes, replace) => call("collide:collide-files-save", name, bytes, replace),
     open: (file) => call("collide:collide-files-open", file),
     pick: () => call("collide:collide-files-pick"),
+    openPdf: (file) => call("collide:collide-files-open-pdf", file),
+    exportPdf: (name, bytes) => call("collide:collide-files-export-pdf", name, bytes),
   },
   storage: {
     info: () => call("collide:storage-info"),
