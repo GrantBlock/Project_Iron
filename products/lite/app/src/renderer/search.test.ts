@@ -67,9 +67,13 @@ describe("search: tree and hook", () => {
     expect(snapshot(setQuery(s, ""), { narrow: false, highlights: 0 }).search.matchCount).toBe(7);
   });
 
-  it("searching opens collapsed folders again (prototype, ISSUES.md 3)", () => {
+  it("searching keeps collapsed folders collapsed (Grant 2026-11-17, ISSUES.md 3)", () => {
     const s = setQuery(toggleFolder(initialState(), "Palletizer retrofit"), "o");
-    expect(treeFolders(s).every((f) => f.open)).toBe(true);
+    expect(treeFolders(s).map((f) => [f.project.name, f.open])).toEqual([
+      ["Palletizer retrofit", false],
+      ["Engineering resources", true],
+    ]);
+    expect(treeFolders(setQuery(s, "")).map((f) => f.open)).toEqual([false, true]);
   });
 
   it("opening a result carries the trimmed query as the page highlight", () => {

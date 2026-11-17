@@ -187,8 +187,9 @@ export const ANSWERS: readonly CannedAnswer[] = [
     ],
   },
   {
-    // Prototype quirk (ISSUES.md 1): "servicing" does not match /service/.
-    keywords: /lock|loto|energy|service/i,
+    // Grant 2026-11-17 (ISSUES.md 1): "servicing" matches too (the prototype's /service/ missed it,
+    // so its suggested question got the fallback). "service" itself matches as before.
+    keywords: /lock|loto|energy|servic(?:e|ing)/i,
     text: "Apply lockout at the main disconnect, release stored energy at the pneumatic dump valve, and verify zero energy before you open any guard [1].",
     sources: [{ itemId: "d3", page: 2, label: "p. 3" }],
   },

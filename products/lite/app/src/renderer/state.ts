@@ -1,6 +1,7 @@
 // The app's state and the changes to it, as pure functions (unit-tested in Node), plus a
 // tiny store the render modules subscribe to. Behaviour follows the prototype
-// (prototype/exports/P16-lite/index.html), including its quirks listed in ../ISSUES.md.
+// (prototype/exports/P16-lite/index.html), including its quirks listed in ../ISSUES.md, except
+// where Grant decided otherwise (2026-11-17: folders keep their open/closed state, ISSUES.md 3).
 import { ABOUT_LABEL, ASSISTANT_TEXT, PROJECTS, findItem, projectOf, type Item, type Project, type Source, type ViewType } from "./data/sample";
 import { isDiskId, packageItems, type DiskFolder, type DiskPackage } from "./disk/package";
 import { filterItems, normalizeQuery } from "./search";
@@ -88,8 +89,8 @@ export function openDisk(s: AppState, disk: DiskPackage): AppState {
 }
 
 /**
- * Opens About or an item at `page`. As the prototype: the tree is rebuilt, so every folder opens
- * again (ISSUES.md 3), and under 900px the View pane is shown.
+ * Opens About or an item at `page`; under 900px the View pane is shown. Folders keep their
+ * open/closed state (Grant 2026-11-17, ISSUES.md 3; the prototype opened every folder again).
  */
 export function select(s: AppState, id: SelectionId, options: { page?: number; highlight?: string; narrow?: boolean } = {}): AppState {
   if (id !== ABOUT && !itemById(s, id)) return s;
@@ -98,7 +99,6 @@ export function select(s: AppState, id: SelectionId, options: { page?: number; h
     selected: id,
     page: options.page ?? 0,
     highlight: options.highlight ?? "",
-    closedFolders: [],
     pane: options.narrow ? "view" : s.pane,
     part: null,
     opened: s.opened + 1,
@@ -135,9 +135,12 @@ export function setPane(s: AppState, pane: Pane): AppState {
   return { ...s, pane };
 }
 
-/** Typing in Search this package. As the prototype, the tree is rebuilt, so folders open again. */
+/**
+ * Typing in Search this package. Folders keep their open/closed state while searching and after
+ * the search is cleared (Grant 2026-11-17, ISSUES.md 3; the prototype opened every folder again).
+ */
 export function setQuery(s: AppState, query: string): AppState {
-  return { ...s, query, closedFolders: [] };
+  return query === s.query ? s : { ...s, query };
 }
 
 /** Previous and Next on a document page (clamped). */

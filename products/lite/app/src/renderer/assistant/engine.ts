@@ -14,9 +14,9 @@ export interface AnswerEngine {
 }
 
 /**
- * The prototype's matching, exactly: the first canned answer whose keywords match the question,
- * otherwise the fallback with no sources. Quirks kept (ISSUES.md 1: "servicing" finds nothing;
- * ISSUES.md 2: the oil answer cites [1] twice, so it shows three chips).
+ * The prototype's matching: the first canned answer whose keywords match the question, otherwise
+ * the fallback with no sources. ISSUES.md 1 fixed (Grant 2026-11-17): "servicing" gets the lockout
+ * answer. Quirk kept (ISSUES.md 2: the oil answer cites [1] twice, so it shows three chips).
  */
 export function cannedAnswerFor(question: string): Answer {
   const hit = cannedAnswer(question);
