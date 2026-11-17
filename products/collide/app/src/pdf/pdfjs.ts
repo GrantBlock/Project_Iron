@@ -32,8 +32,8 @@ export async function openPdfDoc(bytes: Uint8Array): Promise<PDFDocumentProxy> {
     return await task.promise;
   } catch (e) {
     const why = e instanceof Error ? e.message : String(e);
-    if (/password/i.test(why)) throw new Error("This PDF needs a password, so Collide cannot open it. Save a copy without a password, then open that copy.");
-    throw new Error(`The file is not a PDF Collide can read (${why}). Open another file.`);
+    if (/password/i.test(why)) throw new Error("This PDF needs a password, so Collide cannot open it. Save a copy without a password, then open that copy.", { cause: e });
+    throw new Error(`The file is not a PDF Collide can read (${why}). Open another file.`, { cause: e });
   }
 }
 

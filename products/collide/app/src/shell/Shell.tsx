@@ -19,6 +19,7 @@ import {
   encodeCollide,
   markdownSummary,
   OPEN_FAILED as COLLIDE_OPEN_FAILED,
+  pdfSummary,
   pictureDataUrl,
   pictureLinks,
   picturePath,
@@ -35,10 +36,14 @@ import { SAMPLE_OPEN, sampleArt, sampleDoc, sampleRecents, sampleSnip, wantsSamp
 import { Sidebar } from "./Sidebar";
 import { createMdSession, defaultMdPen, MarkdownEditor, type MdEditorApi, type MdSession } from "../markdown/MarkdownEditor";
 import { linkKey, type Resolve } from "../markdown/render";
+import { defaultPdfPen, loadPdfSession, PdfEditor, type PdfEditorApi, type PdfSession } from "../pdf/PdfEditor";
 import { activateTab, activeTab, closeTab, cycleTab, noTabs, openTab, patchTab, type Tab, type TabKind, type TabsState } from "./tabs";
 
 const nameFromUrl = (url: string) => decodeURIComponent(url.split("?")[0].split("/").pop() || "image");
 const baseName = (p: string) => p.replace(/[\\/]+$/, "").split(/[\\/]/).pop() ?? p;
+
+/** RUN3 T38: the title of a toast for a PDF that cannot be opened. */
+const PDF_OPEN_FAILED = "Could not open the PDF";
 
 /** Where a saved Collide file is, for the toast (A: beside the markup folders; a browser downloads it). */
 const COLLIDE_PLACE = "Documents/Collide/Markups/";
@@ -140,6 +145,10 @@ export function Shell() {
   const mdSessions = useRef(new Map<string, MdSession>());
   const mdPen = useRef(defaultMdPen());
   const mdEditor = useRef<MdEditorApi | null>(null);
+  // PDF tabs (RUN3 T38): each tab's PDF, pages, markup and view; one colour and thickness for every PDF tab.
+  const pdfSessions = useRef(new Map<string, PdfSession>());
+  const pdfPen = useRef(defaultPdfPen());
+  const pdfEditor = useRef<PdfEditorApi | null>(null);
   const [full, setFull] = useState(false);
   const [hideTools, setHideTools] = useState(false);
   const nextId = useRef(1);
@@ -293,7 +302,8 @@ export function Shell() {
     for (const t of live.current.tabs.tabs) {
       const snip = sessions.current.get(t.id);
       const md = mdSessions.current.get(t.id);
-      for (const name of [snip?.source.folder, snip?.collideFile, md?.collideFile]) if (name) open.push(name);
+      const pdf = pdfSessions.current.get(t.id);
+      for (const name of [snip?.source.folder, snip?.collideFile, md?.collideFile, pdf?.collideFile]) if (name) open.push(name);
     }
     try {
       const r = await storage.prune(open);
@@ -351,6 +361,7 @@ export function Shell() {
       sessions.current.delete(id);
       files.current.delete(id);
       mdSessions.current.delete(id);
+      pdfSessions.current.delete(id);
     },
     [setTabs],
   );
@@ -452,6 +463,39 @@ export function Shell() {
     [addTab],
   );
 
+  // ---------- PDFs (RUN3 T38) ----------
+  /** Open a PDF in a tab. `where` is its path (desktop) or null (a file picked in a browser). Resolves with the tab title. */
+  const openPdfBytes = useCallback(
+    async (bytes: Uint8Array, name: string, where: string | null): Promise<string> => {
+      const key = `pdf:${where ?? `${name}#${nextId.current}`}`;
+      const had = findTab(key);
+      if (had) {
+        setTabs((s) => activateTab(s, had.id));
+        return had.title;
+      }
+      const session = await loadPdfSession({ name, path: where ?? name, pdf: bytes }).catch((e: unknown) => {
+        throw new MarkupError(PDF_OPEN_FAILED, e instanceof Error ? e.message : String(e));
+      });
+      addTab({ key, kind: "pdf", title: name, dirty: false, owner: key }, (id) => pdfSessions.current.set(id, session));
+      return name;
+    },
+    [addTab, setTabs],
+  );
+  const openPdfFile = useCallback(
+    async (file: string) => {
+      const files = window.collide?.collideFiles;
+      if (!files) throw new MarkupError(PDF_OPEN_FAILED, "PDFs from disk open in the Collide desktop app.");
+      let bytes: Uint8Array;
+      try {
+        bytes = new Uint8Array(await files.openPdf(file));
+      } catch (e) {
+        throw new MarkupError(PDF_OPEN_FAILED, e instanceof Error ? e.message : String(e));
+      }
+      return openPdfBytes(bytes, baseName(file), file);
+    },
+    [openPdfBytes],
+  );
+
   // ---------- Collide files (RUN3 T35) ----------
   /** A reopened Markdown package's zip row, by the file it came from. */
   const collideZips = useRef(new Map<string, string>());
@@ -459,6 +503,29 @@ export function Shell() {
   const openCollideBytes = useCallback(
     async (bytes: Uint8Array, label: string, where: string | null): Promise<string> => {
       const pkg: CollidePackage = decodeCollide(bytes);
+      if (pkg.kind === "pdf") {
+        // RUN3 T38: the PDF opens in a tab with every page's items and the page that was in front.
+        const key = `collide:${where ?? `${label}#${nextId.current}`}`;
+        const had = findTab(key);
+        if (had) {
+          setTabs((s) => activateTab(s, had.id));
+          return pkg.title;
+        }
+        const session = await loadPdfSession({ name: pkg.name, path: where ?? label, pdf: pkg.pdf, shapes: pkg.pages.map((p) => p.shapes), page: pkg.page }).catch((e: unknown) => {
+          throw new MarkupError(COLLIDE_OPEN_FAILED, `sources/source.pdf cannot be read: ${e instanceof Error ? e.message : String(e)}`);
+        });
+        const off = session.pages.findIndex((p, i) => Math.abs(p.width - pkg.pages[i].width) > 0.5 || Math.abs(p.height - pkg.pages[i].height) > 0.5);
+        if (off >= 0) {
+          const [a, b] = [session.pages[off], pkg.pages[off]];
+          throw new MarkupError(
+            COLLIDE_OPEN_FAILED,
+            `Page ${off + 1} of sources/source.pdf is ${Math.round(a.width)}×${Math.round(a.height)} pt but manifest.json says ${Math.round(b.width)}×${Math.round(b.height)}. Save it again from Collide, or open another file.`,
+          );
+        }
+        session.collideFile = where ?? label;
+        addTab({ key, kind: "pdf", title: pkg.title, dirty: false, owner: key }, (id) => pdfSessions.current.set(id, session));
+        return pkg.title;
+      }
       if (pkg.kind === "snip") {
         const key = `collide:${where ?? `${label}#${nextId.current}`}`;
         const had = findTab(key);
@@ -499,7 +566,7 @@ export function Shell() {
       if (md) md.collideFile = where ?? label;
       return pkg.file;
     },
-    [openFile, openSnipTab, setTabs],
+    [addTab, openFile, openSnipTab, setTabs],
   );
   const openCollideFile = useCallback(
     async (file: string) => {
@@ -523,7 +590,17 @@ export function Shell() {
     let pkg: CollidePackage;
     let summary: string;
     let session: { collideFile?: string };
-    if (front.kind === "snip" && editor.current && sessions.current.get(front.id)) {
+    let afterSave: (() => void) | null = null;
+    if (front.kind === "pdf" && pdfEditor.current && pdfSessions.current.get(front.id)) {
+      // RUN3 T38: the original PDF and every page's items.
+      const pdf = pdfSessions.current.get(front.id)!;
+      const api = pdfEditor.current;
+      session = pdf;
+      const c = await api.collideContent();
+      pkg = { kind: "pdf", title: front.title, name: pdf.name, pdf: pdf.pdf, page: c.page, pages: c.pages, preview: c.preview };
+      summary = pdfSummary(c.pages);
+      afterSave = () => api.markSaved();
+    } else if (front.kind === "snip" && editor.current && sessions.current.get(front.id)) {
       session = sessions.current.get(front.id)!;
       pkg = await editor.current.collidePackage(front.title);
       summary = snipSummary(pkg.doc.shapes);
@@ -546,7 +623,9 @@ export function Shell() {
     } else return;
     const bytes = encodeCollide(pkg);
     const bridge = window.collide;
-    const name = session.collideFile ? baseName(session.collideFile) : collideFileName({ kind: pkg.kind, title: pkg.title, file: pkg.kind === "markdown" ? pkg.file : undefined });
+    const name = session.collideFile
+      ? baseName(session.collideFile)
+      : collideFileName({ kind: pkg.kind, title: pkg.title, file: pkg.kind === "markdown" ? pkg.file : pkg.kind === "pdf" ? pkg.name : undefined });
     let saved: string;
     let place: string;
     if (bridge?.collideFiles) {
@@ -562,6 +641,7 @@ export function Shell() {
       place = "downloaded";
     }
     session.collideFile = saved;
+    afterSave?.();
     showHint(`Saved ${baseName(saved)} · ${summary} · ${place}`);
     void pruneStorage();
   }, [pruneStorage, showHint]);
@@ -600,6 +680,9 @@ export function Shell() {
           if (r?.kind === "markup") {
             const n = await openMarkup(r.folder).catch((e: unknown) => void fail(e, "Could not open markup"));
             if (n) notify({ tone: "success", title: "Markup opened", description: n });
+          } else if (r?.kind === "pdf") {
+            const t = await openPdfFile(r.file).catch((e: unknown) => void fail(e, PDF_OPEN_FAILED));
+            if (t) notify({ tone: "success", title: "PDF opened", description: r.file });
           } else if (r?.kind === "collide") {
             const t = await openCollideFile(r.file).catch((e: unknown) => void fail(e, COLLIDE_OPEN_FAILED));
             if (t) notify({ tone: "success", title: "Collide file opened", description: r.file });
@@ -613,7 +696,7 @@ export function Shell() {
       (n) => n && notify({ tone: "success", title: "Markup opened", description: n }),
       (e: unknown) => fail(e, "Could not open markup"),
     );
-  }, [openMarkup, openCollideFile, notify, fail]);
+  }, [openMarkup, openCollideFile, openPdfFile, notify, fail]);
 
   const onFile = (e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -625,6 +708,15 @@ export function Shell() {
         .then(
           () => notify({ tone: "success", title: "Collide file opened", description: f.name }),
           (err: unknown) => fail(err, COLLIDE_OPEN_FAILED),
+        );
+    } else if (f && (f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf"))) {
+      // RUN3 T38: a PDF picked in a browser.
+      void f
+        .arrayBuffer()
+        .then((b) => openPdfBytes(new Uint8Array(b), f.name, null))
+        .then(
+          () => notify({ tone: "success", title: "PDF opened", description: f.name }),
+          (err: unknown) => fail(err, PDF_OPEN_FAILED),
         );
     } else if (f) void openImage(URL.createObjectURL(f), f.name).catch((err: unknown) => fail(err, "Could not open the image"));
     e.target.value = "";
@@ -760,11 +852,12 @@ export function Shell() {
         notify({ tone: "success", title: "Markup saved", description: id });
       } else if (t.kind === "settings") settingsSave.current?.();
       else if (t.kind === "markdown") mdEditor.current?.save();
+      else if (t.kind === "pdf") await saveCollide();
       dropTab(t.id);
     } catch (e) {
       fail(e, "Could not save markup"); // the tab stays, with its changes
     }
-  }, [dropTab, fail, notify, setAsk, setTabs]);
+  }, [dropTab, fail, notify, saveCollide, setAsk, setTabs]);
   const discardAndClose = useCallback(() => {
     const a = live.current.ask;
     setAsk(null);
@@ -830,6 +923,7 @@ export function Shell() {
           { tabs: t.tabs, active: t.active, theme: p.theme, aura: p.aura, snipDelay: p.snipDelay, addMode: p.addMode, collapsed: p.collapsed, splash: a ? { kind: a.kind, title: askTitle(a) } : null },
           activeTab(t)?.kind === "snip" ? (editor.current?.refInput() ?? null) : null,
           activeTab(t)?.kind === "markdown" ? (mdEditor.current?.refInput() ?? null) : null,
+          activeTab(t)?.kind === "pdf" ? (pdfEditor.current?.refInput() ?? null) : null,
         );
       },
       openImage: (url, name) => openImage(url, name ?? nameFromUrl(url)),
@@ -883,6 +977,7 @@ export function Shell() {
   const session = front ? sessions.current.get(front.id) : undefined;
   const file = front ? files.current.get(front.id) : undefined;
   const md = front ? mdSessions.current.get(front.id) : undefined;
+  const pdfSession = front ? pdfSessions.current.get(front.id) : undefined;
   const mdZip = md ? samples.find((z): z is RecentZip => z.kind === "zip" && z.id === md.zipId) : undefined;
   // A link in the page to the zip's picture: one pasted or inserted this session, or a sample's picture.
   const resolve = useMemo<Resolve>(() => {
@@ -974,12 +1069,31 @@ export function Shell() {
         head={(h) => <WsHead {...headBase} name={md.name} path={md.path} savedLabel="Saved" onSave={h.onSave} canSave={h.canSave} extra={h.extra} tail={h.tail} />}
       />
     );
+  } else if (front && headBase && front.kind === "pdf" && pdfSession) {
+    body = (
+      <PdfEditor
+        key={front.id}
+        session={pdfSession}
+        pen={pdfPen.current}
+        apiRef={pdfEditor}
+        onDirty={(d) => setDirty(front.id, d)}
+        full={full}
+        onFull={() => setFull((f) => !f)}
+        hideTools={hideTools}
+        onHideTools={() => setHideTools((h) => !h)}
+        hint={showHint}
+        notify={notify}
+        themeKey={themeKey}
+        onSaveCollide={onSaveCollide}
+        head={(h) => <WsHead {...headBase} name={front.title} path={pdfSession.collideFile ?? pdfSession.path} savedLabel="Saved" onSave={h.onSave} canSave={h.canSave} extra={h.extra} tail={h.tail} />}
+      />
+    );
   } else if (front && headBase && file) {
     body = <FileTab key={front.id} doc={file} kind={front.kind} head={<WsHead {...headBase} name={file.name} path={file.path} />} />;
   }
 
   const frontFile = front && file ? (front.key.startsWith("doc:") ? front.key.slice(4) : null) : null;
-  const cls = ["app", full && front?.kind === "markdown" ? "focus" : "", prefs.collapsed ? "compact" : "", prefs.collapsed && (maximized || hasTab) ? "with-canvas" : "", sideOpen ? "side-open" : ""].filter(Boolean).join(" ");
+  const cls = ["app", full && (front?.kind === "markdown" || front?.kind === "pdf") ? "focus" : "", prefs.collapsed ? "compact" : "", prefs.collapsed && (maximized || hasTab) ? "with-canvas" : "", sideOpen ? "side-open" : ""].filter(Boolean).join(" ");
   const closing = ask?.kind === "close" ? tabs.tabs.find((t) => t.id === ask.tabId) : undefined;
   const deleting = ask?.kind === "delete" ? ask.item : undefined;
   const openTabsOfDeleting = deleting ? tabs.tabs.filter((t) => t.owner === deleting.id).length : 0;
@@ -1055,7 +1169,7 @@ export function Shell() {
           ]}
         />
       )}
-      <input ref={fileRef} type="file" accept={`image/*,${COLLIDE_EXT}`} hidden data-testid="file-input" onChange={onFile} />
+      <input ref={fileRef} type="file" accept={`image/*,${COLLIDE_EXT},.pdf,application/pdf`} hidden data-testid="file-input" onChange={onFile} />
     </div>
   );
 }
