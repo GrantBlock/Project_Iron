@@ -146,7 +146,13 @@ test("save, close, open: identical annotations and image, from real folders unde
       // Cancelling the dialog opens nothing and says nothing.
       await answerDialog(app, { canceled: true, filePaths: [] });
       await page.getByTestId("open-markup").click();
-      await expect.poll(() => dialogAsked(app)).toEqual([{ onWindow: true, options: { title: "Open markup folder", defaultPath: root, properties: ["openDirectory"] } }]);
+      // RUN3 T35: Open is one dialog for a .collide file or a saved markup (its folder or its annotations.json).
+      await expect.poll(() => dialogAsked(app)).toEqual([
+        {
+          onWindow: true,
+          options: { title: "Open a Collide file or a saved markup", defaultPath: root, properties: ["openFile"], filters: [{ name: "Collide files and saved markups", extensions: ["collide", "json"] }] },
+        },
+      ]);
       await expect(page.getByTestId("notice")).toHaveCount(0);
       expect(await page.evaluate(() => window.__collide!.getDoc())).toBeNull();
 
