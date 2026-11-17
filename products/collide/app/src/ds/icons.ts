@@ -4,6 +4,8 @@
 import circleFilled from "./glyphs/circle-filled.svg?url";
 import squareFilled from "./glyphs/square-filled.svg?url";
 import crop from "lucide-static/icons/crop.svg?url";
+import refreshCw from "lucide-static/icons/refresh-cw.svg?url";
+import rotateCw from "lucide-static/icons/rotate-cw.svg?url";
 import eraserIcon from "lucide-static/icons/eraser.svg?url";
 import gripVerticalIcon from "lucide-static/icons/grip-vertical.svg?url";
 import highlighterIcon from "lucide-static/icons/highlighter.svg?url";
@@ -89,6 +91,8 @@ export const ICON_URLS: Record<string, string> = {
   "circle-check": circleCheck,
   "timer": timer,
   "crop": crop,
+  "refresh-cw": refreshCw,
+  "rotate-cw": rotateCw,
   "circle-filled": circleFilled,
   "square-filled": squareFilled,
   "clipboard-copy": clipboardCopy,

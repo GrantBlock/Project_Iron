@@ -71,6 +71,7 @@ describe("electron/preload.cjs", () => {
       "collideFiles.exportPdf": ["pump-markup.pdf", new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d])],
       "storage.setKeep": [3],
       "storage.prune": [["2026-11-17_snip", "line-3.collide"]],
+      "updates.setAuto": [false],
     };
     for (const name of Object.keys(INVOKE_CHANNELS) as InvokeMethod[]) {
       invoked.length = 0;

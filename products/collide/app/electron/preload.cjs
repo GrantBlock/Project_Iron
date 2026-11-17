@@ -10,6 +10,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 const OVERLAY_EVENT_CHANNEL = "collide:overlay-event";
 const SNIP_REQUEST_CHANNEL = "collide:snip-request";
+const UPDATE_STATUS_CHANNEL = "collide:update-status";
 const OVERLAY_EVENTS = [
   "collide:overlay-frame",
   "collide:overlay-ready",
@@ -62,6 +63,13 @@ contextBridge.exposeInMainWorld("collide", {
     pick: () => call("collide:collide-files-pick"),
     openPdf: (file) => call("collide:collide-files-open-pdf", file),
     exportPdf: (name, bytes) => call("collide:collide-files-export-pdf", name, bytes),
+  },
+  updates: {
+    status: () => call("collide:updates-status"),
+    check: () => call("collide:updates-check"),
+    install: () => call("collide:updates-install"),
+    setAuto: (on) => call("collide:updates-set-auto", on),
+    onStatus: (cb) => subscribe(UPDATE_STATUS_CHANNEL, (_e, status) => cb(status)),
   },
   storage: {
     info: () => call("collide:storage-info"),

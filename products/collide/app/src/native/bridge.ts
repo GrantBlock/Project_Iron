@@ -7,6 +7,8 @@
 
 import type { LogicalRect } from "../snip/crop";
 import type { CaptureInfo, CropInfo } from "../snip/flow";
+import type { UpdateStatus } from "./updates";
+export type { UpdateStatus } from "./updates";
 
 /** Events between the editor and the overlay window (the names the Rust shell used). */
 export const OVERLAY_EVENTS = [
@@ -43,12 +45,18 @@ export const INVOKE_CHANNELS = {
   "storage.info": "collide:storage-info",
   "storage.setKeep": "collide:storage-set-keep",
   "storage.prune": "collide:storage-prune",
+  "updates.status": "collide:updates-status",
+  "updates.check": "collide:updates-check",
+  "updates.install": "collide:updates-install",
+  "updates.setAuto": "collide:updates-set-auto",
 } as const;
 export type InvokeMethod = keyof typeof INVOKE_CHANNELS;
 
 /** One-way channels. */
 export const OVERLAY_EVENT_CHANNEL = "collide:overlay-event";
 export const SNIP_REQUEST_CHANNEL = "collide:snip-request";
+/** Updates (Grant 2026-11-17): the main process sends each new UpdateStatus here. */
+export const UPDATE_STATUS_CHANNEL = "collide:update-status";
 
 /** What every invoke channel answers; the preload turns `ok: false` into a rejected promise with `error` as its message. */
 export type IpcReply<T = unknown> = { ok: true; value: T } | { ok: false; error: string };
@@ -163,6 +171,17 @@ export interface CollideBridge {
     /** After a save: delete the oldest items beyond N, never the open ones (names or paths of the items open in tabs). */
     prune(open: string[]): Promise<{ deleted: string[]; info: StorageInfo }>;
   };
+  /** Updates (Grant 2026-11-17): Collide's release folder on Cloudflare; Settings → Updates. */
+  updates: {
+    status(): Promise<UpdateStatus>;
+    /** Check now; a newer version downloads in the background. */
+    check(): Promise<UpdateStatus>;
+    /** Restart into the downloaded version. */
+    install(): Promise<void>;
+    setAuto(on: boolean): Promise<UpdateStatus>;
+    /** Every change of state. Returns the unsubscribe function. */
+    onStatus(cb: (s: UpdateStatus) => void): () => void;
+  };
   /** The overlay events: sent to every Collide window, the sender included (as the Rust shell's emit/listen did). */
   overlay: {
     emit(event: OverlayEvent, payload?: unknown): void;
@@ -188,6 +207,7 @@ export const BRIDGE_KEYS = [
   "showEditor",
   "showOverlay",
   "storage",
+  "updates",
 ] as const;
 
 declare global {

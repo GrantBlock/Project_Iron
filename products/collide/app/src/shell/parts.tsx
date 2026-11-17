@@ -7,6 +7,7 @@ import { Icon } from "../ds";
 import logoUrl from "../../../design-system/assets/logo/favicon.svg?url";
 import type { Settings } from "./prefs";
 import type { StorageInfo } from "../native/bridge";
+import { UpdatesCard } from "./UpdatesCard";
 import type { Tab, TabKind } from "./tabs";
 
 export const Logo = () => <img className="logo" src={logoUrl} alt="Collide" draggable={false} />;
@@ -336,6 +337,7 @@ const SECTIONS = [
   ["mode", "This computer"],
   ["links", "Open from other computers"],
   ["access", "Access password"],
+  ["updates", "Updates"],
 ] as const;
 
 interface SettingsProps {
@@ -494,6 +496,7 @@ export function SettingsTab({ saved, onSave, onDirty, notify, head, password, on
               <input type="password" value={password} placeholder="No password" autoComplete="off" onChange={(e) => onPassword(e.target.value)} />
             </label>
           </section>
+          <UpdatesCard />
         </div>
         <aside className="numbered" aria-label="Sections">
           <div className="head">

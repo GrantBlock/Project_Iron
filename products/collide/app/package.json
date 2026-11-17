@@ -21,9 +21,11 @@
     "lint": "eslint .",
     "electron:dev": "node scripts/electron-dev.mjs",
     "dist": "pnpm build && electron-builder --win --x64",
-    "dist:portable": "pnpm build && electron-builder --win portable --x64"
+    "dist:offline": "pnpm build && electron-builder --win nsis --x64 -c.publish=null -c.nsis.artifactName=Collide-Setup-${version}-offline.exe",
+    "release": "node scripts/release.mjs"
   },
   "dependencies": {
+    "electron-updater": "6.8.11",
     "fflate": "^0.8.2",
     "konva": "^10.9.1",
     "lucide-static": "0.460.0",
@@ -69,7 +71,7 @@
     "win": {
       "target": [
         {
-          "target": "nsis",
+          "target": "nsis-web",
           "arch": [
             "x64"
           ]
@@ -91,7 +93,14 @@
       "output": "release"
     },
     "copyright": "Copyright © 2026 Block Concepts LLC",
-    "nsis": {
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://pub-91ea11eb33cc4fa19f970cc08c390d6b.r2.dev/windows",
+        "channel": "latest"
+      }
+    ],
+    "nsisWeb": {
       "oneClick": false,
       "perMachine": false,
       "allowElevation": true,
@@ -105,6 +114,18 @@
       "deleteAppDataOnUninstall": false,
       "artifactName": "Collide-Setup-${version}.exe"
     },
-    "publish": null
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Collide",
+      "uninstallDisplayName": "Collide",
+      "installerIcon": "electron/icons/icon.ico",
+      "uninstallerIcon": "electron/icons/icon.ico",
+      "deleteAppDataOnUninstall": false
+    }
   }
 }

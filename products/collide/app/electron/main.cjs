@@ -7,6 +7,8 @@
 // T16: markup folders under Documents/Collide/Markups and the Open folder dialog.
 // RUN3 T35: Collide files (.collide) in the same folder, and the Open dialog for them and for markups.
 // RUN3 T36: storage on the server PC (Server mode): this main process is the Node side; no network port yet.
+// Updates (Grant 2026-11-17): the installed app checks Collide's release folder on Cloudflare (src/native/updates.ts;
+// electron-updater in dist-electron/updater.cjs, loaded only when this copy can update itself).
 // This file only creates windows and passes Electron's modules on: the logic
 // lives in src/native/ and src/snip/crop.ts (TypeScript, unit-tested) and is
 // bundled to dist-electron/native.cjs by `pnpm build:electron`.
@@ -160,6 +162,29 @@ app.whenReady().then(() => {
     showOpenDialog: (options) => (editor && !editor.isDestroyed() ? dialog.showOpenDialog(editor, options) : dialog.showOpenDialog(options)),
   });
   const collapse = native.createCollapse({ editor: () => editor, workArea: (bounds) => screen.getDisplayMatching(bounds).workArea });
+  // Updates: only the installed Windows app updates itself; the portable exe and dev builds say why not.
+  const updateBlocked = native.cannotUpdate({ packaged: app.isPackaged, platform: process.platform, portable: !!process.env.PORTABLE_EXECUTABLE_DIR });
+  let updater = null;
+  let updaterFailed = null;
+  if (!updateBlocked) {
+    try {
+      updater = require("../dist-electron/updater.cjs").autoUpdater;
+    } catch (e) {
+      updaterFailed = `Collide's updater did not load (${e && e.message ? e.message : e}). Download the newest installer.`;
+    }
+  }
+  const updates = native.createUpdates({
+    updater,
+    unsupported: updateBlocked || updaterFailed || undefined,
+    current: app.getVersion(),
+    fs,
+    path,
+    userData: () => app.getPath("userData"),
+    now: () => new Date(),
+    broadcast: (status) => broadcast(native.UPDATE_STATUS_CHANNEL, status),
+    setInterval,
+    setTimeout,
+  });
   native.registerBridge({
     ipcMain,
     screen,
@@ -189,6 +214,7 @@ app.whenReady().then(() => {
     }),
     // RUN3 T36: the storage folder's size and count, and keep the newest N (storage.json and storage.log in user data).
     storage: native.createStorage({ fs, path, documents: () => app.getPath("documents"), userData: () => app.getPath("userData"), now: () => new Date(), markups }),
+    updates,
     capturer: fakeCapture
       ? native.fakeCapturer({
           screen,
@@ -204,6 +230,7 @@ app.whenReady().then(() => {
   // Dev keeps Electron's default menu for reload and DevTools.
   if (app.isPackaged) Menu.setApplicationMenu(null);
   editor = createEditorWindow();
+  updates.start();
 });
 
 app.on("before-quit", () => {

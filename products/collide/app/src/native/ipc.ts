@@ -18,6 +18,7 @@ import { captureMonitor, electronCapturer, type ElectronCaptureDeps } from "./el
 import type { Markups } from "./markups";
 import type { CollideFiles } from "./collideFiles";
 import type { Storage } from "./storage";
+import type { Updates } from "./updates";
 import { overlayBoundsFor, type Choreography } from "./windows";
 import type { LogicalRect } from "../snip/crop";
 
@@ -52,6 +53,8 @@ export interface BridgeDeps extends ElectronCaptureDeps {
   collideFiles?: CollideFiles;
   /** RUN3 T36: storage on the server PC (storage.ts). Absent = the channels answer that this build cannot. */
   storage?: Storage;
+  /** Updates (Grant 2026-11-17, updates.ts). Absent = the channels answer that this build cannot. */
+  updates?: Updates;
   /** Defaults to the real capturer; tests and the Electron e2e pass a fake. */
   capturer?: Capturer;
   state?: CaptureState;
@@ -119,6 +122,15 @@ export function registerBridge(deps: BridgeDeps): { state: CaptureState } {
   handle("storage.info", () => storage().info());
   handle("storage.setKeep", (keep) => storage().setKeep(keep));
   handle("storage.prune", (open) => storage().prune(open));
+  // Updates (Grant 2026-11-17).
+  const updates = (): Updates => {
+    if (!deps.updates) throw new Error("This build of Collide cannot check for updates. Download the newest installer.");
+    return deps.updates;
+  };
+  handle("updates.status", () => updates().status());
+  handle("updates.check", () => updates().check());
+  handle("updates.install", () => updates().install());
+  handle("updates.setAuto", (on) => updates().setAuto(on));
 
   // Overlay events go to every window, the sender included (the Rust shell's emit did the same).
   deps.ipcMain.on(OVERLAY_EVENT_CHANNEL, (event, name, payload) => {

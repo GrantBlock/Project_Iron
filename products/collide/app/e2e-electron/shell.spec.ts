@@ -50,6 +50,7 @@ const BRIDGE_KEYS = [
   "showEditor",
   "showOverlay",
   "storage",
+  "updates", // Settings → Updates (Grant 2026-11-17)
 ];
 
 test("the page is isolated: window.collide has exactly the bridge, no Node, sandbox on", async () => {
@@ -90,7 +91,7 @@ test("the page is isolated: window.collide has exactly the bridge, no Node, sand
     expect(inPage).toEqual({
       collide: "object",
       collideKeys: BRIDGE_KEYS,
-      functions: BRIDGE_KEYS.filter((k) => k !== "markups" && k !== "overlay" && k !== "collideFiles" && k !== "storage"),
+      functions: BRIDGE_KEYS.filter((k) => k !== "markups" && k !== "overlay" && k !== "collideFiles" && k !== "storage" && k !== "updates"),
       markups: { list: "function", open: "function", pick: "function", remove: "function", save: "function" },
       collideFiles: { exportPdf: "function", open: "function", openPdf: "function", pick: "function", save: "function" },
       storage: { info: "function", prune: "function", setKeep: "function" },

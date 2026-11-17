@@ -11,4 +11,6 @@ export { copyImage } from "./clipboard";
 export { createMarkups } from "./markups";
 export { createCollideFiles } from "./collideFiles";
 export { createStorage } from "./storage";
+export { createUpdates, cannotUpdate } from "./updates";
+export { UPDATE_STATUS_CHANNEL } from "./bridge";
 export { fakeCapturer } from "./fakeCapturer";
