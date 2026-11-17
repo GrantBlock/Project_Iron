@@ -22,7 +22,7 @@ export function mountApp(root: HTMLElement, store: Store = createStore()): HTMLE
   const titleBar = createTitleBar(store, { desktop: window.lite?.desktop === true });
   const tabs = createTabs(store);
   const left = createLeft(store, isNarrow);
-  const center = createCenter();
+  const center = createCenter(store);
   const right = createRight();
   const body = el("div", { class: "l-body", id: "body" }, left.element, center.element, right.element);
   const areas: Area<AppState>[] = [titleBar, tabs, left, center, right];
