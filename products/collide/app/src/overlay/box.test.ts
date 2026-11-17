@@ -28,7 +28,7 @@ describe("normalizeBox", () => {
   });
 });
 
-// Cases copied from src-tauri/src/crop.rs tests: [x, y, w, h, scale, frameW, frameH, expected rect].
+// Cases copied from the Rust shell's crop.rs tests: [x, y, w, h, scale, frameW, frameH, expected rect].
 const B = (x: number, y: number, w: number, h: number) => ({ x, y, w, h });
 const cases: [string, ReturnType<typeof B>, number, number, number, [number, number, number, number]][] = [
   ["integer 1x", B(10, 20, 100, 50), 1, 1920, 1080, [10, 20, 100, 50]],

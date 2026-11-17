@@ -4,6 +4,13 @@
 import circleFilled from "./glyphs/circle-filled.svg?url";
 import squareFilled from "./glyphs/square-filled.svg?url";
 import crop from "lucide-static/icons/crop.svg?url";
+import eraserIcon from "lucide-static/icons/eraser.svg?url";
+import gripVerticalIcon from "lucide-static/icons/grip-vertical.svg?url";
+import highlighterIcon from "lucide-static/icons/highlighter.svg?url";
+import messageSquareIcon from "lucide-static/icons/message-square.svg?url";
+import minusIcon from "lucide-static/icons/minus.svg?url";
+import penLineIcon from "lucide-static/icons/pen-line.svg?url";
+import squareDashedIcon from "lucide-static/icons/square-dashed.svg?url";
 import timer from "lucide-static/icons/timer.svg?url";
 import circleAlert from "lucide-static/icons/circle-alert.svg?url";
 import circle from "lucide-static/icons/circle.svg?url";
@@ -24,8 +31,58 @@ import square from "lucide-static/icons/square.svg?url";
 import type from "lucide-static/icons/type.svg?url";
 import undo2 from "lucide-static/icons/undo-2.svg?url";
 import x from "lucide-static/icons/x.svg?url";
+import plusIcon from "lucide-static/icons/plus.svg?url";
+import packageIcon from "lucide-static/icons/package.svg?url";
+import folderIcon from "lucide-static/icons/folder.svg?url";
+import chevronRightIcon from "lucide-static/icons/chevron-right.svg?url";
+// RUN3 T38: the PDF tab and its page arrows.
+import chevronLeftIcon from "lucide-static/icons/chevron-left.svg?url";
+import fileTypeIcon from "lucide-static/icons/file-type.svg?url";
+import fileIcon from "lucide-static/icons/file.svg?url";
+import fileTextIcon from "lucide-static/icons/file-text.svg?url";
+import imageIcon from "lucide-static/icons/image.svg?url";
+import trash2Icon from "lucide-static/icons/trash-2.svg?url";
+import cloudIcon from "lucide-static/icons/cloud.svg?url";
+import cloudUploadIcon from "lucide-static/icons/cloud-upload.svg?url";
+import paletteIcon from "lucide-static/icons/palette.svg?url";
+import settingsIcon from "lucide-static/icons/settings.svg?url";
+import minimize2Icon from "lucide-static/icons/minimize-2.svg?url";
+import maximize2Icon from "lucide-static/icons/maximize-2.svg?url";
+import menuIcon from "lucide-static/icons/menu.svg?url";
+import serverIcon from "lucide-static/icons/server.svg?url";
+import globeIcon from "lucide-static/icons/globe.svg?url";
+import keyIcon from "lucide-static/icons/key.svg?url";
+import copyIcon from "lucide-static/icons/copy.svg?url";
 
+import mdHeadingIcon from "lucide-static/icons/heading.svg?url";
+import mdListIcon from "lucide-static/icons/list.svg?url";
+import mdListOrderedIcon from "lucide-static/icons/list-ordered.svg?url";
+import mdTableIcon from "lucide-static/icons/table.svg?url";
+import mdTagIcon from "lucide-static/icons/tag.svg?url";
+import mdBoldIcon from "lucide-static/icons/bold.svg?url";
+import mdLinkIcon from "lucide-static/icons/link.svg?url";
+import mdEyeIcon from "lucide-static/icons/eye.svg?url";
+import mdPencilIcon from "lucide-static/icons/pencil.svg?url";
+import mdMaximizeIcon from "lucide-static/icons/maximize.svg?url";
+import mdChevronUpIcon from "lucide-static/icons/chevron-up.svg?url";
+import mdChevronDownIcon from "lucide-static/icons/chevron-down.svg?url";
+import mdImagePlusIcon from "lucide-static/icons/image-plus.svg?url";
+import fileDownIcon from "lucide-static/icons/file-down.svg?url";
 export const ICON_URLS: Record<string, string> = {
+  "heading": mdHeadingIcon,
+  "list": mdListIcon,
+  "list-ordered": mdListOrderedIcon,
+  "table": mdTableIcon,
+  "tag": mdTagIcon,
+  "bold": mdBoldIcon,
+  "link": mdLinkIcon,
+  "eye": mdEyeIcon,
+  "pencil": mdPencilIcon,
+  "maximize": mdMaximizeIcon,
+  "chevron-up": mdChevronUpIcon,
+  "chevron-down": mdChevronDownIcon,
+  "image-plus": mdImagePlusIcon,
+  "file-down": fileDownIcon,
   "circle": circle,
   "circle-alert": circleAlert,
   "x": x,
@@ -49,4 +106,32 @@ export const ICON_URLS: Record<string, string> = {
   "square": square,
   "type": type,
   "undo-2": undo2,
+  "plus": plusIcon,
+  "package": packageIcon,
+  "folder": folderIcon,
+  "chevron-right": chevronRightIcon,
+  "chevron-left": chevronLeftIcon,
+  "file-type": fileTypeIcon,
+  "file": fileIcon,
+  "file-text": fileTextIcon,
+  "image": imageIcon,
+  "trash-2": trash2Icon,
+  "cloud": cloudIcon,
+  "cloud-upload": cloudUploadIcon,
+  "palette": paletteIcon,
+  "settings": settingsIcon,
+  "minimize-2": minimize2Icon,
+  "maximize-2": maximize2Icon,
+  "menu": menuIcon,
+  "server": serverIcon,
+  "globe": globeIcon,
+  "key": keyIcon,
+  "copy": copyIcon,
+  "eraser": eraserIcon,
+  "grip-vertical": gripVerticalIcon,
+  "highlighter": highlighterIcon,
+  "message-square": messageSquareIcon,
+  "minus": minusIcon,
+  "pen-line": penLineIcon,
+  "square-dashed": squareDashedIcon,
 };

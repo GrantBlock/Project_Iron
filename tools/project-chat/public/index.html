@@ -75,6 +75,15 @@
   .bubble h4 { margin: 8px 0 4px; font-size: 14px; }
   .time { font-size: 11px; color: #9aa0a8; margin: 5px 36px 0; }
   .row.grouped .time { display: none; }
+  .edit-note { margin-top: 8px; font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 6px; }
+  .edit-note div { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+  .roster { display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: #eef1f5; border-top: 1px solid var(--line); font-size: 13px; color: var(--navy); }
+  .roster[hidden] { display: none; }
+  .roster span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .roster button { background: var(--blue); color: #fff; border: 0; border-radius: 14px; padding: 5px 12px; font-size: 12.5px; cursor: pointer; flex-shrink: 0; }
+  .afile { background: #fff; border: 1px solid var(--line); border-radius: 6px; margin-bottom: 10px; }
+  .afile summary { cursor: pointer; padding: 9px 12px; font-size: 14px; font-weight: 600; color: var(--navy); }
+  .afile .md { padding: 0 12px 10px; font-size: 13.5px; line-height: 1.45; } .afile .md p { margin: 4px 0; } .afile .md ul { margin: 4px 0; padding-left: 18px; }
   .report-kicker { font-size: 12px; color: var(--muted); }
   .day { text-align: center; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #a2a8b0; margin: 14px 0 0; }
 
@@ -138,6 +147,7 @@
 
   <div id="log"></div>
   <div class="typing" id="typing"></div>
+  <div class="roster" id="roster" hidden><span id="rosterText"></span><button type="button" id="askNext">Ask next</button></div>
   <div class="composer">
     <textarea id="input" rows="1" placeholder="Type reply"></textarea>
     <button class="send" id="sendBtn" title="Send"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"><path d="M21 3L3 10.5l7 2.5 2.5 7L21 3z"/><path d="M10 13l11-10"/></svg></button>
@@ -147,6 +157,7 @@
     <div class="tabs">
       <button data-tab="projects" class="active">Projects</button>
       <button data-tab="reports">Reports</button>
+      <button data-tab="agent" id="agentTab">Agent</button>
       <button data-tab="connect">Connect</button>
     </div>
     <div class="body" id="panelBody"></div>
@@ -208,10 +219,13 @@ function renderMessage(m, cont) {
       ${r.body || r.link ? `<button class="toggle">View full report</button><div class="full">${md(r.body)}${r.link ? `<p><a href="${esc(r.link)}" target="_blank" rel="noopener">${/github\.com/.test(r.link) ? 'Open on GitHub' : 'Open link'}</a></p>` : ''}</div>` : ''}`;
   } else {
     inner = md(m.text);
+    const eds = m.edits || (m.edit ? [m.edit] : []);
+    if (eds.length) inner += `<div class="edit-note">${eds.map((e, n) => `<div>${e.undone ? 'Undone: ' : 'Updated '}<code>${esc(e.file)}</code>${e.undone ? '' : ` · <button class="linkbtn undo" data-n="${n}">Undo</button>`}</div>`).join('')}</div>`;
   }
   const pic = me ? '' : agentPic(m.projectId, m.author);
   row.innerHTML = `<div class="who"><div class="mavatar ${pic ? 'pic' : m.role === 'report' ? 'report' : ''}">${avatarInner(pic, m.author)}</div><span>${esc(m.author)}</span></div>
     <div class="bubble">${inner}</div><div class="time">${fmtTime(m.ts)}</div>`;
+  row.querySelectorAll('.undo').forEach(u => u.onclick = async () => { u.disabled = true; try { await api(`/api/projects/${encodeURIComponent(m.projectId)}/undo/${m.id}/${u.dataset.n}`, { method: 'POST' }); } catch (e) { alert('Undo failed: ' + e.message); u.disabled = false; } });
   const t = row.querySelector('.toggle');
   if (t) t.onclick = () => { const f = row.querySelector('.full'); f.classList.toggle('open'); t.textContent = f.classList.contains('open') ? 'Hide full report' : 'View full report'; };
   return row;
@@ -265,15 +279,26 @@ async function loadProjects() {
 async function selectProject(id) {
   state.current = id; store.set('project', id); state.unread[id] = 0;
   state.messages = await api(`/api/projects/${encodeURIComponent(id)}/messages`);
-  setHeader(); renderLog(); closePanel();
+  setHeader(); renderLog(); closePanel(); loadRoster();
+  const p = project(); if (p) $('#agentTab').textContent = p.agent;
 }
+
+// ---- Question roster: the agent asks one question at a time; the rest wait in plans.md ----
+async function loadRoster() {
+  if (!state.current) return;
+  const r = await api(`/api/projects/${encodeURIComponent(state.current)}/roster`).catch(() => ({ count: 0 }));
+  const p = project();
+  $('#roster').hidden = !r.count;
+  $('#rosterText').textContent = r.count ? `${r.count} question${r.count > 1 ? 's' : ''} waiting from ${p ? p.agent : 'the agent'} · next: ${r.next}` : '';
+}
+$('#askNext').onclick = () => { $('#input').value = 'Ask me the next question from your roster.'; send(); };
 
 // ---- Menu panel ----
 function openPanel(tab) { if (tab) state.tab = tab; renderPanel(); $('#panel').classList.add('open'); }
 function closePanel() { $('#panel').classList.remove('open'); }
 document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { state.tab = b.dataset.tab; renderPanel(); });
 
-function renderPanel() {
+async function renderPanel() {
   document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === state.tab));
   const body = $('#panelBody');
   if (state.tab === 'projects') {
@@ -314,6 +339,12 @@ function renderPanel() {
       const p = await api('/api/projects', { method: 'POST', body: JSON.stringify(f) });
       await loadProjects(); selectProject(p.id);
     };
+  } else if (state.tab === 'agent') {
+    const p = project();
+    const files = await api(`/api/projects/${encodeURIComponent(state.current)}/agent-files`).catch(() => []);
+    if (state.tab !== 'agent') return;
+    body.innerHTML = `<div class="muted" style="margin:4px 0 10px">${esc(p.agent)} reads these before every reply and updates them in the chat: ask ${esc(p.agent)} to remember something, plan work or change how they work. Each change shows in the chat with Undo. Stored only on the server PC.</div>` +
+      files.map(f => `<details class="afile"${f.name === 'plans' ? ' open' : ''}><summary>${esc(f.file)}</summary><div class="md">${md(f.content)}</div></details>`).join('');
   } else if (state.tab === 'reports') {
     const reps = state.messages.filter(m => m.role === 'report').reverse();
     body.innerHTML = reps.length ? reps.map(m => `
@@ -331,7 +362,7 @@ function renderPanel() {
       <div class="team">Open from other computers</div>
       ${i.lan.map(ip => `<div class="kv"><code>http://${ip}:${i.port}</code></div>`).join('') || '<div class="muted">No network address found.</div>'}
       <div class="team">AI replies</div>
-      <div class="kv">${i.aiEnabled ? 'On · ' + esc(i.model) : 'Off — add <code>anthropicApiKey</code> to config.json and restart.'}</div>
+      <div class="kv">${i.aiEnabled ? 'On · ' + esc(i.model) + ' (claude CLI)' : 'Off. Install the claude CLI on the server PC, run <code>claude</code> once to sign in, then restart.'}</div>
       <div class="team">Agent report endpoint</div>
       <div class="kv"><code>POST http://${i.lan[0] || 'localhost'}:${i.port}/api/reports</code></div>
       <div class="kv">Header: <code>Authorization: Bearer &lt;reportToken from config.json&gt;</code></div>
@@ -449,6 +480,9 @@ function connectEvents() {
       } else { state.unread[m.projectId] = (state.unread[m.projectId] || 0) + 1; setHeader(); }
       if (m.role === 'report' && document.hidden && 'Notification' in window && Notification.permission === 'granted')
         new Notification(`${m.author}: ${m.report.status.toUpperCase()}`, { body: m.report.title });
+    } else if (evt.type === 'updated' && evt.message.projectId === state.current) {
+      const i = state.messages.findIndex(x => x.id === evt.message.id);
+      if (i > -1) { state.messages[i] = evt.message; renderLog(); }
     } else if (evt.type === 'pruned' && evt.projectId === state.current) {
       const gone = new Set(evt.ids);
       state.messages = state.messages.filter(m => !gone.has(m.id));
@@ -456,6 +490,8 @@ function connectEvents() {
     } else if (evt.type === 'typing' && evt.projectId === state.current) {
       $('#typing').textContent = `${evt.author} is typing…`;
       clearTimeout(typingTimer); typingTimer = setTimeout(() => $('#typing').textContent = '', 60000);
+    } else if (evt.type === 'agent-files' && evt.projectId === state.current) {
+      loadRoster(); if ($('#panel').classList.contains('open') && state.tab === 'agent') renderPanel();
     } else if (evt.type === 'projects') { await loadProjects(); renderLog(); if ($('#panel').classList.contains('open')) renderPanel(); }
   };
 }

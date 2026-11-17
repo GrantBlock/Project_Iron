@@ -1,5 +1,6 @@
 import type Konva from "konva";
 import { Rect as KonvaRect } from "konva/lib/shapes/Rect";
+import { Image as KonvaImageNode } from "konva/lib/shapes/Image";
 
 export interface Flattened {
   /** PNG data URL, exactly `width` x `height` pixels. */
@@ -15,7 +16,7 @@ export interface Flattened {
  * restored before returning (the work is synchronous, so nothing repaints in between).
  */
 /** Editor-only nodes left out of every export: the Transformer and note boxes (with arrows) set to "Hide #". */
-const editorOnly = (stage: Konva.Stage) => [...stage.find("Transformer"), ...stage.find(".note-hidden")];
+const editorOnly = (stage: Konva.Stage) => [...stage.find("Transformer"), ...stage.find(".note-hidden"), ...stage.find(".print-area")];
 
 export function flatten(stage: Konva.Stage, size: { width: number; height: number }): Flattened {
   const { width, height } = size;
@@ -72,11 +73,20 @@ export function contentBounds(image: { width: number; height: number }, rects: B
   return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
 }
 
+/** A picture drawn under the shapes for one flatten (the Markdown page, RUN3 T34), at (0, 0) in image pixels. */
+export interface Under {
+  image: HTMLImageElement | HTMLCanvasElement;
+  width: number;
+  height: number;
+}
+
 /**
  * Render any area of the canvas (image pixels, may extend past the image) at source
- * resolution, with `background` behind the image. Same exclusions as Export.
+ * resolution (or `pixelRatio` times it), with `background` behind the image, and `under` above the background.
+ * Same exclusions as Export.
  */
-export function flattenArea(stage: Konva.Stage, area: Box, background: string): Flattened {
+export function flattenArea(stage: Konva.Stage, area: Box, background: string, opts: { under?: Under; pixelRatio?: number } = {}): Flattened {
+  const ratio = opts.pixelRatio ?? 1;
   const box = { x: Math.floor(area.x), y: Math.floor(area.y), width: 0, height: 0 };
   box.width = Math.ceil(area.x + area.width) - box.x;
   box.height = Math.ceil(area.y + area.height) - box.y;
@@ -86,19 +96,26 @@ export function flattenArea(stage: Konva.Stage, area: Box, background: string): 
   const wasVisible = hidden.map((t) => t.visible());
   const layer = stage.getLayers()[0];
   let bg: Konva.Rect | null = null;
+  let under: KonvaImageNode | null = null;
   try {
     hidden.forEach((t) => t.visible(false));
     stage.position({ x: 0, y: 0 });
     stage.scale({ x: 1, y: 1 });
     if (layer) {
+      if (opts.under) {
+        under = new KonvaImageNode({ x: 0, y: 0, image: opts.under.image, width: opts.under.width, height: opts.under.height, listening: false });
+        layer.add(under);
+        under.moveToBottom();
+      }
       bg = new KonvaRect({ ...box, fill: background, listening: false });
       layer.add(bg);
       bg.moveToBottom();
     }
-    const dataUrl = stage.toDataURL({ ...box, pixelRatio: 1, mimeType: "image/png" });
-    return { dataUrl, width: box.width, height: box.height };
+    const dataUrl = stage.toDataURL({ ...box, pixelRatio: ratio, mimeType: "image/png" });
+    return { dataUrl, width: Math.round(box.width * ratio), height: Math.round(box.height * ratio) };
   } finally {
     bg?.destroy();
+    under?.destroy();
     stage.position({ x: saved.x, y: saved.y });
     stage.scale({ x: saved.sx, y: saved.sy });
     hidden.forEach((t, i) => t.visible(wasVisible[i]));
@@ -170,10 +187,30 @@ export function downloadPng(dataUrl: string, fileName: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/** Put a PNG data URL on the system clipboard as an image (WebView2/WebKit async Clipboard API). */
-export async function copyPngToClipboard(dataUrl: string, clipboard: Clipboard | undefined = globalThis.navigator?.clipboard): Promise<void> {
-  if (!clipboard?.write || typeof ClipboardItem === "undefined") {
-    throw new Error("This window cannot write images to the clipboard — use Export instead.");
+/** The desktop shell's own clipboard write (`window.collide.copyImage`), when the page runs in the Collide app. */
+type NativeCopy = (dataUrl: string) => Promise<void>;
+const nativeCopy = (): NativeCopy | undefined => {
+  const bridge = typeof window === "undefined" ? undefined : window.collide;
+  return bridge ? (png) => bridge.copyImage(png) : undefined;
+};
+
+/**
+ * Put a PNG data URL on the system clipboard as an image (async Clipboard API).
+ * In the desktop app, if the web clipboard refuses (e.g. the window is not focused
+ * yet right after a snip), the shell writes the image instead.
+ */
+export async function copyPngToClipboard(
+  dataUrl: string,
+  clipboard: Clipboard | undefined = globalThis.navigator?.clipboard,
+  native: NativeCopy | undefined = nativeCopy(),
+): Promise<void> {
+  try {
+    if (!clipboard?.write || typeof ClipboardItem === "undefined") {
+      throw new Error("This window cannot write images to the clipboard — use Export instead.");
+    }
+    await clipboard.write([new ClipboardItem({ "image/png": dataUrlToBlob(dataUrl) })]);
+  } catch (e) {
+    if (!native) throw e;
+    await native(dataUrl);
   }
-  await clipboard.write([new ClipboardItem({ "image/png": dataUrlToBlob(dataUrl) })]);
 }

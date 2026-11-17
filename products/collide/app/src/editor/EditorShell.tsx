@@ -1,31 +1,29 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ChangeEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { MutableRefObject, ReactNode } from "react";
 import { flushSync } from "react-dom";
 import type { AnnotationsDoc, Shape } from "../model";
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
-import { GlassPanel, Toast } from "../ds";
-import { createSnipFlow, snipName } from "../snip/flow";
-import { isTauri, SNIP_REQUEST_EVENT, tauriDeps } from "../snip/tauriDeps";
 import { Canvas, cssVar, type CanvasHandle, type LoadedImage } from "./Canvas";
+import { historyReducer, initialHistory, type HistoryState } from "./history";
 import { nextShapeId, type NewShape, type ShapePatch } from "./store";
-import { DEFAULT_STROKE_WIDTH, TOOL_KEYS, type Tool } from "./tools";
+import { drawsWithColor, loadPenMemory, savePenMemory, TOOL_KEYS, type Role, type Tool } from "./tools";
 import { useEditorStore } from "./useEditorStore";
-import { Sidebar } from "./Sidebar";
 import { StatusBar } from "./StatusBar";
 import { CalloutsPanel } from "./CalloutsPanel";
-import { SNIP_DELAYS, Toolbar } from "./Toolbar";
+import { Toolbar } from "./Toolbar";
 import { copyPngToClipboard, dataUrlToBlob, downloadPng, exportFileName, flatten, flattenArea, flattenFit, type Flattened } from "../io/flatten";
-import { createMarkupStore, isPng, MarkupError, markupFolderName, type MarkupStore } from "../io";
-import { fitView, recentre, screenToImage, type Point, type Size, type View } from "./viewport";
+import { placeBeside, printArea } from "./engine";
+import { isPng, MarkupError, markupFolderName, type ImageFile, type MarkupStore } from "../io";
+import type { SnipPackage } from "../io/collideFile";
+import { fitArea, recentre, screenToImage, type Point, type Size, type View } from "./viewport";
+import type { RefInput } from "./refState";
 
-/** Resolve a swatch value ("var(--token)") to the hex string stored in the doc. */
-const resolveColor = (c: string) => {
-  const m = /^var\((--[\w-]+)\)$/.exec(c);
-  return m ? cssVar(m[1]) : c;
-};
+// The Snip editor (canvas, tools, callouts) as it lives inside a Snip tab (RUN3 T31).
+// Everything a tab must keep while another tab is in front is in its `SnipSession`, which the shell owns:
+// the image, the document with its undo history, the view and where it is saved. Only the tab in front
+// has an editor on screen; switching tabs mounts the editor again from the session.
 
-function loadImage(url: string, name: string): Promise<LoadedImage> {
+
+export function loadImage(url: string, name: string): Promise<LoadedImage> {
   return new Promise((resolve, reject) => {
     const el = new window.Image();
     el.onload = () => resolve({ el, name, width: el.naturalWidth, height: el.naturalHeight });
@@ -34,7 +32,7 @@ function loadImage(url: string, name: string): Promise<LoadedImage> {
   });
 }
 
-async function toPngBytes(blob: Blob): Promise<Uint8Array> {
+export async function toPngBytes(blob: Blob): Promise<Uint8Array> {
   const bytes = new Uint8Array(await blob.arrayBuffer());
   if (isPng(bytes)) return bytes;
   // Other formats (jpeg, webp): re-encode so source.png is really a PNG of the same pixels.
@@ -48,7 +46,80 @@ async function toPngBytes(blob: Blob): Promise<Uint8Array> {
   return new Uint8Array(await out.arrayBuffer());
 }
 
-const nameFromUrl = (url: string) => decodeURIComponent(url.split("?")[0].split("/").pop() || "image");
+/** An added image's picture and its PNG bytes (RUN3 T33), by file name (`image-<n>.png`). */
+export interface Picture {
+  el: HTMLImageElement;
+  png: Uint8Array;
+}
+
+/** Load added images' files (as opened from a markup folder) into pictures. A file that cannot be decoded is left out. */
+export async function loadPictures(files: readonly ImageFile[]): Promise<Map<string, Picture>> {
+  const out = new Map<string, Picture>();
+  for (const f of files) {
+    const url = URL.createObjectURL(new Blob([f.png as BlobPart], { type: "image/png" }));
+    try {
+      out.set(f.name, { el: (await loadImage(url, f.name)).el, png: f.png });
+    } catch {
+      /* the item stays, drawn as an empty frame */
+    }
+  }
+  return out;
+}
+
+/** The next free added-image file name. */
+export function nextImageFile(taken: Iterable<string>): string {
+  let max = 0;
+  for (const n of taken) {
+    const m = /^image-(\d+)\.png$/.exec(n);
+    if (m) max = Math.max(max, Number(m[1]));
+  }
+  return `image-${max + 1}.png`;
+}
+
+/** What one Snip tab keeps. The editor reads it when it mounts and writes every change back. */
+export interface SnipSession {
+  image: LoadedImage;
+  /** The document, the selection and the undo steps. */
+  history: HistoryState;
+  /** Zoom and pan; null until the editor has fitted the image once. */
+  view: View | null;
+  /** True while the view is "fit to window". */
+  fitted: boolean;
+  /** Original bytes of the image (as PNG) and the markup folder it was saved to / opened from. */
+  source: { bytes: Promise<Uint8Array>; folder: string | null };
+  /** The document as last saved or opened. Null = never saved, so the tab has unsaved changes from the start. */
+  baseDoc: AnnotationsDoc | null;
+  /** Added images' pictures by file name (RUN3 T33). Kept for undo and redo; Save writes the ones still on the canvas. */
+  pictures: Map<string, Picture>;
+  /** RUN3 T35: the Collide file this tab was saved as or opened from (its path, or its name in a browser). */
+  collideFile?: string;
+}
+
+/** A session for an image: a new empty document, or `doc` (a saved markup or a sample, counted as saved). */
+export function createSnipSession(
+  image: LoadedImage,
+  bytes: Promise<Uint8Array>,
+  opened?: { doc: AnnotationsDoc; folder: string | null; pictures?: Map<string, Picture> },
+): SnipSession {
+  bytes.catch(() => undefined); // awaited on save; a failure is reported there
+  const history = historyReducer(initialHistory, { type: "load", width: image.width, height: image.height, doc: opened?.doc });
+  return { image, history, view: null, fitted: true, source: { bytes, folder: opened?.folder ?? null }, baseDoc: opened ? history.present.doc : null, pictures: opened?.pictures ?? new Map() };
+}
+
+/**
+ * The tool, colour and line thickness: one set for every Snip tab. `color` is the pressed colour (none after a draw);
+ * `lastColor` and the thickness are remembered across reloads (RUN3 T32, Grant 2026-11-15).
+ */
+export interface Pen {
+  tool: Tool;
+  color: Role | null;
+  lastColor: Role;
+  strokeWidth: number;
+}
+export const defaultPen = (): Pen => {
+  const m = loadPenMemory("snip");
+  return { tool: "select", color: null, lastColor: m.role, strokeWidth: m.stroke };
+};
 
 export interface CollideTestState {
   image: { name: string; width: number; height: number } | null;
@@ -60,220 +131,271 @@ export interface CollideTestState {
   selectedId: string | null;
 }
 
-export interface CollideHook {
-  /** Load an image from a URL, fit it to the canvas and clear shapes. Resolves with its size. */
-  openImage: (url: string, name?: string) => Promise<{ width: number; height: number }>;
-  /** Add a test rectangle (image pixels). Returns its id. */
+/** What the shell (and through it the test hook) can ask of the editor in front. */
+export interface SnipEditorApi {
+  refInput: () => RefInput;
   seedShape: (s?: Partial<Pick<Shape, "x" | "y" | "w" | "h">>) => string;
   getState: () => CollideTestState;
-  /** The current annotations doc (image pixels), or null before an image is open. */
   getDoc: () => AnnotationsDoc | null;
-  /** Convert a point in canvas-container coordinates to image pixels using the current view. */
   screenToImage: (p: Point) => Point;
-  /** Open a saved markup: by folder id, or the picker/most recent when omitted. Resolves with the folder name, or null if cancelled. */
-  openMarkup: (folder?: string) => Promise<string | null>;
-  /** Save the current markup. Resolves with the folder id. */
+  /** Save the markup. Resolves with the folder id. */
   saveMarkup: () => Promise<string>;
-  /** Flatten to a PNG at source size (no download). Resolves with the data URL and its size. */
+  /** Flatten to a PNG at source size (no download). */
   exportPng: () => Promise<Flattened>;
   copyFit: () => Promise<Flattened>;
-  /** What a finished snip does: open the crop, then copy it to the clipboard. */
-  openSnip: (url: string, name: string) => Promise<unknown>;
+  /** Copy the image plus every annotation to the clipboard and say so with `title`. */
+  copyToClipboard: (title: string) => Promise<void>;
+  /**
+   * RUN3 T33: add an image (Add snip, paste) beside the content: as tall as the base image, aspect kept, selected,
+   * the view fitted to the grown canvas. One undo step. Resolves with the image's own size.
+   */
+  addImage: (url: string) => Promise<{ width: number; height: number }>;
+  /** RUN3 T35: copy the print area to the clipboard with no toast. Rejects when the clipboard refuses. */
+  copyQuiet: () => Promise<void>;
+  /** RUN3 T35: everything a .collide file holds: the doc as Save writes it, the source and added images, and Copy's picture. */
+  collidePackage: (title: string) => Promise<SnipPackage>;
 }
 
-declare global {
-  interface Window {
-    __collide?: CollideHook;
-  }
+export interface EditorNotice {
+  tone: "error" | "success";
+  title: string;
+  description: string;
 }
 
-export function EditorShell() {
-  const [image, setImage] = useState<LoadedImage | null>(null);
-  const { state, dispatch, stateRef, canUndo, canRedo } = useEditorStore();
+interface Props {
+  session: SnipSession;
+  /** Shared by every Snip tab; the editor keeps it up to date. */
+  pen: Pen;
+  store: () => MarkupStore;
+  apiRef: MutableRefObject<SnipEditorApi | null>;
+  notify: (n: EditorNotice | null) => void;
+  /** The document changed (or was saved): does the tab have unsaved changes now? */
+  onDirty: (dirty: boolean) => void;
+  /** Saved: the folder id the store gave, and the folder's name. */
+  onSaved: (id: string, folderName: string) => void;
+  /** The tab's header (name, Save, Close), given the editor's Save. */
+  head: (save: { onSave: () => void; canSave: boolean }) => ReactNode;
+  /** Changes when the theme does, so the canvas repaints with the theme's colours. */
+  themeKey: string;
+  /** RUN3 T35: the toolbar's Save as .collide. */
+  onSaveCollide?: () => void;
+}
+
+export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSaved, head, themeKey, onSaveCollide }: Props) {
+  const image = session.image;
+  const { state, dispatch, stateRef, canUndo, canRedo } = useEditorStore(session.history, (h) => (session.history = h));
   const shapes = useMemo(() => state.doc?.shapes ?? [], [state.doc]);
-  const [view, setViewState] = useState<View>({ scale: 1, x: 0, y: 0 });
+  const [view, setViewState] = useState<View>(session.view ?? { scale: 1, x: 0, y: 0 });
   // True while the view is "fit to window": resizing refits and recentres. A user zoom/pan clears it; Ctrl+0 sets it again.
-  const fittedRef = useRef(true);
+  const fittedRef = useRef(session.view ? session.fitted : true);
   const setView = useCallback((update: View | ((v: View) => View)) => {
     fittedRef.current = false;
     setViewState(update);
   }, []);
-  const [tool, setTool] = useState<Tool>("select");
-  // New snip delay (s). Remembered on this computer only; storage may be unavailable, so never required.
-  const [snipDelay, setSnipDelayState] = useState<number>(() => {
-    try {
-      const v = Number(localStorage.getItem("collide.snipDelay"));
-      return (SNIP_DELAYS as readonly number[]).includes(v) ? v : 0;
-    } catch {
-      return 0;
-    }
-  });
-  const setSnipDelay = useCallback((s: number) => {
-    setSnipDelayState(s);
-    try {
-      localStorage.setItem("collide.snipDelay", String(s));
-    } catch {
-      /* not remembered; still applies this session */
-    }
+  const [tool, setToolState] = useState<Tool>(pen.tool);
+  const [color, setColorState] = useState<Role | null>(pen.color);
+  const [lastColor, setLastColor] = useState<Role>(pen.lastColor);
+  const [strokeWidth, setStrokeWidthState] = useState<number>(pen.strokeWidth);
+  const lastColorRef = useRef(lastColor);
+  lastColorRef.current = lastColor;
+  // Picking a drawing tool with no colour pressed brings back the last colour.
+  const setTool = useCallback((t: Tool) => {
+    setToolState(t);
+    if (drawsWithColor(t)) setColorState((c) => c ?? lastColorRef.current);
   }, []);
-  const snipDelayRef = useRef(snipDelay);
-  snipDelayRef.current = snipDelay;
-  const [color, setColorState] = useState("var(--signal-500)");
-  const [strokeWidth, setStrokeWidthState] = useState<number>(DEFAULT_STROKE_WIDTH);
+  const [focusNote, setFocusNote] = useState<{ id: string; n: number } | null>(null);
   const sizeRef = useRef<Size>({ width: 0, height: 0 });
   const handleRef = useRef<CanvasHandle | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+  // Added images' pictures for the canvas (RUN3 T33); the session's map only grows, and a new image is a new document.
+  const pictures = useMemo(() => new Map([...session.pictures].map(([k, v]) => [k, v.el])), [session, state.doc]);
 
-  const live = useRef({ image, view });
-  live.current = { image, view };
+  // What the hook and the window-level handlers read, as of the last render; the session and the pen follow.
+  const live = useRef({ view, tool, color, strokeWidth });
+  live.current = { view, tool, color, strokeWidth };
+  useEffect(() => {
+    session.view = view;
+    session.fitted = fittedRef.current;
+    pen.tool = tool;
+    pen.color = color;
+    pen.lastColor = lastColor;
+    pen.strokeWidth = strokeWidth;
+  });
 
-  const onSize = useCallback((s: Size) => {
-    const prev = sizeRef.current;
-    sizeRef.current = s;
-    const img = live.current.image;
-    if (!img || (prev.width === s.width && prev.height === s.height)) return;
-    if (fittedRef.current || prev.width === 0 || prev.height === 0) setViewState(fitView(s, img));
-    else setViewState((v) => recentre(v, prev, s));
-  }, []);
+  // The print area (image, shapes and shown bubbles, tight margin): Fit and Copy use it.
+  const areaNow = useCallback(
+    () => printArea(image, stateRef.current.doc?.shapes ?? [], handleRef.current?.notes() ?? new Map()),
+    [image, stateRef],
+  );
+
+  // The view a tab had comes back as it was; a fitted view (and a new tab) fits to the canvas.
+  const restore = useRef(session.view !== null && !session.fitted);
+  const onSize = useCallback(
+    (s: Size) => {
+      const prev = sizeRef.current;
+      if (s.width <= 0 || s.height <= 0 || (prev.width === s.width && prev.height === s.height)) return;
+      sizeRef.current = s;
+      const first = prev.width === 0 || prev.height === 0;
+      if (first && restore.current) return;
+      if (fittedRef.current || first) setViewState(fitArea(s, areaNow()));
+      else setViewState((v) => recentre(v, prev, s));
+    },
+    [areaNow],
+  );
 
   const fitToWindow = useCallback(() => {
-    const img = live.current.image;
-    if (!img) return;
     fittedRef.current = true;
-    setViewState(fitView(sizeRef.current, img));
-  }, []);
+    setViewState(fitArea(sizeRef.current, areaNow()));
+  }, [areaNow]);
 
-  const storeRef = useRef<MarkupStore | null>(null);
-  const getStore = () => (storeRef.current ??= createMarkupStore());
-  /** Original bytes of the open image (as PNG) and the markup folder it was saved to / opened from. */
-  const sourceRef = useRef<{ bytes: Promise<Uint8Array>; folder: string | null } | null>(null);
-
-  const showImage = useCallback((img: LoadedImage, doc?: AnnotationsDoc) => {
-    // Commit synchronously so the Konva nodes exist when the promise resolves (test hook relies on it).
-    flushSync(() => {
-      setImage(img);
-      dispatch({ type: "load", width: img.width, height: img.height, doc });
-      fittedRef.current = true;
-      setViewState(fitView(sizeRef.current, img));
-    });
-    live.current = { image: img, view: fitView(sizeRef.current, img) };
-    return { width: img.width, height: img.height };
-  }, [dispatch]);
-
-  const open = useCallback(async (url: string, name: string) => {
-    const img = await loadImage(url, name);
-    // Keep the original bytes so source.png is the untouched source image (fetched lazily, awaited on save).
-    const bytes = fetch(url).then((r) => r.blob()).then(toPngBytes);
-    bytes.catch(() => undefined);
-    sourceRef.current = { bytes, folder: null };
-    return showImage(img);
-  }, [showImage]);
+  // Unsaved changes: the document is not the one last saved or opened.
+  const dirty = state.doc !== session.baseDoc;
+  const dirtyRef = useRef(onDirty);
+  dirtyRef.current = onDirty;
+  useEffect(() => {
+    dirtyRef.current(dirty);
+  }, [dirty]);
 
   const copyFit = useCallback(async (): Promise<Flattened> => {
-    const { image: img } = live.current;
     const stage = handleRef.current?.stage();
-    if (!img || !stage) throw new Error("Nothing to copy: no image is open.");
-    return flattenFit(stage, img, cssVar("--bg-canvas"));
-  }, []);
+    if (!stage) throw new Error("Nothing to copy: no image is open.");
+    return flattenFit(stage, image, cssVar("--bg-canvas"));
+  }, [image]);
 
   const exportPng = useCallback(async (): Promise<Flattened> => {
-    const { image: img } = live.current;
     const stage = handleRef.current?.stage();
-    if (!img || !stage) throw new Error("Nothing to export: no image is open.");
-    return flatten(stage, img);
-  }, []);
+    if (!stage) throw new Error("Nothing to export: no image is open.");
+    return flatten(stage, image);
+  }, [image]);
 
-  const [notice, setNotice] = useState<{ tone: "error" | "success"; title: string; description: string } | null>(null);
-  const fail = useCallback((e: unknown, fallbackTitle: string) => {
-    const title = e instanceof MarkupError ? e.title : fallbackTitle;
-    const description = e instanceof Error ? e.message : String(e);
-    setNotice({ tone: "error", title, description });
-  }, []);
+  const fail = useCallback(
+    (e: unknown, fallbackTitle: string) => {
+      const title = e instanceof MarkupError ? e.title : fallbackTitle;
+      const description = e instanceof Error ? e.message : String(e);
+      notify({ tone: "error", title, description });
+    },
+    [notify],
+  );
 
+  const savedRef = useRef(onSaved);
+  savedRef.current = onSaved;
+  /** The document as Save writes it, with the added images still on the canvas (T33) listed, and their files. */
+  const withImages = useCallback((doc: AnnotationsDoc) => {
+    const used = [...new Set(doc.shapes.flatMap((s) => (s.type === "image" ? [s.src] : [])))];
+    const images = used.flatMap((name) => {
+      const p = session.pictures.get(name);
+      return p ? [{ name, png: p.png, width: p.el.naturalWidth, height: p.el.naturalHeight }] : [];
+    });
+    const { images: _old, ...plain } = doc;
+    void _old;
+    const annotations: AnnotationsDoc = images.length ? { ...plain, images: images.map((i) => ({ file: i.name, width: i.width, height: i.height })) } : plain;
+    return { annotations, images };
+  }, [session]);
   const saveMarkup = useCallback(async (): Promise<string> => {
-    const { image: img } = live.current;
     const doc = stateRef.current.doc;
-    const src = sourceRef.current;
-    if (!img || !doc || !src) throw new MarkupError("Could not save markup", "No image is open. Open an image, then save.");
+    const src = session.source;
+    if (!doc) throw new MarkupError("Could not save markup", "No image is open. Open an image, then save.");
     const flat = await exportPng();
     const exportBytes = new Uint8Array(await dataUrlToBlob(flat.dataUrl).arrayBuffer());
-    const folderName = src.folder ?? markupFolderName(img.name);
-    const id = await getStore().save(folderName, { sourcePng: await src.bytes, annotations: doc, exportPng: exportBytes });
+    const folderName = src.folder ?? markupFolderName(image.name);
+    // Added images (T33): the ones still on the canvas, as files beside source.png, listed in annotations.json.
+    const { annotations, images } = withImages(doc);
+    const id = await store().save(folderName, {
+      sourcePng: await src.bytes,
+      annotations,
+      exportPng: exportBytes,
+      ...(images.length ? { images: images.map((i) => ({ name: i.name, png: i.png })) } : {}),
+    });
     src.folder = id.replace(/[\\/]+$/, "").split(/[\\/]/).pop() ?? id;
+    session.baseDoc = doc;
+    dirtyRef.current(stateRef.current.doc !== doc);
+    savedRef.current(id, src.folder);
     return id;
-  }, [exportPng, stateRef]);
-
-  const openMarkup = useCallback(async (folder?: string): Promise<string | null> => {
-    const store = getStore();
-    const id = folder ?? (await store.pick());
-    if (!id) return null;
-    const m = await store.open(id);
-    const blob = new Blob([m.sourcePng as BlobPart], { type: "image/png" });
-    const img = await loadImage(URL.createObjectURL(blob), m.folderName);
-    if (img.width !== m.annotations.source.width || img.height !== m.annotations.source.height) {
-      throw new MarkupError(
-        "Could not open markup",
-        `source.png is ${img.width}×${img.height} but annotations.json says ${m.annotations.source.width}×${m.annotations.source.height}. Restore the matching source.png or re-save the markup.`,
-      );
-    }
-    sourceRef.current = { bytes: Promise.resolve(m.sourcePng), folder: m.folderName };
-    showImage(img, m.annotations);
-    return m.folderName;
-  }, [showImage]);
+  }, [exportPng, image, session, stateRef, store, withImages]);
 
   const onSave = useCallback(() => {
-    setNotice(null);
+    notify(null);
     saveMarkup().then(
-      (id) => setNotice({ tone: "success", title: "Markup saved", description: id }),
+      (id) => notify({ tone: "success", title: "Markup saved", description: id }),
       (e: unknown) => fail(e, "Could not save markup"),
     );
-  }, [saveMarkup, fail]);
-  const onOpenMarkup = useCallback(() => {
-    setNotice(null);
-    openMarkup().then(
-      (n) => n && setNotice({ tone: "success", title: "Markup opened", description: n }),
-      (e: unknown) => fail(e, "Could not open markup"),
-    );
-  }, [openMarkup, fail]);
+  }, [saveMarkup, fail, notify]);
 
-  const [exportError, setExportError] = useState(false);
   const onExport = useCallback(() => {
-    setExportError(false);
+    notify(null);
     void exportPng().then(
-      (f) => downloadPng(f.dataUrl, exportFileName(live.current.image?.name ?? "image")),
-      () => setExportError(true),
+      (f) => downloadPng(f.dataUrl, exportFileName(image.name)),
+      () => notify({ tone: "error", title: "Export failed", description: "The image could not be drawn. Try again or reopen the image." }),
     );
-  }, [exportPng]);
+  }, [exportPng, image, notify]);
 
-  // Copy: the image plus every annotation (auto-cropped, canvas background outside the image) to the clipboard.
+  // Copy: the print area (the image, shapes and shown bubbles, tight margin) to the clipboard.
+  const copyArea = useCallback(async (): Promise<Flattened> => {
+    const stage = handleRef.current?.stage();
+    if (!stage) throw new Error("Nothing to copy: no image is open.");
+    const a = areaNow();
+    return flattenArea(stage, { x: a.x, y: a.y, width: a.w, height: a.h }, cssVar("--bg-canvas"));
+  }, [areaNow]);
   const copyToClipboard = useCallback(
     (title: string) =>
-      copyFit()
-        .then((f) => copyPngToClipboard(f.dataUrl))
+      copyArea()
+        .then(async (f) => {
+          await copyPngToClipboard(f.dataUrl);
+          return f;
+        })
         .then(
-          () => setNotice({ tone: "success", title, description: "Paste the marked-up image into any app." }),
+          (f) => notify({ tone: "success", title, description: `${f.width} × ${f.height} with note boxes` }),
           (e: unknown) => fail(e, "Copy failed"),
         ),
-    [copyFit, fail],
+    [copyArea, fail, notify],
   );
-  const onCopy = useCallback(() => void copyToClipboard("Copied to clipboard"), [copyToClipboard]);
+  const onCopy = useCallback(() => void copyToClipboard("Copied the print area"), [copyToClipboard]);
+  const copyQuiet = useCallback(async () => {
+    await copyPngToClipboard((await copyArea()).dataUrl);
+  }, [copyArea]);
 
-  const onAdd = useCallback((shape: NewShape, numbered: boolean) => dispatch({ type: "add", shape, numbered }), [dispatch]);
+  // RUN3 T35: a .collide file's content: the doc (back to front), the sources as they are, and what Copy gives.
+  const collidePackage = useCallback(
+    async (title: string): Promise<SnipPackage> => {
+      const doc = stateRef.current.doc;
+      if (!doc) throw new MarkupError("Could not save the Collide file", "No image is open. Open an image, then save.");
+      const { annotations, images } = withImages(doc);
+      const preview = new Uint8Array(await dataUrlToBlob((await copyArea()).dataUrl).arrayBuffer());
+      return { kind: "snip", title, doc: annotations, source: await session.source.bytes, images: images.map((i) => ({ name: i.name, png: i.png })), preview };
+    },
+    [copyArea, session, stateRef, withImages],
+  );
+
+  // After a draw no colour stays pressed; a new callout's note takes the cursor.
+  const onAdd = useCallback(
+    (shape: NewShape, numbered: boolean) => {
+      const id = nextShapeId(stateRef.current.doc?.shapes ?? []);
+      dispatch({ type: "add", shape, numbered });
+      setColorState(null);
+      if (numbered) setFocusNote((f) => ({ id, n: (f?.n ?? 0) + 1 }));
+    },
+    [dispatch, stateRef],
+  );
+  const onRemoveMany = useCallback((ids: string[]) => dispatch({ type: "removeMany", ids }), [dispatch]);
+  const onPatch = useCallback((id: string, patch: ShapePatch) => dispatch({ type: "update", id, patch }), [dispatch]);
+  const onReorder = useCallback((id: string, index: number) => dispatch({ type: "reorder", id, index }), [dispatch]);
   const onUpdate = useCallback((id: string, patch: ShapePatch) => dispatch({ type: "update", id, patch }), [dispatch]);
   const onRemove = useCallback((id: string) => dispatch({ type: "remove", id }), [dispatch]);
   const onSelect = useCallback((id: string | null) => dispatch({ type: "select", id }), [dispatch]);
 
-  // Changing colour or stroke width also restyles the selected shape (not callout badges, which stay steel).
+  // Changing colour or stroke width also restyles the selected shape (not callout badges); both are remembered.
   const selectedShape = shapes.find((s) => s.id === state.selectedId);
   const restyle = (patch: ShapePatch) => {
-    if (selectedShape && selectedShape.type !== "callout") dispatch({ type: "update", id: selectedShape.id, patch });
+    if (tool === "select" && selectedShape && selectedShape.type !== "callout") dispatch({ type: "update", id: selectedShape.id, patch });
   };
-  const setColor = (c: string) => {
+  const setColor = (c: Role) => {
     setColorState(c);
-    restyle({ stroke: resolveColor(c) });
+    setLastColor(c);
+    savePenMemory("snip", { role: c, stroke: strokeWidth });
+    restyle({ stroke: c });
   };
   const setStrokeWidth = (w: number) => {
     setStrokeWidthState(w);
+    savePenMemory("snip", { role: lastColor, stroke: w });
     restyle({ strokeWidth: w });
   };
 
@@ -328,7 +450,7 @@ export function EditorShell() {
         return;
       }
       if (e.key === "Escape") {
-        setTool((t) => (t === "canvas-snip" ? "select" : t));
+        setTool("select");
         dispatch({ type: "select", id: null });
         return;
       }
@@ -337,94 +459,81 @@ export function EditorShell() {
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [dispatch, stateRef]);
+  }, [dispatch, stateRef, setTool]);
 
-  // T11: New snip button and the global hotkey (Rust emits SNIP_REQUEST_EVENT) both run the same flow.
-  // A finished snip opens in the editor and goes straight to the clipboard, like Snipping Tool.
-  // A failed copy only shows its own toast; the snip itself still counts as done.
-  const openSnip = useCallback(
-    async (url: string, name: string) => {
-      const size = await open(url, name);
-      await copyToClipboard("Snip copied to clipboard");
-      return size;
-    },
-    [open, copyToClipboard],
-  );
-  // Canvas snip: the dragged area of the canvas (image + markups) becomes a new markup and is copied.
-  const onCanvasSnip = useCallback(
-    (area: { x: number; y: number; w: number; h: number }) => {
+  // With a drawing tool on, a press outside the canvas (not on the toolbar) goes back to Select and still lands.
+  useEffect(() => {
+    const down = (e: PointerEvent) => {
+      if (live.current.tool === "select") return;
+      const t = e.target;
+      if (!(t instanceof Element)) return;
+      if (t.closest('[data-testid="canvas"]') || t.closest('[role="toolbar"]')) return;
       setTool("select");
-      const stage = handleRef.current?.stage();
-      if (!stage) return;
-      let flat: Flattened;
-      try {
-        flat = flattenArea(stage, { x: area.x, y: area.y, width: area.w, height: area.h }, cssVar("--bg-canvas"));
-      } catch (e) {
-        fail(e, "Canvas snip failed");
-        return;
-      }
-      void openSnip(flat.dataUrl, snipName(new Date()).replace(/^snip-/, "canvas-snip-")).catch((e: unknown) => fail(e, "Canvas snip failed"));
+    };
+    window.addEventListener("pointerdown", down, true);
+    return () => window.removeEventListener("pointerdown", down, true);
+  }, [setTool]);
+
+  const addImage = useCallback(
+    async (url: string) => {
+      const loaded = await loadImage(url, "image");
+      const png = await toPngBytes(await (await fetch(url)).blob());
+      const src = nextImageFile([...session.pictures.keys(), ...(stateRef.current.doc?.shapes ?? []).flatMap((s) => (s.type === "image" ? [s.src] : []))]);
+      session.pictures.set(src, { el: loaded.el, png });
+      const at = placeBeside(image, stateRef.current.doc?.shapes ?? [], loaded);
+      flushSync(() => {
+        setTool("select");
+        dispatch({ type: "add", shape: { type: "image", src, ...at, stroke: "gray", strokeWidth: 0 } });
+      });
+      // The canvas grew: fit the view to it (as the prototype does).
+      requestAnimationFrame(fitToWindow);
+      return { width: loaded.width, height: loaded.height };
     },
-    [openSnip, fail],
+    [dispatch, fitToWindow, image, session, setTool, stateRef],
   );
 
-  const openSnipRef = useRef(openSnip);
-  openSnipRef.current = openSnip;
-
-  const snipRef = useRef<ReturnType<typeof createSnipFlow>>({ start: async () => undefined, isBusy: () => false });
-  useEffect(() => {
-    const flow = createSnipFlow(tauriDeps({ openImage: (url, name) => openSnipRef.current(url, name), notify: setNotice, delayMs: () => snipDelayRef.current * 1000 }));
-    snipRef.current = flow;
-    if (!isTauri()) return;
-    const un = listen(SNIP_REQUEST_EVENT, () => void flow.start());
-    void invoke("get_settings_status").then((s) => {
-      const warning = (s as { warning?: string | null } | null)?.warning;
-      if (warning) setNotice({ tone: "error", title: "Hotkey setting not used", description: warning });
-    }, () => undefined);
-    return () => void un.then((f) => f());
-  }, [open]);
-
-  const onFile = (e: ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f) void open(URL.createObjectURL(f), f.name);
-    e.target.value = "";
-  };
-
-  useEffect(() => {
-    const hook: CollideHook = {
-      openImage: (url, name) => open(url, name ?? nameFromUrl(url)),
+  // The shell reaches the editor in front through `apiRef`.
+  useLayoutEffect(() => {
+    const api: SnipEditorApi = {
+      refInput: () => ({
+        image,
+        shapes: stateRef.current.doc?.shapes ?? [],
+        selectedId: stateRef.current.selectedId,
+        tool: live.current.tool,
+        color: live.current.color,
+        strokeWidth: live.current.strokeWidth,
+        scale: live.current.view.scale,
+        fitted: fittedRef.current,
+        bubbles: handleRef.current?.notes(),
+      }),
       seedShape: (s) => {
         const id = nextShapeId(stateRef.current.doc?.shapes ?? []);
-        flushSync(() => dispatch({
-          type: "add",
-          shape: {
-            type: "rect",
-            x: s?.x ?? 100,
-            y: s?.y ?? 80,
-            w: s?.w ?? 120,
-            h: s?.h ?? 60,
-            stroke: cssVar("--signal-500"),
-            strokeWidth: 2,
-          },
-        }));
+        // Commit synchronously so the Konva node exists when this returns (the test hook relies on it).
+        flushSync(() =>
+          dispatch({
+            type: "add",
+            shape: { type: "rect", x: s?.x ?? 100, y: s?.y ?? 80, w: s?.w ?? 120, h: s?.h ?? 60, stroke: "red", strokeWidth: 2 },
+          }),
+        );
         return id;
       },
       getDoc: () => stateRef.current.doc,
       exportPng,
       copyFit,
-      openSnip,
-      openMarkup,
+      copyToClipboard,
+      addImage,
+      copyQuiet,
+      collidePackage,
       saveMarkup,
       screenToImage: (p) => screenToImage(live.current.view, p),
       getState: () => {
-        const { image: img } = live.current;
         const ss = stateRef.current.doc?.shapes ?? [];
         const stage = handleRef.current?.stage() ?? null;
         const bg = stage?.findOne(".background") ?? null;
         const inv = bg?.getAbsoluteTransform().copy().invert();
         return {
           selectedId: stateRef.current.selectedId,
-          image: img && { name: img.name, width: img.width, height: img.height },
+          image: { name: image.name, width: image.width, height: image.height },
           stage: stage && { scale: stage.scaleX(), x: stage.x(), y: stage.y(), width: stage.width(), height: stage.height() },
           shapes: ss.map((s) => ({ id: s.id, x: s.x, y: s.y, w: s.w, h: s.h })),
           shapesOnImage: ss.flatMap((s) => {
@@ -436,115 +545,65 @@ export function EditorShell() {
         };
       },
     };
-    window.__collide = hook;
+    apiRef.current = api;
     return () => {
-      delete window.__collide;
+      if (apiRef.current === api) apiRef.current = null;
     };
-  }, [open, dispatch, stateRef, exportPng, copyFit, openSnip, openMarkup, saveMarkup]);
-
-  // In the desktop app the OS window already has a title bar and border, so the in-app
-  // frame and "Collide" title row would show twice; fill the window edge to edge instead.
-  const desktop = isTauri();
+  }, [apiRef, image, dispatch, stateRef, exportPng, copyFit, copyToClipboard, saveMarkup, addImage, copyQuiet, collidePackage]);
 
   return (
-    <div
-      data-testid="app-root"
-      data-frame={desktop ? "native" : "framed"}
-      style={{
-        height: "100vh",
-        padding: desktop ? 0 : 14,
-        boxSizing: "border-box",
-        background: desktop ? "var(--bg-app)" : "var(--grain), var(--ambient-ember), var(--bg-canvas)",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <GlassPanel
-        radius="xl"
-        style={{
-          flex: 1,
-          minHeight: 0,
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-          ...(desktop ? { borderRadius: 0, border: 0, boxShadow: "none" } : {}),
-        }}
-      >
-        {!desktop && <div data-testid="app-title" style={{ height: 38, flex: "none", display: "flex", alignItems: "center", gap: 12, padding: "0 14px", borderBottom: "1px solid var(--line-1)" }}>
-          <span style={{ font: "600 15px/1 var(--font-sans)", letterSpacing: "-0.04em" }}>Collide</span>
-          <span style={{ font: "500 10.5px/1 var(--font-mono)", letterSpacing: "var(--tracking-label)", textTransform: "uppercase", color: "var(--text-4)" }}>
-            Snip &amp; Markup
-          </span>
-        </div>}
-        <Toolbar
+    <div className="wsfill" data-theme-key={themeKey}>
+      {/* Save stays on for an open snip, changed or not, as before the tabs: saving again writes the same folder (ISSUES 25). */}
+      {head({ onSave, canSave: true })}
+      <Toolbar
+        tool={tool}
+        setTool={setTool}
+        color={color}
+        setColor={setColor}
+        strokeWidth={strokeWidth}
+        setStrokeWidth={setStrokeWidth}
+        fileName={image.name}
+        onExport={onExport}
+        onCopy={onCopy}
+        onSaveCollide={onSaveCollide}
+        canExport
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
+      />
+      <div className="snipbody">
+        <Canvas
+          image={image}
+          shapes={shapes}
+          selectedId={state.selectedId}
           tool={tool}
-          setTool={setTool}
-          color={color}
-          setColor={setColor}
-          strokeWidth={strokeWidth}
-          setStrokeWidth={setStrokeWidth}
-          fileName={image?.name ?? "No image"}
-          onOpenFile={() => fileRef.current?.click()}
-          onNewSnip={() => void snipRef.current.start()}
-          snipDelay={snipDelay}
-          setSnipDelay={setSnipDelay}
-          onCanvasSnip={() => setTool((t) => (t === "canvas-snip" ? "select" : "canvas-snip"))}
-          canvasSnipActive={tool === "canvas-snip"}
-          onExport={onExport}
-          onCopy={onCopy}
-          canExport={!!image}
-          onSave={onSave}
-          onOpenMarkup={onOpenMarkup}
-          onUndo={undo}
-          onRedo={redo}
-          canUndo={canUndo}
-          canRedo={canRedo}
+          style={{ stroke: color ?? lastColor, strokeWidth }}
+          view={view}
+          onViewChange={setView}
+          onSize={onSize}
+          onAdd={onAdd}
+          onUpdate={onUpdate}
+          onRemove={onRemove}
+          onRemoveMany={onRemoveMany}
+          onSelect={onSelect}
+          handleRef={handleRef}
+          pictures={pictures}
         />
-        <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
-          <Sidebar current={image && { name: image.name, meta: `${image.width} × ${image.height}` }} />
-          <Canvas
-            image={image}
-            shapes={shapes}
-            selectedId={state.selectedId}
-            tool={tool}
-            style={{ stroke: resolveColor(color), strokeWidth }}
-            view={view}
-            onViewChange={setView}
-            onSize={onSize}
-            onAdd={onAdd}
-            onUpdate={onUpdate}
-            onRemove={onRemove}
-            onSelect={onSelect}
-            onCanvasSnip={onCanvasSnip}
-            handleRef={handleRef}
-          />
-          <CalloutsPanel
-            shapes={shapes}
-            selectedId={state.selectedId}
-            onSelect={onSelect}
-            onNote={onNote}
-            onCommit={onCommit}
-            onToggleHide={(id) => dispatch({ type: "update", id, patch: { hideNumber: !shapes.find((s) => s.id === id)?.hideNumber } })}
-          />
-        </div>
-        <StatusBar zoom={view.scale} dims={image && { width: image.width, height: image.height }} />
-      </GlassPanel>
-      {exportError && (
-        <div style={{ position: "fixed", right: 28, bottom: 52, zIndex: 10 }} data-testid="export-error">
-          <Toast
-            tone="error"
-            title="Export failed"
-            description="The image could not be drawn. Try again or reopen the image."
-            onClose={() => setExportError(false)}
-          />
-        </div>
-      )}
-      {notice && (
-        <div style={{ position: "fixed", right: 28, bottom: 100, zIndex: 10 }} data-testid="notice">
-          <Toast tone={notice.tone} title={notice.title} description={notice.description} onClose={() => setNotice(null)} />
-        </div>
-      )}
-      <input ref={fileRef} type="file" accept="image/*" hidden data-testid="file-input" onChange={onFile} />
+        <CalloutsPanel
+          shapes={shapes}
+          selectedId={state.selectedId}
+          onSelect={onSelect}
+          onNote={onNote}
+          onCommit={onCommit}
+          onPatch={onPatch}
+          onReorder={onReorder}
+          onRemove={onRemove}
+          focus={focusNote}
+          onEscape={() => setTool("select")}
+        />
+      </div>
+      <StatusBar zoom={view.scale} dims={{ width: image.width, height: image.height }} />
     </div>
   );
 }

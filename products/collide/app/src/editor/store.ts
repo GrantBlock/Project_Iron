@@ -21,6 +21,13 @@ export type ShapePatch = Partial<{
   text: string;
   fontSize: number;
   points: [number, number, number, number];
+  pts: number[];
+  hideText: boolean;
+  hideBubble: boolean;
+  hideOutline: boolean;
+  fillPct: number;
+  fill: boolean;
+  type: "rect" | "ellipse" | "line" | "cross" | "point";
 }>;
 
 export interface EditorState {
@@ -33,6 +40,10 @@ export type Action =
   | { type: "add"; shape: NewShape; numbered?: boolean }
   | { type: "update"; id: string; patch: ShapePatch }
   | { type: "remove"; id: string }
+  /** Remove several shapes in one step (the eraser). */
+  | { type: "removeMany"; ids: string[] }
+  /** Move a shape to `index` in draw order (0 = the back). */
+  | { type: "reorder"; id: string; index: number }
   | { type: "select"; id: string | null };
 
 export const initialState: EditorState = { doc: null, selectedId: null };
@@ -70,6 +81,24 @@ export function reducer(state: EditorState, action: Action): EditorState {
       if (!state.doc) return state;
       const shapes = state.doc.shapes.filter((s) => s.id !== action.id);
       return { doc: { ...state.doc, shapes }, selectedId: state.selectedId === action.id ? null : state.selectedId };
+    }
+    case "removeMany": {
+      if (!state.doc || action.ids.length === 0) return state;
+      const shapes = state.doc.shapes.filter((s) => !action.ids.includes(s.id));
+      if (shapes.length === state.doc.shapes.length) return state;
+      const selectedId = state.selectedId !== null && action.ids.includes(state.selectedId) ? null : state.selectedId;
+      return { doc: { ...state.doc, shapes }, selectedId };
+    }
+    case "reorder": {
+      if (!state.doc) return state;
+      const from = state.doc.shapes.findIndex((s) => s.id === action.id);
+      if (from < 0) return state;
+      const to = Math.max(0, Math.min(state.doc.shapes.length - 1, action.index));
+      if (to === from) return state;
+      const shapes = [...state.doc.shapes];
+      const [moved] = shapes.splice(from, 1);
+      shapes.splice(to, 0, moved);
+      return { ...state, doc: { ...state.doc, shapes } };
     }
     case "select":
       return state.doc && state.selectedId !== action.id ? { ...state, selectedId: action.id } : state;

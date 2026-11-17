@@ -6,7 +6,8 @@ test("save, reload, open: doc and image identical and still editable", async ({ 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   await page.waitForFunction(() => !!window.__collide);
-  await page.getByTestId("canvas").locator("canvas").first().waitFor();
+  // T31: home is the blank canvas; the Konva canvas comes with the Snip tab an image opens in.
+  await page.getByTestId("canvas").waitFor();
   await page.evaluate((u) => window.__collide!.openImage(u), FIXTURE);
 
   // Draw rect + ellipse + callout by hand, plus seeded shapes with notes.
@@ -36,7 +37,8 @@ test("save, reload, open: doc and image identical and still editable", async ({ 
 
   await page.reload();
   await page.waitForFunction(() => !!window.__collide);
-  await page.getByTestId("canvas").locator("canvas").first().waitFor();
+  // T31: home is the blank canvas; the Konva canvas comes with the Snip tab an image opens in.
+  await page.getByTestId("canvas").waitFor();
   expect(await page.evaluate(() => window.__collide!.getDoc())).toBeNull();
 
   await page.getByTestId("open-markup").click();

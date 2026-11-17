@@ -72,6 +72,30 @@ after installing the CLI). Add the CLI's install folder to the **System** PATH (
 just your user PATH) and restart Project Chat, or run `start.bat` instead of the
 `.exe`.
 
+## 0.4.1: one chat, the agent's own files, one question at a time
+
+0.4.1 goes back to the compact single-chat window of 0.3.6 (the 0.4.0 workspace with Files, editor and chat history is set aside; its server endpoints remain).
+
+- **One running chat** per project, trimmed to the newest 30 messages (`maxMessages`). Reports stay in their own list (newest 30, the latest 5 always kept). Chats made in 0.4.0 are merged into the one chat on first start.
+- **The agent's files:** `personality.md`, `skills.md`, `memory.md` and `plans.md`, stored only on the server PC. The agent reads them before every reply and changes them **only through this chat**, writing the whole file in a `<<<WRITE memory.md` … `WRITE>>>` block. Each change shows under the reply as "Updated Lydia / memory.md · Undo". Personality and skills change only when you ask. Menu → (agent name) shows the four files read-only.
+- **One question at a time:** the agent asks at most one question per reply. Others go in the "## Question roster" of `plans.md`; the bar above the reply box shows how many are waiting and **Ask next** asks for the next one. Your answer is recorded in `memory.md` and the question leaves the roster.
+
+## The agent's tools and files
+
+**Read-only tools.** When the agent answers in the chat it runs the `claude` CLI with read-only tools and `--permission-mode dontAsk`, so anything not on this list is refused without asking:
+
+- `Read`, `Grep`, `Glob` in the project folder and the agent's own files
+- `gh pr view/list/diff`, `gh issue view/list`, `gh run list/view`, `git log/status/diff/show` (needs `gh` installed and signed in on the server PC)
+- Web reads of `github.com`, `api.github.com` and `raw.githubusercontent.com`
+
+It cannot edit files or run anything else. When a file should change, it shows the exact new text and names the file; you apply it. An older CLI without these options gets a reply without tools.
+
+**Project folder.** `PUT /api/projects/<id>/settings` with `{"workspace":"T:\\Main_Workspace\\Project-Iron-PC\\products\\collide"}` sets the folder the agent reads and works in (it must exist on the server PC). The app UI for this comes with the Files and editor build.
+
+**Agent files.** Each project's agent has `personality.md`, `skills.md` and `memory.md` in `%APPDATA%\\Project Chat\\data\\agents\\<project>\\` (only on the server PC, never in the repository). They are created with short defaults, read before every reply, and edited with `GET`/`PUT /api/projects/<id>/agent-files/<name>`.
+
+**Read this file / write.** The chat request can share one file (`context: {file, path}` for a file in the project folder, or `{agentFile: "memory"}` for an agent file). The agent reads it from disk with that message and may rewrite **only that file**, only when asked, by replying with the whole new file between `<<<WRITE` and `WRITE>>>` lines. Allowed: `.md`, `.markdown`, `.txt` inside the project folder, and the agent's own files; anything else is refused. Before every write the old version is copied to `data\\backups\\<project>\\`, and the chat shows "Edited <file> · Undo" (`POST /api/projects/<id>/undo/<messageId>`).
+
 ## GitHub report source (cloud agents)
 
 Cloud agents (Claude Code scheduled sessions) can't reach this PC, so they post the nightly report as a **comment on a GitHub issue** and Agent Chat pulls it in.

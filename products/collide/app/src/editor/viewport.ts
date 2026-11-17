@@ -49,6 +49,18 @@ export function fitView(container: Size, image: Size, padding = 48): View {
   };
 }
 
+/** Fit an area of the canvas (image pixels, may lie past the image) to the container, never above 100%, centred. */
+export function fitArea(container: Size, area: { x: number; y: number; w: number; h: number }, padding = 28): View {
+  const availW = Math.max(1, container.width - padding * 2);
+  const availH = Math.max(1, container.height - padding * 2);
+  const scale = clampScale(Math.min(1, availW / area.w, availH / area.h));
+  return {
+    scale,
+    x: (container.width - area.w * scale) / 2 - area.x * scale,
+    y: (container.height - area.h * scale) / 2 - area.y * scale,
+  };
+}
+
 /** Keep the image point at the old container's centre at the new container's centre, same scale. */
 export function recentre(v: View, from: Size, to: Size): View {
   return { ...v, x: v.x + (to.width - from.width) / 2, y: v.y + (to.height - from.height) / 2 };

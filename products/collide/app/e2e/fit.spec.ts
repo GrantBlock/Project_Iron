@@ -12,7 +12,8 @@ test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   await page.waitForFunction(() => !!window.__collide);
-  await page.getByTestId("canvas").locator("canvas").first().waitFor();
+  // T31: home is the blank canvas; the Konva canvas comes with the Snip tab an image opens in.
+  await page.getByTestId("canvas").waitFor();
   await page.evaluate((u) => window.__collide!.openImage(u), FIXTURE);
 });
 
@@ -49,7 +50,8 @@ test("after a user zoom, resizing keeps the zoom and the centred point; Ctrl+0 r
 test("Copy puts the flattened PNG on the clipboard", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.getByTestId("copy-btn").click();
-  await expect(page.getByTestId("notice")).toContainText("Copied to clipboard");
+  // T32: Copy takes the print area (here just the image) and says its size.
+  await expect(page.getByTestId("notice")).toContainText("Copied the print area · 400 × 300 with note boxes");
   const size = await page.evaluate(async () => {
     const [item] = await navigator.clipboard.read();
     const bmp = await createImageBitmap(await item.getType("image/png"));
@@ -85,7 +87,7 @@ async function toPage(page: import("@playwright/test").Page, ix: number, iy: num
 const doc = (page: import("@playwright/test").Page) =>
   page.evaluate(() => window.__collide!.getDoc()) as Promise<{ shapes: { note?: string; label?: { x: number; y: number; w: number } }[] }>;
 
-test("an empty note still shows its number and arrow in Copy; Hide # leaves them out", async ({ page }) => {
+test("an empty note still shows its number and arrow in Copy; hiding the bubble leaves them out", async ({ page }) => {
   const copyW = async () => ((await page.evaluate(() => window.__collide!.copyFit())) as { width: number }).width;
   await page.keyboard.press("p");
   const pt = await toPage(page, 380, 150);
@@ -97,14 +99,14 @@ test("an empty note still shows its number and arrow in Copy; Hide # leaves them
   // With text, the box grows.
   await page.getByTestId("callout-note").first().fill("background needs blending");
   await page.keyboard.press("Tab");
-  expect(await copyW()).toBeGreaterThan(400 + 40 + 200);
-  // Hide # drops the box and arrow from Copy and is saved in the doc.
-  await page.getByTestId("hide-number").first().click();
-  await expect(page.getByTestId("hide-number").first()).toHaveText("Show #");
+  expect(await copyW()).toBeGreaterThan(chip + 100);
+  // T32: the card's "Hide the bubble" (was Hide #) drops the box and arrow from Copy and is saved in the doc.
+  await page.getByRole("button", { name: "Hide the bubble and arrow (Copy and Export too)" }).click();
+  await expect(page.getByRole("button", { name: "Bubble hidden: click to show" })).toHaveAttribute("aria-pressed", "true");
   expect(await copyW()).toBe(400);
-  expect(((await doc(page)).shapes[0] as { hideNumber?: boolean }).hideNumber).toBe(true);
-  await page.getByTestId("hide-number").first().click();
-  expect(await copyW()).toBeGreaterThan(400 + 40 + 200);
+  expect(((await doc(page)).shapes[0] as { hideBubble?: boolean }).hideBubble).toBe(true);
+  await page.getByRole("button", { name: "Bubble hidden: click to show" }).click();
+  expect(await copyW()).toBeGreaterThan(chip + 100);
 });
 
 test("double-click edits a note on the canvas; drag moves the box and its right edge resizes it", async ({ page }) => {
@@ -115,15 +117,16 @@ test("double-click edits a note on the canvas; drag moves the box and its right 
   await page.mouse.down();
   await page.mouse.move(b.x, b.y, { steps: 5 });
   await page.mouse.up();
-  await page.keyboard.press("v");
-  // Empty: a number chip left of the image (x = -40 - 34 .. -40), centred on y = 140.
-  const chip = await toPage(page, -57, 140);
+  // T32: the new note has the cursor; Esc leaves it and goes back to Select.
+  await page.keyboard.press("Escape");
+  // Empty: a number chip left of the image (x = -40 - 28 .. -40), set 14 px above the centre line (y = 112 .. 140).
+  const chip = await toPage(page, -54, 126);
   await page.mouse.dblclick(chip.x, chip.y);
   await page.getByTestId("note-editor").fill("Check the header colour against the brand palette");
   await page.keyboard.press("Enter");
   expect((await doc(page)).shapes[0].note).toBe("Check the header colour against the brand palette");
-  // Now a full box: x = -40 - 200 .. -40.
-  const inBox = await toPage(page, -140, 140);
+  // Now a full box: x = -40 - 150 .. -40, still above the centre line.
+  const inBox = await toPage(page, -140, 120);
 
   // Move the box up by 60.
   await page.mouse.move(inBox.x, inBox.y);
@@ -132,18 +135,18 @@ test("double-click edits a note on the canvas; drag moves the box and its right 
   await page.mouse.move(inBox.x, inBox.y - 60, { steps: 4 });
   await page.mouse.up();
   const moved = (await doc(page)).shapes[0].label!;
-  expect(Math.abs(moved.x - -240)).toBeLessThanOrEqual(2);
-  expect(moved.w).toBe(200);
+  expect(Math.abs(moved.x - -190)).toBeLessThanOrEqual(2);
+  expect(moved.w).toBe(150);
 
-  // Resize: drag the right edge 80 px left; the box gets narrower (height re-fits).
+  // Resize: drag the right edge 40 px left; the box gets narrower (height re-fits).
   const s = await stage(page);
   const edge = await toPage(page, moved.x + moved.w - 1, moved.y + 10);
   await page.mouse.move(edge.x, edge.y);
   await page.mouse.down();
+  await page.mouse.move(edge.x - 20 * s.scale, edge.y, { steps: 4 });
   await page.mouse.move(edge.x - 40 * s.scale, edge.y, { steps: 4 });
-  await page.mouse.move(edge.x - 80 * s.scale, edge.y, { steps: 4 });
   await page.mouse.up();
   const resized = (await doc(page)).shapes[0].label!;
-  expect(Math.abs(resized.w - 120)).toBeLessThanOrEqual(3);
+  expect(Math.abs(resized.w - 110)).toBeLessThanOrEqual(3);
   expect(resized.x).toBe(moved.x);
 });

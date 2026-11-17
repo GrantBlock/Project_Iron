@@ -1,3 +1,60 @@
+# Collide — Run 2 + 3 Handoff (scheduled run, `collide/run`)
+
+## Run session 2
+
+- Start (UTC): 2026-11-16T22:11Z · Planner (Irileth). Grant: use the remaining usage; when the limit is reached, park and stop (no auto-continue).
+- T32 merged 22:40Z. The 5-hour limit hit during T33 (Coder on Opus); T33 parked at 22:51Z and the session stopped (Grant: check only, do not continue).
+- Wake (hourly scheduled task) 2026-11-17T07:02Z: resuming at T33.
+- Wake 07:02Z: T33 resumed and merged 07:11Z; T34 merged 07:45Z (Reviewer's crash fix applied by the Planner); T35 merged 08:09Z; T36 merged 08:28Z.
+- The 5-hour limit hit during T38, after 08:28Z (reset 11:50Z); the 09:02, 10:02 and 11:02 wakes could not run. Resumed 11:51Z; T38 merged 12:04Z; T37 merged 12:07Z.
+- Session 2 result: every board task Done; reference specs prototype 15/15 · app 15/15; Vitest 480, Playwright 56, Electron e2e 21. Nothing blocked.
+
+## Run session 1
+
+- Start (UTC): 2026-11-15T15:38Z · Planner (Irileth). Stop starting new tasks at 19:53Z (4 h 15 min).
+- Usage: the 5-hour limit hit three times; each time the agent in flight was resumed, not restarted, after Grant's go-ahead:
+  1. about 16:30Z during T15 (reset 18:40Z, resumed 18:41Z);
+  2. about 20:40Z during T17 (reset 23:40Z per the limit notice; Grant said it had reset and work resumed about 20:50Z);
+  3. during T31, before the Coder committed anything (reset 01:40Z, resumed 01:41Z; T31 restarted from a clean branch);
+  4. again during T31, after 5 commits (reset 06:40Z, resumed 06:41Z); T31 merged 06:52Z.
+- Session 1 stopped at 06:53Z (2026-11-16) after T31: four limit hits and well past 4 h 15 min, so no new task was started (pacing rule).
+  The Fable Coder is the heaviest user: each Coder task cost roughly 120–250k tokens, Reviewer/Tester 70–120k.
+- Merged at start (CLAUDE.md step 1): `claude/intelligent-brown-2hlzyu` (Agent Chat 0.4.x, `tools/project-chat/` only).
+
+### Board
+
+| ID | Task | Status | Specs prototype / app |
+| --- | --- | --- | --- |
+| T13 | Electron shell | Done (Vitest 119, Playwright 45, Electron smoke 3; Windows exe check: manual Grant/Lydia) | n/a (Phase E) |
+| T14 | Bridge, capture, crop | Done (Vitest 219, Playwright 45, Electron e2e 6; capture at 100–200% and second monitor: manual Grant/Lydia) | n/a (Phase E) |
+| T15 | Snip choreography, settings | Done (Vitest 286, Playwright 45, Electron e2e 13 ×2; TESTER-NOTES 1, 7, 9, real hotkey, overlay DPI: manual Grant/Lydia) | n/a (Phase E) |
+| T16 | Local markup storage | Done (Vitest 319, Playwright 45, Electron e2e 15 ×2; real folder dialog, OneDrive/UNC Documents: manual Grant/Lydia) | n/a (Phase E) |
+| T17 | Remove Tauri | Done (Vitest 319, Playwright 45 (2 of 3 full runs green, see ISSUES 16), Electron e2e 15; no Rust; Reviewer doc fixes applied by Planner) | n/a (Phase E) |
+| T30 | Reference harness | Done (hook in prototype + app; `pnpm ref`; Vitest 327, Playwright 45, Electron e2e 15) | 15 specs: prototype 15/15 ✓ · app 0/15 (expected before T31) |
+| T31 | Layout shell | Done (Vitest 368, Playwright 45 ×2, Electron e2e 15; collapsed window size, DPI: manual Grant/Lydia) | prototype 15/15 · app 3/15 (tabs-and-close-splash, delete-recents-items, sidebar-toggles) |
+| T32 | Markup engine | Done (Snip; Vitest 376, Playwright 45 ×2, Electron e2e 15) | prototype 15/15 · app 5/15 (+callout-numbering, print-area-and-bubble-stacking; Esc, click-outside, colour memory, pen-highlighter pass their Snip parts and wait for T34; order-numbers waits for T33) |
+| T33 | Images on canvas | Done (Vitest 388, Playwright 48 ×2, Electron e2e 16; real Current/Behind capture, DPI: manual Grant/Lydia) | prototype 15/15 · app 5/15 (order-numbers-and-eraser and paste-image now fail only at their Markdown steps → T34) |
+| T34 | Markdown editor | Done (Vitest 410, Playwright 52 ×2, Electron e2e 16; zip storage on disk not built, ISSUES 35) | prototype 15/15 · app 14/15 (only save-collide-file left → T35) |
+| T35 | `.collide` files | Done (Vitest 441, Playwright 52 ×2, Electron e2e 19 ×2; adds fflate) | prototype 15/15 · app 15/15 |
+| T36 | Server storage | Done (Server mode, smallest version: Settings → Storage with real values, retention off by default; Vitest 459, Playwright 52 ×2, Electron e2e 20 ×2; ISSUES 39–42) | prototype 15/15 · app 15/15 |
+| T38 | PDF | Done (smallest version: open, mark up per page in PDF points, .collide, Export PDF, Copy PNG; Vitest 480, Playwright 56, Electron e2e 21; adds pdfjs-dist 4.10.38, pdf-lib 1.17.1; real PDFs on Windows: manual Grant/Lydia) | no prototype spec; fixture round trip and export e2e pass |
+| T37 | Handoff | Done (this file, `reports/screenshot-diff.md`, Windows checks in `TESTER-NOTES.md`) | screenshots: 102 pairs compared, 93 above 2% (worst: Markdown pages at 400×800, up to 46%); 24 'current'-theme app shots unpaired |
+
+### Reference specs (app column)
+
+All 15 reference specs pass on the prototype and on the app (`cd products/collide/app && pnpm ref`). PDF (T38) has no prototype; its fixture round trip and export are covered by e2e. Screenshot comparison, 2% tolerance (A, ISSUES 23): 102 pairs compared, 93 above 2% (worst: Markdown pages at 400×800, up to 46%); 24 'current'-theme app shots unpaired; details in `reports/screenshot-diff.md`, listed for Grant, not failed.
+
+### Next (for Grant, then a later run)
+
+- **Board done.** Pull request #6 (`collide/run` → `development`) is ready for Grant's review; it stays a draft until Grant's Windows pass.
+- **Windows manual checks (Grant/Lydia):** the numbered list in `TESTER-NOTES.md`, section "Run 2+3 (Electron)". Nothing Windows-only was passed from the cloud.
+- **Not built yet (logged):** zips are in memory only, no real zip open or write (ISSUES 35); Insert snip picker (36); Connected mode and a network server (41); Recents thumbnails; screenshot differences above 2%.
+- **Open for Grant:** ISSUES 3–5, 8, 9, 11–13, 15, 17–43 (21–24 are RUN3's questions on the (A) defaults; 28 the reversed frame test; 31–32 callout note focus and bubble size; 33 what Add snip Current captures; 39–41 storage folder, retention, no network server; 43 PDF export of side bubbles).
+- **Test notes:** `pnpm ref` for the reference; Electron e2e needs `xvfb-run -a` in the cloud; Playwright flakes in full parallel runs were seen early on (ISSUES 16), none since T31.
+- **Usage:** the limit hit six times across the two sessions (Fable Coder in session 1, Opus Coder in session 2); each time the agent was resumed, not restarted. A Coder task cost about 200–350k tokens, Reviewer and Tester about 70–110k each.
+
+---
+
 # Collide — Run 1 Handoff
 
 2026-11-14 · Planner. Branch `snip-markup/run-1` → pull request into `development` (Grant reviews and merges; no agent merged into `development` or `main`).
@@ -49,7 +106,7 @@ None.
 
 ## Grant: test first on Windows 11
 
-1. `cd products/collide/app && pnpm install && pnpm tauri dev` starts the app (Linux needs the -dev packages in `app/CLAUDE.md`; Windows needs the standard Tauri prerequisites).
+1. `cd products/collide/app && pnpm install && pnpm electron:dev` starts the app (since run 2 T17: Electron, no Rust or Tauri prerequisites).
 2. Open an image, draw, move, resize and delete each shape, add notes, undo/redo; Save (Ctrl+S), close, Open — all still editable.
 3. Export PNG — same size as the source.
 4. `Ctrl+Alt+S` from another app opens the overlay on the monitor under the cursor; the editor is not in the frame.

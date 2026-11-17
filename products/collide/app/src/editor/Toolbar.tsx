@@ -1,39 +1,23 @@
-import { Button, Icon, IconButton, Tooltip } from "../ds";
+import type { ReactNode } from "react";
+import { Button, IconButton, Tooltip } from "../ds";
+import { ROLES, STROKE_WIDTHS, swatchBackground, TOOL_BUTTONS, type Role, type Tool } from "./tools";
 
-/** Snip delay choices in seconds, as in Windows Snipping Tool. */
-export const SNIP_DELAYS = [0, 3, 5, 10] as const;
-import { STROKE_WIDTHS, type Tool } from "./tools";
-
-// Ported from design-system/ui_kits/snip-markup/Toolbar.jsx. New snip, Save and Export are wired in later tasks.
-const tools: [Tool, string, string, string][] = [
-  ["select", "mouse-pointer-2", "Select", "V"],
-  ["rect", "square", "Rectangle", "R"],
-  ["ellipse", "circle", "Ellipse", "O"],
-  ["rect-fill", "square-filled", "Filled rectangle", ""],
-  ["ellipse-fill", "circle-filled", "Filled ellipse", ""],
-  ["cross", "x", "X mark (remove)", "X"],
-  ["point", "map-pin", "Point", "P"],
-];
-const colors = ["var(--signal-500)", "var(--steel-500)", "var(--amber-500)", "var(--ink-50)"];
+// Ported from design-system/ui_kits/snip-markup/Toolbar.jsx. The toolbar of a Snip tab (RUN3 T31, T32):
+// tools, the four colours, stroke; undo/redo and actions on the right. Canvas snip is gone (Grant 2026-11-15).
+/** The prototype's words for Save as .collide. */
+export const SAVE_COLLIDE_TIP = "Save as a Collide file (.collide): the sources in their own formats plus every shape, bubble, note and order; reopens editable";
 
 const Sep = () => <span style={{ width: 1, height: 20, background: "var(--line-2)", margin: "0 6px" }} />;
 
 interface Props {
   tool: Tool;
   setTool: (t: Tool) => void;
-  color: string;
-  setColor: (c: string) => void;
+  /** The pressed colour; null after a draw (nothing pressed). */
+  color: Role | null;
+  setColor: (c: Role) => void;
   strokeWidth: number;
   setStrokeWidth: (w: number) => void;
   fileName: string;
-  onOpenFile: () => void;
-  onNewSnip: () => void;
-  /** New snip delay in seconds (0 = none). */
-  snipDelay: number;
-  setSnipDelay: (s: number) => void;
-  /** Toggle Canvas snip mode (drag a box on the canvas). */
-  onCanvasSnip: () => void;
-  canvasSnipActive: boolean;
   onUndo: () => void;
   onRedo: () => void;
   canUndo: boolean;
@@ -41,89 +25,55 @@ interface Props {
   onExport: () => void;
   onCopy: () => void;
   canExport: boolean;
-  onSave: () => void;
-  onOpenMarkup: () => void;
+  /** The toolbar's name: "Markup tools" (Snip) or "Markdown tools" (RUN3 T34). */
+  label?: string;
+  /** The Copy button's name and tip. */
+  copyLabel?: string;
+  copyTip?: string;
+  /** RUN3 T35: Save as .collide (before Copy); absent = no button. */
+  onSaveCollide?: () => void;
+  /** Buttons after the tools (the Markdown editor's Insert image). */
+  extra?: ReactNode;
+  hidden?: boolean;
 }
 
-export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStrokeWidth, fileName, onOpenFile, onNewSnip, snipDelay, setSnipDelay, onCanvasSnip, canvasSnipActive, onUndo, onRedo, canUndo, canRedo, onExport, onCopy, canExport, onSave, onOpenMarkup }: Props) {
+export function Toolbar(props: Props) {
+  const { tool, setTool, color, setColor, strokeWidth, setStrokeWidth, fileName, onUndo, onRedo, canUndo, canRedo, onExport, onCopy, canExport } = props;
+  const { label = "Markup tools", copyLabel = "Copy to clipboard", copyTip = "Copy image to clipboard", extra, hidden } = props;
   return (
     <div
       data-testid="toolbar"
-      style={{ height: 52, boxSizing: "border-box", flex: "none", display: "flex", alignItems: "center", gap: 4, padding: "0 10px", borderBottom: "1px solid var(--line-1)" }}
+      role="toolbar"
+      aria-label={label}
+      hidden={hidden}
+      style={{ height: 52, boxSizing: "border-box", flex: "none", display: hidden ? "none" : "flex", alignItems: "center", gap: 4, padding: "0 10px", borderBottom: "1px solid var(--line-1)", background: "var(--surface-1)", overflowX: "auto" }}
     >
-      <Tooltip label="New snip" shortcut="Ctrl+Alt+S">
-        <Button variant="primary" size="sm" icon="scissors" onClick={onNewSnip} data-testid="new-snip">
-          New snip
-        </Button>
-      </Tooltip>
-      <Tooltip label="Delay before New snip captures">
-        <label
-          data-testid="snip-delay-wrap"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-            height: 28,
-            padding: "0 6px",
-            borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--line-2)",
-            color: snipDelay ? "var(--text-1)" : "var(--text-3)",
-            cursor: "pointer",
-          }}
-        >
-          <Icon name="timer" size={14} />
-          <select
-            data-testid="snip-delay"
-            aria-label="Snip delay"
-            value={snipDelay}
-            onChange={(e) => setSnipDelay(Number(e.target.value))}
-            style={{ background: "transparent", border: 0, outline: "none", color: "inherit", font: "500 12px/1 var(--font-sans)", cursor: "pointer" }}
-          >
-            {SNIP_DELAYS.map((d) => (
-              <option key={d} value={d} style={{ background: "var(--surface-2)", color: "var(--text-1)" }}>
-                {d === 0 ? "No delay" : `${d} s`}
-              </option>
-            ))}
-          </select>
-        </label>
-      </Tooltip>
-      <Tooltip label="Drag a box on the canvas: copies it and opens it as a new markup (Esc cancels)">
-        <Button
-          variant={canvasSnipActive ? "primary" : "secondary"}
-          size="sm"
-          icon="crop"
-          onClick={onCanvasSnip}
-          disabled={!canExport}
-          aria-pressed={canvasSnipActive}
-          data-testid="canvas-snip"
-        >
-          Canvas snip
-        </Button>
-      </Tooltip>
-      <IconButton icon="file-up" label="Open file" data-testid="open-file" onClick={onOpenFile} />
-      <Sep />
-      {tools.map(([k, ic, l, s]) => (
+      {TOOL_BUTTONS.map(([k, ic, l, s]) => (
         <Tooltip key={k} label={l} shortcut={s}>
-          <IconButton icon={ic} label={l} active={tool === k} onClick={() => setTool(k)} />
+          <IconButton icon={ic} label={l} active={tool === k} aria-pressed={tool === k} onClick={() => setTool(k)} />
         </Tooltip>
       ))}
+      {extra}
       <Sep />
-      <div style={{ display: "flex", gap: 6, padding: "0 4px" }}>
-        {colors.map((c) => (
+      <div role="group" aria-label="Colour for the next shape" style={{ display: "flex", gap: 6, padding: "6px 8px", borderRadius: "var(--radius-sm)", background: "var(--annot-box, #FFFFFF)" }}>
+        {ROLES.map(([r, label]) => (
           <button
-            key={c}
-            onClick={() => setColor(c)}
-            aria-label="Color"
-            aria-pressed={color === c}
+            key={r}
+            type="button"
+            onClick={() => setColor(r)}
+            aria-label={label}
+            title={color ? label : `${label} (pick a colour for the next shape)`}
+            aria-pressed={color === r}
             data-testid="swatch"
+            data-role={r}
             style={{
               width: 18,
               height: 18,
               borderRadius: 999,
-              background: c,
+              background: swatchBackground(r),
               border: 0,
               cursor: "pointer",
-              boxShadow: color === c ? `0 0 0 2px var(--ink-900), 0 0 0 3px ${c}` : "inset 0 1px 0 rgba(255,255,255,0.25)",
+              boxShadow: color === r ? "0 0 0 2px #FFFFFF, 0 0 0 4px #424242" : "inset 0 1px 0 rgba(255,255,255,0.35)",
             }}
           />
         ))}
@@ -162,12 +112,13 @@ export function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStroke
       <IconButton icon="undo-2" label="Undo" disabled={!canUndo} onClick={onUndo} style={canUndo ? undefined : { opacity: 0.4, cursor: "not-allowed" }} />
       <IconButton icon="redo-2" label="Redo" disabled={!canRedo} onClick={onRedo} style={canRedo ? undefined : { opacity: 0.4, cursor: "not-allowed" }} />
       <Sep />
-      <IconButton icon="folder-open" label="Open markup" data-testid="open-markup" onClick={onOpenMarkup} />
-      <Tooltip label="Save markup" shortcut="Ctrl+S">
-        <IconButton icon="save" label="Save" data-testid="save-markup" onClick={onSave} disabled={!canExport} />
-      </Tooltip>
-      <Tooltip label="Copy image to clipboard" shortcut="Ctrl+Shift+C">
-        <IconButton icon="clipboard-copy" label="Copy to clipboard" data-testid="copy-btn" onClick={onCopy} disabled={!canExport} />
+      {props.onSaveCollide && (
+        <Tooltip label={SAVE_COLLIDE_TIP}>
+          <IconButton icon="file-down" label="Save as .collide" onClick={props.onSaveCollide} />
+        </Tooltip>
+      )}
+      <Tooltip label={copyTip} shortcut="Ctrl+Shift+C">
+        <IconButton icon="clipboard-copy" label={copyLabel} data-testid="copy-btn" onClick={onCopy} disabled={!canExport} />
       </Tooltip>
       <Button size="sm" icon="share" onClick={onExport} disabled={!canExport} data-testid="export-btn">
         Export
