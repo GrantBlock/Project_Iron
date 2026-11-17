@@ -8,6 +8,21 @@ import { SCHEME } from "./shell";
 const LOCAL_SCHEMES = new Set([`${SCHEME}:`, "data:", "blob:", "devtools:"]);
 
 /**
+ * True for a file URL path that names a network share on Windows: two or more leading
+ * separators (`//server/share`, also from `file:////server`, `file:///\\\\server`,
+ * `file://localhost//server`), percent-encoded ones included (`/%5C%5Cserver`).
+ */
+function isNetworkPath(pathname: string): boolean {
+  let path: string;
+  try {
+    path = decodeURIComponent(pathname);
+  } catch {
+    return true;
+  }
+  return /^[/\\]{2}/.test(path);
+}
+
+/**
  * True when `url` stays on this machine: the app's own files (lite://), data: and blob:,
  * a file on a local disk (file:///…; not file://server/share, which is a network share
  * on Windows) and, in dev only, the Vite dev server (`devUrl`, http and its ws for reload).
@@ -20,7 +35,7 @@ export function isLocalRequest(url: string, devUrl?: string): boolean {
     return false;
   }
   if (LOCAL_SCHEMES.has(u.protocol)) return true;
-  if (u.protocol === "file:") return u.host === "" || u.host === "localhost";
+  if (u.protocol === "file:") return (u.host === "" || u.host === "localhost") && !isNetworkPath(u.pathname);
   if (devUrl && (u.protocol === "http:" || u.protocol === "ws:")) {
     try {
       const dev = new URL(devUrl);
