@@ -14,9 +14,11 @@ import { createSnipFlow } from "../snip/flow";
 import { electronDeps, isDesktop } from "../snip/electronDeps";
 import { Blank, FileTab, SettingsTab, Splash, TabBar, Toasts, WsHead, type FileDoc, type Notice } from "./parts";
 import { applyTheme, loadPrefs, savePref, type Prefs } from "./prefs";
-import { flatFiles, sortFolders, storeRow, type RecentItem, type RecentSnip, type RecentZip } from "./recents";
+import { flatFiles, patchZipFile, PICTURES, pictureNames, sortFolders, storeRow, withPicture, zipFile, type RecentItem, type RecentSnip, type RecentZip } from "./recents";
 import { SAMPLE_OPEN, sampleArt, sampleDoc, sampleRecents, sampleSnip, wantsSample } from "./sample";
 import { Sidebar } from "./Sidebar";
+import { createMdSession, defaultMdPen, MarkdownEditor, type MdEditorApi, type MdSession } from "../markdown/MarkdownEditor";
+import { linkKey, type Resolve } from "../markdown/render";
 import { activateTab, activeTab, closeTab, cycleTab, noTabs, openTab, patchTab, type Tab, type TabKind, type TabsState } from "./tabs";
 
 const nameFromUrl = (url: string) => decodeURIComponent(url.split("?")[0].split("/").pop() || "image");
@@ -93,6 +95,12 @@ export function Shell() {
   const files = useRef(new Map<string, FileDoc>());
   const pen = useRef(defaultPen());
   const editor = useRef<SnipEditorApi | null>(null);
+  // Markdown tabs (RUN3 T34): each tab's text, markup and view; one colour and thickness for every Markdown tab.
+  const mdSessions = useRef(new Map<string, MdSession>());
+  const mdPen = useRef(defaultMdPen());
+  const mdEditor = useRef<MdEditorApi | null>(null);
+  const [full, setFull] = useState(false);
+  const [hideTools, setHideTools] = useState(false);
   const nextId = useRef(1);
   const fileRef = useRef<HTMLInputElement>(null);
   const storeRef = useRef<MarkupStore | null>(null);
@@ -215,6 +223,28 @@ export function Shell() {
   }, [refreshRecents]);
   const rows = useMemo<RecentItem[]>(() => [...stored, ...samples], [stored, samples]);
 
+  // ---------- A zip's files (RUN3 T34): the Markdown editor's pictures and saves, kept in memory this session ----------
+  const samplesRef = useRef(samples);
+  samplesRef.current = samples;
+  const zipById = (id: string) => samplesRef.current.find((z): z is RecentZip => z.kind === "zip" && z.id === id) ?? null;
+  const patchZip = useCallback((id: string, update: (z: RecentZip) => RecentZip) => {
+    const next = samplesRef.current.map((z) => (z.kind === "zip" && z.id === id ? update(z) : z));
+    samplesRef.current = next;
+    setSamples(next);
+  }, []);
+  const addPicture = useCallback(
+    (zipId: string, url: string, name: string) => {
+      patchZip(zipId, (z) => ({ ...z, tree: withPicture(z.tree, name, url) }));
+      setOpenFolders((o) => new Set([...o, zipId, `${zipId}/${PICTURES}`]));
+      return `${PICTURES}/${name}`;
+    },
+    [patchZip],
+  );
+  const saveMdFile = useCallback(
+    (md: MdSession, text: string, marks: Shape[]) => patchZip(md.zipId, (z) => ({ ...z, tree: patchZipFile(z.tree, md.file.slice(md.zipId.length + 1), { text, marks }) })),
+    [patchZip],
+  );
+
   // ---------- Tabs ----------
   const addTab = useCallback(
     (tab: Omit<Tab, "id">, fill?: (id: string) => void) => {
@@ -236,6 +266,7 @@ export function Shell() {
       setTabs((s) => closeTab(s, id));
       sessions.current.delete(id);
       files.current.delete(id);
+      mdSessions.current.delete(id);
     },
     [setTabs],
   );
@@ -326,7 +357,13 @@ export function Shell() {
       const f = flatFiles(zip.tree, zip.id).find((x) => x.path === path);
       if (!f) return;
       const kind: TabKind = f.type === "md" ? "markdown" : f.type === "image" ? "image" : "file";
-      const doc: FileDoc = { name: f.name, path: zip.name + path.slice(zip.id.length), type: f.type ?? "code", text: f.text ?? "" };
+      const shown = zip.name + path.slice(zip.id.length);
+      if (kind === "markdown") {
+        const md = createMdSession({ name: f.name, path: shown, zipId: zip.id, zipName: zip.name, file: path, text: f.text ?? "", shapes: f.marks });
+        addTab({ key: `doc:${path}`, kind, title: f.name, dirty: false, owner: zip.id }, (id) => mdSessions.current.set(id, md));
+        return;
+      }
+      const doc: FileDoc = { name: f.name, path: shown, type: f.type ?? "code", text: f.text ?? "" };
       addTab({ key: `doc:${path}`, kind, title: f.name, dirty: false, owner: zip.id }, (id) => files.current.set(id, doc));
     },
     [addTab],
@@ -433,7 +470,7 @@ export function Shell() {
 
   // ---------- Paste an image (Ctrl+V) ----------
   // Snip: added beside the image like Add snip. Anything else open, or nothing: a new snip. Text pastes are left alone (RUN3 T33).
-  // Markdown pastes (saved to images/ and linked) come with the Markdown editor (T34).
+  // Markdown: saved to the zip's images/ folder and linked (T34).
   const openImageRef = useRef(openImage);
   openImageRef.current = openImage;
   useEffect(() => {
@@ -443,8 +480,12 @@ export function Shell() {
       const file = item?.getAsFile();
       if (!file) return;
       const front = activeTab(live.current.tabs);
-      if (front?.kind === "markdown") return;
       e.preventDefault();
+      if (front?.kind === "markdown") {
+        // Saved into the zip's images/ folder and linked, like Insert image (RUN3 T34).
+        mdEditor.current?.pasteImage(file);
+        return;
+      }
       const url = URL.createObjectURL(file);
       if (front?.kind === "snip") {
         void addToSnip(url, front.id).then(
@@ -481,6 +522,7 @@ export function Shell() {
         if (id === undefined) throw new MarkupError("Could not save markup", "The tab's editor is not open. Go to the tab, then save.");
         notify({ tone: "success", title: "Markup saved", description: id });
       } else if (t.kind === "settings") settingsSave.current?.();
+      else if (t.kind === "markdown") mdEditor.current?.save();
       dropTab(t.id);
     } catch (e) {
       fail(e, "Could not save markup"); // the tab stays, with its changes
@@ -550,6 +592,7 @@ export function Shell() {
         return refState(
           { tabs: t.tabs, active: t.active, theme: p.theme, aura: p.aura, snipDelay: p.snipDelay, addMode: p.addMode, collapsed: p.collapsed, splash: a ? { kind: a.kind, title: askTitle(a) } : null },
           activeTab(t)?.kind === "snip" ? (editor.current?.refInput() ?? null) : null,
+          activeTab(t)?.kind === "markdown" ? (mdEditor.current?.refInput() ?? null) : null,
         );
       },
       openImage: (url, name) => openImage(url, name ?? nameFromUrl(url)),
@@ -588,6 +631,18 @@ export function Shell() {
   };
   const session = front ? sessions.current.get(front.id) : undefined;
   const file = front ? files.current.get(front.id) : undefined;
+  const md = front ? mdSessions.current.get(front.id) : undefined;
+  const mdZip = md ? samples.find((z): z is RecentZip => z.kind === "zip" && z.id === md.zipId) : undefined;
+  // A link in the page to the zip's picture: one pasted or inserted this session, or a sample's picture.
+  const resolve = useMemo<Resolve>(() => {
+    const tree = mdZip?.tree;
+    return (path) => {
+      const f = tree ? zipFile(tree, linkKey(path)) : null;
+      if (!f) return null;
+      const s = f.sample ? sampleSnip(f.sample) : undefined;
+      return f.url ?? (s ? sampleArt(s, 640) : null);
+    };
+  }, [mdZip]);
   const [password, setPassword] = useState("");
 
   let body = <Blank onNewSnip={newSnip} onOpenFile={() => fileRef.current?.click()} onMenu={() => setSideOpen((o) => !o)} />;
@@ -632,12 +687,40 @@ export function Shell() {
         }}
       />
     );
+  } else if (front && headBase && front.kind === "markdown" && md) {
+    const zipId = md.zipId;
+    body = (
+      <MarkdownEditor
+        key={front.id}
+        session={md}
+        pen={mdPen.current}
+        apiRef={mdEditor}
+        resolve={resolve}
+        addPicture={(url, name) => addPicture(zipId, url, name)}
+        pictureNames={() => {
+          const z = zipById(zipId);
+          return z ? pictureNames(z.tree) : new Set<string>();
+        }}
+        onDirty={(d) => setDirty(front.id, d)}
+        onSave={(text, marks) => saveMdFile(md, text, marks)}
+        full={full}
+        onFull={() => setFull((f) => !f)}
+        hideTools={hideTools}
+        onHideTools={() => setHideTools((h) => !h)}
+        hint={showHint}
+        notify={notify}
+        store={getStore}
+        onExported={() => void refreshRecents()}
+        themeKey={themeKey}
+        head={(h) => <WsHead {...headBase} name={md.name} path={md.path} savedLabel="Saved" onSave={h.onSave} canSave={h.canSave} extra={h.extra} tail={h.tail} />}
+      />
+    );
   } else if (front && headBase && file) {
     body = <FileTab key={front.id} doc={file} kind={front.kind} head={<WsHead {...headBase} name={file.name} path={file.path} />} />;
   }
 
   const frontFile = front && file ? (front.key.startsWith("doc:") ? front.key.slice(4) : null) : null;
-  const cls = ["app", prefs.collapsed ? "compact" : "", prefs.collapsed && (maximized || hasTab) ? "with-canvas" : "", sideOpen ? "side-open" : ""].filter(Boolean).join(" ");
+  const cls = ["app", full && front?.kind === "markdown" ? "focus" : "", prefs.collapsed ? "compact" : "", prefs.collapsed && (maximized || hasTab) ? "with-canvas" : "", sideOpen ? "side-open" : ""].filter(Boolean).join(" ");
   const closing = ask?.kind === "close" ? tabs.tabs.find((t) => t.id === ask.tabId) : undefined;
   const deleting = ask?.kind === "delete" ? ask.item : undefined;
   const openTabsOfDeleting = deleting ? tabs.tabs.filter((t) => t.owner === deleting.id).length : 0;

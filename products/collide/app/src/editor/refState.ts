@@ -65,6 +65,20 @@ export interface RefInput {
   bubbles?: BubbleMap;
 }
 
+/** What the open Markdown editor hands over (T34): shapes in page pixels; the view only in Preview. */
+export interface MdRefInput {
+  mode: "edit" | "preview";
+  shapes: readonly Shape[];
+  selectedId: string | null;
+  tool: string;
+  color: Role | null;
+  strokeWidth: number;
+  /** Preview's zoom; null in Edit. */
+  scale: number | null;
+  fitted: boolean;
+  bubbles?: BubbleMap;
+}
+
 /** What the layout shell hands over (T31). */
 export interface ShellRefInput {
   /** Left to right. */
@@ -115,23 +129,30 @@ function items(shapes: readonly Shape[], bubbles: BubbleMap | undefined): RefIte
 }
 
 /** `editor` is the Snip editor of the tab in front, or null when that tab is not a snip (or nothing is open). */
-export function refState(shell: ShellRefInput, editor: RefInput | null): RefState {
+/**
+ * `editor` is the Snip editor of the tab in front, or null when that tab is not a snip (or nothing is open);
+ * `md` the Markdown editor of the tab in front (T34).
+ */
+export function refState(shell: ShellRefInput, editor: RefInput | null, md: MdRefInput | null = null): RefState {
   const front = shell.tabs.find((t) => t.id === shell.active) ?? null;
   const view: RefState["view"] = front ? front.kind : "blank";
   const snip = view === "snip" && editor !== null && editor.image !== null ? editor : null;
+  const doc = view === "markdown" ? md : null;
+  const page = doc?.mode === "preview" ? doc : null;
+  const zoom = snip ? { percent: Math.round(snip.scale * 100), fit: snip.fitted } : page && page.scale !== null ? { percent: Math.round(page.scale * 100), fit: page.fitted } : null;
   return {
     version: 1,
     view,
-    // A Markdown file opens in Edit; Preview comes with the Markdown editor (T34).
-    mode: view === "markdown" ? "edit" : null,
+    // A Markdown file opens in Preview (T34); without its editor on screen the tab reads as Edit (source only).
+    mode: view === "markdown" ? (doc?.mode ?? "edit") : null,
     tabs: shell.tabs.map((t) => ({ id: t.id, title: t.title, kind: t.kind, dirty: t.dirty, active: t.id === shell.active })),
     editor: view === "snip" || view === "markdown" ? view : null,
-    activeTool: snip ? snip.tool : null,
-    color: snip ? snip.color : null,
-    stroke: snip ? snip.strokeWidth : null,
-    items: snip ? items(snip.shapes, snip.bubbles) : [],
-    selection: snip && snip.selectedId !== null ? [snip.selectedId] : [],
-    zoom: snip ? { percent: Math.round(snip.scale * 100), fit: snip.fitted } : null,
+    activeTool: snip ? snip.tool : page ? page.tool : null,
+    color: snip ? snip.color : doc ? doc.color : null,
+    stroke: snip ? snip.strokeWidth : doc ? doc.strokeWidth : null,
+    items: snip ? items(snip.shapes, snip.bubbles) : doc ? items(doc.shapes, doc.bubbles) : [],
+    selection: snip && snip.selectedId !== null ? [snip.selectedId] : page && page.selectedId !== null ? [page.selectedId] : [],
+    zoom,
     theme: shell.theme,
     aura: shell.theme === "aura" ? shell.aura : null,
     sidebar: { delay: delayLabel(shell.snipDelay), addMode: shell.addMode, collapsed: shell.collapsed },

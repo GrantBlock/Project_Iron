@@ -73,10 +73,13 @@ export interface HeadProps {
   onClose: () => void;
   /** Phone: opens Recents. */
   onMenu: () => void;
+  /** Controls after the name (the Markdown editor's Edit / Preview), and after Save (full width, hide the toolbar). */
+  extra?: ReactNode;
+  tail?: ReactNode;
 }
 
 /** The header of the tab in front: what it is, saved or not, Save, collapse, Close. */
-export function WsHead({ kind, name, path, dirty, savedLabel = "Saved", onSave, canSave, collapsed, onCollapse, onClose, onMenu }: HeadProps) {
+export function WsHead({ kind, name, path, dirty, savedLabel = "Saved", onSave, canSave, collapsed, onCollapse, onClose, onMenu, extra, tail }: HeadProps) {
   return (
     <div className="wshead">
       <button type="button" className="btn ghost icon mobile-only" aria-label="Recents" onClick={onMenu}>
@@ -98,6 +101,7 @@ export function WsHead({ kind, name, path, dirty, savedLabel = "Saved", onSave, 
         <span className="path mono">{path}</span>
       </div>
       <span className="grow" />
+      {extra}
       <span className={`savedstate${dirty ? " dirty" : ""}`}>
         <span className="d" />
         <span className="lbl">{dirty ? "Unsaved changes" : savedLabel}</span>
@@ -108,6 +112,7 @@ export function WsHead({ kind, name, path, dirty, savedLabel = "Saved", onSave, 
           <span>Save</span>
         </button>
       )}
+      {tail}
       <CollapseButton collapsed={collapsed} onCollapse={onCollapse} />
       <button type="button" className="btn" title="Close this tab (Ctrl+W)" onClick={onClose}>
         <Icon name="x" />

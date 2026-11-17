@@ -80,6 +80,12 @@ The project workspace holds Import, Specifications, Layout, Schedule and Exports
 [placeholder]
 `;
 
+/** The prototype's two callouts on the P06 page (page pixels, 680 wide), numbered from the back. */
+const P06_MARKS: Shape[] = [
+  { id: "a1", type: "rect", x: 26, y: 132, w: 628, h: 30, stroke: "red", strokeWidth: 3, callout: 1, note: "Add Uploads to this list." },
+  { id: "a2", type: "ellipse", x: 210, y: 236, w: 150, h: 46, stroke: "blue", strokeWidth: 3, callout: 2, note: "Name the session panel." },
+];
+
 export const SAMPLE_ZIPS: RecentZip[] = [
   {
     kind: "zip", id: "z-builder", name: "builder-v0.1.zip", meta: "14 files · 2.1 MB", day: "Today",
@@ -93,14 +99,14 @@ export const SAMPLE_ZIPS: RecentZip[] = [
             {
               name: "specs",
               kids: [
-                { name: "P06-Project-Workspace-Spec.md", type: "md", text: P06 },
+                { name: "P06-Project-Workspace-Spec.md", type: "md", text: P06, marks: P06_MARKS },
                 { name: "P08-3D-Designer-Spec.md", type: "md", text: "# P08 3D Designer Spec\n\n## 1 Purpose\n\n[placeholder]\n" },
               ],
             },
             { name: "exports", kids: [{ name: "P06.png", type: "image" }, { name: "P08.png", type: "image" }] },
           ],
         },
-        { name: "images", kids: [{ name: "line-3-conveyor-guard.png", type: "image" }] },
+        { name: "images", kids: [{ name: "line-3-conveyor-guard.png", type: "image", sample: "s-line3" }] },
         { name: "README.md", type: "md", text: "# Builder v0.1\n\nPrototype, specs and design system.\n" },
         { name: "package.json", type: "code", text: '{\n  "name": "builder",\n  "version": "0.1.0"\n}\n' },
       ],

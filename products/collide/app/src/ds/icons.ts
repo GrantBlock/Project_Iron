@@ -51,7 +51,33 @@ import globeIcon from "lucide-static/icons/globe.svg?url";
 import keyIcon from "lucide-static/icons/key.svg?url";
 import copyIcon from "lucide-static/icons/copy.svg?url";
 
+import mdHeadingIcon from "lucide-static/icons/heading.svg?url";
+import mdListIcon from "lucide-static/icons/list.svg?url";
+import mdListOrderedIcon from "lucide-static/icons/list-ordered.svg?url";
+import mdTableIcon from "lucide-static/icons/table.svg?url";
+import mdTagIcon from "lucide-static/icons/tag.svg?url";
+import mdBoldIcon from "lucide-static/icons/bold.svg?url";
+import mdLinkIcon from "lucide-static/icons/link.svg?url";
+import mdEyeIcon from "lucide-static/icons/eye.svg?url";
+import mdPencilIcon from "lucide-static/icons/pencil.svg?url";
+import mdMaximizeIcon from "lucide-static/icons/maximize.svg?url";
+import mdChevronUpIcon from "lucide-static/icons/chevron-up.svg?url";
+import mdChevronDownIcon from "lucide-static/icons/chevron-down.svg?url";
+import mdImagePlusIcon from "lucide-static/icons/image-plus.svg?url";
 export const ICON_URLS: Record<string, string> = {
+  "heading": mdHeadingIcon,
+  "list": mdListIcon,
+  "list-ordered": mdListOrderedIcon,
+  "table": mdTableIcon,
+  "tag": mdTagIcon,
+  "bold": mdBoldIcon,
+  "link": mdLinkIcon,
+  "eye": mdEyeIcon,
+  "pencil": mdPencilIcon,
+  "maximize": mdMaximizeIcon,
+  "chevron-up": mdChevronUpIcon,
+  "chevron-down": mdChevronDownIcon,
+  "image-plus": mdImagePlusIcon,
   "circle": circle,
   "circle-alert": circleAlert,
   "x": x,
