@@ -29,6 +29,14 @@ describe("Markdown rendering (RUN3 T34, markdown-it)", () => {
     expect(renderMarkdown("![x](a.png)", () => "https://example.invalid/a.png")).not.toContain("<img");
   });
 
+  it("a malformed % escape in a picture link does not throw; it shows as a missing picture", () => {
+    const resolve = (p: string) => (p === "%E0%A4" ? "data:image/png;base64,AAAA" : null);
+    expect(() => renderMarkdown("![a](%E0%A4)")).not.toThrow();
+    expect(renderMarkdown("![a](%E0%A4)")).toContain('role="img" aria-label="a"');
+    // The raw text is what the resolver sees.
+    expect(renderMarkdown("![a](%E0%A4)", resolve)).toContain("<img");
+  });
+
   it("link keys drop a leading ./ or /", () => {
     expect(linkKey("./images/a.png")).toBe("images/a.png");
     expect(linkKey("/images/a.png")).toBe("images/a.png");

@@ -14,11 +14,20 @@ const esc = md.utils.escapeHtml;
 md.renderer.rules.table_open = () => '<div class="mdtable"><table>\n';
 md.renderer.rules.table_close = () => "</table></div>\n";
 
+/** decodeURI, but a malformed escape (e.g. "%E0%A4") keeps the raw text instead of throwing. */
+const safeDecode = (s: string) => {
+  try {
+    return decodeURI(s);
+  } catch {
+    return s;
+  }
+};
+
 md.renderer.rules.image = (tokens, idx, options, env: { resolve?: Resolve }, self) => {
   const t = tokens[idx];
   const src = t.attrGet("src") ?? "";
   const alt = self.renderInlineAsText(t.children ?? [], options, env);
-  const url = env.resolve?.(decodeURI(src)) ?? null;
+  const url = env.resolve?.(safeDecode(src)) ?? null;
   if (url && /^(data:image\/|blob:)/.test(url)) return `<img src="${esc(url)}" alt="${esc(alt)}">`;
   return `<span class="mdimg-missing" role="img" aria-label="${esc(alt || src)}" title="${esc(src)}">${esc(alt || src)}</span>`;
 };
