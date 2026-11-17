@@ -150,3 +150,10 @@ export function withPicture(tree: TreeNode, name: string, url: string): TreeNode
     kids: has ? kids.map((k) => (k.name === PICTURES && k.kids ? { ...k, kids: [...k.kids.filter((x) => x.name !== name), file] } : k)) : [...kids, { name: PICTURES, kids: [file] }],
   };
 }
+
+/** The tags on the snips in Recents, each once (case-insensitive), in the order first seen. */
+export function recentTags(rows: readonly RecentItem[]): string[] {
+  const seen = new Map<string, string>();
+  for (const r of rows) if (r.kind === "snip") for (const t of r.tags) if (t.trim() && !seen.has(t.trim().toLowerCase())) seen.set(t.trim().toLowerCase(), t.trim());
+  return [...seen.values()];
+}

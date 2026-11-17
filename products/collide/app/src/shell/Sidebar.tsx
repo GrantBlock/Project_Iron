@@ -6,7 +6,7 @@ import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import { Icon } from "../ds";
 import { CollapseButton, Logo } from "./parts";
 import { ADD_MODES, AURA_GROUNDS, SNIP_DELAYS, THEMES, type AddMode, type AuraGround, type Prefs, type Theme } from "./prefs";
-import { filterRecents, groupRecents, snipMeta, type RecentItem, type RecentZip, type TreeNode } from "./recents";
+import { filterRecents, groupRecents, recentTags, snipMeta, type RecentItem, type RecentZip, type TreeNode } from "./recents";
 
 const DELAY_TITLE: Record<number, string> = { 0: "No delay", 3: "Wait 3 seconds", 5: "Wait 5 seconds", 10: "Wait 10 seconds" };
 const ADD_TITLE: Record<AddMode, string> = {
@@ -19,7 +19,6 @@ const THEME_HINT: Record<Theme, string> = {
   dark: "Collide Dark, from the design system.",
   aura: "Aura: flat grounds, one highlight. Sage is the default.",
 };
-const TAGS = ["Line 3", "Conveyor", "P&ID"];
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
 
 /** A row of choices where one is on: a toggle, not a drop-down (Grant 2026-11-15). */
@@ -165,6 +164,8 @@ function Row({ item, p }: { item: RecentItem; p: SidebarProps }) {
 export function Sidebar(p: SidebarProps) {
   const { prefs } = p;
   const groups = groupRecents(filterRecents(p.rows, p.query));
+  // Tags come from the snips in Recents (Grant 2026-11-17: no sample tags in the real app); none, no Tags section.
+  const tags = recentTags(p.rows);
   const aura = prefs.theme === "aura";
   // Appearance closes on a click outside it (its own button toggles it).
   const foot = useRef<HTMLDivElement>(null);
@@ -230,16 +231,20 @@ export function Sidebar(p: SidebarProps) {
             {p.query.trim() ? `Nothing matches "${p.query.trim()}".` : "No markups yet. New snip, or open an image, then Save."}
           </p>
         )}
-        <div className="sec">
-          <span className="label">Tags</span>
-        </div>
-        <div className="tags">
-          {TAGS.map((t) => (
-            <button key={t} type="button" className="tag" onClick={() => p.onQuery(t)}>
-              {t}
-            </button>
-          ))}
-        </div>
+        {tags.length > 0 && (
+          <>
+            <div className="sec">
+              <span className="label">Tags</span>
+            </div>
+            <div className="tags">
+              {tags.map((t) => (
+                <button key={t} type="button" className="tag" onClick={() => p.onQuery(t)}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
       <div className="foot" ref={foot}>
         {pop && (

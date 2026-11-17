@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AnnotationsDoc } from "../model";
-import { filterRecents, flatFiles, folderBase, groupRecents, patchZipFile, pictureNames, snipMeta, sortFolders, storeRow, withPicture, zipFile, type RecentItem } from "./recents";
+import { filterRecents, recentTags, flatFiles, folderBase, groupRecents, patchZipFile, pictureNames, snipMeta, sortFolders, storeRow, withPicture, zipFile, type RecentItem } from "./recents";
 import { sampleRecents, sampleDoc, SAMPLE_SNIPS } from "./sample";
 
 const today = new Date(2026, 10, 15, 9, 30);
@@ -90,5 +90,19 @@ describe("a zip's files for the Markdown editor (RUN3 T34)", () => {
     expect(zipFile(t, "design/specs/P06-Project-Workspace-Spec.md")).toMatchObject({ text: "# New", marks: [] });
     expect(zipFile(zip.tree, "design/specs/P06-Project-Workspace-Spec.md")?.text).not.toBe("# New");
     expect(patchZipFile(zip.tree, "design/specs", { text: "x" })).toEqual(zip.tree); // folders are left alone
+  });
+});
+
+describe("recentTags (Grant 2026-11-17: no sample tags in the real app)", () => {
+  const snip = (tags: string[]): RecentItem => ({ kind: "snip", id: tags.join(), name: "s", day: "Today", callouts: 0, width: 1, height: 1, tags, notes: [], thumb: null, source: { from: "store", folder: "f" } }) as RecentItem;
+  it("no snips, or snips without tags: no tags", () => {
+    expect(recentTags([])).toEqual([]);
+    expect(recentTags([snip([])])).toEqual([]);
+  });
+  it("each tag once, ignoring case and spaces, in the order first seen", () => {
+    expect(recentTags([snip(["Line 3", "Pump"]), snip([" line 3", "Conveyor"])])).toEqual(["Line 3", "Pump", "Conveyor"]);
+  });
+  it("the sample Recents (dev and the reference only) still carry the prototype's tags", () => {
+    expect(recentTags(sampleRecents()).length).toBeGreaterThan(0);
   });
 });
