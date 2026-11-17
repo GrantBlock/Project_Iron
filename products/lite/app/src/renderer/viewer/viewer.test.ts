@@ -1,7 +1,7 @@
-import { Group, Mesh, Object3D } from "three";
+import { BoxGeometry, Group, Mesh, MeshStandardMaterial, Object3D, Texture } from "three";
 import { describe, expect, it } from "vitest";
 import { initialState, select, selectPart } from "../state";
-import { fitDistance, nodeName, partOf } from "./viewer";
+import { disposeModel, fitDistance, nodeName, partOf } from "./viewer";
 
 describe("viewer helpers", () => {
   it("fitDistance: the sphere fits the narrower field of view", () => {
@@ -43,5 +43,29 @@ describe("part selection state", () => {
     expect(selectPart(s, "Guard door")).toBe(s);
     expect(selectPart(s, null).part).toBeNull();
     expect(select(s, "m2").part).toBeNull();
+  });
+});
+
+describe("disposeModel", () => {
+  it("disposes every geometry, material and texture of the model", () => {
+    const disposed: string[] = [];
+    const track = (name: string, o: { addEventListener(type: "dispose", fn: () => void): void }) => o.addEventListener("dispose", () => disposed.push(name));
+    const map = new Texture();
+    const normalMap = new Texture();
+    const material = new MeshStandardMaterial({ map, normalMap });
+    const geometry = new BoxGeometry();
+    const other = new MeshStandardMaterial();
+    const root = new Group();
+    const part = new Group();
+    part.add(new Mesh(geometry, material));
+    part.add(new Mesh(new BoxGeometry(), [other]));
+    root.add(part);
+    track("geometry", geometry);
+    track("material", material);
+    track("other material", other);
+    track("map", map);
+    track("normalMap", normalMap);
+    disposeModel(root);
+    expect(disposed.sort()).toEqual(["geometry", "map", "material", "normalMap", "other material"]);
   });
 });

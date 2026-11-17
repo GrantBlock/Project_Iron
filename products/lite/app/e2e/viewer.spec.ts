@@ -93,3 +93,44 @@ test("the second sample model loads; opening another item removes the viewer", a
   await page.getByRole("button", { name: "Handoff log template", exact: true }).click();
   await expect(page.locator("#view canvas")).toHaveCount(0);
 });
+
+test("without WebGL the prototype's placeholder stays and the parts list still selects", async ({ page }) => {
+  await page.addInitScript(() => {
+    const original = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string, ...rest: unknown[]) {
+      if (/webgl/i.test(type)) return null;
+      return (original as (...a: unknown[]) => unknown).call(this, type, ...rest);
+    } as typeof original;
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Palletizer frame v4", exact: true }).click();
+  await expect(viewport(page)).toHaveAttribute("data-state", "error", { timeout: 15_000 });
+  await expect(viewport(page).locator(":scope > svg.de-icon")).toBeVisible();
+  await expect(viewport(page).getByText("Drag to orbit · scroll to zoom")).toBeVisible();
+  await expect(viewport(page).locator("canvas")).toHaveCount(0);
+  const row = page.getByRole("button", { name: /^Guard door/ });
+  await row.click();
+  await expect(row).toHaveAttribute("aria-pressed", "true");
+  await expect(row).toHaveClass(/is-on/);
+});
+
+test("switching models many times keeps one canvas and never runs out of WebGL contexts", async ({ page }) => {
+  const warnings: string[] = [];
+  page.on("console", (m) => warnings.push(m.text()));
+  await page.goto("/");
+  let previous: import("@playwright/test").JSHandle<HTMLCanvasElement | null> | null = null;
+  for (let i = 0; i < 20; i++) {
+    for (const name of ["Palletizer frame v4", "Standard guard layout"]) {
+      await page.getByRole("button", { name, exact: true }).click();
+      await expect(viewport(page)).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+      await expect(page.locator("#view canvas")).toHaveCount(1);
+      // The canvas of the model before has given its WebGL context back (not waiting for garbage collection).
+      if (previous) {
+        expect(await previous.evaluate((c) => !c?.isConnected && (c?.getContext("webgl2") as WebGL2RenderingContext | null)?.isContextLost() === true)).toBe(true);
+        await previous.dispose();
+      }
+      previous = await page.evaluateHandle(() => document.querySelector<HTMLCanvasElement>("#view canvas"));
+    }
+  }
+  expect(warnings.filter((w) => /too many active webgl contexts/i.test(w))).toEqual([]);
+});
