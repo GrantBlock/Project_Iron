@@ -100,7 +100,7 @@ describe("diffImages", () => {
   it("counts pixels beyond the tolerance only", () => {
     const a = solid(10, 10, [30, 30, 32, 255]);
     const b = solid(10, 10, [30, 30, 32, 255]);
-    b.data[0] = 40; // within tolerance
+    b.data[0] = 32; // within tolerance
     b.data[4] = 200; // pixel 2 differs
     b.data[8 * 4 + 2] = 0; // pixel 9 differs
     expect(diffImages(a, b).differing).toBe(2);

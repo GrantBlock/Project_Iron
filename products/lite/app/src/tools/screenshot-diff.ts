@@ -106,8 +106,8 @@ export interface Diff {
   sameSize: boolean;
 }
 
-/** Per-channel difference (0–255) below which two pixels count as the same (A): absorbs anti-aliasing noise. */
-export const PIXEL_TOLERANCE = 16;
+/** Per-channel difference (0–255) up to which two pixels count as the same (A). Both targets render in the same Chromium with the same fonts, so this only absorbs rounding; it is kept small because the dark surfaces differ by about 11 (canvas vs surface). */
+export const PIXEL_TOLERANCE = 2;
 
 /** Compares two images pixel by pixel. */
 export function diffImages(a: Image, b: Image, tolerance = PIXEL_TOLERANCE): Diff {

@@ -9,7 +9,8 @@ test("Lite opens one window titled Lite, 1280 × 800 and resizable, on the app's
     expect(page.url()).toBe("lite://app/");
     await expect(page.getByTestId("app-root")).toBeVisible();
     const background = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-    expect(background).toBe("rgb(30, 30, 32)");
+    // L03: the prototype's backdrop behind the window frame.
+    expect(background).toBe("rgb(20, 20, 22)");
 
     const shell = await app.evaluate(({ app: electronApp, BrowserWindow }) => {
       const windows = BrowserWindow.getAllWindows();
