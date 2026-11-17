@@ -8,3 +8,6 @@ dist/
 site/
 *.log
 .DS_Store
+
+products/lite/reference/shots/
+products/lite/reference/test-results/
