@@ -5,7 +5,9 @@
 - Start (UTC): 2026-11-16T22:11Z · Planner (Irileth). Grant: use the remaining usage; when the limit is reached, park and stop (no auto-continue).
 - T32 merged 22:40Z. The 5-hour limit hit during T33 (Coder on Opus); T33 parked at 22:51Z and the session stopped (Grant: check only, do not continue).
 - Wake (hourly scheduled task) 2026-11-17T07:02Z: resuming at T33.
-- T33 parked on `task/T33-canvas-images` (6 commits, not merged, no Reviewer or Tester yet). Planner check at park: lint and build pass; Vitest 388; Electron e2e 15/15; Playwright 47/48: the new `e2e/images.spec.ts:87` (pasted image beside, move, aspect-locked resize, delete, undo) fails, and that spec was committed WIP and unverified. Reference app 5/15 (order-numbers-and-eraser not passing yet). Next: fix images.spec, then Reviewer → Tester → squash.
+- Wake 07:02Z: T33 resumed and merged 07:11Z; T34 merged 07:45Z (Reviewer's crash fix applied by the Planner); T35 merged 08:09Z; T36 merged 08:28Z.
+- The 5-hour limit hit during T38, after 08:28Z (reset 11:50Z); the 09:02, 10:02 and 11:02 wakes could not run. Resumed 11:51Z; T38 merged 12:04Z; T37 12:04–12:45Z.
+- Session 2 result: every board task Done; reference specs prototype 15/15 · app 15/15; Vitest 480, Playwright 56, Electron e2e 21. Nothing blocked.
 
 ## Run session 1
 
@@ -36,21 +38,20 @@
 | T35 | `.collide` files | Done (Vitest 441, Playwright 52 ×2, Electron e2e 19 ×2; adds fflate) | prototype 15/15 · app 15/15 |
 | T36 | Server storage | Done (Server mode, smallest version: Settings → Storage with real values, retention off by default; Vitest 459, Playwright 52 ×2, Electron e2e 20 ×2; ISSUES 39–42) | prototype 15/15 · app 15/15 |
 | T38 | PDF | Done (smallest version: open, mark up per page in PDF points, .collide, Export PDF, Copy PNG; Vitest 480, Playwright 56, Electron e2e 21; adds pdfjs-dist 4.10.38, pdf-lib 1.17.1; real PDFs on Windows: manual Grant/Lydia) | no prototype spec; fixture round trip and export e2e pass |
-| T37 | Handoff | To do | |
+| T37 | Handoff | Done (this file, `reports/screenshot-diff.md`, Windows checks in `TESTER-NOTES.md`) | screenshots: 102 pairs compared, 93 above 2% (worst: Markdown pages at 400×800, up to 46%); 24 'current'-theme app shots unpaired |
 
 ### Reference specs (app column)
 
-prototype 15/15 ✓ · app 3/15 ✓ after T31. Passing on the app: tabs-and-close-splash, delete-recents-items, sidebar-toggles. The other 12 wait for T32 (engine), T33 (images and paste), T34 (Markdown) and T35 (`.collide`). Screenshot comparison (2% tolerance (A)) not reported yet; T37 does it.
+All 15 reference specs pass on the prototype and on the app (`cd products/collide/app && pnpm ref`). PDF (T38) has no prototype; its fixture round trip and export are covered by e2e. Screenshot comparison, 2% tolerance (A, ISSUES 23): 102 pairs compared, 93 above 2% (worst: Markdown pages at 400×800, up to 46%); 24 'current'-theme app shots unpaired; details in `reports/screenshot-diff.md`, listed for Grant, not failed.
 
-### Next (for session 2)
+### Next (for Grant, then a later run)
 
-- **First:** T38 (PDF, smallest version: open, render pages with pdf.js in the T32 canvas, mark up, save in `.collide`, export PDF with pdf-lib, Copy PNG; 2-page fixture).
-- T37 (handoff, screenshot differences) last.
-- Run the reference: `cd products/collide/app && pnpm ref` (per spec prototype ✓/✗ · app ✓/✗). Electron e2e needs `xvfb-run -a` in the cloud.
-- Pacing: the Fable Coder hit the 5-hour limit in four of eight tasks. Have each Coder commit and push after every step, and resume a stopped agent with SendMessage rather than restarting it.
-- Playwright e2e has parallel-run flakes (ISSUES 16): rerun a single failure once before treating it as real.
-- Open for Grant: ISSUES 3–5, 8, 9, 11–13, 15, 17–20, 25–30 (25–30 from T31: dirty dot on new snips, splash rules, default theme System or Dark, the reversed frame test and two new bridge keys, what Recents/Add snip/Zip/Markdown tabs do for now, collapse sizing), and 21–24 (RUN3 questions 2–5; the run uses the (A) defaults).
-- Windows manual checks (Grant/Lydia): TESTER-NOTES items 1–10 on `pnpm electron:dev`, then `pnpm dist` and the portable `.exe` (items 1, 2, 7, 9 at 100% and 150%); real Ctrl+Alt+S; overlay on a second monitor; real folder dialog and a folder outside Markups.
+- **Board done.** Pull request #6 (`collide/run` → `development`) is ready for Grant's review; it stays a draft until Grant's Windows pass.
+- **Windows manual checks (Grant/Lydia):** the numbered list in `TESTER-NOTES.md`, section "Run 2+3 (Electron)". Nothing Windows-only was passed from the cloud.
+- **Not built yet (logged):** zips are in memory only, no real zip open or write (ISSUES 35); Insert snip picker (36); Connected mode and a network server (41); Recents thumbnails; screenshot differences above 2%.
+- **Open for Grant:** ISSUES 3–5, 8, 9, 11–13, 15, 17–43 (21–24 are RUN3's questions on the (A) defaults; 28 the reversed frame test; 31–32 callout note focus and bubble size; 33 what Add snip Current captures; 39–41 storage folder, retention, no network server; 43 PDF export of side bubbles).
+- **Test notes:** `pnpm ref` for the reference; Electron e2e needs `xvfb-run -a` in the cloud; Playwright flakes in full parallel runs were seen early on (ISSUES 16), none since T31.
+- **Usage:** the limit hit six times across the two sessions (Fable Coder in session 1, Opus Coder in session 2); each time the agent was resumed, not restarted. A Coder task cost about 200–350k tokens, Reviewer and Tester about 70–110k each.
 
 ---
 
