@@ -57,3 +57,24 @@ test("the web build draws the prototype's window controls in the title bar", asy
   await page.goto("/");
   await expect(page.locator(".l-title .l-wc span")).toHaveCount(3);
 });
+
+test("L04 views: Next and Previous keep the keyboard on the page buttons", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Process document, rev 3", exact: true }).click();
+  const next = page.getByRole("button", { name: "Next" });
+  await next.focus();
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Enter");
+  await expect(page.getByText("Page 3 of 3")).toBeVisible();
+  // Next is now disabled, so the keyboard moves to Previous.
+  await expect(page.getByRole("button", { name: "Previous" })).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.getByText("Page 2 of 3")).toBeVisible();
+});
+
+test("L04 views: the model view keeps the prototype's viewport placeholder and parts list", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Standard guard layout", exact: true }).click();
+  await expect(page.locator(".l-viewport .hint")).toHaveText("Drag to orbit · scroll to zoom");
+  await expect(page.locator(".l-part")).toHaveText(["Guard panel4 bodies", "Door interlock2 bodies"]);
+});

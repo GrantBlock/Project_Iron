@@ -1,7 +1,7 @@
 // `pnpm ref`: the reference harness (RUN.md, L02). Runs the reference specs in
 // ../reference/specs, unchanged and with their own Playwright config, twice:
 //   1. against the prototype (file://…/prototype/exports/P16-lite/index.html, the specs' default)
-//   2. against the app: the renderer build (dist/) under `vite preview` on :4331, in Chromium
+//   2. against the app: the renderer build (dist/) under `vite preview` on a free local port, in Chromium
 // Each run saves its screenshots in ../reference/shots/<target>/. Then it prints a table per
 // spec (prototype ✓ ✗, app ✓ ✗), compares the screenshot pairs and writes
 // ../reports/screenshot-diff.md (pairs above 2% are listed, not failed).
@@ -21,7 +21,6 @@ const referenceDir = path.resolve(appDir, "../reference");
 const reportsDir = path.resolve(appDir, "../reports");
 const shotsDir = path.join(referenceDir, "shots");
 const resultsDir = path.join(appDir, "test-results", "ref");
-const PORT = 4331;
 const THRESHOLD = 2;
 
 const argv = process.argv.slice(2);
@@ -85,9 +84,12 @@ if (targets.includes("prototype")) {
 }
 if (targets.includes("app")) {
   if (!flag("--no-build")) await build({ root: appDir, logLevel: "warn" });
-  const server = await preview({ root: appDir, logLevel: "warn", preview: { port: PORT, strictPort: true, open: false } });
+  // Port 0: the system picks a free port, so runs in other checkouts (e.g. a reviewer's worktree) never collide.
+  const server = await preview({ root: appDir, logLevel: "warn", preview: { host: "127.0.0.1", port: 0, strictPort: true, open: false } });
   try {
-    results.app = readResults(await runSpecs("app", `http://localhost:${PORT}/`));
+    const address = server.httpServer.address();
+    if (!address || typeof address === "string") throw new Error("vite preview has no port");
+    results.app = readResults(await runSpecs("app", `http://127.0.0.1:${address.port}/`));
   } finally {
     await new Promise((resolve) => server.httpServer.close(resolve));
   }
