@@ -2,6 +2,7 @@
 // Tree: About this package, then one folder per project with its documents, models and notes;
 // folders collapse, rows select (steel-blue left edge on the selected row).
 import { ABOUT_LABEL, PACKAGE, type Item, type ItemType } from "../data/sample";
+import { NO_MATCHES, normalizeQuery } from "../search";
 import { ABOUT, select, setQuery, toggleFolder, treeFolders, type AppState, type Store } from "../state";
 import { el, type Area } from "./dom";
 import { icon, type IconName } from "./icons";
@@ -39,7 +40,8 @@ export function createLeft(store: Store, isNarrow: () => boolean): Area<AppState
       const folders = treeFolders(s);
       // Rebuild when the rows change (selection, listed items); otherwise only open or close
       // folders in place, so the chevron animates as in the prototype.
-      const key = JSON.stringify([s.selected, folders.map((f) => [f.project.name, f.items.map((i) => i.id)])]);
+      const searching = normalizeQuery(s.query) !== "";
+      const key = JSON.stringify([s.selected, searching, folders.map((f) => [f.project.name, f.items.map((i) => i.id)])]);
       if (key === builtFor) {
         for (const g of tree.querySelectorAll<HTMLElement>(".l-grp")) {
           const head = g.querySelector<HTMLElement>("[data-g]");
@@ -68,6 +70,7 @@ export function createLeft(store: Store, isNarrow: () => boolean): Area<AppState
             el("div", { class: "l-kids" }, ...f.items.map((i) => row(i, s.selected === i.id))),
           ),
         ),
+        ...(searching && folders.length === 0 ? [el("div", { class: "l-empty" }, NO_MATCHES)] : []),
       );
       if (focusKey) tree.querySelector<HTMLElement>(focusKey)?.focus();
     },

@@ -2,6 +2,7 @@
 // tiny store the render modules subscribe to. Behaviour follows the prototype
 // (prototype/exports/P16-lite/index.html), including its quirks listed in ../ISSUES.md.
 import { ABOUT_LABEL, PROJECTS, findItem, projectOf, type Item, type Project, type Source, type ViewType } from "./data/sample";
+import { filterItems } from "./search";
 
 /** The panes under 900px. "chat" is the Assistant pane (the prototype's name). */
 export type Pane = "files" | "view" | "chat";
@@ -96,11 +97,11 @@ export interface TreeFolder {
 }
 
 /**
- * The folders and items the tree lists. Folders with no listed items are left out.
- * L03 lists every item; L05 (search) filters by the query here.
+ * The folders and items the tree lists: the items that match Search this package (search.ts);
+ * folders with no matching item are left out. An empty search lists everything.
  */
 export function treeFolders(s: AppState): TreeFolder[] {
-  return PROJECTS.map((project) => ({ project, items: project.items, open: !s.closedFolders.includes(project.name) })).filter(
+  return PROJECTS.map((project) => ({ project, items: filterItems(project.items, s.query), open: !s.closedFolders.includes(project.name) })).filter(
     (f) => f.items.length > 0,
   );
 }
