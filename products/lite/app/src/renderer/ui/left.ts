@@ -51,7 +51,7 @@ export function createLeft(store: Store, isNarrow: () => boolean): Area<AppState
       }
       builtFor = key;
       const focused = tree.contains(document.activeElement) ? (document.activeElement as HTMLElement) : null;
-      const focusKey = focused?.dataset.s ? `[data-s="${focused.dataset.s}"]` : focused?.dataset.g ? `[data-g="${CSS.escape(focused.dataset.g)}"]` : "";
+      const focusKey = focused?.dataset.s ? `[data-s="${CSS.escape(focused.dataset.s)}"]` : focused?.dataset.g ? `[data-g="${CSS.escape(focused.dataset.g)}"]` : "";
       tree.replaceChildren(
         el("button", { class: s.selected === ABOUT ? "l-top is-on" : "l-top", type: "button", "data-s": ABOUT }, icon("about"), ABOUT_LABEL),
         ...folders.map((f) =>
