@@ -4,7 +4,7 @@ import { expect, test } from "@playwright/test";
 
 const LOCAL = "http://localhost:4330";
 
-test("the build shows the empty Lite window on the dark canvas, in Overpass", async ({ page }) => {
+test("the build shows the Lite window on the dark backdrop, in Overpass", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Lite");
   await expect(page.getByTestId("app-root")).toBeVisible();
@@ -24,7 +24,8 @@ test("the build shows the empty Lite window on the dark canvas, in Overpass", as
     };
   });
   expect(look).toEqual({
-    background: "rgb(30, 30, 32)",
+    // L03: the page behind the window frame is the prototype's backdrop (body{background:var(--bc-backdrop)}).
+    background: "rgb(20, 20, 22)",
     color: "rgb(236, 236, 237)",
     font: 'Overpass, "Helvetica Neue", Helvetica, Arial, sans-serif',
     canvasToken: "#1e1e20",

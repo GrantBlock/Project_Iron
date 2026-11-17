@@ -1,10 +1,10 @@
 /* Page base, as the prototype's (prototype/exports/P16-lite/index.html). Tokens only. */
 html, body { margin: 0; height: 100%; }
-body { background: var(--bc-canvas); color: var(--bc-ink); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+body { background: var(--bc-backdrop); color: var(--bc-ink); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
 *, *::before, *::after { box-sizing: border-box; }
 a { color: var(--bc-steel-blue-text); text-decoration: none; }
 a:hover { color: var(--bc-ink); text-decoration: underline; }
 button:focus-visible, textarea:focus-visible, input:focus-visible, [role="button"]:focus-visible { outline: 2px solid var(--bc-steel-blue-text); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 #app { height: 100%; }
-.lite { height: 100%; background: var(--bc-canvas); }
+.lite { height: 100%; }
