@@ -32,6 +32,8 @@ export function invokeOn(bridge: CollideBridge, cmd: string, args: Record<string
   switch (cmd) {
     case "hide_editor":
       return bridge.hideEditor();
+    case "prepare_overlay":
+      return bridge.prepareOverlay();
     case "show_editor":
       return bridge.showEditor();
     case "capture_monitor":

@@ -25,6 +25,8 @@ export type ShapePatch = Partial<{
   hideText: boolean;
   hideBubble: boolean;
   hideOutline: boolean;
+  /** T39: an added image's crop; undefined = the whole image. */
+  crop: { x: number; y: number; w: number; h: number } | undefined;
   fillPct: number;
   fill: boolean;
   type: "rect" | "ellipse" | "line" | "cross" | "point";

@@ -62,6 +62,26 @@ describe("snip flow", () => {
     expect(flow.isBusy()).toBe(false);
   });
 
+  it("T39 Add snip, Current: no hide, no delay; the box comes with the whole frame and the box as fractions", async () => {
+    const { calls, deps, flow } = setup({ result: { kind: "crop", box: { x: 96, y: 54, w: 768, h: 432 }, scale: 1 } });
+    deps.delayMs = () => 3000;
+    const deliver = vi.fn(async () => undefined);
+    await flow.start(deliver, { hide: false });
+    expect(calls).not.toContain("hide_editor");
+    expect(calls).not.toContain("settle");
+    expect(calls.slice(0, 2)).toEqual(["prepare_overlay", "capture_monitor"]);
+    expect(deliver).toHaveBeenCalledWith(CROP.png, "snip-2026-11-14-0905", { png: CAP.png, crop: { x: 0.05, y: 0.05, w: 0.4, h: 0.4 } });
+    expect(deps.openImage).not.toHaveBeenCalled();
+  });
+
+  it("T39 Add snip, Behind: hides first, like New snip", async () => {
+    const { calls, flow } = setup({ result: { kind: "crop", box: { x: 10, y: 20, w: 40, h: 30 }, scale: 1 } });
+    const deliver = vi.fn(async () => undefined);
+    await flow.start(deliver, { hide: true });
+    expect(calls[0]).toBe("hide_editor");
+    expect(deliver).toHaveBeenCalledTimes(1);
+  });
+
   it("cancel: overlay hidden, editor shown, nothing opened, no toast", async () => {
     const { calls, deps, flow } = setup({ result: { kind: "cancel" } });
     await flow.start();

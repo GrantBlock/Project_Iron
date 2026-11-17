@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Shape } from "../model";
-import { calloutNumbers, fillPctOf, fromPoints, hiddenOf, pixelArea, printArea, PRINT_MARGIN, strokePoints, strokesHit } from "./engine";
+import { calloutNumbers, fillPctOf, fromPoints, hiddenOf, pixelArea, printArea, PRINT_MARGIN, strokePoints, strokesHit, cropImage } from "./engine";
 import { reducer, type EditorState } from "./store";
 import { loadPenMemory, savePenMemory } from "./tools";
 
@@ -52,5 +52,18 @@ describe("markup engine (T32)", () => {
     savePenMemory("snip", { role: "blue", stroke: 5 });
     expect(loadPenMemory("snip")).toEqual({ role: "blue", stroke: 5 });
     expect(loadPenMemory("markdown")).toEqual({ role: "red", stroke: 3 });
+  });
+});
+
+describe("T39 cropImage", () => {
+  const file = { width: 1000, height: 500 };
+  it("keeps the scale and keeps what stays visible in place", () => {
+    // Shown whole at half size: 500 x 250 at (2000, 0).
+    const r = cropImage({ x: 2000, y: 0, w: 500, h: 250 }, file, { x: 0.2, y: 0.4, w: 0.5, h: 0.5 });
+    expect(r).toEqual({ x: 2100, y: 100, w: 250, h: 125, crop: { x: 0.2, y: 0.4, w: 0.5, h: 0.5 } });
+  });
+  it("widening back to the whole image stores no crop and restores the box", () => {
+    const r = cropImage({ x: 2100, y: 100, w: 250, h: 125, crop: { x: 0.2, y: 0.4, w: 0.5, h: 0.5 } }, file, { x: 0, y: 0, w: 1, h: 1 });
+    expect(r).toEqual({ x: 2000, y: 0, w: 500, h: 250, crop: undefined });
   });
 });

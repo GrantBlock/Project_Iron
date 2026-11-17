@@ -750,10 +750,10 @@ export function Shell() {
   }, [showHint]);
   /** Add a captured or pasted image to the snip in front (T33). Resolves with the image's size, or null when no snip is in front. */
   const addToSnip = useCallback(
-    async (url: string, tabId: string | null) => {
+    async (url: string, tabId: string | null, crop?: { x: number; y: number; w: number; h: number }) => {
       const front = activeTab(live.current.tabs);
       if (!front || front.kind !== "snip" || (tabId !== null && front.id !== tabId) || !editor.current) return null;
-      return editor.current.addImage(url);
+      return editor.current.addImage(url, crop);
     },
     [],
   );
@@ -776,25 +776,21 @@ export function Shell() {
     };
     const bridge = window.collide;
     if (bridge) {
-      if (behind) {
-        // Behind: Collide hides and you snip the screen behind it, like New snip; the crop comes to this canvas.
-        if (snipRef.current.isBusy()) return;
-        showHint("Collide hides, then drag a box on the screen behind it. Esc cancels.");
-        void snipRef.current.start((url) => addToSnip(url, front.id).then(added("Snip from behind"), failed));
-      } else {
-        // Current: a new screenshot of the program that is open (the screen as it is, Collide not hidden).
-        void bridge
-          .captureMonitor()
-          .then((cap) => addToSnip(cap.png, front.id))
-          .then(added("Screenshot"), failed);
-      }
+      // Both show the drag box, like New snip (T39, Grant 2026-11-17). Behind: Collide hides first and you snip the screen
+      // behind it. Current: the screen as it is, Collide not hidden. The whole capture is kept with the box as its crop.
+      if (snipRef.current.isBusy()) return;
+      showHint(behind ? "Collide hides, then drag a box on the screen behind it. Esc cancels." : "Drag a box on the screen. Esc cancels.");
+      void snipRef.current.start(
+        (url, _name, whole) => addToSnip(whole?.png ?? url, front.id, whole?.crop).then(added(behind ? "Snip from behind" : "Snip"), failed),
+        { hide: behind },
+      );
       return;
     }
     // A browser has no screen capture. The sample (dev and test only) adds a sample picture, as the prototype does.
     const art = wantsSample() ? sampleSnip(behind ? "s-pid" : "s-hmi") : undefined;
     const url = art ? sampleArt(art, 1280) : null;
     if (!url) return notify({ tone: "error", title: "Add snip needs the Collide desktop app", description: "Screen capture is not available in a browser. Paste an image (Ctrl+V) to add it beside the image." });
-    void addToSnip(url, front.id).then(added(behind ? "Snip from behind" : "Screenshot"), failed);
+    void addToSnip(url, front.id).then(added(behind ? "Snip from behind" : "Snip"), failed);
   }, [addToSnip, fail, newSnip, notify, showHint]);
 
   // ---------- Paste an image (Ctrl+V) ----------

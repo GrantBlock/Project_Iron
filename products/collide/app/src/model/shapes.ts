@@ -8,6 +8,12 @@ const num = z.number().finite();
 /** Added images are saved as `image-<n>.png` beside source.png (RUN3 T33). Nothing else is ever read or written. */
 export const IMAGE_FILE = /^image-[1-9][0-9]{0,5}\.png$/;
 
+/** T39: part of an image file as fractions of its width and height. */
+export const CropSchema = z
+  .object({ x: z.number().min(0).max(1), y: z.number().min(0).max(1), w: z.number().gt(0).max(1), h: z.number().gt(0).max(1) })
+  .refine((c) => c.x + c.w <= 1 + 1e-6 && c.y + c.h <= 1 + 1e-6, "The crop must stay inside the image.");
+export type Crop = z.infer<typeof CropSchema>;
+
 const base = {
   id: z.string().min(1),
   page: z.number().int().min(1).optional(),
@@ -66,7 +72,9 @@ export const ShapeSchema = z.discriminatedUnion("type", [
   }),
   // RUN3 T33: an image added with Add snip or paste. `src` names its file next to source.png in the markup folder
   // (listed in the document's `images`); x, y, w, h place it in image pixels. In the list without a number or bubble.
-  z.object({ ...base, type: z.literal("image"), src: z.string().regex(IMAGE_FILE) }),
+  // T39 (Grant 2026-11-17): `crop` keeps part of the file, as fractions of it (0..1); absent = the whole file.
+  // The file stays whole, so Crop can widen the crop again later.
+  z.object({ ...base, type: z.literal("image"), src: z.string().regex(IMAGE_FILE), crop: CropSchema.optional() }),
   // A callout marker always carries its number.
   z.object({ ...base, type: z.literal("callout"), callout: z.number().int().min(1) }),
 ]);

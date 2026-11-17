@@ -1,4 +1,4 @@
-import type { Locator, Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 // Shared steps for the reference specs: visible UI and mouse positions taken from bounding boxes only.
 
@@ -113,4 +113,20 @@ export async function pasteText(page: Page, text: string): Promise<boolean> {
     (document.activeElement || document.body).dispatchEvent(ev);
     return ev.defaultPrevented;
   }, text);
+}
+
+/**
+ * T39 (Grant 2026-11-17): Add snip shows the drag box like New snip. The prototype shows it in the page; the app's browser
+ * build has no screen capture and adds its sample at once (the real box is the Electron overlay, covered by e2e-electron).
+ * Click Add snip and, when the box is shown, drag one.
+ */
+export async function addSnip(page: Page) {
+  await recents(page).getByRole("button", { name: "Add snip", exact: true }).click();
+  const hint = page.getByText(/drag a box · Esc cancels/);
+  const shown = await hint.waitFor({ state: "visible", timeout: 1500 }).then(() => true, () => false);
+  if (shown) {
+    const v = page.viewportSize() ?? { width: 1440, height: 860 };
+    await drag(page, [Math.round(v.width * 0.2), Math.round(v.height * 0.2)], [Math.round(v.width * 0.7), Math.round(v.height * 0.7)], 6);
+    await expect(hint).toBeHidden();
+  }
 }

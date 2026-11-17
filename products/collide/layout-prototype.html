@@ -2145,7 +2145,7 @@ document.addEventListener('click', (e) => {
         // Beside the content: same height as the first image, aspect of the box; the canvas grows to fit.
         s.shapes.push({ n: nextId(s), type: 'image', art, nat, crop: c, x: right + 24, y: 0, w: Math.round(H * (c.w * nat.w) / (c.h * nat.h)), h: H, note: '' });
         S.sel = s.shapes[s.shapes.length - 1].n; S.selByDraw = false; S.tool = 'select'; snipChanged(); requestAnimationFrame(fitView);
-        toast(`${behind ? 'Snip from behind' : 'Snip of the open program'} added beside the image · ${Math.round(c.w * 1280)} × ${Math.round(c.h * 720)} · copied to clipboard`);
+        toast(`${behind ? 'Snip from behind' : 'Snip'} added beside the image · copied to clipboard`);
       }), behind ? 700 : 150);
       return;
     }

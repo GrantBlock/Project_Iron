@@ -150,3 +150,31 @@ export function pixelArea(a: Area): { x: number; y: number; width: number; heigh
   const y = Math.floor(a.y);
   return { x, y, width: Math.ceil(a.x + a.w) - x, height: Math.ceil(a.y + a.h) - y };
 }
+
+/** T39: the whole image, as a crop. */
+export const FULL_CROP = { x: 0, y: 0, w: 1, h: 1 } as const;
+type CropBox = { x: number; y: number; w: number; h: number };
+const isFull = (c: CropBox) => Math.abs(c.x) < 1e-6 && Math.abs(c.y) < 1e-6 && Math.abs(c.w - 1) < 1e-6 && Math.abs(c.h - 1) < 1e-6;
+
+/**
+ * T39 (Grant 2026-11-17): re-crop an added image. Its scale stays (canvas px per file px) and what stays visible stays
+ * where it was: the box moves by the change at the crop's top-left. A crop of the whole file is stored as no crop.
+ */
+export function cropImage(
+  shape: { x: number; y: number; w: number; h: number; crop?: CropBox },
+  file: { width: number; height: number },
+  next: CropBox,
+): { x: number; y: number; w: number; h: number; crop: CropBox | undefined } {
+  const o = shape.crop ?? FULL_CROP;
+  const sx = shape.w / (o.w * file.width), sy = shape.h / (o.h * file.height);
+  return {
+    x: Math.round(shape.x + (next.x - o.x) * file.width * sx),
+    y: Math.round(shape.y + (next.y - o.y) * file.height * sy),
+    w: Math.max(8, Math.round(next.w * file.width * sx)),
+    h: Math.max(8, Math.round(next.h * file.height * sy)),
+    crop: isFull(next) ? undefined : { ...next },
+  };
+}
+
+/** T39: the crop in file pixels, for drawing. */
+export const cropPixels = (c: CropBox, file: { width: number; height: number }) => ({ x: c.x * file.width, y: c.y * file.height, width: c.w * file.width, height: c.h * file.height });

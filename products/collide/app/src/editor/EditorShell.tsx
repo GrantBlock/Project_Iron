@@ -11,7 +11,8 @@ import { StatusBar } from "./StatusBar";
 import { CalloutsPanel } from "./CalloutsPanel";
 import { Toolbar } from "./Toolbar";
 import { copyPngToClipboard, dataUrlToBlob, downloadPng, exportFileName, flatten, flattenArea, flattenFit, type Flattened } from "../io/flatten";
-import { placeBeside, printArea } from "./engine";
+import { cropImage, placeBeside, printArea } from "./engine";
+import { CropDialog, type CropBox } from "./CropDialog";
 import { isPng, MarkupError, markupFolderName, type ImageFile, type MarkupStore } from "../io";
 import type { SnipPackage } from "../io/collideFile";
 import { fitArea, recentre, screenToImage, type Point, type Size, type View } from "./viewport";
@@ -149,7 +150,7 @@ export interface SnipEditorApi {
    * RUN3 T33: add an image (Add snip, paste) beside the content: as tall as the base image, aspect kept, selected,
    * the view fitted to the grown canvas. One undo step. Resolves with the image's own size.
    */
-  addImage: (url: string) => Promise<{ width: number; height: number }>;
+  addImage: (url: string, crop?: CropBox) => Promise<{ width: number; height: number }>;
   /** RUN3 T35: copy the print area to the clipboard with no toast. Rejects when the clipboard refuses. */
   copyQuiet: () => Promise<void>;
   /** RUN3 T35: everything a .collide file holds: the doc as Save writes it, the source and added images, and Copy's picture. */
@@ -207,6 +208,8 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
   const sizeRef = useRef<Size>({ width: 0, height: 0 });
   const handleRef = useRef<CanvasHandle | null>(null);
   // Added images' pictures for the canvas (RUN3 T33); the session's map only grows, and a new image is a new document.
+  // T39: the added image whose Crop is open.
+  const [cropId, setCropId] = useState<string | null>(null);
   const pictures = useMemo(() => new Map([...session.pictures].map(([k, v]) => [k, v.el])), [session, state.doc]);
 
   // What the hook and the window-level handlers read, as of the last render; the session and the pen follow.
@@ -475,19 +478,21 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
   }, [setTool]);
 
   const addImage = useCallback(
-    async (url: string) => {
+    // T39: `crop` (Add snip's drag box) keeps part of the image; the file stays whole so Crop can widen it later.
+    async (url: string, crop?: CropBox) => {
       const loaded = await loadImage(url, "image");
       const png = await toPngBytes(await (await fetch(url)).blob());
       const src = nextImageFile([...session.pictures.keys(), ...(stateRef.current.doc?.shapes ?? []).flatMap((s) => (s.type === "image" ? [s.src] : []))]);
       session.pictures.set(src, { el: loaded.el, png });
-      const at = placeBeside(image, stateRef.current.doc?.shapes ?? [], loaded);
+      const kept = crop ? { width: Math.max(1, Math.round(loaded.width * crop.w)), height: Math.max(1, Math.round(loaded.height * crop.h)) } : loaded;
+      const at = placeBeside(image, stateRef.current.doc?.shapes ?? [], kept);
       flushSync(() => {
         setTool("select");
-        dispatch({ type: "add", shape: { type: "image", src, ...at, stroke: "gray", strokeWidth: 0 } });
+        dispatch({ type: "add", shape: { type: "image", src, ...at, ...(crop ? { crop } : {}), stroke: "gray", strokeWidth: 0 } as NewShape });
       });
       // The canvas grew: fit the view to it (as the prototype does).
       requestAnimationFrame(fitToWindow);
-      return { width: loaded.width, height: loaded.height };
+      return { width: kept.width, height: kept.height };
     },
     [dispatch, fitToWindow, image, session, setTool, stateRef],
   );
@@ -599,11 +604,32 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
           onPatch={onPatch}
           onReorder={onReorder}
           onRemove={onRemove}
+          onCrop={setCropId}
           focus={focusNote}
           onEscape={() => setTool("select")}
         />
       </div>
       <StatusBar zoom={view.scale} dims={{ width: image.width, height: image.height }} />
+      {(() => {
+        const s = cropId ? shapes.find((x) => x.id === cropId) : undefined;
+        const el = s?.type === "image" ? session.pictures.get(s.src)?.el : undefined;
+        if (!s || s.type !== "image" || !el) return null;
+        const file = { width: el.naturalWidth || el.width, height: el.naturalHeight || el.height };
+        return (
+          <CropDialog
+            src={el.src}
+            file={file}
+            crop={s.crop}
+            onCancel={() => setCropId(null)}
+            onApply={(c) => {
+              setCropId(null);
+              const was = s.crop ?? { x: 0, y: 0, w: 1, h: 1 };
+              if ((["x", "y", "w", "h"] as const).every((q) => Math.abs(was[q] - c[q]) < 1e-4)) return;
+              dispatch({ type: "update", id: s.id, patch: cropImage(s, file, c) });
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }

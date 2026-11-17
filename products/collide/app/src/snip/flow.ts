@@ -1,5 +1,6 @@
 // T11: the snip orchestrator. All side effects come in through `SnipDeps`, so the
 // order of calls is unit-testable with mocks. Window moves are main-process calls (src/native/windows.ts).
+import { cropRect } from "./crop";
 
 export interface CaptureInfo {
   width: number;
@@ -13,6 +14,11 @@ export interface CropInfo {
   width: number;
   height: number;
   png: string;
+}
+/** T39: the whole frozen frame and the snipped box as fractions of it. */
+export interface WholeCapture {
+  png: string;
+  crop: { x: number; y: number; w: number; h: number };
 }
 export type OverlayResult =
   | { kind: "crop"; box: { x: number; y: number; w: number; h: number }; scale: number }
@@ -83,13 +89,22 @@ export function createSnipFlow(deps: SnipDeps) {
   let busy = false;
   let lastSnipId = 0;
 
-  type Deliver = SnipDeps["openImage"];
+  /**
+   * Takes the crop. `whole` is the frozen frame and the box as fractions of it (T39: Add snip keeps the whole capture,
+   * so Crop can widen the box later); New snip ignores it.
+   */
+  type Deliver = (url: string, name: string, whole?: WholeCapture) => Promise<unknown>;
 
-  async function run(invoke: NonNullable<SnipDeps["invoke"]>, snipId: number, deliver: Deliver) {
-    await invoke("hide_editor");
-    const delay = deps.delayMs?.() ?? 0;
-    if (delay > 0) await (deps.wait ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms))))(delay);
-    await deps.settle();
+  async function run(invoke: NonNullable<SnipDeps["invoke"]>, snipId: number, deliver: Deliver, hide: boolean) {
+    if (hide) {
+      await invoke("hide_editor");
+      const delay = deps.delayMs?.() ?? 0;
+      if (delay > 0) await (deps.wait ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms))))(delay);
+      await deps.settle();
+    } else {
+      // T39 Add snip, Current: the editor stays; the overlay window must still be open and loaded.
+      await invoke("prepare_overlay");
+    }
     const cap = (await invoke("capture_monitor")) as CaptureInfo;
     await withTimeout(
       deps.waitForOverlayReady(),
@@ -114,14 +129,16 @@ export function createSnipFlow(deps: SnipDeps) {
     const crop = (await invoke("crop_capture", { x: box.x, y: box.y, w: box.w, h: box.h, scale })) as CropInfo;
     await invoke("hide_overlay");
     await invoke("show_editor");
-    await deliver(crop.png, snipName(deps.now()));
+    // The box as fractions of the frame, from the same rounding the crop used.
+    const r = cropRect(box, scale, cap.width, cap.height);
+    await deliver(crop.png, snipName(deps.now()), { png: cap.png, crop: { x: r.x / cap.width, y: r.y / cap.height, w: r.w / cap.width, h: r.h / cap.height } });
   }
 
   /**
    * Start a snip. Ignored while one is already in progress. Never throws.
    * `deliver` takes the crop instead of opening it in a new tab (Add snip, Behind: RUN3 T33).
    */
-  async function start(deliver: Deliver = deps.openImage): Promise<void> {
+  async function start(deliver: Deliver = (url, name) => deps.openImage(url, name), opts: { hide?: boolean } = {}): Promise<void> {
     if (busy) return;
     const invoke = deps.invoke;
     if (!invoke) {
@@ -130,7 +147,7 @@ export function createSnipFlow(deps: SnipDeps) {
     }
     busy = true;
     try {
-      await run(invoke, ++lastSnipId, deliver);
+      await run(invoke, ++lastSnipId, deliver, opts.hide ?? true);
     } catch (e) {
       deps.notify({
         tone: "error",

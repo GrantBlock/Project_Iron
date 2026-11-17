@@ -1,5 +1,5 @@
 import { expect, test } from "../fixture";
-import { atStage, box, drag, openMarkdown, openSnip, recents, scribble, tool, workspace } from "../helpers";
+import { atStage, box, drag, openMarkdown, openSnip, scribble, tool, workspace, addSnip } from "../helpers";
 
 // Seed: ../../../prototype-checks/order-numbers-and-eraser.js
 // List front to back; pens, highlighters and images without numbers or bubbles;
@@ -45,7 +45,7 @@ test("front-to-back list; strokes and images have no number or bubble; the erase
 
   // Again, then Add snip: the image comes in front, also without a number or a bubble.
   await strokes();
-  await recents(page).getByRole("button", { name: "Add snip", exact: true }).click();
+  await addSnip(page);
   await expect.poll(async () => (await state()).items.some((i) => i.type === "image")).toBe(true);
   expect(await summary()).toEqual(["image:-", "hl:-", "pen:-", ...callouts]);
   items = (await state()).items;

@@ -23,6 +23,7 @@ export const INVOKE_CHANNELS = {
   captureMonitor: "collide:capture-monitor",
   cropCapture: "collide:crop-capture",
   hideEditor: "collide:hide-editor",
+  prepareOverlay: "collide:prepare-overlay",
   showEditor: "collide:show-editor",
   showOverlay: "collide:show-overlay",
   hideOverlay: "collide:hide-overlay",
@@ -104,6 +105,8 @@ export interface CollideBridge {
   cropCapture(box: LogicalRect, scale: number): Promise<CropInfo>;
   /** Hide the editor for a snip, leaving no ghost in the capture; resolves once the overlay window's page has loaded. */
   hideEditor(): Promise<void>;
+  /** T39: open the overlay window (hidden) and resolve once its page has loaded, without hiding the editor (Add snip, Current). */
+  prepareOverlay(): Promise<void>;
   /** Put the editor back exactly where it was (position, size, maximized, opacity), show and focus it. */
   showEditor(): Promise<void>;
   /** Place the overlay on the captured display, then show and focus it. */
@@ -180,6 +183,7 @@ export const BRIDGE_KEYS = [
   "markups",
   "onSnipRequest",
   "overlay",
+  "prepareOverlay",
   "settingsStatus",
   "showEditor",
   "showOverlay",

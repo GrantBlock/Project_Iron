@@ -41,6 +41,7 @@ contextBridge.exposeInMainWorld("collide", {
   captureMonitor: () => call("collide:capture-monitor"),
   cropCapture: (box, scale) => call("collide:crop-capture", box, scale),
   hideEditor: () => call("collide:hide-editor"),
+  prepareOverlay: () => call("collide:prepare-overlay"),
   showEditor: () => call("collide:show-editor"),
   showOverlay: (bounds) => call("collide:show-overlay", bounds),
   hideOverlay: () => call("collide:hide-overlay"),

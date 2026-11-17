@@ -33,7 +33,7 @@ test("Electron opens the editor from the Vite dev server", async () => {
   }
 });
 
-// RUN2.md, "Preload bridge window.collide": these and nothing else (RUN3 T35 adds collideFiles: .collide save, open, pick; T36 adds storage: info, setKeep, prune; T38 adds collideFiles.openPdf and exportPdf).
+// RUN2.md, "Preload bridge window.collide": these and nothing else (RUN3 T35 adds collideFiles: .collide save, open, pick; T36 adds storage: info, setKeep, prune; T38 adds collideFiles.openPdf and exportPdf; T39 adds prepareOverlay).
 const BRIDGE_KEYS = [
   "captureMonitor",
   "collapse",
@@ -45,6 +45,7 @@ const BRIDGE_KEYS = [
   "markups",
   "onSnipRequest",
   "overlay", // the overlay events
+  "prepareOverlay", // T39: Add snip, Current opens the overlay without hiding the editor
   "settingsStatus",
   "showEditor",
   "showOverlay",

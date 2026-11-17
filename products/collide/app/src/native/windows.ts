@@ -48,6 +48,8 @@ export interface ChoreographyDeps {
 
 export interface Choreography {
   hideEditor(): Promise<void>;
+  /** T39: the overlay window loaded (hidden), the editor left as it is. */
+  prepareOverlay(): Promise<void>;
   showEditor(): void;
   showOverlay(bounds: Rect): void;
   hideOverlay(): void;
@@ -103,6 +105,10 @@ export function createChoreography(deps: ChoreographyDeps): Choreography {
       }
       // Have the overlay's page loaded before the flow pings it. The Rust shell
       // opened that window (hidden) at startup; here it is opened by the first snip.
+      await deps.overlay().loaded;
+    },
+
+    async prepareOverlay() {
       await deps.overlay().loaded;
     },
 

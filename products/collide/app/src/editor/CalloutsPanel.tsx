@@ -47,6 +47,8 @@ interface Props {
   /** Move a shape to `index` in draw order (0 = the back). */
   onReorder: (id: string, index: number) => void;
   onRemove: (id: string) => void;
+  /** T39: open Crop for an added image. */
+  onCrop?: (id: string) => void;
   /** Put the cursor in this callout's note (after a draw); `n` changes on every request. */
   focus: { id: string; n: number } | null;
   /** Esc in a note: leave it and go back to Select. */
@@ -56,7 +58,7 @@ interface Props {
 const tog = { flex: "none", width: 24, height: 24, display: "grid", placeItems: "center", border: "1px solid var(--line-2)", borderRadius: "var(--radius-sm)", cursor: "pointer" } as const;
 
 /** Right pane: every item front to back (RUN3 T32). Callouts get a card; strokes and added images a plain row without a number. */
-export function CalloutsPanel({ shapes, selectedId, onSelect, onNote, onCommit, onPatch, onReorder, onRemove, focus, onEscape }: Props) {
+export function CalloutsPanel({ shapes, selectedId, onSelect, onNote, onCommit, onPatch, onReorder, onRemove, onCrop, focus, onEscape }: Props) {
   const numbers = calloutNumbers(shapes);
   const timer = useRef<number | undefined>(undefined);
   const notes = useRef(new Map<string, HTMLTextAreaElement>());
@@ -159,6 +161,21 @@ export function CalloutsPanel({ shapes, selectedId, onSelect, onNote, onCommit, 
                 <span style={{ font: "var(--type-sm)", lineHeight: "20px", color: "var(--text-4)" }}>no number</span>
                 <span style={{ flex: 1 }} />
                 {s.type !== "image" && toggle(s, "hideOutline", "square", "Stroke hidden: click to show", "Hide the stroke (Copy and Export too)", hid.outline)}
+                {s.type === "image" && onCrop && (
+                  <button
+                    type="button"
+                    aria-label="Crop image"
+                    aria-pressed={!!s.crop}
+                    title={s.crop ? "Crop this image (cropped)" : "Crop this image"}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onCrop(s.id);
+                    }}
+                    style={{ ...tog, background: s.crop ? "var(--surface-3)" : "transparent", color: "var(--text-3)" }}
+                  >
+                    <Icon name="crop" size={13} />
+                  </button>
+                )}
                 <button
                   type="button"
                   aria-label={`Delete ${label}`}

@@ -7,7 +7,7 @@ import { BADGE_SIZE, isRealDrag, resizeShape, shapeFromDrag, type DrawTool, type
 import { hasNoteBox, layoutNotes, leader, noteUnit, snapNote, NOTE_BADGE, NOTE_BADGE_GAP, NOTE_FONT, NOTE_MIN_W, NOTE_PAD, NOTE_W, noteSize, noteTextWidth, type Box } from "./notes";
 import type { NewShape, ShapePatch } from "./store";
 import { paintOf, type Tool } from "./tools";
-import { calloutNumbers, fillPctOf, fromPoints, hiddenOf, highlighterWidth, pixelArea, printArea, strokesHit } from "./engine";
+import { calloutNumbers, fillPctOf, fromPoints, hiddenOf, highlighterWidth, pixelArea, printArea, strokesHit, cropPixels } from "./engine";
 import { imageToScreen, panBy, screenToImage, wheelFactor, zoomAt, type Point, type Size, type View } from "./viewport";
 
 export interface LoadedImage {
@@ -231,7 +231,7 @@ function ShapeNode({ shape, interactive, hidden, onSelect, onMoved, onEditText, 
     case "image":
       // An added image: its picture, or a plain frame while it loads (RUN3 T33).
       main = picture ? (
-        <KonvaImage name="main" image={picture} width={shape.w} height={shape.h} />
+        <KonvaImage name="main" image={picture} width={shape.w} height={shape.h} crop={shape.crop ? cropPixels(shape.crop, { width: picture.naturalWidth || picture.width, height: picture.naturalHeight || picture.height }) : undefined} />
       ) : (
         <Rect name="main" width={shape.w} height={shape.h} fill={cssVar("--surface-2")} stroke={cssVar("--line-2")} strokeWidth={1} />
       );

@@ -1,5 +1,5 @@
 import { expect, test } from "../fixture";
-import { openMarkdown, openSnip, recents, tool } from "../helpers";
+import { openMarkdown, openSnip, tool, addSnip } from "../helpers";
 
 // Seed: ../../../prototype-checks/save-collide-file.js
 // Save as .collide from Snip and from Markdown.
@@ -10,8 +10,8 @@ test("Save as .collide works from Snip (two sources) and from Markdown", async (
 
   // Snip with a second image added beside the first: the file has both sources and every item.
   await openSnip(page);
-  await recents(page).getByRole("button", { name: "Add snip", exact: true }).click();
-  await expect(toast).toHaveText("Screenshot added beside the image · copied to clipboard");
+  await addSnip(page);
+  await expect(toast).toHaveText("Snip added beside the image · copied to clipboard");
   const items = (await state()).items;
   expect(items.filter((i) => i.type === "image")).toHaveLength(1);
   expect(items.filter((i) => i.number !== null)).toHaveLength(4);

@@ -40,6 +40,7 @@ function setup(capturer?: Capturer, settings: SettingsStatus | null = { hotkey: 
     broadcast: (...args) => void sent.push(args),
     windows: {
       hideEditor: async () => void moves.push(["hideEditor"]),
+      prepareOverlay: async () => void moves.push(["prepareOverlay"]),
       showEditor: () => void moves.push(["showEditor"]),
       showOverlay: (bounds) => void moves.push(["showOverlay", bounds]),
       hideOverlay: () => {

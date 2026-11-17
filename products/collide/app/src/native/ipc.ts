@@ -84,6 +84,7 @@ export function registerBridge(deps: BridgeDeps): { state: CaptureState } {
   handle("captureMonitor", () => captureMonitor(deps, state, capturer));
   handle("cropCapture", (box, scale) => cropFromState(state, box as LogicalRect, scale as number, deps.decodePng));
   handle("hideEditor", () => deps.windows.hideEditor());
+  handle("prepareOverlay", () => deps.windows.prepareOverlay());
   handle("showEditor", () => deps.windows.showEditor());
   handle("showOverlay", (bounds) => deps.windows.showOverlay(overlayBoundsFor(state.frame, bounds)));
   handle("hideOverlay", () => deps.windows.hideOverlay());
