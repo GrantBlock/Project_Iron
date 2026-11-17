@@ -1,11 +1,15 @@
 // Center: the path bar with the Read only tag, and the view (ui/views.ts).
-import { projectOf } from "../data/sample";
-import { pathText, selectedItem, turnPage, type AppState, type Store } from "../state";
+import type { Item } from "../data/sample";
+import { pathParts, selectedItem, turnPage, type AppState, type Store } from "../state";
 import { el, type Area } from "./dom";
 import { createModelView, type ViewHandle } from "./model-view";
+import { createPdfView } from "./pdf-view";
 import { renderView } from "./views";
 
-export function createCenter(store: Store): Area<AppState> {
+/** Reads a file of the opened folder (the preload bridge; absent outside the Electron app). */
+export type FileReader = (path: string) => Promise<Uint8Array>;
+
+export function createCenter(store: Store, readFile?: FileReader): Area<AppState> {
   const crumb = el("span", { class: "l-crumb", id: "crumb" });
   const view = el("div", { class: "l-view de-scroll", id: "view", tabindex: "0" });
   view.addEventListener("click", (e) => {
@@ -24,14 +28,16 @@ export function createCenter(store: Store): Area<AppState> {
     element,
     render(s, prev) {
       handle?.update(s);
-      if (prev && prev.opened === s.opened && prev.selected === s.selected && prev.page === s.page && prev.highlight === s.highlight) return;
+      const sameItem = prev && prev.opened === s.opened && prev.selected === s.selected;
+      // A view with a handle (model, PDF) follows page and part changes itself.
+      if (sameItem && (handle || (prev.page === s.page && prev.highlight === s.highlight))) return;
       const item = selectedItem(s);
-      const project = item && projectOf(item.id);
-      crumb.replaceChildren(...(item && project ? [`${project.name} / `, el("b", {}, item.title)] : [el("b", {}, pathText(s))]));
+      const { folders, title } = pathParts(s);
+      crumb.replaceChildren(...(title === null ? [el("b", {}, "About this package")] : [folders.map((f) => `${f} / `).join(""), el("b", {}, title)]));
       // Keep the keyboard on Previous / Next across page turns (the other one when it is now disabled).
       const focused = view.contains(document.activeElement) ? document.activeElement?.id : undefined;
       handle?.dispose();
-      handle = item?.type === "model" ? createModelView(item, store) : null;
+      handle = item ? viewHandle(item, store, readFile) : null;
       view.replaceChildren(...(handle ? handle.nodes : renderView(s)));
       handle?.update(s);
       if (focused === "pp" || focused === "pn") {
@@ -42,4 +48,13 @@ export function createCenter(store: Store): Area<AppState> {
       if (!prev || prev.opened !== s.opened) view.scrollTop = 0;
     },
   };
+}
+
+/** Views that load and follow the state themselves: models (3D viewer) and PDFs. */
+function viewHandle(item: Item, store: Store, readFile: FileReader | undefined): ViewHandle | null {
+  const src = item.source;
+  const read = src && readFile ? () => readFile(src.path) : undefined;
+  if (item.type === "model") return createModelView(item, store, src ? read : undefined);
+  if (item.type === "document" && src?.kind === "pdf" && read) return createPdfView(item, read);
+  return null;
 }

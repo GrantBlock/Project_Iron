@@ -2,7 +2,7 @@
 // prototype's hook returns. Built from the app state; the two facts that only the page knows
 // (whether the window is under 900px, how many <mark>s the page shows) come from `env`.
 import { PACKAGE } from "./data/sample";
-import { selectedItem, treeFolders, viewInfo, pathText, type AppState, type Store } from "./state";
+import { listedItems, openFolderNames, selectedItem, viewInfo, pathText, type AppState, type Store } from "./state";
 import type { ViewType } from "./data/sample";
 
 export interface HookMessage {
@@ -35,14 +35,13 @@ export function messageText(text: string): string {
 }
 
 export function snapshot(s: AppState, env: HookEnv): HookState {
-  const folders = treeFolders(s);
-  const listed = folders.flatMap((f) => f.items);
+  const listed = listedItems(s);
   const item = selectedItem(s);
   const view = viewInfo(s);
   const inTree = !item || listed.some((i) => i.id === item.id);
   return {
     selected: { id: inTree ? s.selected : null, type: view.type, title: item ? item.title : PACKAGE.title, path: pathText(s) },
-    openFolders: folders.filter((f) => f.open).map((f) => f.project.name),
+    openFolders: openFolderNames(s),
     view: { ...view },
     search: { query: s.query, matchCount: listed.length, highlights: env.highlights },
     assistantShown: s.assistantShown,

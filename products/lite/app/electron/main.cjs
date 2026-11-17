@@ -7,7 +7,8 @@
 // dist-electron/native.cjs by `pnpm build:native`.
 "use strict";
 
-const { app, BrowserWindow, Menu, net, protocol, session } = require("electron");
+const { app, BrowserWindow, Menu, dialog, ipcMain, net, protocol, session } = require("electron");
+const fsp = require("node:fs/promises");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 
@@ -69,6 +70,39 @@ app.on("web-contents-created", (_event, contents) => {
 });
 
 if (process.platform === "win32") app.setAppUserModelId(APP_ID);
+
+// Open a folder (L08), read only: the page asks for a folder (the system dialog) and then for
+// files by their path inside it. One folder at a time. src/native/folder.ts checks every path
+// (inside the folder after symlinks, a regular file, at most 50 MB) and never writes.
+let openFolderRoot = null;
+const { constants } = require("node:fs");
+const fsLike = {
+  realpath: (p) => fsp.realpath(p),
+  lstat: (p) => fsp.lstat(p),
+  stat: (p) => fsp.stat(p),
+  readdir: (p) => fsp.readdir(p),
+  // Read only: O_RDONLY, plus O_NOFOLLOW where it exists (undefined on Windows; folder.ts re-checks there).
+  open: (p, flags) => fsp.open(p, flags),
+  flags: { readOnly: constants.O_RDONLY, noFollow: constants.O_NOFOLLOW },
+};
+const fromApp = (event) => isAppUrl(event.senderFrame?.url ?? "");
+
+ipcMain.handle("lite:open-folder", async (event) => {
+  if (!fromApp(event)) throw new Error("Refused");
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const options = { title: "Open folder", properties: ["openDirectory"] };
+  const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options);
+  if (result.canceled || !result.filePaths[0]) return null;
+  const root = await fsp.realpath(result.filePaths[0]);
+  const listing = await native.listFolder(root, fsLike, path);
+  openFolderRoot = root;
+  return listing;
+});
+
+ipcMain.handle("lite:read-file", async (event, rel) => {
+  if (!fromApp(event) || !openFolderRoot) throw new Error("Refused");
+  return native.readInside(openFolderRoot, rel, fsLike, path);
+});
 
 function createWindow() {
   const win = new BrowserWindow(native.windowOptions(path.join(__dirname, "preload.cjs")));

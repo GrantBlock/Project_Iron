@@ -16,8 +16,8 @@ export interface ViewHandle {
   dispose(): void;
 }
 
-/** Where a model's GLB comes from: a bundled sample URL now; bytes from disk in L08. */
-export type ModelSource = string | ArrayBuffer;
+/** Where a model's GLB comes from: a bundled sample URL, bytes, or a reader (a file of an opened folder, L08). */
+export type ModelSource = string | ArrayBuffer | (() => Promise<Uint8Array>);
 
 export function modelSource(item: ModelItem): ModelSource | undefined {
   return SAMPLE_MODEL_URLS[item.id];
@@ -47,7 +47,7 @@ export function createModelView(item: ModelItem, store: Store, source: ModelSour
   if (viewport && source !== undefined) {
     void (async () => {
       try {
-        const bytes = typeof source === "string" ? await (await fetch(source)).arrayBuffer() : source;
+        const bytes = typeof source === "string" ? await (await fetch(source)).arrayBuffer() : typeof source === "function" ? toArrayBuffer(await source()) : source;
         const { createViewer } = await import("../viewer/viewer");
         if (disposed) return;
         const steel = getComputedStyle(document.documentElement).getPropertyValue("--bc-steel-blue").trim() || "steelblue";
@@ -87,4 +87,8 @@ export function createModelView(item: ModelItem, store: Store, source: ModelSour
       viewer = null;
     },
   };
+}
+
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 }

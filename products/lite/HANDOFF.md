@@ -16,5 +16,5 @@
 | L05 | Search | Done (Vitest 54, e2e 16; generic search module for L08) | search 9/9 · app total 35/47 |
 | L06 | 3D viewer | Done (three 0.187.0; sample GLBs via pnpm models; Vitest 71, e2e 25; Reviewer fixes: WebGL disposal, no-WebGL and 40-switch tests) | ref 47/47 (parts list both; viewer app-only e2e) |
 | L07 | Assistant (canned) | Done (Vitest 61, e2e 17; answer engine behind an interface; offline test flake fixed) | assistant 11/11 · app total 47/47 |
-| L08 | Open a folder | To do | |
+| L08 | Open a folder | Done (pdfjs-dist 4.10.38; read-only, path checks, one-handle reads, 50 MB cap, 5000-entry cap; Vitest 95, e2e 27; Reviewer fixes: read race, listing cap) | ref 47/47; app-only fixture e2e |
 | L09 | Handoff | To do | |
