@@ -112,7 +112,9 @@ test("a pasted image goes beside the image, moves, resizes with its aspect locke
   await expect.poll(async () => (await imageShape(page))!.w).toBeLessThan(480);
   const sized = (await imageShape(page))!;
   expect(sized.w / sized.h).toBeCloseTo(480 / 300, 2);
-  expect([sized.x, sized.y]).toEqual([moved.x, moved.y]);
+  // The top-left corner stays put (to float precision).
+  expect(sized.x).toBeCloseTo(moved.x, 3);
+  expect(sized.y).toBeCloseTo(moved.y, 3);
 
   // Undo the resize, then delete it, then undo the delete.
   await page.keyboard.press("Control+z");
