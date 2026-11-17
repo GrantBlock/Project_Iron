@@ -23,6 +23,7 @@
     "dist": "pnpm build && electron-builder --win portable --x64"
   },
   "dependencies": {
+    "fflate": "^0.8.2",
     "konva": "^10.9.1",
     "lucide-static": "0.460.0",
     "markdown-it": "^14.3.3",
