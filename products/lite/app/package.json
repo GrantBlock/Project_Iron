@@ -1,0 +1,59 @@
+{
+  "name": "lite",
+  "productName": "Lite",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Lite",
+  "author": "Block Concepts LLC",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:web": "vite",
+    "build": "tsc --noEmit && vite build && pnpm build:native",
+    "build:native": "vite build -c vite.native.config.ts",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "e2e": "pnpm build && node scripts/e2e.mjs",
+    "dist": "pnpm build && electron-builder --win portable --x64 --publish never"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.65.1",
+    "@types/node": "26.6.6",
+    "electron": "33.4.11",
+    "electron-builder": "25.1.8",
+    "eslint": "10.15.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.2",
+    "vite": "8.3.8",
+    "vitest": "5.1.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron"
+    ]
+  },
+  "build": {
+    "appId": "com.blockconcepts.lite",
+    "productName": "Lite",
+    "files": [
+      "dist/**",
+      "dist-electron/**",
+      "electron/**",
+      "!node_modules"
+    ],
+    "publish": null,
+    "win": {
+      "target": "portable",
+      "signAndEditExecutable": false
+    },
+    "portable": {
+      "artifactName": "Lite-${version}.exe"
+    },
+    "directories": {
+      "output": "release"
+    }
+  }
+}
