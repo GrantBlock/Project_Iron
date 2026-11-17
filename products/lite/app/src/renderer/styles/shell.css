@@ -166,3 +166,17 @@ button.l-part:focus-visible{outline:2px solid var(--bc-steel-blue-text);outline-
 .l-pdf canvas{display:block;width:100%;height:auto}
 .l-pdf[data-state=loading]{min-height:380px}
 .l-pdf-error{padding:28px 32px;margin:0}
+
+/* L10: the frameless Electron window (Grant 2026-11-17). The window's edge is the frame, so the
+   prototype's backdrop margin and rounded frame are left out there (A); the web build is unchanged.
+   The title bar drags the window; its buttons (window buttons, Assistant) do not. The window
+   buttons show at every width (the prototype hides its drawn ones under 900px: there is no
+   other way to close a frameless window). */
+.is-desktop .l-win{padding:0}
+.is-desktop .l-frame{border:none;border-radius:0;box-shadow:none}
+.is-desktop .l-title{-webkit-app-region:drag;user-select:none}
+.is-desktop .l-title button{-webkit-app-region:no-drag}
+.is-desktop .l-wc{display:flex}
+.l-wb{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:center;width:40px;height:32px;border-radius:var(--bc-radius-control);color:var(--bc-muted);cursor:default}
+.l-wb:hover{background:var(--bc-surface-raised);color:var(--bc-ink)}
+.l-wb:focus-visible{outline:2px solid var(--bc-steel-blue-text);outline-offset:-2px}

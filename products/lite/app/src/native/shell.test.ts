@@ -1,12 +1,12 @@
 import { posix, win32 } from "node:path";
 import { describe, expect, it } from "vitest";
-import { APP_NAME, APP_URL, devServerUrl, distFile, sameOrigin, windowOptions } from "./shell";
+import { APP_NAME, APP_URL, applyWindowAction, devServerUrl, distFile, sameOrigin, windowOptions, type WindowLike } from "./shell";
 
 describe("window", () => {
-  it("is titled Lite, 1280 × 800, resizable, with the page locked down", () => {
+  it("is titled Lite, 1280 × 800, resizable, frameless with Windows resize edges, with the page locked down", () => {
     const options = windowOptions("/app/electron/preload.cjs");
     expect(APP_NAME).toBe("Lite");
-    expect(options).toMatchObject({ title: "Lite", width: 1280, height: 800, resizable: true, backgroundColor: "#1e1e20" });
+    expect(options).toMatchObject({ title: "Lite", width: 1280, height: 800, minWidth: 400, minHeight: 500, resizable: true, frame: false, thickFrame: true, backgroundColor: "#1e1e20" });
     expect(options.webPreferences).toEqual({
       preload: "/app/electron/preload.cjs",
       contextIsolation: true,
@@ -15,6 +15,36 @@ describe("window", () => {
       webSecurity: true,
       spellcheck: false,
     });
+  });
+});
+
+describe("applyWindowAction", () => {
+  function fakeWindow() {
+    const calls: string[] = [];
+    let maximized = false;
+    const win: WindowLike = {
+      minimize: () => calls.push("minimize"),
+      maximize: () => (calls.push("maximize"), (maximized = true)),
+      unmaximize: () => (calls.push("unmaximize"), (maximized = false)),
+      isMaximized: () => maximized,
+      close: () => calls.push("close"),
+    };
+    return { win, calls };
+  }
+
+  it("minimizes, toggles maximized and closes", () => {
+    const { win, calls } = fakeWindow();
+    expect(applyWindowAction(win, "minimize")).toBe(true);
+    expect(applyWindowAction(win, "toggle-maximize")).toBe(true);
+    expect(applyWindowAction(win, "toggle-maximize")).toBe(true);
+    expect(applyWindowAction(win, "close")).toBe(true);
+    expect(calls).toEqual(["minimize", "maximize", "unmaximize", "close"]);
+  });
+
+  it("ignores anything else", () => {
+    const { win, calls } = fakeWindow();
+    for (const bad of ["maximize", "destroy", "", undefined, null, 1, { toString: () => "close" }]) expect(applyWindowAction(win, bad)).toBe(false);
+    expect(calls).toEqual([]);
   });
 });
 

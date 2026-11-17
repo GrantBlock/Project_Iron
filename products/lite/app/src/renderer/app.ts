@@ -22,7 +22,8 @@ export const NARROW_QUERY = "(max-width:900px)";
 export function mountApp(root: HTMLElement, store: Store = createStore(), engine: AnswerEngine = createCannedEngine()): HTMLElement {
   const narrow = window.matchMedia(NARROW_QUERY);
   const isNarrow = () => narrow.matches;
-  const titleBar = createTitleBar(store, { desktop: window.lite?.desktop === true });
+  // L10: in the Electron app the window is frameless and the title bar's buttons work.
+  const titleBar = createTitleBar(store, { windowControls: window.lite?.desktop === true ? window.lite : undefined });
   const tabs = createTabs(store);
   // L08: Open folder, only in the Electron app (the preload bridge). Read only.
   const bridge = window.lite;
@@ -43,7 +44,7 @@ export function mountApp(root: HTMLElement, store: Store = createStore(), engine
 
   const app = el(
     "div",
-    { class: "lite", "data-testid": "app-root" },
+    { class: window.lite?.desktop === true ? "lite is-desktop" : "lite", "data-testid": "app-root" },
     el("a", { class: "dx-skip", href: "#de-main" }, "Skip to content"),
     el("div", { class: "l-win" }, el("div", { class: "l-frame" }, titleBar.element, tabs.element, body)),
   );

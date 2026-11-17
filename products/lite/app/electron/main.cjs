@@ -104,9 +104,23 @@ ipcMain.handle("lite:read-file", async (event, rel) => {
   return native.readInside(openFolderRoot, rel, fsLike, path);
 });
 
+// The drawn window buttons (L10, frameless window): three actions from the app's own page, and
+// the maximized state sent back so the maximize / restore icon follows the window.
+ipcMain.on("lite:window", (event, action) => {
+  if (!fromApp(event)) return;
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) native.applyWindowAction(win, action);
+});
+
 function createWindow() {
   const win = new BrowserWindow(native.windowOptions(path.join(__dirname, "preload.cjs")));
   win.once("ready-to-show", () => win.show());
+  const sendMaximized = () => {
+    if (!win.isDestroyed()) win.webContents.send("lite:maximized", win.isMaximized());
+  };
+  win.on("maximize", sendMaximized);
+  win.on("unmaximize", sendMaximized);
+  win.webContents.on("did-finish-load", sendMaximized);
   void win.loadURL(startUrl);
   return win;
 }
@@ -114,7 +128,7 @@ function createWindow() {
 app.whenReady().then(() => {
   guardSession(session.defaultSession);
   protocol.handle(native.SCHEME, serveDist);
-  // The native frame only, no menu bar. Dev keeps Electron's default menu for reload and DevTools.
+  // No menu bar (the window is frameless). Dev keeps Electron's default menu for reload and DevTools.
   if (app.isPackaged) Menu.setApplicationMenu(null);
   createWindow();
 });

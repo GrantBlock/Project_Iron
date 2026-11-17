@@ -14,10 +14,11 @@ Do these on Windows. Note pass or fail and attach a screenshot for each. Report 
 8. Unplug the network (or turn on airplane mode) and repeat 1–4: everything works offline.
 9. `pnpm dist`, then run the portable `.exe` from `release/`. Repeat 1 and 2 at 100% and 150% display scaling.
 10. On a PC without a graphics driver (or in a VM without 3D), open a model: the placeholder shows and the parts list still works.
+11. Frameless window (L10): no Windows title bar; the drawn minimize, maximize and close work; maximize turns into restore and back. Drag the title bar to move the window; double-click it to maximize and restore; drag it to a screen edge (Snap) and use Win+Arrow keys; resize from every edge and corner; the window stops at 400 × 500. Clicking the Assistant button or a window button does not start a drag. At 100% and 150% scaling.
 
 ## Known gaps / watch for
 
-- The Electron window uses the normal Windows title bar; the prototype's drawn window buttons are left out until Grant decides (ISSUES 7).
-- The prototype's quirks are copied on purpose (ISSUES 1–4). Report them, don't file them as bugs.
+- The Electron window is frameless (Grant 2026-11-17, ISSUES 7). The cloud e2e cannot really maximize or minimize (no window manager under xvfb), so check 11 is the real test.
+- The prototype's quirks 2 and 4 are copied on purpose; 1 and 3 are fixed (Grant 2026-11-17). Report 2 and 4, don't file them as bugs.
 - Markdown shows as plain text (ISSUES 9).
 - The window does not remember its size; the `.exe` has no icon yet.
