@@ -60,3 +60,8 @@ export async function shots(page: Page, name: string) {
 export const tree = (page: Page) => page.getByLabel("Package files");
 export const viewer = (page: Page) => page.getByRole("main", { name: "Viewer" });
 export const assistant = (page: Page) => page.getByRole("complementary", { name: "Assistant" });
+
+/** Marks a test whose assertion is a Grant decision that overrides the prototype (README, "Grant overrides"). */
+export const grantOverride = (issue: string) => ({
+  annotation: { type: "grant-override", description: `Grant 2026-11-17: ${issue} — overrides the prototype` },
+});

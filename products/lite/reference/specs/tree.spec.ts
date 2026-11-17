@@ -1,4 +1,4 @@
-import { test, expect, state, shots, tree } from "./fixture";
+import { test, expect, state, shots, tree, grantOverride, TARGET_NAME } from "./fixture";
 
 const group = (page: any, name: string) => tree(page).getByRole("button", { name: new RegExp("^" + name) });
 
@@ -57,6 +57,16 @@ test.describe("tree", () => {
       expect(s.selected).toEqual({ id, type, title, path: `${folder} / ${title}` });
       expect(s.view.type).toBe(type);
     }
+  });
+
+  test("a closed folder stays closed when an item is selected [Grant 2026-11-17]", grantOverride("ISSUES 3"), async ({ lite: page }) => {
+    test.fail(TARGET_NAME === "prototype", "Grant 2026-11-17 overrides the prototype");
+    await group(page, "Palletizer retrofit").click();
+    await tree(page).getByRole("button", { name: "Standard guard layout" }).click();
+    expect((await state(page)).selected.title).toBe("Standard guard layout");
+    await expect(group(page, "Palletizer retrofit")).toHaveAttribute("aria-expanded", "false");
+    await expect(group(page, "Engineering resources")).toHaveAttribute("aria-expanded", "true");
+    expect((await state(page)).openFolders).toEqual(["Engineering resources"]);
   });
 
   test("only the selected row has the selected state; About returns", async ({ lite: page }) => {
