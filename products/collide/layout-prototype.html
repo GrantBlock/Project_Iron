@@ -880,6 +880,21 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
 .tab .tx { width: 20px; height: 20px; display: grid; place-items: center; border: 0; border-radius: 4px; background: transparent; color: var(--t4); opacity: 0; }
 .tab:hover .tx, .tab.on .tx, .tab .tx:focus-visible { opacity: 1; }
 .tab .tx:hover { background: var(--hover); color: var(--t1); }
+.cap { position: fixed; inset: 0; z-index: 80; cursor: crosshair; user-select: none; touch-action: none; }
+.cap .capscreen, .cap .capmask { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cap .capmask path { fill: rgba(0,0,0,.45); }
+.cap .capbox { position: absolute; outline: 2px solid #FF3D1F; box-shadow: 0 0 0 1px rgba(255,255,255,.7) inset; pointer-events: none; }
+.cap .capbox span { position: absolute; left: 0; top: -24px; padding: 2px 6px; border-radius: 4px; background: #111; color: #fff; font-size: 12px; white-space: nowrap; }
+.cap .caphint { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); padding: 6px 12px; border-radius: 999px; background: rgba(17,17,17,.85); color: #fff; font-size: 13px; pointer-events: none; }
+.splashcard.cropcard { width: auto; max-width: calc(100vw - 32px); padding: 18px 20px 16px; display: grid; gap: 10px; justify-items: start; }
+.cropcard .cropfoot { width: 100%; display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.cropstage { position: relative; max-width: 100%; touch-action: none; user-select: none; cursor: crosshair; border-radius: 6px; overflow: visible; background: var(--sunk); }
+.cropstage svg { display: block; border-radius: 6px; }
+.cropstage .cropdim { fill: rgba(0,0,0,.55); }
+.cropstage .cropline { fill: none; stroke: #fff; stroke-width: 2; cursor: move; pointer-events: all; fill-opacity: 0; }
+.crophandle { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 3px; background: #fff; border: 2px solid #FF3D1F; }
+.crophandle[data-ch="nw"], .crophandle[data-ch="se"] { cursor: nwse-resize; }
+.crophandle[data-ch="ne"], .crophandle[data-ch="sw"] { cursor: nesw-resize; }
 .splash { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, var(--bg) 55%, rgba(0,0,0,.55)); backdrop-filter: blur(6px); animation: splashIn 160ms ease-out; }
 @keyframes splashIn { from { opacity: 0; } to { opacity: 1; } }
 .splashcard { position: relative; width: min(440px, 100%); border-radius: var(--r-panel); overflow: hidden; background: var(--raised); color: var(--t1); box-shadow: var(--shadow), 0 30px 80px rgba(0,0,0,.35); border: var(--border-w) solid var(--line-2); }
@@ -960,7 +975,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
     <tr><td>New snip, Ctrl+Alt+S, delay 0/3/5/10 s</td><td>Sidebar, top, with a 0s / 3s / 5s / 10s toggle; blank canvas. Add snip has a Current / Behind toggle</td></tr>
     <tr><td>Snip copied to clipboard automatically</td><td>Toast after New snip</td></tr>
     <tr><td>Canvas snip with W × H readout, Esc leaves</td><td><b>Removed</b> from the Snip toolbar and the Markdown editor (Grant 2026-11-15). In Markdown, Export saves the visible marked-up page</td></tr>
-    <tr><td>Open file, Open markup, Save Ctrl+S, Copy Ctrl+Shift+C, Export</td><td>Open file and Open markup → sidebar <b>Open</b> (zip, markup or image), the toolbar folder button is removed; <b>Add snip</b> adds a capture beside the image and the canvas grows: Current = the program that is open, Behind = Collide hides and you snip the screen behind (like New snip); select it to move it or resize it from a corner (aspect locked); Open markup, Copy, Export in the toolbar; Save in the header</td></tr>
+    <tr><td>Open file, Open markup, Save Ctrl+S, Copy Ctrl+Shift+C, Export</td><td>Open file and Open markup → sidebar <b>Open</b> (zip, markup or image), the toolbar folder button is removed; <b>Add snip</b> shows the same drag box as New snip and adds the box beside the image; the canvas grows: Current = the program that is open, Behind = Collide hides and you snip the screen behind; added and pasted images have a <b>Crop</b> button in their card that re-crops them from the whole capture (scale and position kept); select it to move it or resize it from a corner (aspect locked); Open markup, Copy, Export in the toolbar; Save in the header</td></tr>
     <tr><td>Select V, Rectangle R, Ellipse O, Filled rectangle, Filled ellipse, X mark X, Point P</td><td>Snip toolbar without the filled tools; <b>shading is a toggle in the callout card</b>; type can be changed in the card</td></tr>
     <tr><td>Print area</td><td>Dashed frame with corner marks and its size: the image, added images, shapes and shown bubbles, plus a 12 px margin when anything goes past the image (was 24 px). Notes can go anywhere, also over the frame; it follows them. Copy takes it; Fit (Ctrl+0) zooms to it</td></tr>
     <tr><td>Bubble stacking</td><td>When bubbles would overlap, one sits to the right, bottom, top or left of the other (closest free spot off the image). Drop a bubble near another and it snaps beside it</td></tr>
@@ -1254,6 +1269,14 @@ function bounds(s, withNotes = true) {
   if (withNotes) { const nb = noteBoxes(s); for (const sh of s.shapes) { if (sh.hideBubble || !isCallout(sh)) continue; const b = nb[sh.n].box; x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.w); y1 = Math.max(y1, b.y + b.h); } }
   return { x0, y0, x1, y1 };
 }
+/* Added and pasted images keep their whole source and a crop (Grant 2026-11-17): crop = {x, y, w, h} as fractions of the source. */
+const FULL_CROP = { x: 0, y: 0, w: 1, h: 1 };
+function imgNat(sh) { return sh.nat || { w: 1280, h: 720 }; }
+function cropViewBox(sh) { const c = sh.crop || FULL_CROP; return `viewBox="${c.x} ${c.y} ${c.w} ${c.h}"`; }
+function imgSource(sh) {
+  return sh.img ? `<image href="${sh.img}" x="0" y="0" width="1" height="1" preserveAspectRatio="none"/>`
+    : `<svg x="0" y="0" width="1" height="1" viewBox="0 0 ${IW} 360" preserveAspectRatio="none">${artSVG({ art: sh.art, w: 1280, h: 720 })}</svg>`;
+}
 function artSVG(s) {
   const H = ih(s);
   if (s.img) return `<image href="${s.img}" x="0" y="0" width="${IW}" height="${H}" preserveAspectRatio="none"/>`;
@@ -1284,7 +1307,7 @@ function shapeSVG(sh, sel, s, mode = 'full') {
   else if (type === 'ellipse') g = `<ellipse cx="${sh.x + sh.w / 2}" cy="${sh.y + sh.h / 2}" rx="${sh.w / 2}" ry="${sh.h / 2}" ${fill} ${st}/>`;
   else if (type === 'cross') g = `<path d="M${sh.x} ${sh.y}l${sh.w} ${sh.h}M${sh.x + sh.w} ${sh.y}l${-sh.w} ${sh.h}" ${st} stroke-linecap="round"/>`;
   else if (type === 'line') g = `<line x1="${sh.x}" y1="${sh.y}" x2="${sh.x + sh.w}" y2="${sh.y + sh.h}" ${st} stroke-linecap="round"/>`;
-  else if (type === 'image') g = (sh.img ? `<image href="${sh.img}" x="${sh.x}" y="${sh.y}" width="${sh.w}" height="${sh.h}" preserveAspectRatio="none"/>` : `<svg x="${sh.x}" y="${sh.y}" width="${sh.w}" height="${sh.h}" viewBox="0 0 ${IW} 360" preserveAspectRatio="none">${artSVG({ art: sh.art, w: 1280, h: 720 })}</svg>`) + (mode === 'full' ? `<rect x="${sh.x}" y="${sh.y}" width="${sh.w}" height="${sh.h}" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="1"/>` : '');
+  else if (type === 'image') g = `<svg x="${sh.x}" y="${sh.y}" width="${sh.w}" height="${sh.h}" ${cropViewBox(sh)} preserveAspectRatio="none">${imgSource(sh)}</svg>` + (mode === 'full' ? `<rect x="${sh.x}" y="${sh.y}" width="${sh.w}" height="${sh.h}" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="1"/>` : '');
   else if (type === 'pen') g = `<path d="${penPath(sh)}" fill="none" ${st} stroke-linecap="round" stroke-linejoin="round"/>`;
   else if (type === 'hl') g = sh.hideOutline && mode !== 'full' ? '' : `<path d="${penPath(sh)}" fill="none" stroke="${c}" stroke-width="${hlWidth(sh)}" stroke-opacity="${sh.hideOutline ? 0.15 : 0.38}" stroke-linecap="round" stroke-linejoin="round" style="mix-blend-mode:multiply"/>`;
   else g = `<circle cx="${sh.x}" cy="${sh.y}" r="${3 + sh.sw}" fill="${c}" ${sh.hideOutline ? 'fill-opacity=".35"' : ''} stroke="${pal(s).f1}" stroke-width="1.5"/>`;
@@ -1580,7 +1603,7 @@ function calloutsHTML(s) {
       return `<div class="el ccard plain ${selN === c.n ? 'sel' : ''}" data-sel="${c.n}" data-drop="${c.n}">
       <span class="grip" draggable="true" data-grip="${c.n}" title="Drag to move it forward or back" aria-label="Reorder ${TYPE_LABEL[type]}">${ico('menu', 'sm')}</span>
       <div class="row"><span class="plainico" style="color:${k}">${ico(icon, 'sm')}</span><span class="typesel static">${TYPE_LABEL[type]}</span><span class="hint">no number</span><span style="flex:1"></span>
-        ${type !== 'image' ? tog('hideOutline', c.n, 'square', 'Stroke hidden: click to show', 'Hide the stroke (Copy and Export too)', !!c.hideOutline) : ''}
+        ${type !== 'image' ? tog('hideOutline', c.n, 'square', 'Stroke hidden: click to show', 'Hide the stroke (Copy and Export too)', !!c.hideOutline) : `<button class="tog" data-crop="${c.n}" aria-pressed="${!!c.crop}" title="Crop this image${c.crop ? ' (cropped)' : ''}" aria-label="Crop image">${ico('crop', 'sm')}</button>`}
         <button class="tog" data-delshape="${c.n}" title="Delete" aria-label="Delete ${TYPE_LABEL[type]}">${ico('trash', 'sm')}</button></div></div>`;
     }
     const no = calloutNo(s, c.n);
@@ -1947,6 +1970,100 @@ function copyToast(what) {
   const s = snipOf(), pa = printArea(s), f = s.w / IW, hidden = s.shapes.filter((x) => x.hideBubble).length;
   toast(`${what} the print area · ${Math.round((pa.x1 - pa.x0) * f)} × ${Math.round((pa.y1 - pa.y0) * f)}${pa.spill ? ' with note boxes' : ''}${hidden ? ` · ${hidden} hidden bubble left out` : ''}`);
 }
+/* Drag box over a captured screen (prototype stand-in for the capture overlay): dimmed screen, drag a box, W × H readout, Esc cancels. */
+function dragBox(art, label, done) {
+  const el = document.createElement('div'); el.id = 'cap'; el.className = 'cap';
+  el.innerHTML = `<svg class="capscreen" viewBox="0 0 ${IW} 360" preserveAspectRatio="none" aria-hidden="true">${artSVG({ art, w: 1280, h: 720 })}</svg>
+    <svg class="capmask" aria-hidden="true"><path fill-rule="evenodd" d=""/></svg><div class="capbox" hidden><span class="mono"></span></div>
+    <div class="caphint" role="status">${esc(label)} · drag a box · Esc cancels</div>`;
+  document.body.appendChild(el);
+  const box = $('.capbox', el), mask = $('.capmask path', el), out = $('.capbox span', el);
+  let p0 = null, r = null;
+  const draw = () => {
+    const W = innerWidth, H = innerHeight;
+    mask.setAttribute('d', `M0 0H${W}V${H}H0Z` + (r ? `M${r.x} ${r.y}h${r.w}v${r.h}h${-r.w}Z` : ''));
+    box.hidden = !r; if (r) { Object.assign(box.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' }); out.textContent = `${Math.round(r.w / W * 1280)} × ${Math.round(r.h / H * 720)}`; }
+  };
+  const close = () => { el.remove(); removeEventListener('keydown', key, true); };
+  const key = (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); close(); toast('Snip cancelled'); } };
+  addEventListener('keydown', key, true);
+  el.addEventListener('pointerdown', (e) => { e.stopPropagation(); p0 = { x: e.clientX, y: e.clientY }; r = { x: p0.x, y: p0.y, w: 0, h: 0 }; el.setPointerCapture(e.pointerId); draw(); });
+  el.addEventListener('pointermove', (e) => { if (!p0) return; r = { x: Math.min(p0.x, e.clientX), y: Math.min(p0.y, e.clientY), w: Math.abs(e.clientX - p0.x), h: Math.abs(e.clientY - p0.y) }; draw(); });
+  el.addEventListener('pointerup', () => {
+    if (!p0) return; p0 = null;
+    if (!r || r.w < 8 || r.h < 8) { r = null; draw(); return; } // a click is not a snip; drag again
+    const W = innerWidth, H = innerHeight; close();
+    done({ x: r.x / W, y: r.y / H, w: r.w / W, h: r.h / H });
+  });
+  draw();
+}
+/* Crop an added or pasted image (Grant 2026-11-17): the whole source with the kept part bright; drag inside to move, a corner to resize,
+   outside to draw a new box. Apply keeps the image's scale and its position on the canvas. */
+function openCrop(n) {
+  const F = surf(); if (!F) return; const sh = F.s.shapes.find((x) => x.n === n); if (!sh || sh.type !== 'image') return;
+  const nat = imgNat(sh); let c = { ...(sh.crop || FULL_CROP) };
+  const k = Math.min(Math.min(720, innerWidth - 72) / nat.w, Math.min(420, innerHeight - 220) / nat.h), VW = Math.round(nat.w * k), VH = Math.round(nat.h * k);
+  const el = document.createElement('div'); el.id = 'cropper'; el.className = 'splash';
+  el.innerHTML = `<div class="splashcard cropcard" role="dialog" aria-modal="true" aria-labelledby="cropTitle">
+    <h2 id="cropTitle">Crop image</h2><p style="max-width:${VW}px">Drag inside the box to move it, a corner to resize it, or outside it to draw a new one. The whole image is kept, so you can widen the crop later.</p>
+    <div class="cropstage" style="width:${VW}px;height:${VH}px"><svg width="${VW}" height="${VH}" viewBox="0 0 1 1" preserveAspectRatio="none">${imgSource(sh)}<path class="cropdim" fill-rule="evenodd" d=""/><rect class="cropline" vector-effect="non-scaling-stroke"/></svg>
+      ${['nw', 'ne', 'se', 'sw'].map((d) => `<span class="crophandle" data-ch="${d}"></span>`).join('')}</div>
+    <div class="cropfoot"><span class="mono hint" id="cropSize"></span>
+      <span class="btnrow"><button class="btn ghost" id="cropReset">Reset</button><button class="btn ghost" id="cropCancel">Cancel</button><button class="btn primary" id="cropApply">${ico('crop', 'sm')}Apply</button></span></div>
+    <span class="hint">Enter applies · Esc cancels</span></div>`;
+  document.body.appendChild(el);
+  const stage = $('.cropstage', el), dim = $('.cropdim', el), line = $('.cropline', el);
+  const draw = () => {
+    dim.setAttribute('d', `M0 0H1V1H0Z M${c.x} ${c.y}h${c.w}v${c.h}h${-c.w}Z`);
+    Object.entries({ x: c.x, y: c.y, width: c.w, height: c.h }).forEach(([a, v]) => line.setAttribute(a, v));
+    el.querySelectorAll('.crophandle').forEach((h) => { const d = h.dataset.ch; h.style.left = (d.includes('w') ? c.x : c.x + c.w) * VW + 'px'; h.style.top = (d.includes('n') ? c.y : c.y + c.h) * VH + 'px'; });
+    $('#cropSize', el).textContent = `${Math.round(c.w * nat.w)} × ${Math.round(c.h * nat.h)} of ${nat.w} × ${nat.h}`;
+  };
+  const MIN = 0.03, cl = (v) => Math.min(1, Math.max(0, v));
+  const at = (e) => { const b = stage.getBoundingClientRect(); return { x: cl((e.clientX - b.left) / VW), y: cl((e.clientY - b.top) / VH) }; };
+  let drag = null;
+  stage.addEventListener('pointerdown', (e) => {
+    const p = at(e), h = e.target.closest('.crophandle');
+    if (h) drag = { kind: 'corner', dir: h.dataset.ch, o: { ...c } };
+    else if (p.x > c.x && p.x < c.x + c.w && p.y > c.y && p.y < c.y + c.h) drag = { kind: 'move', p0: p, o: { ...c } };
+    else drag = { kind: 'new', p0: p };
+    stage.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  stage.addEventListener('pointermove', (e) => {
+    if (!drag) return; const p = at(e), o = drag.o;
+    if (drag.kind === 'move') { c.x = Math.min(1 - o.w, Math.max(0, o.x + p.x - drag.p0.x)); c.y = Math.min(1 - o.h, Math.max(0, o.y + p.y - drag.p0.y)); }
+    else if (drag.kind === 'new') { c = { x: Math.min(drag.p0.x, p.x), y: Math.min(drag.p0.y, p.y), w: Math.max(MIN, Math.abs(p.x - drag.p0.x)), h: Math.max(MIN, Math.abs(p.y - drag.p0.y)) }; c.w = Math.min(c.w, 1 - c.x); c.h = Math.min(c.h, 1 - c.y); }
+    else {
+      const d = drag.dir, x1 = d.includes('w') ? Math.min(p.x, o.x + o.w - MIN) : o.x, x2 = d.includes('e') ? Math.max(p.x, o.x + MIN) : o.x + o.w;
+      const y1 = d.includes('n') ? Math.min(p.y, o.y + o.h - MIN) : o.y, y2 = d.includes('s') ? Math.max(p.y, o.y + MIN) : o.y + o.h;
+      c = { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
+    }
+    draw();
+  });
+  stage.addEventListener('pointerup', () => { drag = null; });
+  const close = () => { el.remove(); removeEventListener('keydown', key, true); };
+  const apply = () => {
+    const o = sh.crop || FULL_CROP, sx = sh.w / (o.w * nat.w), sy = sh.h / (o.h * nat.h);
+    const same = ['x', 'y', 'w', 'h'].every((q) => Math.abs(o[q] - c[q]) < 1e-4); close(); if (same) return;
+    F.hist();
+    // Keep the scale and keep what was visible where it was: the canvas moves the image by the change at the top-left.
+    sh.x = Math.round(sh.x + (c.x - o.x) * nat.w * sx); sh.y = Math.round(sh.y + (c.y - o.y) * nat.h * sy);
+    sh.w = Math.max(8, Math.round(c.w * nat.w * sx)); sh.h = Math.max(8, Math.round(c.h * nat.h * sy));
+    if (c.x === 0 && c.y === 0 && c.w === 1 && c.h === 1) delete sh.crop; else sh.crop = { ...c };
+    F.commit(); toast(`Cropped to ${Math.round(c.w * nat.w)} × ${Math.round(c.h * nat.h)} · Crop again to change it; the whole image is kept`);
+  };
+  const key = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); close(); }
+    else if (e.key === 'Enter') { e.preventDefault(); e.stopImmediatePropagation(); apply(); }
+    else e.stopImmediatePropagation();
+  };
+  addEventListener('keydown', key, true);
+  el.addEventListener('click', (e) => {
+    e.stopPropagation(); const b = e.target.closest('button'); if (!b) return;
+    if (b.id === 'cropApply') apply(); else if (b.id === 'cropCancel') close(); else if (b.id === 'cropReset') { c = { ...FULL_CROP }; draw(); }
+  });
+  draw(); $('#cropApply', el).focus();
+}
 function newSnip(fromCanvas) {
   const base = S.ws && S.ws.kind === 'snip' ? snipOf() : SNIPS[0];
   const now = new Date(), t = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -1974,6 +2091,7 @@ document.addEventListener('click', (e) => {
   if (d.tool) { pickTool(d.tool); if (d.tool === 'canvas-snip') toast('Drag a box on the canvas. Esc leaves.'); renderWS(); return; }
   if (d.delay) { S.delay = d.delay; try { localStorage.setItem('collide-proto-delay', d.delay); } catch (x) {} renderSide(); return; }
   if (d.addmode) { S.addMode = d.addmode; try { localStorage.setItem('collide-proto-addmode', d.addmode); } catch (x) {} renderSide(); return; }
+  if (d.crop) { e.stopPropagation(); openCrop(Number(d.crop)); return; }
   if (d.delshape) { e.stopPropagation(); const F = surf(); if (!F) return; F.hist(); F.s.shapes = F.s.shapes.filter((x) => x.n !== Number(d.delshape)); if (F.kind === 'doc') S.ws.marks = F.s.shapes; F.commit(); return; }
   if (d.tabclose !== undefined) { e.stopPropagation(); closeTab(Number(d.tabclose), false); return; }
   if (d.role) { S.role = d.role; S.lastRole = d.role; savePen(); if (S.sel && !S.selByDraw) { pushHist(); snipOf().shapes.find((x) => x.n === S.sel).color = d.role; snipChanged(); } else renderWS(); return; }
@@ -2018,15 +2136,17 @@ document.addEventListener('click', (e) => {
       // Current: a new screenshot of the program that is open, added to the open canvas.
       // Behind: Collide hides and captures the screen behind it, like New snip; the crop is added to the open canvas.
       if (!S.ws || S.ws.kind !== 'snip') { $('#newSnip').click(); return; }
-      const behind = S.addMode === 'Behind';
-      toast(behind ? 'Collide hides, then drag a box on the screen behind it. Esc cancels.' : 'Captured the program that is open');
-      setTimeout(() => {
+      // Both modes show the drag box like New snip (Grant 2026-11-17); the box becomes the image's crop, so Crop can widen it later.
+      const behind = S.addMode === 'Behind', art = behind ? 'pid' : 'hmi';
+      if (behind) toast('Collide hides, then drag a box on the screen behind it. Esc cancels.');
+      setTimeout(() => dragBox(art, behind ? 'The screen behind Collide' : 'The program that is open', (c) => {
         const s = snipOf(); pushHist(); s.images = s.images || [];
-        const H = ih(s), right = Math.max(IW, ...s.shapes.filter((x) => x.type === 'image').map((im) => im.x + im.w));
-        // Beside the content: same height as the first image, aspect kept; the canvas grows to fit.
-        s.shapes.push({ n: nextId(s), type: 'image', art: behind ? 'pid' : 'hmi', x: right + 24, y: 0, w: Math.round(H * 640 / 360), h: H, note: '' });
-        S.sel = s.shapes[s.shapes.length - 1].n; S.selByDraw = false; snipChanged(); toast(behind ? 'Snip from behind added beside the image · copied to clipboard' : 'Screenshot added beside the image · copied to clipboard'); requestAnimationFrame(fitView);
-      }, behind ? 900 : 300);
+        const H = ih(s), right = Math.max(IW, ...s.shapes.filter((x) => x.type === 'image').map((im) => im.x + im.w)), nat = { w: 1280, h: 720 };
+        // Beside the content: same height as the first image, aspect of the box; the canvas grows to fit.
+        s.shapes.push({ n: nextId(s), type: 'image', art, nat, crop: c, x: right + 24, y: 0, w: Math.round(H * (c.w * nat.w) / (c.h * nat.h)), h: H, note: '' });
+        S.sel = s.shapes[s.shapes.length - 1].n; S.selByDraw = false; S.tool = 'select'; snipChanged(); requestAnimationFrame(fitView);
+        toast(`${behind ? 'Snip from behind' : 'Snip of the open program'} added beside the image · ${Math.round(c.w * 1280)} × ${Math.round(c.h * 720)} · copied to clipboard`);
+      }), behind ? 700 : 150);
       return;
     }
     case 'wsSave': save(); renderWS(); renderSide(); return;
@@ -2086,7 +2206,7 @@ document.addEventListener('change', (e) => {
 /* A click outside the canvas (Snip) or the page pane (Markdown) while a drawing tool is on goes back to Select (Grant 2026-11-15).
    The toolbar is exempt, so colours and stroke can be picked for the tool. Updated in place so the click still lands where it was aimed. */
 document.addEventListener('pointerdown', (e) => {
-  if (!S.ws || e.target.closest('.toolbar, #splash, .picker')) return;
+  if (!S.ws || e.target.closest('.toolbar, #splash, .picker, #cap, #cropper')) return;
   if (S.ws.kind === 'snip' && S.tool !== 'select' && !e.target.closest('#stage')) {
     S.tool = 'select';
     document.querySelectorAll('#ws [data-tool]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tool === 'select')));
@@ -2115,7 +2235,7 @@ function pasteImage(url, w, h) {
     // Like Add snip: beside the image, the canvas grows; select it to move or resize it.
     const s = snipOf(); pushHist(); s.images = s.images || [];
     const H = ih(s), right = Math.max(IW, ...s.shapes.filter((x) => x.type === 'image').map((im) => im.x + im.w));
-    s.shapes.push({ n: nextId(s), type: 'image', img: url, x: right + 24, y: 0, w: Math.round(H * w / h), h: H, note: '' });
+    s.shapes.push({ n: nextId(s), type: 'image', img: url, nat: { w, h }, x: right + 24, y: 0, w: Math.round(H * w / h), h: H, note: '' });
     S.sel = s.shapes[s.shapes.length - 1].n; S.selByDraw = false; S.tool = 'select'; snipChanged(); requestAnimationFrame(fitView);
     toast(`Pasted image added beside the image · ${w} × ${h}`); return;
   }

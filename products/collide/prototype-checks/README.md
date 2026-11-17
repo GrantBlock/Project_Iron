@@ -8,10 +8,10 @@ They are the starting point for the **reference tests** in `../RUN3.md`. They ar
 
 ```bash
 cd products/collide/prototype-checks
-node tabs-and-close-splash.js ../layout-prototype.html /tmp
+node tabs-and-close-splash.js "$(realpath ../layout-prototype.html)" /tmp
 ```
 
-The first argument is the prototype file. The second is a folder for screenshots (some scripts save PNGs there). In the cloud box Playwright's Chromium is already installed; do not run `playwright install`.
+The first argument is the prototype file, as an absolute path. The second is a folder for screenshots (some scripts save PNGs there). In the cloud box Playwright's Chromium is already installed; do not run `playwright install`.
 
 ## What each one covers
 
@@ -32,3 +32,4 @@ The first argument is the prototype file. The second is a folder for screenshots
 | `save-collide-file.js` | Save as .collide from Snip and from Markdown |
 | `callout-numbering.js` | A new callout takes the next number; existing numbers stay |
 | `esc-returns-to-select.js` | Esc returns to Select in both editors, also from a note box |
+| `add-snip-drag-box-and-crop.js` | Add snip shows the drag box (a click alone is not a snip, Esc cancels) and adds the box beside the image; the image card's Crop re-crops from the whole capture, keeps scale and position, Reset, Esc keeps it, undo |

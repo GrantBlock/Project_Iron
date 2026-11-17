@@ -10,7 +10,8 @@ const { chromium } = require('playwright');
   for (let i = 1; i <= 10; i++) await p.mouse.move(st.x + 60 + i * 8, st.y + 220 + (i % 2) * 10);
   await p.mouse.up();
   await p.click('[data-tool="hl"]'); await p.mouse.move(st.x + 30, st.y + 100); await p.mouse.down(); await p.mouse.move(st.x + 200, st.y + 102, { steps: 6 }); await p.mouse.up();
-  await p.click('#addSnip'); await p.waitForTimeout(700);
+  await p.click('#addSnip'); await p.waitForTimeout(700); // Add snip shows the drag box (2026-11-17): drag one.
+  await p.mouse.move(300, 200); await p.mouse.down(); await p.mouse.move(900, 560, { steps: 4 }); await p.mouse.up(); await p.waitForTimeout(400);
   const list = await p.evaluate(() => [...document.querySelectorAll('#calloutList .ccard')].map((c) => (c.querySelector('.num') ? '#' + c.querySelector('.num').textContent : '-') + ' ' + (c.querySelector('select.typesel') ? c.querySelector('select.typesel').value : c.querySelector('.typesel').textContent)));
   const bubbles = await p.evaluate(() => document.querySelectorAll('#zoomer [data-box]').length);
   await p.screenshot({ path: out + '/na.png' });
