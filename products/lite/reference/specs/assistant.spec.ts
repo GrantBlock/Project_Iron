@@ -1,4 +1,4 @@
-import { test, expect, state, shots, assistant, viewer } from "./fixture";
+import { test, expect, state, shots, assistant, viewer, grantOverride, TARGET_NAME } from "./fixture";
 
 const SUGGESTED = [
   "What is the gearbox oil change interval?",
@@ -19,7 +19,10 @@ test.describe("assistant", () => {
   });
 
   for (const [i, q] of SUGGESTED.entries()) {
-    test(`suggested question ${i + 1} gives the canned answer`, async ({ lite: page }) => {
+    const override = i === 1;
+    const title = `suggested question ${i + 1} gives the canned answer${override ? " [Grant 2026-11-17]" : ""}`;
+    test(title, override ? grantOverride("ISSUES 1") : {}, async ({ lite: page }) => {
+      test.fail(override && TARGET_NAME === "prototype", "Grant 2026-11-17 overrides the prototype");
       const a = assistant(page);
       await a.getByRole("button", { name: q }).click();
       await expect.poll(async () => (await state(page)).messages.length).toBe(3);
@@ -27,8 +30,8 @@ test.describe("assistant", () => {
       expect(m[1]).toMatchObject({ role: "user", text: q });
       const want = [
         { cites: 3, text: OIL_TEXT },
-        // Prototype quirk: "servicing" does not match the lockout keyword /service/, so this suggested question gets the fallback answer.
-        { cites: 0, text: "I could not find that in this package. I only answer from its documents, models and notes." },
+        // Grant 2026-11-17 (ISSUES 1): the prototype gives the fallback answer here ("servicing" misses its /service/ keyword); the app gives the lockout answer.
+        { cites: 1, text: "Apply lockout at the main disconnect, release stored energy at the pneumatic dump valve, and verify zero energy before you open any guard ." },
         { cites: 1, text: "The cylinder bore was sized at 63 mm (A). Check the extend force against the 6 bar supply before ordering, and confirm the rod diameter with the vendor ." },
       ][i];
       expect(m[2].role).toBe("assistant");
