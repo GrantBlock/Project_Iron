@@ -13,6 +13,7 @@ import { Toolbar } from "./Toolbar";
 import { copyPngToClipboard, dataUrlToBlob, downloadPng, exportFileName, flatten, flattenArea, flattenFit, type Flattened } from "../io/flatten";
 import { placeBeside, printArea } from "./engine";
 import { isPng, MarkupError, markupFolderName, type ImageFile, type MarkupStore } from "../io";
+import type { SnipPackage } from "../io/collideFile";
 import { fitArea, recentre, screenToImage, type Point, type Size, type View } from "./viewport";
 import type { RefInput } from "./refState";
 
@@ -90,6 +91,8 @@ export interface SnipSession {
   baseDoc: AnnotationsDoc | null;
   /** Added images' pictures by file name (RUN3 T33). Kept for undo and redo; Save writes the ones still on the canvas. */
   pictures: Map<string, Picture>;
+  /** RUN3 T35: the Collide file this tab was saved as or opened from (its path, or its name in a browser). */
+  collideFile?: string;
 }
 
 /** A session for an image: a new empty document, or `doc` (a saved markup or a sample, counted as saved). */
@@ -147,6 +150,10 @@ export interface SnipEditorApi {
    * the view fitted to the grown canvas. One undo step. Resolves with the image's own size.
    */
   addImage: (url: string) => Promise<{ width: number; height: number }>;
+  /** RUN3 T35: copy the print area to the clipboard with no toast. Rejects when the clipboard refuses. */
+  copyQuiet: () => Promise<void>;
+  /** RUN3 T35: everything a .collide file holds: the doc as Save writes it, the source and added images, and Copy's picture. */
+  collidePackage: (title: string) => Promise<SnipPackage>;
 }
 
 export interface EditorNotice {
@@ -170,9 +177,11 @@ interface Props {
   head: (save: { onSave: () => void; canSave: boolean }) => ReactNode;
   /** Changes when the theme does, so the canvas repaints with the theme's colours. */
   themeKey: string;
+  /** RUN3 T35: the toolbar's Save as .collide. */
+  onSaveCollide?: () => void;
 }
 
-export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSaved, head, themeKey }: Props) {
+export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSaved, head, themeKey, onSaveCollide }: Props) {
   const image = session.image;
   const { state, dispatch, stateRef, canUndo, canRedo } = useEditorStore(session.history, (h) => (session.history = h));
   const shapes = useMemo(() => state.doc?.shapes ?? [], [state.doc]);
@@ -269,14 +278,8 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
 
   const savedRef = useRef(onSaved);
   savedRef.current = onSaved;
-  const saveMarkup = useCallback(async (): Promise<string> => {
-    const doc = stateRef.current.doc;
-    const src = session.source;
-    if (!doc) throw new MarkupError("Could not save markup", "No image is open. Open an image, then save.");
-    const flat = await exportPng();
-    const exportBytes = new Uint8Array(await dataUrlToBlob(flat.dataUrl).arrayBuffer());
-    const folderName = src.folder ?? markupFolderName(image.name);
-    // Added images (T33): the ones still on the canvas, as files beside source.png, listed in annotations.json.
+  /** The document as Save writes it, with the added images still on the canvas (T33) listed, and their files. */
+  const withImages = useCallback((doc: AnnotationsDoc) => {
     const used = [...new Set(doc.shapes.flatMap((s) => (s.type === "image" ? [s.src] : [])))];
     const images = used.flatMap((name) => {
       const p = session.pictures.get(name);
@@ -285,6 +288,17 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
     const { images: _old, ...plain } = doc;
     void _old;
     const annotations: AnnotationsDoc = images.length ? { ...plain, images: images.map((i) => ({ file: i.name, width: i.width, height: i.height })) } : plain;
+    return { annotations, images };
+  }, [session]);
+  const saveMarkup = useCallback(async (): Promise<string> => {
+    const doc = stateRef.current.doc;
+    const src = session.source;
+    if (!doc) throw new MarkupError("Could not save markup", "No image is open. Open an image, then save.");
+    const flat = await exportPng();
+    const exportBytes = new Uint8Array(await dataUrlToBlob(flat.dataUrl).arrayBuffer());
+    const folderName = src.folder ?? markupFolderName(image.name);
+    // Added images (T33): the ones still on the canvas, as files beside source.png, listed in annotations.json.
+    const { annotations, images } = withImages(doc);
     const id = await store().save(folderName, {
       sourcePng: await src.bytes,
       annotations,
@@ -296,7 +310,7 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
     dirtyRef.current(stateRef.current.doc !== doc);
     savedRef.current(id, src.folder);
     return id;
-  }, [exportPng, image, session, stateRef, store]);
+  }, [exportPng, image, session, stateRef, store, withImages]);
 
   const onSave = useCallback(() => {
     notify(null);
@@ -335,6 +349,21 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
     [copyArea, fail, notify],
   );
   const onCopy = useCallback(() => void copyToClipboard("Copied the print area"), [copyToClipboard]);
+  const copyQuiet = useCallback(async () => {
+    await copyPngToClipboard((await copyArea()).dataUrl);
+  }, [copyArea]);
+
+  // RUN3 T35: a .collide file's content: the doc (back to front), the sources as they are, and what Copy gives.
+  const collidePackage = useCallback(
+    async (title: string): Promise<SnipPackage> => {
+      const doc = stateRef.current.doc;
+      if (!doc) throw new MarkupError("Could not save the Collide file", "No image is open. Open an image, then save.");
+      const { annotations, images } = withImages(doc);
+      const preview = new Uint8Array(await dataUrlToBlob((await copyArea()).dataUrl).arrayBuffer());
+      return { kind: "snip", title, doc: annotations, source: await session.source.bytes, images: images.map((i) => ({ name: i.name, png: i.png })), preview };
+    },
+    [copyArea, session, stateRef, withImages],
+  );
 
   // After a draw no colour stays pressed; a new callout's note takes the cursor.
   const onAdd = useCallback(
@@ -493,6 +522,8 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
       copyFit,
       copyToClipboard,
       addImage,
+      copyQuiet,
+      collidePackage,
       saveMarkup,
       screenToImage: (p) => screenToImage(live.current.view, p),
       getState: () => {
@@ -518,7 +549,7 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
     return () => {
       if (apiRef.current === api) apiRef.current = null;
     };
-  }, [apiRef, image, dispatch, stateRef, exportPng, copyFit, copyToClipboard, saveMarkup, addImage]);
+  }, [apiRef, image, dispatch, stateRef, exportPng, copyFit, copyToClipboard, saveMarkup, addImage, copyQuiet, collidePackage]);
 
   return (
     <div className="wsfill" data-theme-key={themeKey}>
@@ -534,6 +565,7 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
         fileName={image.name}
         onExport={onExport}
         onCopy={onCopy}
+        onSaveCollide={onSaveCollide}
         canExport
         onUndo={undo}
         onRedo={redo}
