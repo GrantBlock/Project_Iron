@@ -75,11 +75,15 @@ if (process.platform === "win32") app.setAppUserModelId(APP_ID);
 // files by their path inside it. One folder at a time. src/native/folder.ts checks every path
 // (inside the folder after symlinks, a regular file, at most 50 MB) and never writes.
 let openFolderRoot = null;
+const { constants } = require("node:fs");
 const fsLike = {
   realpath: (p) => fsp.realpath(p),
   lstat: (p) => fsp.lstat(p),
+  stat: (p) => fsp.stat(p),
   readdir: (p) => fsp.readdir(p),
-  readFile: (p) => fsp.readFile(p, { flag: "r" }),
+  // Read only: O_RDONLY, plus O_NOFOLLOW where it exists (undefined on Windows; folder.ts re-checks there).
+  open: (p, flags) => fsp.open(p, flags),
+  flags: { readOnly: constants.O_RDONLY, noFollow: constants.O_NOFOLLOW },
 };
 const fromApp = (event) => isAppUrl(event.senderFrame?.url ?? "");
 

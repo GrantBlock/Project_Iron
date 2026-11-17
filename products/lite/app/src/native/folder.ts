@@ -29,12 +29,35 @@ export interface FolderListing {
   readonly truncated: boolean;
 }
 
-/** The part of `node:fs/promises` used here. */
+/** What a stat tells: kind, size and identity (device and inode). */
+export interface StatLike {
+  isFile(): boolean;
+  size: number;
+  dev: number;
+  ino: number;
+}
+
+/** The part of a `node:fs/promises` FileHandle used here. */
+export interface FileHandleLike {
+  stat(): Promise<StatLike>;
+  read(buffer: Uint8Array, offset: number, length: number, position: number | null): Promise<{ bytesRead: number }>;
+  close(): Promise<void>;
+}
+
+/** The part of `node:fs/promises` used here, plus the open flags (`fs.constants`). */
 export interface FsLike {
   realpath(p: string): Promise<string>;
   lstat(p: string): Promise<{ isFile(): boolean; isDirectory(): boolean; isSymbolicLink(): boolean; size: number }>;
+  stat(p: string): Promise<StatLike>;
   readdir(p: string): Promise<string[]>;
-  readFile(p: string): Promise<Uint8Array>;
+  open(p: string, flags: number): Promise<FileHandleLike>;
+  /** O_RDONLY, and O_NOFOLLOW where the system has it (not on Windows). */
+  readonly flags: { readonly readOnly: number; readonly noFollow?: number };
+}
+
+export interface ListLimits {
+  readonly maxEntries: number;
+  readonly maxDepth: number;
 }
 
 /** The part of `node:path` used here. */
@@ -67,7 +90,7 @@ export function isInside(root: string, target: string, path: PathLike): boolean 
  * Lists the folder (`root` must already be a real path). Symbolic links are skipped, so
  * nothing outside the folder is listed (A).
  */
-export async function listFolder(root: string, fs: FsLike, path: PathLike): Promise<FolderListing> {
+export async function listFolder(root: string, fs: FsLike, path: PathLike, limits: ListLimits = { maxEntries: MAX_ENTRIES, maxDepth: MAX_DEPTH }): Promise<FolderListing> {
   const entries: FolderEntry[] = [];
   let truncated = false;
   const walk = async (dir: string, rel: string, depth: number) => {
@@ -80,6 +103,11 @@ export async function listFolder(root: string, fs: FsLike, path: PathLike): Prom
     const folders: FolderEntry[] = [];
     const files: FolderEntry[] = [];
     for (const name of names) {
+      // Stop as soon as the limit is reached, so a huge folder cannot stall the app.
+      if (entries.length + folders.length + files.length >= limits.maxEntries) {
+        truncated = true;
+        break;
+      }
       let st;
       try {
         st = await fs.lstat(path.join(dir, name));
@@ -95,15 +123,17 @@ export async function listFolder(root: string, fs: FsLike, path: PathLike): Prom
     folders.sort(byName);
     files.sort(byName);
     for (const f of folders) {
-      if (entries.length >= MAX_ENTRIES || depth >= MAX_DEPTH) {
+      if (entries.length >= limits.maxEntries) {
         truncated = true;
         return;
       }
       entries.push(f);
-      await walk(path.join(dir, f.name), f.path, depth + 1);
+      // Too deep: the folder is listed, its contents are not.
+      if (depth + 1 >= limits.maxDepth) truncated = true;
+      else await walk(path.join(dir, f.name), f.path, depth + 1);
     }
     for (const f of files) {
-      if (entries.length >= MAX_ENTRIES) {
+      if (entries.length >= limits.maxEntries) {
         truncated = true;
         return;
       }
@@ -138,8 +168,53 @@ export async function readInside(root: string, rel: unknown, fs: FsLike, path: P
     throw new RefusedPath("No such file in the opened folder");
   }
   if (!isInside(realRoot, real, path)) throw new RefusedPath("Not a path inside the opened folder");
-  const st = await fs.lstat(real);
-  if (!st.isFile()) throw new RefusedPath("Not a file");
-  if (st.size > maxBytes) throw new RefusedPath("The file is too large to open");
-  return fs.readFile(real);
+
+  // Open once and check the open file itself, so a swap (file → symlink) or a file that grows
+  // between the check and the read cannot get past the folder check or the size cap.
+  let handle: FileHandleLike;
+  try {
+    handle = await fs.open(real, fs.flags.readOnly | (fs.flags.noFollow ?? 0));
+  } catch {
+    // O_NOFOLLOW refuses a path that became a symlink (ELOOP); a vanished file lands here too.
+    throw new RefusedPath("Not a file inside the opened folder");
+  }
+  try {
+    const st = await handle.stat();
+    if (!st.isFile()) throw new RefusedPath("Not a file");
+    // Where O_NOFOLLOW does not exist (Windows), and as a second check everywhere: the opened
+    // file must still be the one at a path inside the folder.
+    let now: string;
+    try {
+      now = await fs.realpath(real);
+    } catch {
+      throw new RefusedPath("Not a file inside the opened folder");
+    }
+    if (!isInside(realRoot, now, path)) throw new RefusedPath("Not a path inside the opened folder");
+    const there = await fs.stat(now);
+    if ((st.ino || there.ino) && (st.ino !== there.ino || st.dev !== there.dev)) throw new RefusedPath("Not a path inside the opened folder");
+    if (st.size > maxBytes) throw new RefusedPath("The file is too large to open");
+    // Read from the handle until the end, never more than maxBytes + 1 bytes: one more than the
+    // cap means the file grew past it after the stat.
+    const parts: Uint8Array[] = [];
+    let total = 0;
+    for (;;) {
+      const want = Math.min(Math.max(st.size - total, 64 * 1024), maxBytes + 1 - total);
+      const chunk = new Uint8Array(want);
+      const { bytesRead } = await handle.read(chunk, 0, want, total);
+      if (bytesRead === 0) break;
+      parts.push(bytesRead === want ? chunk : chunk.subarray(0, bytesRead));
+      total += bytesRead;
+      if (total > maxBytes) throw new RefusedPath("The file is too large to open");
+    }
+    if (parts.length === 1) return parts[0];
+    const out = new Uint8Array(total);
+    let at = 0;
+    for (const part of parts) {
+      out.set(part, at);
+      at += part.length;
+    }
+    return out;
+  } finally {
+    await handle.close();
+  }
 }

@@ -1,16 +1,21 @@
 import * as fsp from "node:fs/promises";
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { appendFileSync, constants, mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { fileKind, isInside, listFolder, readInside, RefusedPath, type FsLike } from "./folder";
+import { fileKind, isInside, listFolder, readInside, RefusedPath, type FileHandleLike, type FsLike } from "./folder";
 
+// As electron/main.cjs passes it.
 const fs: FsLike = {
   realpath: (p) => fsp.realpath(p),
   lstat: (p) => fsp.lstat(p),
+  stat: (p) => fsp.stat(p),
   readdir: (p) => fsp.readdir(p),
-  readFile: (p) => fsp.readFile(p),
+  open: (p, flags) => fsp.open(p, flags),
+  flags: { readOnly: constants.O_RDONLY, noFollow: constants.O_NOFOLLOW },
 };
+/** As on Windows: no O_NOFOLLOW. */
+const fsWindowsLike: FsLike = { ...fs, flags: { readOnly: constants.O_RDONLY } };
 
 let base = "";
 let root = "";
@@ -81,6 +86,107 @@ describe("readInside", () => {
     await readInside(root, "log.txt", fs, path);
     await readInside(root, "../secret.txt", fs, path).catch(() => undefined);
     expect(await listFolder(root, fs, path)).toEqual(before);
+  });
+});
+
+describe("readInside: no race between the check and the read", () => {
+  /** An fs whose open() first runs `before` (the attacker's move between check and read). */
+  const racing = (base: FsLike, before: (p: string) => void): FsLike => ({
+    ...base,
+    open: async (p, flags) => {
+      before(p);
+      return base.open(p, flags);
+    },
+  });
+  const swapToOutsideLink = (p: string) => {
+    unlinkSync(p);
+    symlinkSync(path.join(base, "secret.txt"), p);
+  };
+
+  it("a file swapped for a symlink to outside after the check is refused (O_NOFOLLOW)", async () => {
+    expect(constants.O_NOFOLLOW).toBeDefined();
+    await expect(readInside(root, "log.txt", racing(fs, swapToOutsideLink), path)).rejects.toBeInstanceOf(RefusedPath);
+  });
+
+  it("the same swap is refused without O_NOFOLLOW (Windows): re-checked after opening", async () => {
+    await expect(readInside(root, "log.txt", racing(fsWindowsLike, swapToOutsideLink), path)).rejects.toThrow("Not a path inside the opened folder");
+  });
+
+  it("a file that grew past the cap before it was opened is refused (the open file is checked)", async () => {
+    const grow = (p: string) => appendFileSync(p, "x".repeat(100));
+    await expect(readInside(root, "log.txt", racing(fs, grow), path, 50)).rejects.toThrow("too large");
+  });
+
+  it("a file that grows after the stat is refused: at most cap + 1 bytes are read", async () => {
+    const reads: number[] = [];
+    const lying: FsLike = {
+      ...fs,
+      open: async (p, flags) => {
+        const h = await fs.open(p, flags);
+        const wrapped: FileHandleLike = {
+          // The stat sees the old size (3 bytes); the file is then much larger.
+          stat: async () => {
+            const st = await h.stat();
+            appendFileSync(p, "y".repeat(500));
+            return { isFile: () => st.isFile(), size: st.size, dev: st.dev, ino: st.ino };
+          },
+          read: async (buffer, offset, length, position) => {
+            reads.push(length);
+            return h.read(buffer, offset, length, position);
+          },
+          close: () => h.close(),
+        };
+        return wrapped;
+      },
+    };
+    await expect(readInside(root, "log.txt", lying, path, 50)).rejects.toThrow("too large");
+    expect(reads.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(51);
+  });
+
+  it("a file that grew but stays under the cap is read whole", async () => {
+    const grow = (p: string) => appendFileSync(p, "-more");
+    expect(Buffer.from(await readInside(root, "log.txt", racing(fs, grow), path)).toString()).toBe("log-more");
+  });
+
+  it("the file handle is always closed", async () => {
+    let open = 0;
+    const counting: FsLike = {
+      ...fs,
+      open: async (p, flags) => {
+        const h = await fs.open(p, flags);
+        open++;
+        return { stat: () => h.stat(), read: (b, o, l, pos) => h.read(b, o, l, pos), close: async () => (open--, h.close()) };
+      },
+    };
+    await readInside(root, "log.txt", counting, path);
+    await readInside(root, "log.txt", counting, path, 1).catch(() => undefined);
+    await readInside(root, "drawings", counting, path).catch(() => undefined);
+    expect(open).toBe(0);
+  });
+});
+
+describe("listFolder limits", () => {
+  it("stops at the entry limit and says it was truncated", async () => {
+    for (let i = 0; i < 30; i++) writeFileSync(path.join(root, `many-${i}.txt`), "");
+    const listing = await listFolder(root, fs, path, { maxEntries: 5, maxDepth: 12 });
+    expect(listing.entries).toHaveLength(5);
+    expect(listing.truncated).toBe(true);
+    let lstats = 0;
+    const counting: FsLike = { ...fs, lstat: (p) => (lstats++, fs.lstat(p)) };
+    await listFolder(root, counting, path, { maxEntries: 3, maxDepth: 12 });
+    // Stops looking at entries once the limit is reached, instead of stat-ing all 38.
+    expect(lstats).toBeLessThan(10);
+  });
+
+  it("stops at the depth limit", async () => {
+    const listing = await listFolder(root, fs, path, { maxEntries: 100, maxDepth: 2 });
+    const paths = listing.entries.map((e) => e.path);
+    // Depth 2: drawings and its files and sub-folder are listed; the sub-folder's contents are not.
+    expect(paths).toContain("drawings/frame.GLB");
+    expect(paths).toContain("drawings/old");
+    expect(paths).not.toContain("drawings/old/a.txt");
+    expect(listing.truncated).toBe(true);
+    expect((await listFolder(root, fs, path, { maxEntries: 100, maxDepth: 3 })).truncated).toBe(false);
   });
 });
 
