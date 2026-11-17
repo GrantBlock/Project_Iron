@@ -50,6 +50,7 @@ describe("electron/preload.cjs", () => {
     expect(Object.keys(exposed)).toEqual(["collide"]);
     expect(Object.keys(collide).sort()).toEqual([...BRIDGE_KEYS]);
     expect(Object.keys(collide.markups).sort()).toEqual(["list", "open", "pick", "remove", "save"]);
+    expect(Object.keys(collide.collideFiles).sort()).toEqual(["open", "pick", "save"]);
     expect(Object.keys(collide.overlay).sort()).toEqual(["emit", "on"]);
     expect(required).toEqual(["electron"]);
   });
@@ -64,6 +65,8 @@ describe("electron/preload.cjs", () => {
       "markups.save": ["2026-11-15_snip", { annotations: "{}" }],
       "markups.open": ["folder"],
       "markups.remove": ["folder"],
+      "collideFiles.save": ["line-3.collide", new Uint8Array([0x50, 0x4b]), false],
+      "collideFiles.open": ["line-3.collide"],
     };
     for (const name of Object.keys(INVOKE_CHANNELS) as InvokeMethod[]) {
       invoked.length = 0;

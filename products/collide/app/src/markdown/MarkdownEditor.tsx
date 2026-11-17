@@ -12,7 +12,7 @@ import type { AnnotationsDoc, Shape } from "../model";
 import { Icon } from "../ds";
 import { Canvas, cssVar, type CanvasHandle, type LoadedImage } from "../editor/Canvas";
 import { CalloutsPanel } from "../editor/CalloutsPanel";
-import { Toolbar } from "../editor/Toolbar";
+import { SAVE_COLLIDE_TIP, Toolbar } from "../editor/Toolbar";
 import { historyReducer, initialHistory, type HistoryState } from "../editor/history";
 import { nextShapeId, type NewShape, type ShapePatch } from "../editor/store";
 import { drawsWithColor, loadPenMemory, savePenMemory, TOOL_KEYS, type Role, type Tool } from "../editor/tools";
@@ -54,6 +54,8 @@ export interface MdSession {
   view: View | null;
   fitted: boolean;
   pageH: number;
+  /** RUN3 T35: the Collide file this tab was saved as or opened from (its path, or its name in a browser). */
+  collideFile?: string;
 }
 
 export function createMdSession(o: { name: string; path: string; zipId: string; zipName: string; file: string; text: string; shapes?: readonly Shape[] }): MdSession {
@@ -75,6 +77,28 @@ export interface MdEditorApi {
   pasteImage: (file: Blob) => void;
   /** Save the text and the markup into the zip (this session). */
   save: () => void;
+  /** RUN3 T35: what a .collide file takes from the editor: the text, the page markup (back to front) and a preview picture. */
+  collideContent: () => Promise<{ text: string; shapes: Shape[]; preview: Uint8Array }>;
+}
+
+/** A 1 × 1 PNG, when the page cannot be drawn (the preview is only a thumbnail). */
+async function blankPng(): Promise<Uint8Array> {
+  const c = document.createElement("canvas");
+  c.width = 1;
+  c.height = 1;
+  const b = await new Promise<Blob | null>((r) => c.toBlob(r, "image/png"));
+  return new Uint8Array(b ? await b.arrayBuffer() : []);
+}
+
+/** A picture as PNG bytes. */
+async function pngOf(img: HTMLImageElement): Promise<Uint8Array> {
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, img.width);
+  c.height = Math.max(1, img.height);
+  c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
+  const b = await new Promise<Blob | null>((r) => c.toBlob(r, "image/png"));
+  if (!b) throw new Error("PNG encoding failed");
+  return new Uint8Array(await b.arrayBuffer());
 }
 
 interface Props {
@@ -101,6 +125,8 @@ interface Props {
   onExported: () => void;
   head: (h: { onSave: () => void; canSave: boolean; extra: ReactNode; tail: ReactNode }) => ReactNode;
   themeKey: string;
+  /** RUN3 T35: Save as .collide, in both toolbars. */
+  onSaveCollide?: () => void;
 }
 
 let blank: HTMLImageElement | null = null;
@@ -405,6 +431,21 @@ export function MarkdownEditor(p: Props) {
     })().catch((e: unknown) => q.notify({ tone: "error", title: e instanceof MarkupError ? e.title : "Export failed", description: e instanceof Error ? e.message : String(e) }));
   }, [renderVisible, session]);
 
+  // RUN3 T35: Preview gives the visible page with its callouts (what Copy PNG gives); Edit the rendered page alone.
+  const liveRef = useRef<HTMLDivElement | null>(null);
+  const collideContent = useCallback(async () => {
+    const doc = stateRef.current.doc;
+    let preview: Uint8Array;
+    try {
+      if (live.current.mode === "preview") preview = new Uint8Array(await dataUrlToBlob((await renderVisible()).dataUrl).arrayBuffer());
+      else if (liveRef.current) preview = await pngOf(await pagePicture(liveRef.current));
+      else preview = await blankPng();
+    } catch {
+      preview = await blankPng();
+    }
+    return { text: session.text, shapes: [...(doc?.shapes ?? [])], preview };
+  }, [renderVisible, session, stateRef]);
+
   // ---------- Keys ----------
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
@@ -482,12 +523,13 @@ export function MarkdownEditor(p: Props) {
       }),
       pasteImage: (file) => void placePicture(file, null, "Pasted"),
       save,
+      collideContent,
     };
     apiRef.current = api;
     return () => {
       if (apiRef.current === api) apiRef.current = null;
     };
-  }, [apiRef, placePicture, save, stateRef]);
+  }, [apiRef, placePicture, save, stateRef, collideContent]);
 
   // ---------- Render ----------
   const preview = mode === "preview";
@@ -547,6 +589,7 @@ export function MarkdownEditor(p: Props) {
           copyLabel="Copy PNG"
           copyTip="Copy the visible page with its callouts as a PNG"
           canExport
+          onSaveCollide={p.onSaveCollide}
           onUndo={undo}
           onRedo={redo}
           canUndo={canUndo}
@@ -597,6 +640,11 @@ export function MarkdownEditor(p: Props) {
           </button>
           <span className="grow" />
           {insertButton}
+          {p.onSaveCollide && (
+            <button type="button" className="tool" aria-label="Save as .collide" title={SAVE_COLLIDE_TIP} onClick={p.onSaveCollide}>
+              <Icon name="file-down" />
+            </button>
+          )}
         </div>
       )}
       <div className={`mdbody${preview && !full ? " with-list" : ""}`}>
@@ -637,7 +685,7 @@ export function MarkdownEditor(p: Props) {
                 if (e.target instanceof Element && e.target.closest("a")) e.preventDefault();
               }}
             >
-              <div className="mdpage" dangerouslySetInnerHTML={{ __html: html }} />
+              <div className="mdpage" ref={liveRef} dangerouslySetInnerHTML={{ __html: html }} />
             </div>
           </div>
         )}

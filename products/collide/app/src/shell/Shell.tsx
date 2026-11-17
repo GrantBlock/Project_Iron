@@ -10,11 +10,26 @@ import { refState, type RefState } from "../editor/refState";
 import type { Point } from "../editor/viewport";
 import type { Flattened } from "../io/flatten";
 import { createMarkupStore, MarkupError, type MarkupStore } from "../io";
+import {
+  collideFileName,
+  COLLIDE_EXT,
+  dataUrlBytes,
+  decodeCollide,
+  encodeCollide,
+  markdownSummary,
+  OPEN_FAILED as COLLIDE_OPEN_FAILED,
+  pictureDataUrl,
+  pictureLinks,
+  picturePath,
+  SAVE_FAILED as COLLIDE_SAVE_FAILED,
+  snipSummary,
+  type CollidePackage,
+} from "../io/collideFile";
 import { createSnipFlow } from "../snip/flow";
 import { electronDeps, isDesktop } from "../snip/electronDeps";
 import { Blank, FileTab, SettingsTab, Splash, TabBar, Toasts, WsHead, type FileDoc, type Notice } from "./parts";
 import { applyTheme, loadPrefs, savePref, type Prefs } from "./prefs";
-import { flatFiles, patchZipFile, PICTURES, pictureNames, sortFolders, storeRow, withPicture, zipFile, type RecentItem, type RecentSnip, type RecentZip } from "./recents";
+import { flatFiles, patchZipFile, PICTURES, pictureNames, sortFolders, storeRow, withPicture, zipFile, type RecentItem, type RecentSnip, type RecentZip, type TreeNode } from "./recents";
 import { SAMPLE_OPEN, sampleArt, sampleDoc, sampleRecents, sampleSnip, wantsSample } from "./sample";
 import { Sidebar } from "./Sidebar";
 import { createMdSession, defaultMdPen, MarkdownEditor, type MdEditorApi, type MdSession } from "../markdown/MarkdownEditor";
@@ -22,6 +37,31 @@ import { linkKey, type Resolve } from "../markdown/render";
 import { activateTab, activeTab, closeTab, cycleTab, noTabs, openTab, patchTab, type Tab, type TabKind, type TabsState } from "./tabs";
 
 const nameFromUrl = (url: string) => decodeURIComponent(url.split("?")[0].split("/").pop() || "image");
+const baseName = (p: string) => p.replace(/[\\/]+$/, "").split(/[\\/]/).pop() ?? p;
+
+/** Where a saved Collide file is, for the toast (A: beside the markup folders; a browser downloads it). */
+const COLLIDE_PLACE = "Documents/Collide/Markups/";
+
+/** A browser has no folder to write to: the file is downloaded. */
+function downloadBytes(bytes: Uint8Array, name: string) {
+  const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/zip" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
+/** A tree with `node` at `rel` (folders made as needed). */
+function withFile(tree: TreeNode, rel: string, node: TreeNode): TreeNode {
+  const [head, ...rest] = rel.split("/").filter(Boolean);
+  const kids = tree.kids ?? [];
+  if (rest.length === 0) return { ...tree, kids: [...kids.filter((k) => k.name !== head), { ...node, name: head }] };
+  const folder = kids.find((k) => k.name === head && k.kids) ?? { name: head, kids: [] };
+  return { ...tree, kids: [...kids.filter((k) => k !== folder), withFile(folder, rest.join("/"), node)] };
+}
 
 export interface CollideHook {
   /** The reference test hook (RUN3 T30): read-only, a fresh plain JSON object. The prototype has the same call. */
@@ -355,19 +395,135 @@ export function Shell() {
   const openFile = useCallback(
     (zip: RecentZip, path: string) => {
       const f = flatFiles(zip.tree, zip.id).find((x) => x.path === path);
-      if (!f) return;
+      if (!f) return null;
       const kind: TabKind = f.type === "md" ? "markdown" : f.type === "image" ? "image" : "file";
       const shown = zip.name + path.slice(zip.id.length);
       if (kind === "markdown") {
         const md = createMdSession({ name: f.name, path: shown, zipId: zip.id, zipName: zip.name, file: path, text: f.text ?? "", shapes: f.marks });
-        addTab({ key: `doc:${path}`, kind, title: f.name, dirty: false, owner: zip.id }, (id) => mdSessions.current.set(id, md));
-        return;
+        return addTab({ key: `doc:${path}`, kind, title: f.name, dirty: false, owner: zip.id }, (id) => mdSessions.current.set(id, md));
       }
       const doc: FileDoc = { name: f.name, path: shown, type: f.type ?? "code", text: f.text ?? "" };
-      addTab({ key: `doc:${path}`, kind, title: f.name, dirty: false, owner: zip.id }, (id) => files.current.set(id, doc));
+      return addTab({ key: `doc:${path}`, kind, title: f.name, dirty: false, owner: zip.id }, (id) => files.current.set(id, doc));
     },
     [addTab],
   );
+
+  // ---------- Collide files (RUN3 T35) ----------
+  /** A reopened Markdown package's zip row, by the file it came from. */
+  const collideZips = useRef(new Map<string, string>());
+  /** Open a .collide package in a tab, editable. `where` is its path (desktop) or null (a file picked in a browser). Resolves with the tab title. */
+  const openCollideBytes = useCallback(
+    async (bytes: Uint8Array, label: string, where: string | null): Promise<string> => {
+      const pkg: CollidePackage = decodeCollide(bytes);
+      if (pkg.kind === "snip") {
+        const key = `collide:${where ?? `${label}#${nextId.current}`}`;
+        const had = findTab(key);
+        if (had) {
+          setTabs((s) => activateTab(s, had.id));
+          return pkg.title;
+        }
+        const img = await loadImage(URL.createObjectURL(new Blob([pkg.source as BlobPart], { type: "image/png" })), pkg.title).catch(() => {
+          throw new MarkupError(COLLIDE_OPEN_FAILED, "sources/source.png cannot be read as a picture. Save it again from Collide, or open another file.");
+        });
+        if (img.width !== pkg.doc.source.width || img.height !== pkg.doc.source.height) {
+          throw new MarkupError(
+            COLLIDE_OPEN_FAILED,
+            `sources/source.png is ${img.width}×${img.height} but manifest.json says ${pkg.doc.source.width}×${pkg.doc.source.height}. Save it again from Collide, or open another file.`,
+          );
+        }
+        const session = createSnipSession(img, Promise.resolve(pkg.source), { doc: pkg.doc, folder: null, pictures: await loadPictures(pkg.images) });
+        session.collideFile = where ?? label;
+        openSnipTab(session, { key, title: pkg.title, owner: key });
+        return pkg.title;
+      }
+      // Markdown: the package opens as a zip row in Recents (its .md file and pictures), and its .md file in a tab.
+      const zipId = (where && collideZips.current.get(where)) || `collide-${nextId.current++}`;
+      if (where) collideZips.current.set(where, zipId);
+      let tree: TreeNode = { name: label.replace(/\.collide$/i, ""), kids: [{ name: pkg.file, type: "md", text: pkg.text, marks: pkg.shapes }] };
+      for (const pic of pkg.pictures) {
+        const url = pictureDataUrl(pic.path, pic.bytes);
+        if (url) tree = withFile(tree, pic.path, { name: pic.path, type: "image", url });
+      }
+      const n = 1 + pkg.pictures.length;
+      const zip: RecentZip = { kind: "zip", id: zipId, name: label, day: "Today", meta: `Collide file · ${n} file${n === 1 ? "" : "s"}`, tree };
+      const next = [zip, ...samplesRef.current.filter((z) => z.id !== zipId)];
+      samplesRef.current = next;
+      setSamples(next);
+      setOpenFolders((o) => new Set([...o, zipId]));
+      const tabId = openFile(zip, `${zipId}/${pkg.file}`);
+      const md = tabId ? mdSessions.current.get(tabId) : undefined;
+      if (md) md.collideFile = where ?? label;
+      return pkg.file;
+    },
+    [openFile, openSnipTab, setTabs],
+  );
+  const openCollideFile = useCallback(
+    async (file: string) => {
+      const bridge = window.collide;
+      if (!bridge?.collideFiles) throw new MarkupError(COLLIDE_OPEN_FAILED, "Collide files open in the Collide desktop app.");
+      let bytes: Uint8Array;
+      try {
+        bytes = new Uint8Array(await bridge.collideFiles.open(file));
+      } catch (e) {
+        throw new MarkupError(COLLIDE_OPEN_FAILED, e instanceof Error ? e.message : String(e));
+      }
+      return openCollideBytes(bytes, baseName(file), file);
+    },
+    [openCollideBytes],
+  );
+
+  /** Save the tab in front as a .collide file: the desktop app writes it beside the markups; a browser downloads it. */
+  const saveCollide = useCallback(async () => {
+    const front = activeTab(live.current.tabs);
+    if (!front) return;
+    let pkg: CollidePackage;
+    let summary: string;
+    let session: { collideFile?: string };
+    if (front.kind === "snip" && editor.current && sessions.current.get(front.id)) {
+      session = sessions.current.get(front.id)!;
+      pkg = await editor.current.collidePackage(front.title);
+      summary = snipSummary(pkg.doc.shapes);
+    } else if (front.kind === "markdown" && mdEditor.current && mdSessions.current.get(front.id)) {
+      const md = mdSessions.current.get(front.id)!;
+      session = md;
+      const c = await mdEditor.current.collideContent();
+      // The pictures the text links, from the zip, in their own formats.
+      const tree = zipById(md.zipId)?.tree;
+      const pictures = pictureLinks(c.text).flatMap((link) => {
+        const path = picturePath(link);
+        const f = path && tree ? zipFile(tree, linkKey(link)) : null;
+        const sample = f?.sample ? sampleSnip(f.sample) : undefined;
+        const url = f?.url ?? (sample ? sampleArt(sample, 640) : null);
+        const bytes = url ? dataUrlBytes(url) : null;
+        return path && bytes ? [{ path, bytes }] : [];
+      });
+      pkg = { kind: "markdown", title: md.name, file: md.name, text: c.text, shapes: c.shapes, pictures, preview: c.preview };
+      summary = markdownSummary(c.text, c.shapes);
+    } else return;
+    const bytes = encodeCollide(pkg);
+    const bridge = window.collide;
+    const name = session.collideFile ? baseName(session.collideFile) : collideFileName({ kind: pkg.kind, title: pkg.title, file: pkg.kind === "markdown" ? pkg.file : undefined });
+    let saved: string;
+    let place: string;
+    if (bridge?.collideFiles) {
+      try {
+        saved = await bridge.collideFiles.save(name.toLowerCase().endsWith(COLLIDE_EXT) ? name : `${name}${COLLIDE_EXT}`, bytes, !!session.collideFile);
+      } catch (e) {
+        throw new MarkupError(COLLIDE_SAVE_FAILED, e instanceof Error ? e.message : String(e));
+      }
+      place = COLLIDE_PLACE;
+    } else {
+      downloadBytes(bytes, name);
+      saved = name;
+      place = "downloaded";
+    }
+    session.collideFile = saved;
+    showHint(`Saved ${baseName(saved)} · ${summary} · ${place}`);
+  }, [showHint]);
+  const onSaveCollide = useCallback(() => {
+    notify(null);
+    saveCollide().catch((e: unknown) => fail(e, COLLIDE_SAVE_FAILED));
+  }, [fail, notify, saveCollide]);
 
   const openSettings = useCallback(() => void addTab({ key: "settings", kind: "settings", title: "Settings", dirty: false }), [addTab]);
 
@@ -391,15 +547,41 @@ export function Shell() {
 
   const onOpen = useCallback(() => {
     notify(null);
+    // The desktop app (RUN3 T35): one dialog for a .collide file or a saved markup (its folder or its annotations.json).
+    const bridge = window.collide;
+    if (bridge?.collideFiles) {
+      bridge.collideFiles.pick().then(
+        async (r) => {
+          if (r?.kind === "markup") {
+            const n = await openMarkup(r.folder).catch((e: unknown) => void fail(e, "Could not open markup"));
+            if (n) notify({ tone: "success", title: "Markup opened", description: n });
+          } else if (r?.kind === "collide") {
+            const t = await openCollideFile(r.file).catch((e: unknown) => void fail(e, COLLIDE_OPEN_FAILED));
+            if (t) notify({ tone: "success", title: "Collide file opened", description: r.file });
+          }
+        },
+        (e: unknown) => fail(e, "Could not open markup"),
+      );
+      return;
+    }
     openMarkup().then(
       (n) => n && notify({ tone: "success", title: "Markup opened", description: n }),
       (e: unknown) => fail(e, "Could not open markup"),
     );
-  }, [openMarkup, notify, fail]);
+  }, [openMarkup, openCollideFile, notify, fail]);
 
   const onFile = (e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (f) void openImage(URL.createObjectURL(f), f.name).catch((err: unknown) => fail(err, "Could not open the image"));
+    // A .collide file picked in a browser (RUN3 T35): read here, unpacked and checked like one from disk.
+    if (f && f.name.toLowerCase().endsWith(COLLIDE_EXT)) {
+      void f
+        .arrayBuffer()
+        .then((b) => openCollideBytes(new Uint8Array(b), f.name, null))
+        .then(
+          () => notify({ tone: "success", title: "Collide file opened", description: f.name }),
+          (err: unknown) => fail(err, COLLIDE_OPEN_FAILED),
+        );
+    } else if (f) void openImage(URL.createObjectURL(f), f.name).catch((err: unknown) => fail(err, "Could not open the image"));
     e.target.value = "";
   };
 
@@ -444,7 +626,17 @@ export function Shell() {
     if (front?.kind !== "snip") return newSnip();
     const behind = live.current.prefs.addMode === "Behind";
     const failed = (e: unknown) => fail(e, "Add snip failed");
-    const added = (what: string) => (r: unknown) => r && showHint(`${what} added beside the image`);
+    // Added, then the canvas goes to the clipboard, as the prototype says (RUN3 T35).
+    const added = (what: string) => async (r: unknown) => {
+      if (!r) return;
+      let copied = "copied to clipboard";
+      try {
+        await editor.current?.copyQuiet();
+      } catch {
+        copied = "not copied: the clipboard refused it";
+      }
+      showHint(`${what} added beside the image · ${copied}`);
+    };
     const bridge = window.collide;
     if (bridge) {
       if (behind) {
@@ -656,6 +848,7 @@ export function Shell() {
         apiRef={editor}
         notify={notify}
         themeKey={themeKey}
+        onSaveCollide={onSaveCollide}
         onDirty={(d) => setDirty(front.id, d)}
         onSaved={(_, folderName) => {
           // A saved snip is a markup of the store from now on: opening that markup goes to this tab.
@@ -712,6 +905,7 @@ export function Shell() {
         store={getStore}
         onExported={() => void refreshRecents()}
         themeKey={themeKey}
+        onSaveCollide={onSaveCollide}
         head={(h) => <WsHead {...headBase} name={md.name} path={md.path} savedLabel="Saved" onSave={h.onSave} canSave={h.canSave} extra={h.extra} tail={h.tail} />}
       />
     );
@@ -796,7 +990,7 @@ export function Shell() {
           ]}
         />
       )}
-      <input ref={fileRef} type="file" accept="image/*" hidden data-testid="file-input" onChange={onFile} />
+      <input ref={fileRef} type="file" accept={`image/*,${COLLIDE_EXT}`} hidden data-testid="file-input" onChange={onFile} />
     </div>
   );
 }

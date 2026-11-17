@@ -5,6 +5,7 @@
 // T15: the snip's window moves, the overlay window, settings.json and the global
 // hotkey, copyImage.
 // T16: markup folders under Documents/Collide/Markups and the Open folder dialog.
+// RUN3 T35: Collide files (.collide) in the same folder, and the Open dialog for them and for markups.
 // This file only creates windows and passes Electron's modules on: the logic
 // lives in src/native/ and src/snip/crop.ts (TypeScript, unit-tested) and is
 // bundled to dist-electron/native.cjs by `pnpm build:electron`.
@@ -172,6 +173,13 @@ app.whenReady().then(() => {
     collapse: collapse.apply,
     // Files only under Documents/Collide/Markups: src/native/markups.ts checks every path.
     markups: native.createMarkups({
+      fs,
+      path,
+      documents: () => app.getPath("documents"),
+      showOpenDialog: (options) => (editor && !editor.isDestroyed() ? dialog.showOpenDialog(editor, options) : dialog.showOpenDialog(options)),
+    }),
+    // RUN3 T35: .collide files in the same folder, checked the same way (src/native/collideFiles.ts).
+    collideFiles: native.createCollideFiles({
       fs,
       path,
       documents: () => app.getPath("documents"),

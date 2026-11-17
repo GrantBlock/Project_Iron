@@ -219,7 +219,11 @@ function isMarkupFiles(v: unknown): v is MarkupFiles {
   return Array.isArray(f.images) && f.images.every((i) => typeof i === "object" && i !== null && typeof i.name === "string" && IMAGE_FILE.test(i.name) && isBytes(i.png));
 }
 
-export function createMarkups(deps: MarkupsDeps): Markups {
+/**
+ * Checks a path against the Markups folder: the text first (`resolveInScope`), then on disk, so a link (or junction)
+ * inside Markups cannot lead out of it. Shared by the markup folders and the Collide files (T35).
+ */
+export function markupsScope(deps: Pick<MarkupsDeps, "fs" | "path" | "documents">) {
   const { fs, path } = deps;
 
   const root = (): string => {
@@ -268,6 +272,13 @@ export function createMarkups(deps: MarkupsDeps): Markups {
   };
 
   const scoped = (rootDir: string, target: string, shown = target): string => followed(rootDir, resolveInScope(path, rootDir, target), shown);
+
+  return { root, followed, scoped };
+}
+
+export function createMarkups(deps: MarkupsDeps): Markups {
+  const { fs, path } = deps;
+  const { root, followed, scoped } = markupsScope(deps);
 
   return {
     save(folderName, files) {

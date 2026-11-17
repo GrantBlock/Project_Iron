@@ -35,7 +35,7 @@ test("Add snip: Current and Behind add beside the image; save and open keep both
     await recents.getByRole("radio", { name: "Current" }).click();
     await addSnip.click();
     await expect.poll(async () => (await images(page)).length).toBe(1);
-    await expect(page.getByTestId("toast")).toHaveText("Screenshot added beside the image");
+    await expect(page.getByTestId("toast")).toHaveText("Screenshot added beside the image · copied to clipboard");
     const [first] = await images(page);
     expect(first).toMatchObject({ x: 344, y: 0, h: 200, src: "image-1.png" });
     expect(first.w).toBe(Math.round((200 * display.width) / display.height));
@@ -55,7 +55,7 @@ test("Add snip: Current and Behind add beside the image; save and open keep both
     await overlay.mouse.move(b.x + 100, b.y + 80, { steps: 3 });
     await overlay.mouse.up();
     await expect.poll(async () => (await images(page)).length).toBe(2);
-    await expect(page.getByTestId("toast")).toHaveText("Snip from behind added beside the image");
+    await expect(page.getByTestId("toast")).toHaveText("Snip from behind added beside the image · copied to clipboard");
     const second = (await images(page))[1];
     expect(second).toMatchObject({ x: first.x + first.w + 24, y: 0, h: 200, src: "image-2.png" });
     expect(second.w / second.h).toBeCloseTo(100 / 80, 1);

@@ -4,6 +4,9 @@ import { ROLES, STROKE_WIDTHS, swatchBackground, TOOL_BUTTONS, type Role, type T
 
 // Ported from design-system/ui_kits/snip-markup/Toolbar.jsx. The toolbar of a Snip tab (RUN3 T31, T32):
 // tools, the four colours, stroke; undo/redo and actions on the right. Canvas snip is gone (Grant 2026-11-15).
+/** The prototype's words for Save as .collide. */
+export const SAVE_COLLIDE_TIP = "Save as a Collide file (.collide): the sources in their own formats plus every shape, bubble, note and order; reopens editable";
+
 const Sep = () => <span style={{ width: 1, height: 20, background: "var(--line-2)", margin: "0 6px" }} />;
 
 interface Props {
@@ -27,6 +30,8 @@ interface Props {
   /** The Copy button's name and tip. */
   copyLabel?: string;
   copyTip?: string;
+  /** RUN3 T35: Save as .collide (before Copy); absent = no button. */
+  onSaveCollide?: () => void;
   /** Buttons after the tools (the Markdown editor's Insert image). */
   extra?: ReactNode;
   hidden?: boolean;
@@ -107,6 +112,11 @@ export function Toolbar(props: Props) {
       <IconButton icon="undo-2" label="Undo" disabled={!canUndo} onClick={onUndo} style={canUndo ? undefined : { opacity: 0.4, cursor: "not-allowed" }} />
       <IconButton icon="redo-2" label="Redo" disabled={!canRedo} onClick={onRedo} style={canRedo ? undefined : { opacity: 0.4, cursor: "not-allowed" }} />
       <Sep />
+      {props.onSaveCollide && (
+        <Tooltip label={SAVE_COLLIDE_TIP}>
+          <IconButton icon="file-down" label="Save as .collide" onClick={props.onSaveCollide} />
+        </Tooltip>
+      )}
       <Tooltip label={copyTip} shortcut="Ctrl+Shift+C">
         <IconButton icon="clipboard-copy" label={copyLabel} data-testid="copy-btn" onClick={onCopy} disabled={!canExport} />
       </Tooltip>

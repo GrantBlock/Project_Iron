@@ -64,6 +64,7 @@ import mdMaximizeIcon from "lucide-static/icons/maximize.svg?url";
 import mdChevronUpIcon from "lucide-static/icons/chevron-up.svg?url";
 import mdChevronDownIcon from "lucide-static/icons/chevron-down.svg?url";
 import mdImagePlusIcon from "lucide-static/icons/image-plus.svg?url";
+import fileDownIcon from "lucide-static/icons/file-down.svg?url";
 export const ICON_URLS: Record<string, string> = {
   "heading": mdHeadingIcon,
   "list": mdListIcon,
@@ -78,6 +79,7 @@ export const ICON_URLS: Record<string, string> = {
   "chevron-up": mdChevronUpIcon,
   "chevron-down": mdChevronDownIcon,
   "image-plus": mdImagePlusIcon,
+  "file-down": fileDownIcon,
   "circle": circle,
   "circle-alert": circleAlert,
   "x": x,

@@ -16,6 +16,7 @@ import {
 import { CaptureState, cropFromState, type Capturer, type FrameImage } from "./capture";
 import { captureMonitor, electronCapturer, type ElectronCaptureDeps } from "./electronCapturer";
 import type { Markups } from "./markups";
+import type { CollideFiles } from "./collideFiles";
 import { overlayBoundsFor, type Choreography } from "./windows";
 import type { LogicalRect } from "../snip/crop";
 
@@ -46,6 +47,8 @@ export interface BridgeDeps extends ElectronCaptureDeps {
   collapse: (request: unknown) => { maximized: boolean };
   /** Markup folders, scoped to Documents/Collide/Markups (markups.ts). */
   markups: Markups;
+  /** RUN3 T35: Collide files, scoped to the same folder (collideFiles.ts). Absent = the channels answer that this build cannot. */
+  collideFiles?: CollideFiles;
   /** Defaults to the real capturer; tests and the Electron e2e pass a fake. */
   capturer?: Capturer;
   state?: CaptureState;
@@ -91,6 +94,15 @@ export function registerBridge(deps: BridgeDeps): { state: CaptureState } {
   handle("markups.pick", () => deps.markups.pick());
   handle("markups.list", () => deps.markups.list());
   handle("markups.remove", (folder) => deps.markups.remove(folder));
+
+  // RUN3 T35: Collide files. collideFiles.ts checks the arguments and every path.
+  const files = (): CollideFiles => {
+    if (!deps.collideFiles) throw new Error("This build of Collide cannot save or open Collide files. Update Collide.");
+    return deps.collideFiles;
+  };
+  handle("collideFiles.save", (name, bytes, replace) => files().save(name, bytes, replace));
+  handle("collideFiles.open", (file) => files().open(file));
+  handle("collideFiles.pick", () => files().pick());
 
   // Overlay events go to every window, the sender included (the Rust shell's emit did the same).
   deps.ipcMain.on(OVERLAY_EVENT_CHANNEL, (event, name, payload) => {

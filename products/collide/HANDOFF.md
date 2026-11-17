@@ -33,7 +33,7 @@
 | T32 | Markup engine | Done (Snip; Vitest 376, Playwright 45 ×2, Electron e2e 15) | prototype 15/15 · app 5/15 (+callout-numbering, print-area-and-bubble-stacking; Esc, click-outside, colour memory, pen-highlighter pass their Snip parts and wait for T34; order-numbers waits for T33) |
 | T33 | Images on canvas | Done (Vitest 388, Playwright 48 ×2, Electron e2e 16; real Current/Behind capture, DPI: manual Grant/Lydia) | prototype 15/15 · app 5/15 (order-numbers-and-eraser and paste-image now fail only at their Markdown steps → T34) |
 | T34 | Markdown editor | Done (Vitest 410, Playwright 52 ×2, Electron e2e 16; zip storage on disk not built, ISSUES 35) | prototype 15/15 · app 14/15 (only save-collide-file left → T35) |
-| T35 | `.collide` files | To do | |
+| T35 | `.collide` files | Done (Vitest 441, Playwright 52 ×2, Electron e2e 19 ×2; adds fflate) | prototype 15/15 · app 15/15 |
 | T36 | Server storage | To do | |
 | T38 | PDF | To do | |
 | T37 | Handoff | To do | |
@@ -44,8 +44,8 @@ prototype 15/15 ✓ · app 3/15 ✓ after T31. Passing on the app: tabs-and-clos
 
 ### Next (for session 2)
 
-- **First:** T35 (`.collide` files: save and open, sources in their own formats plus every item and the order; reopens editable; (A) layout manifest.json, sources/, preview.png). Target: save-collide-file on the app (it now fails on the toast "… · copied to clipboard" after Add snip).
-- Then T36 and T38 if usage remains; T37 last.
+- **First:** T36 (server storage, Server mode: storage folder (A) `%APPDATA%\Collide\`, delete the oldest after [number of files] — ISSUES 21). Then T38 (PDF).
+- T37 (handoff, screenshot differences) last.
 - Run the reference: `cd products/collide/app && pnpm ref` (per spec prototype ✓/✗ · app ✓/✗). Electron e2e needs `xvfb-run -a` in the cloud.
 - Pacing: the Fable Coder hit the 5-hour limit in four of eight tasks. Have each Coder commit and push after every step, and resume a stopped agent with SendMessage rather than restarting it.
 - Playwright e2e has parallel-run flakes (ISSUES 16): rerun a single failure once before treating it as real.
