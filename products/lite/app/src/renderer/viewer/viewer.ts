@@ -14,6 +14,7 @@ import {
   Raycaster,
   Scene,
   Sphere,
+  Texture,
   Vector2,
   Vector3,
   WebGLRenderer,
@@ -150,7 +151,12 @@ export function createViewer(container: HTMLElement, options: ViewerOptions): Mo
     async load(source) {
       const bytes = typeof source === "string" ? await (await fetch(source)).arrayBuffer() : source;
       const gltf = await new GLTFLoader().parseAsync(bytes, "");
-      if (root) scene.remove(root);
+      if (root) {
+        scene.remove(root);
+        disposeModel(root);
+        root = partRoot = null;
+        parts = [];
+      }
       root = gltf.scene;
       // Each mesh gets its own material copy, so highlighting one part never tints another.
       root.traverse((o) => {
@@ -192,17 +198,29 @@ export function createViewer(container: HTMLElement, options: ViewerOptions): Mo
     dispose() {
       observer.disconnect();
       controls.dispose();
-      root?.traverse((o) => {
-        if (o instanceof Mesh) {
-          o.geometry.dispose();
-          for (const m of materials(o)) m.dispose();
-        }
-      });
+      if (root) disposeModel(root);
+      root = partRoot = null;
+      parts = [];
       renderer.dispose();
+      // Give the WebGL context back now, not when the canvas is garbage-collected: switching
+      // models many times must not run into the browser's limit on live contexts.
+      renderer.forceContextLoss();
       canvas.remove();
     },
   };
   return viewer;
+}
+
+/** Frees a loaded model's GPU resources: every mesh's geometry, its materials and their textures. */
+export function disposeModel(root: Object3D): void {
+  root.traverse((o) => {
+    if (!(o instanceof Mesh)) return;
+    o.geometry.dispose();
+    for (const m of materials(o)) {
+      for (const value of Object.values(m)) if (value instanceof Texture) value.dispose();
+      m.dispose();
+    }
+  });
 }
 
 function materials(mesh: Mesh): Material[] {

@@ -4,3 +4,6 @@ dist-electron
 release
 test-results
 playwright-report
+# Screenshots and other images never belong in the app root (probe output); assets live under src/.
+/*.png
+/*.jpg
