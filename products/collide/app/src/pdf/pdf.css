@@ -1,0 +1,8 @@
+/* The PDF editor (RUN3 T38): the page arrows in the header and the page under the markup. App tokens only (shell.css). */
+.pager { align-items: center; }
+.pager button { padding: 0 8px; display: inline-flex; align-items: center; }
+.pager button:disabled { opacity: 0.4; cursor: default; }
+.pager .pagenum { padding: 0 8px; color: var(--t2); font: 12px var(--font-mono); white-space: nowrap; }
+.pdfpage { position: relative; background: var(--raised); box-shadow: var(--shadow); }
+.pdfpage canvas { display: block; }
+.pdffail { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; text-align: center; color: var(--t3); font: 12px var(--font-mono); }

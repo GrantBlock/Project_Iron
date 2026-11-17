@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fromPdf, normalTurn, pageFrame, pointsToScreen, screenToPoints, shownSize, toPdf, type PdfBox, type Turn } from "./coords";
+import { fitPdfPage, fromPdf, normalTurn, pageFrame, pointsToScreen, screenToPoints, shownSize, toPdf, type PdfBox, type Turn } from "./coords";
 import { zoomAt, type View } from "../editor/viewport";
 
 const box: PdfBox = { x: 0, y: 0, width: 500, height: 360 };
@@ -90,5 +90,22 @@ describe("shown points ↔ PDF user space (RUN3 T38)", () => {
     expect(shownSize(box, 90)).toEqual({ width: 360, height: 500 });
     expect(shownSize(box, 180)).toEqual({ width: 500, height: 360 });
     expect([normalTurn(0), normalTurn(-90), normalTurn(450), normalTurn(45), normalTurn(Number.NaN)]).toEqual([0, 270, 90, 0, 0]);
+  });
+});
+
+describe("Fit for a PDF page (RUN3 T38)", () => {
+  it("shows the whole page with room for bubbles beside it, centred, at most 100%", () => {
+    const pane = { width: 1000, height: 700 };
+    const page = { width: 612, height: 792 };
+    const v = fitPdfPage(pane, page);
+    expect(v.scale).toBeLessThanOrEqual(1);
+    const tl = pointsToScreen(v, { x: 0, y: 0 });
+    const br = pointsToScreen(v, { x: page.width, y: page.height });
+    expect(tl.x).toBeGreaterThan(0);
+    expect(tl.y).toBeGreaterThan(0);
+    expect(br.x).toBeLessThan(pane.width);
+    expect(br.y).toBeLessThan(pane.height);
+    expect(tl.x + br.x).toBeCloseTo(pane.width, 6);
+    expect(fitPdfPage({ width: 4000, height: 3000 }, { width: 500, height: 360 }).scale).toBe(1);
   });
 });

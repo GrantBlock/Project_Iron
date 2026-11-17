@@ -3,7 +3,7 @@
 // page's own rotation (/Rotate), exactly as pdf.js lays the page out at scale 1. The canvas's view maps those
 // points to the screen (screen = points × zoom + pan), so the markup stays on the same spot at any zoom.
 // Export maps the same points into the PDF's own space (origin bottom-left, y up, before the rotation).
-import { imageToScreen, screenToImage, type Point, type View } from "../editor/viewport";
+import { fitArea, imageToScreen, screenToImage, type Point, type Size, type View } from "../editor/viewport";
 
 /** The page box the viewer shows (the CropBox), in PDF user space, before the rotation. */
 export interface PdfBox {
@@ -75,3 +75,12 @@ export function fromPdf(frame: PdfFrame, q: Point): Point {
 export const pointsToScreen = (view: View, p: Point): Point => imageToScreen(view, p);
 /** A screen point (canvas pixels) in shown PDF points at this view. */
 export const screenToPoints = (view: View, p: Point): Point => screenToImage(view, p);
+
+/** Room beside and above the page at Fit (points), for the callout bubbles laid out beside it. */
+export const PAGE_SIDE = 210;
+export const PAGE_TOP = 60;
+
+/** Fit: the page and the room beside it in the pane, centred, never above 100%. */
+export function fitPdfPage(pane: Size, page: Size): View {
+  return fitArea(pane, { x: -PAGE_SIDE, y: -PAGE_TOP, w: page.width + 2 * PAGE_SIDE, h: page.height + 2 * PAGE_TOP }, 12);
+}

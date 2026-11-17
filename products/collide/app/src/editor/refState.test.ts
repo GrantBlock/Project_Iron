@@ -32,6 +32,7 @@ describe("reference test hook: window.__collide.state()", () => {
       aura: null,
       sidebar: { delay: "No delay", addMode: "Current", collapsed: false },
       splash: null,
+      pdf: null,
     });
   });
 
@@ -130,5 +131,17 @@ describe("reference test hook: a Markdown tab (RUN3 T34)", () => {
     const s = refState(md, null, { ...page, mode: "edit", scale: null });
     expect(s).toMatchObject({ mode: "edit", activeTool: null, color: "yellow", stroke: 2, selection: [], zoom: null });
     expect(s.items).toHaveLength(4);
+  });
+
+  // RUN3 T38 (app only): a PDF tab reads like a Markdown page in Preview, plus its page and page count.
+  it("a PDF tab in front: the pdf view and editor, the page's items in points, the page index and count", () => {
+    const pdfShell: ShellRefInput = { ...blank, tabs: [{ id: "t3", title: "two-pages.pdf", kind: "pdf", dirty: true }], active: "t3" };
+    const s = refState(pdfShell, null, null, { pageIndex: 1, pageCount: 2, shapes, selectedId: "a3", tool: "rect", color: "red", strokeWidth: 3, scale: 1.25, fitted: false });
+    expect(s).toMatchObject({ view: "pdf", editor: "pdf", mode: null, activeTool: "rect", color: "red", stroke: 3, selection: ["a3"], zoom: { percent: 125, fit: false }, pdf: { pageIndex: 1, pageCount: 2 } });
+    expect(s.items.map((i) => i.id)).toEqual(["a4", "a3", "a2", "a1"]);
+    // No PDF editor on screen: the view, no items, no page.
+    expect(refState(pdfShell, null)).toMatchObject({ view: "pdf", editor: "pdf", items: [], pdf: null });
+    // Another tab in front: no PDF fields.
+    expect(refState(shell, base, null, { pageIndex: 0, pageCount: 2, shapes, selectedId: null, tool: "select", color: null, strokeWidth: 3, scale: 1, fitted: true }).pdf).toBeNull();
   });
 });
