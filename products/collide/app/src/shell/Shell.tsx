@@ -998,6 +998,7 @@ export function Shell() {
         apiRef={editor}
         notify={notify}
         themeKey={themeKey}
+        onSaveCollide={onSaveCollide}
         onDirty={(d) => setDirty(front.id, d)}
         onSaved={(_, folderName) => {
           // A saved snip is a markup of the store from now on: opening that markup goes to this tab.
@@ -1006,7 +1007,7 @@ export function Shell() {
           void refreshRecents().then(pruneStorage);
         }}
         head={(save) => (
-          <WsHead {...headBase} name={front.title} path={session.source.folder ? `Documents/Collide/Markups/${session.source.folder}` : `${session.image.width} × ${session.image.height} · not saved yet`} savedLabel="Saved" {...save} onSave={onSaveCollide} />
+          <WsHead {...headBase} name={front.title} path={session.source.folder ? `Documents/Collide/Markups/${session.source.folder}` : `${session.image.width} × ${session.image.height} · not saved yet`} savedLabel="Saved" {...save} />
         )}
       />
     );
@@ -1060,7 +1061,8 @@ export function Shell() {
         store={getStore}
         onExported={() => void refreshRecents()}
         themeKey={themeKey}
-        head={(h) => <WsHead {...headBase} name={md.name} path={md.path} savedLabel="Saved" onSave={onSaveCollide} canSave={h.canSave} onCopy={h.onCopy} extra={h.extra} tail={h.tail} />}
+        onSaveCollide={onSaveCollide}
+        head={(h) => <WsHead {...headBase} name={md.name} path={md.path} savedLabel="Saved" onSave={h.onSave} canSave={h.canSave} extra={h.extra} tail={h.tail} />}
       />
     );
   } else if (front && headBase && front.kind === "pdf" && pdfSession) {
@@ -1079,7 +1081,7 @@ export function Shell() {
         notify={notify}
         themeKey={themeKey}
         onSaveCollide={onSaveCollide}
-        head={(h) => <WsHead {...headBase} name={front.title} path={pdfSession.collideFile ?? pdfSession.path} savedLabel="Saved" onSave={onSaveCollide} canSave={h.canSave} onCopy={h.onCopy} extra={h.extra} tail={h.tail} />}
+        head={(h) => <WsHead {...headBase} name={front.title} path={pdfSession.collideFile ?? pdfSession.path} savedLabel="Saved" onSave={h.onSave} canSave={h.canSave} extra={h.extra} tail={h.tail} />}
       />
     );
   } else if (front && headBase && file) {

@@ -118,11 +118,10 @@ interface Props {
   onHideTools: () => void;
   hint: (text: string) => void;
   notify: (n: { tone: "error" | "success"; title: string; description: string } | null) => void;
-  head: (h: { onSave: () => void; canSave: boolean; onCopy: () => void; extra: ReactNode; tail: ReactNode }) => ReactNode;
-  /** Save as .collide (Ctrl+S and the header). */
-  onSaveCollide: () => void;
+  head: (h: { onSave: () => void; canSave: boolean; extra: ReactNode; tail: ReactNode }) => ReactNode;
   themeKey: string;
   /** Save as .collide (the header's Save, Ctrl+S and the toolbar's button). */
+  onSaveCollide: () => void;
 }
 
 /** The bubble colours for Export, from design-system tokens (a print look on any theme). */
@@ -491,7 +490,7 @@ function PdfPageEditor(p: Props & { index: number; setPage: (n: number) => void 
 
   return (
     <div className="wsfill pdfedit" data-theme-key={themeKey}>
-      {p.head({ onSave: save, canSave: true, onCopy, extra, tail })}
+      {p.head({ onSave: save, canSave: true, extra, tail })}
       <Toolbar
         label="PDF tools"
         hidden={hideTools}
@@ -503,7 +502,11 @@ function PdfPageEditor(p: Props & { index: number; setPage: (n: number) => void 
         setStrokeWidth={setStrokeWidth}
         fileName={session.name}
         onExport={onExport}
+        onCopy={onCopy}
+        copyLabel="Copy PNG"
+        copyTip="Copy this page with its callouts as a PNG"
         canExport
+        onSaveCollide={p.onSaveCollide}
         onUndo={undo}
         onRedo={redo}
         canUndo={canUndo}

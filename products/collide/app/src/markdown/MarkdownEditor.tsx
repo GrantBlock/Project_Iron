@@ -12,7 +12,7 @@ import type { AnnotationsDoc, Shape } from "../model";
 import { Icon } from "../ds";
 import { Canvas, cssVar, type CanvasHandle, type LoadedImage } from "../editor/Canvas";
 import { CalloutsPanel } from "../editor/CalloutsPanel";
-import { Toolbar } from "../editor/Toolbar";
+import { SAVE_COLLIDE_TIP, Toolbar } from "../editor/Toolbar";
 import { historyReducer, initialHistory, type HistoryState } from "../editor/history";
 import { nextShapeId, type NewShape, type ShapePatch } from "../editor/store";
 import { drawsWithColor, loadPenMemory, savePenMemory, TOOL_KEYS, type Role, type Tool } from "../editor/tools";
@@ -123,9 +123,10 @@ interface Props {
   store: () => MarkupStore;
   /** Export saved a markup: Recents should show it. */
   onExported: () => void;
-  head: (h: { onSave: () => void; canSave: boolean; onCopy: () => void; extra: ReactNode; tail: ReactNode }) => ReactNode;
+  head: (h: { onSave: () => void; canSave: boolean; extra: ReactNode; tail: ReactNode }) => ReactNode;
   themeKey: string;
   /** RUN3 T35: Save as .collide, in both toolbars. */
+  onSaveCollide?: () => void;
 }
 
 let blank: HTMLImageElement | null = null;
@@ -571,7 +572,7 @@ export function MarkdownEditor(p: Props) {
 
   return (
     <div className="wsfill mdedit" data-theme-key={themeKey}>
-      {p.head({ onSave: save, canSave: true, onCopy, extra, tail })}
+      {p.head({ onSave: save, canSave: true, extra, tail })}
       {preview ? (
         <Toolbar
           label="Markdown tools"
@@ -584,7 +585,11 @@ export function MarkdownEditor(p: Props) {
           setStrokeWidth={setStrokeWidth}
           fileName={session.name}
           onExport={onExport}
+          onCopy={onCopy}
+          copyLabel="Copy PNG"
+          copyTip="Copy the visible page with its callouts as a PNG"
           canExport
+          onSaveCollide={p.onSaveCollide}
           onUndo={undo}
           onRedo={redo}
           canUndo={canUndo}
@@ -635,6 +640,11 @@ export function MarkdownEditor(p: Props) {
           </button>
           <span className="grow" />
           {insertButton}
+          {p.onSaveCollide && (
+            <button type="button" className="tool" aria-label="Save as .collide" title={SAVE_COLLIDE_TIP} onClick={p.onSaveCollide}>
+              <Icon name="file-down" />
+            </button>
+          )}
         </div>
       )}
       <div className={`mdbody${preview && !full ? " with-list" : ""}`}>

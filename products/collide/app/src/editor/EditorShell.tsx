@@ -175,12 +175,14 @@ interface Props {
   /** Saved: the folder id the store gave, and the folder's name. */
   onSaved: (id: string, folderName: string) => void;
   /** The tab's header (name, Save, Close), given the editor's Save. */
-  head: (save: { onSave: () => void; canSave: boolean; onCopy: () => void }) => ReactNode;
+  head: (save: { onSave: () => void; canSave: boolean }) => ReactNode;
   /** Changes when the theme does, so the canvas repaints with the theme's colours. */
   themeKey: string;
+  /** RUN3 T35: the toolbar's Save as .collide. */
+  onSaveCollide?: () => void;
 }
 
-export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSaved, head, themeKey }: Props) {
+export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSaved, head, themeKey, onSaveCollide }: Props) {
   const image = session.image;
   const { state, dispatch, stateRef, canUndo, canRedo } = useEditorStore(session.history, (h) => (session.history = h));
   const shapes = useMemo(() => state.doc?.shapes ?? [], [state.doc]);
@@ -557,7 +559,7 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
   return (
     <div className="wsfill" data-theme-key={themeKey}>
       {/* Save stays on for an open snip, changed or not, as before the tabs: saving again writes the same folder (ISSUES 25). */}
-      {head({ onSave, canSave: true, onCopy })}
+      {head({ onSave, canSave: true })}
       <Toolbar
         tool={tool}
         setTool={setTool}
@@ -567,6 +569,8 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
         setStrokeWidth={setStrokeWidth}
         fileName={image.name}
         onExport={onExport}
+        onCopy={onCopy}
+        onSaveCollide={onSaveCollide}
         canExport
         onUndo={undo}
         onRedo={redo}
