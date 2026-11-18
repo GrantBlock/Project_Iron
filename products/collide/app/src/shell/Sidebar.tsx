@@ -5,10 +5,14 @@ import { useEffect, useRef } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import { Icon } from "../ds";
 import { CollapseButton, Logo } from "./parts";
-import { AURA_GROUNDS, SNIP_DELAYS, THEMES, type AddMode, type AuraGround, type Prefs, type Theme } from "./prefs";
+import { ADD_MODES, AURA_GROUNDS, SNIP_DELAYS, THEMES, type AddMode, type AuraGround, type Prefs, type Theme } from "./prefs";
 import { filterRecents, groupRecents, recentTags, snipMeta, type RecentItem, type RecentZip, type TreeNode } from "./recents";
 
 const DELAY_TITLE: Record<number, string> = { 0: "No delay", 3: "Wait 3 seconds", 5: "Wait 5 seconds", 10: "Wait 10 seconds" };
+const ADD_TITLE: Record<AddMode, string> = {
+  Current: "A screenshot of the program that is open",
+  Behind: "Collide hides and you snip the screen behind it, like New snip",
+};
 const THEME_HINT: Record<Theme, string> = {
   system: "Follows Windows: Light or Dark.",
   light: "Collide Light. Draft (not yet approved by Grant).",
@@ -201,6 +205,7 @@ export function Sidebar(p: SidebarProps) {
           <Icon name="plus" />
           Add snip
         </button>
+        <SegToggle label="Where Add snip captures" value={prefs.addMode} onChange={p.onAddMode} options={ADD_MODES.map((m) => ({ value: m, text: m, title: ADD_TITLE[m] }))} />
         <button type="button" className="btn wide" data-testid="open-markup" title="Open a saved markup" onClick={p.onOpen}>
           <Icon name="folder-open" />
           Open

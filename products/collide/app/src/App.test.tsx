@@ -37,17 +37,19 @@ describe("App", () => {
     expect(window.__collide!.state().sidebar.delay).toBe("5 s");
   });
 
-  it("the sidebar runs New snip, Add snip, Open, Search; the delay is a toggle and is remembered (T31, Grant 2026-11-18: no Current/Behind switch)", () => {
+  it("the sidebar runs New snip, Add snip, Open, Search; both choices are toggles and are remembered (T31)", () => {
     const first = render(<App />);
     const side = within(recents());
     expect(side.getAllByRole("button").slice(2, 5).map((b) => b.textContent)).toEqual(["New snip", "Add snip", "Open"]);
     expect(side.getByRole("textbox", { name: "Search" })).toBeTruthy();
-    expect(side.queryByRole("radiogroup", { name: "Where Add snip captures" })).toBeNull();
+    const where = within(side.getByRole("radiogroup", { name: "Where Add snip captures" }));
+    expect(where.getByRole("radio", { name: "Current" }).getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(where.getByRole("radio", { name: "Behind" }));
     fireEvent.click(within(side.getByRole("radiogroup", { name: "Delay before New snip captures" })).getByRole("radio", { name: "10s" }));
-    expect(window.__collide!.state().sidebar).toEqual({ delay: "10 s", addMode: "Current", collapsed: false });
+    expect(window.__collide!.state().sidebar).toEqual({ delay: "10 s", addMode: "Behind", collapsed: false });
     first.unmount();
     render(<App />);
-    expect(window.__collide!.state().sidebar).toEqual({ delay: "10 s", addMode: "Current", collapsed: false });
+    expect(window.__collide!.state().sidebar).toEqual({ delay: "10 s", addMode: "Behind", collapsed: false });
   });
 
   it("themes apply to the whole app: the choice goes on <html> and is remembered (T31)", () => {
