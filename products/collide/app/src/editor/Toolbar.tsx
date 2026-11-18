@@ -23,23 +23,17 @@ interface Props {
   canUndo: boolean;
   canRedo: boolean;
   onExport: () => void;
-  onCopy: () => void;
   canExport: boolean;
   /** The toolbar's name: "Markup tools" (Snip) or "Markdown tools" (RUN3 T34). */
   label?: string;
-  /** The Copy button's name and tip. */
-  copyLabel?: string;
-  copyTip?: string;
-  /** RUN3 T35: Save as .collide (before Copy); absent = no button. */
-  onSaveCollide?: () => void;
   /** Buttons after the tools (the Markdown editor's Insert image). */
   extra?: ReactNode;
   hidden?: boolean;
 }
 
 export function Toolbar(props: Props) {
-  const { tool, setTool, color, setColor, strokeWidth, setStrokeWidth, fileName, onUndo, onRedo, canUndo, canRedo, onExport, onCopy, canExport } = props;
-  const { label = "Markup tools", copyLabel = "Copy to clipboard", copyTip = "Copy image to clipboard", extra, hidden } = props;
+  const { tool, setTool, color, setColor, strokeWidth, setStrokeWidth, fileName, onUndo, onRedo, canUndo, canRedo, onExport, canExport } = props;
+  const { label = "Markup tools", extra, hidden } = props;
   return (
     <div
       data-testid="toolbar"
@@ -112,14 +106,6 @@ export function Toolbar(props: Props) {
       <IconButton icon="undo-2" label="Undo" disabled={!canUndo} onClick={onUndo} style={canUndo ? undefined : { opacity: 0.4, cursor: "not-allowed" }} />
       <IconButton icon="redo-2" label="Redo" disabled={!canRedo} onClick={onRedo} style={canRedo ? undefined : { opacity: 0.4, cursor: "not-allowed" }} />
       <Sep />
-      {props.onSaveCollide && (
-        <Tooltip label={SAVE_COLLIDE_TIP}>
-          <IconButton icon="file-down" label="Save as .collide" onClick={props.onSaveCollide} />
-        </Tooltip>
-      )}
-      <Tooltip label={copyTip} shortcut="Ctrl+Shift+C">
-        <IconButton icon="clipboard-copy" label={copyLabel} data-testid="copy-btn" onClick={onCopy} disabled={!canExport} />
-      </Tooltip>
       <Button size="sm" icon="share" onClick={onExport} disabled={!canExport} data-testid="export-btn">
         Export
       </Button>
