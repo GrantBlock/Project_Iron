@@ -1,6 +1,6 @@
 # Current Issues
 
-Updated 2026-11-13 · Grant Block. Open problems and decisions waiting on Grant. Close an item by moving it to Resolved with the date. Progress lives in `docs/progress-tracker.md`.
+Updated 2026-11-19 · Grant Block. Open problems and decisions waiting on Grant. Close an item by moving it to Resolved with the date. Progress lives in `docs/progress-tracker.md`.
 
 ## Waiting on Grant (decisions and approvals)
 
@@ -13,6 +13,10 @@ Updated 2026-11-13 · Grant Block. Open problems and decisions waiting on Grant.
 | 5 | Agent Chat branch | `claude/intelligent-brown-2hlzyu` has 5 Agent Chat commits since PR #1 (0.3.3 to the icons). Open a pull request into `development`? | Branch |
 | 6 | `snip-markup/run-1` branch | Separate app (Collide spec, design system, mockups). Not merged into the Agent Chat branch; decide where it merges and when | Branch |
 | 7 | Setup steps 1 to 9 | None started; step 1 (prototype review and feature specs) comes first | Plan, Setup steps |
+| 8 | Collide Run 4 scheduled task | Check the scheduled task `trig_01HrkMzX7oCpyRwUePpJ4Lcx` (2:45 AM Central, 2026-11-20): it has no repository source, no GitHub connector and no model set, so it may fail its push check or be unable to post to issue #2. Recreate it in the claude.ai routines UI with `GrantBlock/Project_Iron` and GitHub, or confirm it as is | `products/collide/RUN4.md` |
+| 9 | Collide Windows checks | Run `TESTER-NOTES.md` "Run 2+3 (Electron)" items 1 to 12 on Collide 0.1.1, and "Run 4" after the run | `products/collide/TESTER-NOTES.md` |
+| 10 | Collide decisions still owed | The groups in section 2 of the improvement plan that Run 4 does not cover (ISSUES 3 without Undo, 4, 5, 8, 9, 11 to 13, 21, 24, 33 to 36, 39 to 43); and ISSUES 44 to 47 (Run 4 assumptions) | `docs/collide-improvement-plan.md` |
+| 11 | Lite branches | `claude/practical-newton-utto9s` (brief) is merged into the session branch; `lite/run` and `task/L*` are not. Merge them, and when does the Lite run start? | Plan, 2026-11-17 lines |
 
 ## Agent Chat (known problems)
 

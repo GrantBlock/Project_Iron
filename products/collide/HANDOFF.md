@@ -1,3 +1,17 @@
+# Collide — Run 4 Handoff (scheduled run, `collide/run-4`)
+
+Updated 2026-11-19 by the Planner before the run. **Not started.** The run fills this section as it goes.
+
+- Brief: `RUN4.md`; tickets `tickets/T41.md` to `T47.md`; board in `PROGRESS.md`; scope in `../../docs/collide-improvement-plan.md` (items 1 to 8, Grant 2026-11-18 to 2026-11-19).
+- Scheduled: 2:45 AM Central, 2026-11-20, a fresh cloud session (scheduled task "Collide Run 4 (improvements)"). Planner Opus 5.5, Coder Opus 5.5, Reviewer Opus 5.5, Tester Sonnet 5.5.
+- Branch: `collide/run-4`, cut from `claude/hopeful-rubin-82u2jg`; one draft pull request into `development` at the end. Grant merges.
+- Pre-run check done 2026-11-19: the branch was pushed and "ready" posted on issue #2.
+- Start (UTC): [filled by the run] · Stop starting new tasks 4 h 15 min after the start or at the first usage warning.
+- Starting state: Collide 0.1.1 source (`68af7b2` app code); Vitest 480, Playwright 56, Electron e2e 21, reference specs 15/15 at the last handoff.
+- Not started: T41 to T47. Must-have: T41, T42, T43.
+
+---
+
 # Collide — Run 2 + 3 Handoff (scheduled run, `collide/run`)
 
 ## Run session 2

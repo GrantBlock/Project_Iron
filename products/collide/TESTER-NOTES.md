@@ -47,6 +47,23 @@ Do these on Windows. Note pass/fail and attach a screenshot for each.
 11. Settings -> Storage with a retention period set: old items go as set and recent ones stay.
 12. Open a real PDF, mark it up, Export PDF, and Copy PNG; paste the PNG into another app.
 
+## Run 4 — Windows manual checks (Grant/Lydia)
+
+Added 2026-11-19, before the run. The run adds results and any new check as it builds T41 to T46. Do these on the build the run produces; note pass/fail with a screenshot.
+
+1. **Crosshair (T42, 1.1):** start New snip. The crosshair at the start point is easy to see on a light and a dark screen; the drag box looks as before.
+2. **Delay (T42, 1.2):** set the delay to 10s and take a snip. After it, the delay shows 0s.
+3. **Autosave (T43, 4.1):** take a first snip. It appears in `Documents\Collide\Markups` with no name prompt. Open a PDF or an image from another folder, change it: nothing is written back to that file without Save or Save as.
+4. **Recents (T43, 8.2):** open a file, save it, and see it in Recents.
+5. **Close splash (T43, 4.2):** closing an autosaved original does not ask; closing a marked-up image offers "Close without saving".
+6. **Line and rectangle (T41, 8.1, 7.1):** switch a rectangle callout to a line and back; number, note and position stay. Drag the line's end handles.
+7. **Collapse view (T44, 5.2):** collapsed, the sidebar shows New snip, delay, Add snip, Open and New file only; New file makes a Markdown file.
+8. **Connected (T44, 5.1):** the pill appears only after Settings → Enable Connected mode; off light with no server.
+9. **Toolbar (T45, 6.1):** narrow the window: the scroll bar appears only when icons no longer fit.
+10. **Header (T45, 6.3, 6.4):** Copy in the header on a snip, a Markdown tab and a PDF; paste into another app. Save source gives a `.collide`; Save as offers the right formats per tab type.
+11. **Add snip size (T46, 2.1):** an added snip is the same size on screen as the original, at 100% and 150% scaling and on a second monitor.
+12. **Callout delete (T46, 3.3):** delete a callout, then Undo; it returns with its number.
+
 ## Known gaps / watch for
 
 - **Export still saves at the source image size**, so note boxes outside the image are cut off in Export and `export.png`. Grant hasn't decided yet whether Export should crop like Copy. Report it, don't file it as a bug.

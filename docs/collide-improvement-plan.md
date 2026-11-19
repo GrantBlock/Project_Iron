@@ -1,6 +1,6 @@
 # Collide: improvement plan
 
-Updated 2026-11-18 · **Draft (not yet approved by Grant).** Nothing here changes a decision, price or number. Items marked (A) are assumptions; items in `[brackets]` are placeholders.
+Updated 2026-11-19 · **Draft (not yet approved by Grant)** except Grant's scope in the last section, which Run 4 builds. Nothing here changes a decision, price or number. Items marked (A) are assumptions; items in `[brackets]` are placeholders.
 
 Source: `products/collide/` on `claude/modest-euler-bucvr2` (Collide 0.1.1, published to the Cloudflare release folder, 2026-11-17). That branch already contains `collide/run` (Runs 1 to 3) and Grant's `claude/intelligent-brown-2hlzyu`. The Collide docs (`ISSUES.md`, `HANDOFF.md`, `TESTER-NOTES.md`, `RUN2.md`, `RUN3.md`) are the record of what is open.
 
@@ -144,3 +144,9 @@ Status: **nothing below is built.** The app source is at the pre-coding state (`
 
 ### Grant's answers, 2026-11-19
 Logged as dated `[stated]` lines in `docs/agentic-dev-plan.md` and in `products/collide/RUN4.md`. Run 4 builds items 1 to 8 in the order T41 to T46; T41 to T43 are must-haves. 5.1: Connected mode is not built; Settings gets an Enable Connected mode button and the pill follows it. 4.1: autosave only inside `Documents\Collide\Markups`.
+
+### Status after the answers (2026-11-19)
+- Run 4 brief: `products/collide/RUN4.md`; tickets `products/collide/tickets/T41.md` to `T47.md`; board in `products/collide/PROGRESS.md`; scheduled 2:45 AM Central 2026-11-20.
+- New assumptions for Grant to confirm: `products/collide/ISSUES.md` rows 44 to 47.
+- Open question 3 above is answered (the scope). Questions 1, 2 and 4 are still open: Windows checks run so far, Track A before Track E, and whether to merge the Lite branches (`docs/current-issues.md` items 9 and 11).
+- Section 2 groups not covered by items 1 to 8 stay open (ISSUES 3 without Undo, 4, 5, 8, 9, 11 to 13, 21, 24, 33 to 36, 39 to 43).

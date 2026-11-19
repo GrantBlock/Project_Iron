@@ -1,6 +1,6 @@
 # Progress Tracker
 
-Updated 2026-11-13 · Grant Block. Where Project Iron stands. Status: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked. Problems and decisions waiting on Grant are in `docs/current-issues.md`.
+Updated 2026-11-19 · Grant Block. Where Project Iron stands. Status: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked. Problems and decisions waiting on Grant are in `docs/current-issues.md`.
 
 ## Summary
 
@@ -9,6 +9,7 @@ Updated 2026-11-13 · Grant Block. Where Project Iron stands. Status: ✅ done �
 | Setup steps (plan) | ⬜ 0 of 9 | Step 1: prototype review and feature specs |
 | Morning report pipeline | 🟡 4 of 6 | Approve `docs/morning-report.md`, then `agents/tester.md` |
 | Agent Chat | 🟡 0.3.5 in use | Second computer; firewall; PR into `development` |
+| Collide (`products/collide/`) | 🟡 0.1.1 shipped; Run 4 scheduled | Run 4 at 2:45 AM Central 2026-11-20; Windows checks (Grant) |
 | Iron build steps | ⬜ 0 of 12 | Gated on setup steps |
 
 ## Setup steps for Grant (from the plan)
@@ -59,6 +60,17 @@ Updated 2026-11-13 · Grant Block. Where Project Iron stands. Status: ✅ done �
 | Firewall allows the chat port on the server PC | ⬜ | Needs admin PowerShell |
 | Second computer connected to the server | ⬜ | Needs the current build |
 | Agent Chat changes merged into `development` | 🟡 | Up to 0.3.2 via PR #1; later commits waiting |
+
+## Collide (`products/collide/`)
+
+| Item | Status | Notes |
+| --- | --- | --- |
+| Runs 1 to 3 (`collide/run`: Electron move, prototype layout, `.collide`, storage, PDF) | ✅ | Board done; PR #6 into `development` open for Grant; Windows checks pending |
+| Collide 0.1.0 and 0.1.1 | ✅ | Installer, portable exe, web installer, updates from the Cloudflare release folder |
+| Improvement plan (`docs/collide-improvement-plan.md`) | 🟡 | Draft; Grant's scope items 1 to 8 recorded 2026-11-19 |
+| Run 4 (`RUN4.md`, branch `collide/run-4`) | 🟡 Scheduled | T41 to T43 must, T44 to T46 if usage remains, T47 handoff; Opus 5.5 Coder |
+| Windows checks on 0.1.1 | ⬜ | Grant (`TESTER-NOTES.md`) |
+| Lite (`products/lite/`) | 🟡 | Brief merged; run branches (`lite/run`, `task/L*`) not merged |
 
 ## Iron build steps (from the plan)
 

@@ -19,6 +19,9 @@ Four agents build the app overnight from approved feature specs, and Grant plans
 | `docs/morning-report.md` | Lydia's morning report: steps and the exact comment format (Draft) |
 | `docs/progress-tracker.md` | Where everything stands: setup steps, report pipeline, Agent Chat, Iron steps |
 | `docs/current-issues.md` | Open problems and decisions waiting on Grant |
+| `docs/collide-improvement-plan.md` | Collide improvements: where it stands, decisions owed, work tracks, Grant's scope from testing |
+| `products/collide/` | Collide (snip and markup desktop app): spec, run briefs, tickets, app source |
+| `products/lite/` | Lite (P16) run brief and prototype copy |
 | `tools/project-chat/` | Agent Chat, the local app for agent reports and chat |
 | `agents/` | Role files, one per agent (added after Grant approves each) |
 | `CLAUDE.md` | Rules for every Claude session in this repository |
@@ -27,4 +30,4 @@ The product plan, the clickable prototype and the design system live in `GrantBl
 
 ## Status
 
-Setup. Grant is reviewing the prototype and the plan. No application code yet.
+Setup for the Iron build: Grant is reviewing the prototype and the plan; no Iron application code yet. Collide (`products/collide/`) is built and shipped as 0.1.1; its Run 4 improvements are scheduled for 2026-11-20.
