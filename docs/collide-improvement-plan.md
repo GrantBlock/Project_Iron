@@ -86,3 +86,58 @@ Grant can add rows here or in the session. Each row gets an ID and a track in th
 2. Track order: Track A first, or Track E in parallel?
 3. The improvements you want to make: send them as rows in section 5.
 4. Lite (`claude/practical-newton-utto9s`, `lite/run`, `task/L*`) is a separate product and has unmerged work. It was not merged into this session branch. Should it be?
+
+---
+
+## Session log and scope from Grant's testing (2026-11-18 to 2026-11-19)
+
+Status: **nothing below is built.** The app source is at the pre-coding state (`68af7b2`) after a revert, so the Collide code is what it was before testing began. Every item is a requested change, confirmed by Grant in this session.
+
+### What happened in this session
+- Collide improvement plan written (Draft) and merged with the Collide release branch (0.1.1).
+- Grant tested the built app and sent requests. Two rounds of code were written by a Haiku session (commits `f318f73` and `22352dc`, covering the tab header, toolbar and sidebar). Grant asked for a revert, and both commits were reverted (`794cd28`, `ff832c6`). Nothing from that coding is in the source.
+- Grant's answers to the open questions are recorded in the scope below.
+
+### Scope (Grant's answers)
+
+**1. Snip capture**
+- 1.1 Starting crosshair gets more contrast so the start point is easy to see. Drag box unchanged.
+- 1.2 After a delayed snip, the delay drops back to 0s. Today it stays at 10s.
+
+**2. Add snip**
+- 2.1 An added snip is the same size as the original, measured on screen.
+
+**3. Callout list**
+- 3.1 The first snip appears as "image 1", with no delete button.
+- 3.2 Each Add snip image appears as its own entry.
+- 3.3 Every callout has a delete button that removes that callout. Delete acts at once, with Undo, and no confirmation.
+- 3.4 Each image entry has a Crop button.
+
+**4. Autosave and closing**
+- 4.1 The first snip is saved automatically to `Documents\Collide\Markups`, with no name prompt.
+- 4.2 "Close without saving" appears for marked-up images, not for autosaved originals.
+
+**5. Header and sidebar**
+- 5.1 The Connected pill appears at top left only when Connected settings are enabled. It reads "Connected". Green light = server reached. Off light = not connected.
+- 5.2 Collapse view shows New snip, delay, Add snip, Open and New file. Search and the Recents list are hidden. The tab-header collapse button stays removed.
+- 5.3 The Current/Behind switch stays.
+- 5.4 New file is a button directly below Open, in Open's style, also shown in the collapse view. It creates Markdown files only.
+
+**6. Toolbars**
+- 6.1 The toolbar expands and contracts with the window. The scroll bar appears only when the window is too narrow to show all the icons.
+- 6.2 Text editing uses a double-row toolbar, with the text tools on the second row. Markdown only. No text editing on PDFs or images.
+- 6.3 Copy to clipboard is in the header on every tab type. It copies a PNG of the print area. For a long PDF, the PNG is the current page that fills most of the view area.
+- 6.4 Save buttons are in the header, after the Saved / Unsaved indicator. "Save source" saves as `.collide`. "Save as" saves PNG, JPEG, TXT, MD or PDF. The save tools are removed from the callout toolbar.
+- 6.5 The callout toolbar is the same on every tab type.
+- 6.6 "Add border" adds a coloured border around the main image's print area. It works like a rectangle callout. Added images get no border.
+
+**7. Line callouts**
+- 7.1 Line callouts get endpoint handles, so the angle can be changed. Arrows are unchanged.
+
+**8. Known problems (reported by Grant)**
+- 8.1 Switching a rectangle callout to a line makes it disappear from the canvas. Expected: an adjustable rectangle becomes a 2-point line, and a line switched back becomes the default rectangle. The number, note and position are kept in both directions.
+- 8.2 Saving a file that was opened does not add it to Recents. Expected: every file that was opened and saved appears in Recents.
+
+### Open for the coder agent
+- Items 1 to 8 are not started. Each needs its own test before it is built.
+- The Windows checks from `TESTER-NOTES.md` still need Grant's run on the installed build.
