@@ -1,6 +1,28 @@
 # Collide — Run 4 Handoff (scheduled run, `collide/run-4`)
 
-Updated 2026-11-19 by the Planner before the run. **Not started.** The run fills this section as it goes.
+Updated 2026-11-19 by the Planner. **Built in the 2026-11-19 session instead of the scheduled 2:45 AM run (Grant's call).** Board: T41 to T46 Done, T47 (this section) Done. Nothing blocked. Branch `claude/hopeful-rubin-82u2jg` (also pushed as `collide/run-4`); task branches `task/T41` to `T46`, merged in order; no pull request opened yet.
+
+### Result
+
+| ID | Task | Result |
+| --- | --- | --- |
+| T41 | Callout fixes | Done: rectangle ↔ line keeps number, note, position; line end handles |
+| T42 | Snip capture | Done: crosshair contrast, delay back to 0s |
+| T43 | Autosave and Recents | Done: first snip autosaves in Markups; opened sources never autosaved; saved files in Recents; close splash |
+| T44 | Sidebar and Connected | Done: New file, collapse view, Enable Connected mode and pill |
+| T45 | Header and toolbars | Done: 6.1 to 6.6; three reference specs fail on the app by design (ISSUES 53) |
+| T46 | Image list | Done: image 1, per-image Crop, per-callout delete with Undo |
+
+Tests at the end: Vitest 576 (507 at the start), Playwright e2e 86 (56), Electron e2e 24 (21), `pnpm ref` app 12/15 (three specs click the old toolbar, ISSUES 53; prototype 15/15), `pnpm build` ok, `pnpm lint` the 11 errors that were there at the start (scripts and `main.cjs`).
+
+### For Grant
+
+- **Windows checks:** `TESTER-NOTES.md` "Run 4" items 1 to 12; none could be run from the cloud (crosshair look, delay, Documents folder, collapse sizes, DPI, second monitor, Save dialogs).
+- **Decide:** ISSUES 53 (update the three reference specs to the header, or keep them as the prototype's record), ISSUES 50 (autosave is the first save only; later edits wait for Save), ISSUES 52 (Markdown Export removed, header Copy and Save as instead), ISSUES 54 (added snips keep their own pixel size).
+- **Version and release:** package.json is still 0.1.1. Bump the version before `pnpm dist` and `pnpm release`, or installed copies see nothing new.
+- **Scheduled task:** `trig_01HrkMzX7oCpyRwUePpJ4Lcx` (2:45 AM, 2026-11-20) would find the board done; disable it or let it check.
+- **Not built (unchanged):** zip open and save, Insert snip, Connected mode and server, access code, Recents thumbnails, Light and Aura polish.
+
 
 - Brief: `RUN4.md`; tickets `tickets/T41.md` to `T47.md`; board in `PROGRESS.md`; scope in `../../docs/collide-improvement-plan.md` (items 1 to 8, Grant 2026-11-18 to 2026-11-19).
 - Scheduled: 2:45 AM Central, 2026-11-20, a fresh cloud session (scheduled task "Collide Run 4 (improvements)"). Planner Opus 5.5, Coder Opus 5.5, Reviewer Opus 5.5, Tester Sonnet 5.5.
