@@ -2,8 +2,9 @@
 // Edit (the source with text tools and a live preview) and Preview (the T32 markup engine over the rendered page:
 // the same tools, bubbles with leaders outside the page, cards and the list; shapes can start in the margin;
 // Ctrl + wheel zooms around the cursor, Ctrl+= / Ctrl+− step, Ctrl+0 fits). Insert image and paste save the picture
-// into the zip's images/ folder and link it at the cursor (Preview: at the end of the file). Copy PNG and Export
-// take the visible page with its callouts. The colour and thickness are remembered apart from Snip's.
+// into the zip's images/ folder and link it at the cursor (Preview: at the end of the file). T45 (Run 4): one callout
+// toolbar with the text tools as its second row in both modes (6.2); Copy and Save as are in the tab header and take
+// the visible page with its callouts (Edit: the rendered page). The colour and thickness are remembered apart from Snip's.
 //
 // Everything a tab keeps while another tab is in front is in its `MdSession`, which the shell owns.
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -12,7 +13,7 @@ import type { AnnotationsDoc, Shape } from "../model";
 import { Icon } from "../ds";
 import { Canvas, cssVar, type CanvasHandle, type LoadedImage } from "../editor/Canvas";
 import { CalloutsPanel } from "../editor/CalloutsPanel";
-import { SAVE_COLLIDE_TIP, Toolbar } from "../editor/Toolbar";
+import { Toolbar } from "../editor/Toolbar";
 import { historyReducer, initialHistory, type HistoryState } from "../editor/history";
 import { nextShapeId, type NewShape, type ShapePatch } from "../editor/store";
 import { drawsWithColor, loadPenMemory, savePenMemory, TOOL_KEYS, type Role, type Tool } from "../editor/tools";
@@ -22,7 +23,7 @@ import type { Size, View } from "../editor/viewport";
 import type { MdRefInput } from "../editor/refState";
 import type { Pen } from "../editor/EditorShell";
 import { copyPngToClipboard, dataUrlToBlob, flattenArea, type Flattened, type Under } from "../io/flatten";
-import { markupFolderName, MarkupError, type MarkupStore } from "../io";
+import { deliver, saveAsFormats, saveAsName, savePicture, type SaveFormat } from "../io/saveAs";
 import { fitPage, PAGE_W, scrollPage, zoomPage } from "./page";
 import { pagePicture } from "./pagePicture";
 import { renderMarkdown, type Resolve } from "./render";
@@ -120,13 +121,9 @@ interface Props {
   /** A short message in the status toast. */
   hint: (text: string) => void;
   notify: (n: { tone: "error" | "success"; title: string; description: string } | null) => void;
-  store: () => MarkupStore;
-  /** Export saved a markup: Recents should show it. */
-  onExported: () => void;
-  head: (h: { onSave: () => void; canSave: boolean; extra: ReactNode; tail: ReactNode }) => ReactNode;
+  /** The header, given Save, the view switch, Copy and Save as (T45). */
+  head: (h: { onSave: () => void; canSave: boolean; extra: ReactNode; tail: ReactNode; onCopy: () => void; saveAs: { formats: SaveFormat[]; onSave: (f: SaveFormat) => void } }) => ReactNode;
   themeKey: string;
-  /** RUN3 T35: Save as .collide, in both toolbars. */
-  onSaveCollide?: () => void;
 }
 
 let blank: HTMLImageElement | null = null;
@@ -186,6 +183,15 @@ export function MarkdownEditor(p: Props) {
       setTool("select");
     },
     [session, setTool],
+  );
+
+  // T45 (6.2, A): a drawing tool picked in Edit opens the Preview, where the page is marked up.
+  const pickTool = useCallback(
+    (t: Tool) => {
+      if (t !== "select" && live.current.mode === "edit") setMode("preview");
+      setTool(t);
+    },
+    [setMode, setTool],
   );
 
   // ---------- Page and view ----------
@@ -342,6 +348,13 @@ export function MarkdownEditor(p: Props) {
     },
     [dispatch, stateRef],
   );
+  // T45 (6.6, A): on a Markdown tab the main image is the page: Add border puts a rectangle callout on its edge.
+  const onAddBorder = useCallback(() => {
+    if (live.current.mode === "edit") setMode("preview");
+    else setTool("select");
+    const { color: c, strokeWidth: w, pageH: h } = live.current;
+    onAdd({ type: "rect", x: 0, y: 0, w: PAGE_W, h, stroke: c ?? lastColorRef.current, strokeWidth: w } as NewShape, true);
+  }, [onAdd, setMode, setTool]);
   const onUpdate = useCallback((id: string, patch: ShapePatch) => dispatch({ type: "update", id, patch }), [dispatch]);
   const onRemove = useCallback((id: string) => dispatch({ type: "remove", id }), [dispatch]);
   const onRemoveMany = useCallback((ids: string[]) => dispatch({ type: "removeMany", ids }), [dispatch]);
@@ -398,41 +411,52 @@ export function MarkdownEditor(p: Props) {
     }
   }, [pageImage, stateRef]);
 
+  // Edit has no canvas: the rendered page alone (callouts are drawn in Preview).
+  const liveRef = useRef<HTMLDivElement | null>(null);
+  const renderPage = useCallback(async (): Promise<Flattened> => {
+    const el = liveRef.current;
+    if (!el) throw new Error("The page is not on screen yet. Try again.");
+    const img = await pagePicture(el);
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, img.width);
+    c.height = Math.max(1, img.height);
+    const g = c.getContext("2d");
+    if (!g) throw new Error("The page could not be drawn.");
+    g.fillStyle = cssVar("--bg-canvas");
+    g.fillRect(0, 0, c.width, c.height);
+    g.drawImage(img, 0, 0, c.width, c.height);
+    return { dataUrl: c.toDataURL("image/png"), width: c.width, height: c.height };
+  }, []);
+  /** What Copy and Save as take: Preview, the visible page with its callouts (ISSUES 24); Edit, the rendered page. */
+  const picture = useCallback(() => (live.current.mode === "preview" ? renderVisible() : renderPage()), [renderPage, renderVisible]);
+
   const onCopy = useCallback(() => {
     pRef.current.notify(null);
-    void renderVisible()
+    const preview = live.current.mode === "preview";
+    void picture()
       .then(async (f) => {
         await copyPngToClipboard(f.dataUrl);
-        pRef.current.hint(`Copied the visible page and its callouts as a PNG · ${f.width} × ${f.height}`);
+        pRef.current.hint(`${preview ? "Copied the visible page and its callouts as a PNG" : "Copied the page as a PNG"} · ${f.width} × ${f.height}`);
       })
       .catch((e: unknown) => pRef.current.notify({ tone: "error", title: "Copy failed", description: e instanceof Error ? e.message : String(e) }));
-  }, [renderVisible]);
+  }, [picture]);
 
-  const onExport = useCallback(() => {
-    const q = pRef.current;
-    q.notify(null);
-    void (async () => {
-      const f = await renderVisible();
-      const bytes = new Uint8Array(await dataUrlToBlob(f.dataUrl).arrayBuffer());
-      const id = await q.store().save(markupFolderName(session.name.replace(/\.md$/i, "")), {
-        sourcePng: bytes,
-        annotations: { version: 1, source: { kind: "image", width: f.width, height: f.height }, shapes: [] },
-        exportPng: bytes,
-      });
-      const folder = id.replace(/[\\/]+$/, "").split(/[\\/]/).pop() ?? id;
-      q.onExported();
-      let copied = "copied to clipboard";
-      try {
-        await copyPngToClipboard(f.dataUrl);
-      } catch {
-        copied = "not copied: the clipboard refused it";
-      }
-      q.hint(`Saved to Documents/Collide/Markups/${folder}/ · ${f.width} × ${f.height} · ${copied}`);
-    })().catch((e: unknown) => q.notify({ tone: "error", title: e instanceof MarkupError ? e.title : "Export failed", description: e instanceof Error ? e.message : String(e) }));
-  }, [renderVisible, session]);
+  // T45 (6.4): Save as PNG, JPEG or PDF (the picture Copy gives), TXT or MD (the file's text).
+  const onSaveAs = useCallback(
+    (f: SaveFormat) => {
+      const q = pRef.current;
+      q.notify(null);
+      const name = saveAsName(session.name, f);
+      const done = f === "txt" || f === "md" ? deliver(session.text, name, f) : picture().then((pic) => savePicture(pic.dataUrl, f, name));
+      done.then(
+        (where) => q.hint(`Saved ${where}`),
+        (e: unknown) => q.notify({ tone: "error", title: "Save as failed", description: e instanceof Error ? e.message : String(e) }),
+      );
+    },
+    [picture, session],
+  );
 
   // RUN3 T35: Preview gives the visible page with its callouts (what Copy PNG gives); Edit the rendered page alone.
-  const liveRef = useRef<HTMLDivElement | null>(null);
   const collideContent = useCallback(async () => {
     const doc = stateRef.current.doc;
     let preview: Uint8Array;
@@ -572,81 +596,71 @@ export function MarkdownEditor(p: Props) {
 
   return (
     <div className="wsfill mdedit" data-theme-key={themeKey}>
-      {p.head({ onSave: save, canSave: true, extra, tail })}
-      {preview ? (
-        <Toolbar
-          label="Markdown tools"
-          hidden={hideTools}
-          tool={tool}
-          setTool={setTool}
-          color={color}
-          setColor={setColor}
-          strokeWidth={strokeWidth}
-          setStrokeWidth={setStrokeWidth}
-          fileName={session.name}
-          onExport={onExport}
-          onCopy={onCopy}
-          copyLabel="Copy PNG"
-          copyTip="Copy the visible page with its callouts as a PNG"
-          canExport
-          onSaveCollide={p.onSaveCollide}
-          onUndo={undo}
-          onRedo={redo}
-          canUndo={canUndo}
-          canRedo={canRedo}
-          extra={insertButton}
-        />
-      ) : (
-        <div className="toolbar mdtools" role="toolbar" aria-label="Markdown tools" hidden={hideTools}>
-          <label className="tbtn hsel">
-            <Icon name="heading" size={14} />
-            <select
-              aria-label="Heading"
-              value=""
-              onChange={(e) => {
-                const v = e.target.value;
-                if (v !== "") applyEdit((t, s, en) => linePrefix(t, s, en, v === "0" ? "" : "#".repeat(Number(v)) + " ", true));
-              }}
-            >
-              <option value="">Heading</option>
-              <option value="0">Normal text</option>
-              <option value="1">Heading 1</option>
-              <option value="2">Heading 2</option>
-              <option value="3">Heading 3</option>
-            </select>
-          </label>
-          <button type="button" className="tbtn" title="Bulleted list" onClick={() => applyEdit((t, s, e) => linePrefix(t, s, e, "- "))}>
-            <Icon name="list" size={14} />
-            List
-          </button>
-          <button type="button" className="tbtn" title="Insert a table" onClick={() => applyEdit(insertTable)}>
-            <Icon name="table" size={14} />
-            Table
-          </button>
-          <button type="button" className="tbtn" title="Label line, like **Status:** PASS" onClick={() => applyEdit((t, s, e) => linePrefix(t, s, e, "**Label:** "))}>
-            <Icon name="tag" size={14} />
-            Label
-          </button>
-          <button type="button" className="tbtn" title="Numbered list" onClick={() => applyEdit((t, s, e) => linePrefix(t, s, e, "1. "))}>
-            <Icon name="list-ordered" size={14} />
-            Num list
-          </button>
-          <span className="vsep" />
-          <button type="button" className="tool" aria-label="Bold" title="Bold (Ctrl+B)" onClick={() => applyEdit(bold)}>
-            <Icon name="bold" />
-          </button>
-          <button type="button" className="tool" aria-label="Link" title="Link" onClick={() => applyEdit(link)}>
-            <Icon name="link" />
-          </button>
-          <span className="grow" />
-          {insertButton}
-          {p.onSaveCollide && (
-            <button type="button" className="tool" aria-label="Save as .collide" title={SAVE_COLLIDE_TIP} onClick={p.onSaveCollide}>
-              <Icon name="file-down" />
+      {p.head({ onSave: save, canSave: true, extra, tail, onCopy, saveAs: { formats: saveAsFormats("markdown"), onSave: onSaveAs } })}
+      <Toolbar
+        label="Markdown tools"
+        hidden={hideTools}
+        tool={tool}
+        setTool={pickTool}
+        color={color}
+        setColor={setColor}
+        strokeWidth={strokeWidth}
+        setStrokeWidth={setStrokeWidth}
+        fileName={session.name}
+        onAddBorder={onAddBorder}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        second={
+          <>
+            {/* (A) The text tools edit the source: on in Edit, shown but off in Preview. */}
+            <label className="tbtn hsel">
+              <Icon name="heading" size={14} />
+              <select
+                aria-label="Heading"
+                value=""
+                disabled={preview}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v !== "") applyEdit((t, s, en) => linePrefix(t, s, en, v === "0" ? "" : "#".repeat(Number(v)) + " ", true));
+                }}
+              >
+                <option value="">Heading</option>
+                <option value="0">Normal text</option>
+                <option value="1">Heading 1</option>
+                <option value="2">Heading 2</option>
+                <option value="3">Heading 3</option>
+              </select>
+            </label>
+            <button type="button" className="tbtn" title="Bulleted list" disabled={preview} onClick={() => applyEdit((t, s, e) => linePrefix(t, s, e, "- "))}>
+              <Icon name="list" size={14} />
+              List
             </button>
-          )}
-        </div>
-      )}
+            <button type="button" className="tbtn" title="Insert a table" disabled={preview} onClick={() => applyEdit(insertTable)}>
+              <Icon name="table" size={14} />
+              Table
+            </button>
+            <button type="button" className="tbtn" title="Label line, like **Status:** PASS" disabled={preview} onClick={() => applyEdit((t, s, e) => linePrefix(t, s, e, "**Label:** "))}>
+              <Icon name="tag" size={14} />
+              Label
+            </button>
+            <button type="button" className="tbtn" title="Numbered list" disabled={preview} onClick={() => applyEdit((t, s, e) => linePrefix(t, s, e, "1. "))}>
+              <Icon name="list-ordered" size={14} />
+              Num list
+            </button>
+            <span className="vsep" />
+            <button type="button" className="tool" aria-label="Bold" title="Bold (Ctrl+B)" disabled={preview} onClick={() => applyEdit(bold)}>
+              <Icon name="bold" />
+            </button>
+            <button type="button" className="tool" aria-label="Link" title="Link" disabled={preview} onClick={() => applyEdit(link)}>
+              <Icon name="link" />
+            </button>
+            <span className="vsep" />
+            {insertButton}
+          </>
+        }
+      />
       <div className={`mdbody${preview && !full ? " with-list" : ""}`}>
         {preview ? (
           <Canvas

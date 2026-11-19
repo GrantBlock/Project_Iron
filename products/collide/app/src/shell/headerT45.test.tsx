@@ -45,10 +45,10 @@ describe("the tab header (6.3, 6.4)", () => {
     const onSave = vi.fn();
     render(head({ kind: "markdown", saveAs: { formats: ["png", "jpeg", "pdf", "txt", "md"], onSave } }));
     const as = screen.getByRole("button", { name: "Save as" });
-    expect(as).toHaveAttribute("aria-haspopup", "menu");
+    expect(as.getAttribute("aria-haspopup")).toBe("menu");
     expect(screen.queryByRole("menu")).toBeNull();
     fireEvent.click(as);
-    expect(as).toHaveAttribute("aria-expanded", "true");
+    expect(as.getAttribute("aria-expanded")).toBe("true");
     const menu = screen.getByRole("menu", { name: "Save as" });
     expect(within(menu).getAllByRole("menuitem").map((b) => b.textContent)).toEqual(["PNG", "JPEG", "PDF", "TXT", "MD"]);
     fireEvent.click(within(menu).getByRole("menuitem", { name: "JPEG" }));
@@ -137,7 +137,7 @@ describe("Markdown tabs: a double-row toolbar (6.2)", () => {
   it("Edit and Preview both show the callout tools on row 1 and the text tools on row 2", () => {
     const ws = openNewFile();
     for (const mode of ["Edit", "Preview"]) {
-      fireEvent.click(within(ws).getByRole("button", { name: mode, exact: true }));
+      fireEvent.click(within(ws).getByRole("button", { name: mode }));
       const tb = within(ws).getByRole("toolbar", { name: "Markdown tools" });
       expect(within(ws).getAllByRole("toolbar")).toHaveLength(1);
       const rows = tb.querySelectorAll(":scope > .tbrow");
@@ -162,9 +162,10 @@ describe("Markdown tabs: a double-row toolbar (6.2)", () => {
 
   it("a callout tool picked in Edit opens the Preview with that tool on", () => {
     const ws = openNewFile();
+    fireEvent.click(within(ws).getByRole("button", { name: "Edit" }));
     expect(window.__collide!.state().mode).toBe("edit");
     fireEvent.click(within(ws).getByRole("button", { name: "Rectangle" }));
-    expect(within(ws).getByRole("button", { name: "Preview", exact: true })).toHaveAttribute("aria-pressed", "true");
+    expect(within(ws).getByRole("button", { name: "Preview" }).getAttribute("aria-pressed")).toBe("true");
     expect(window.__collide!.state().activeTool).toBe("rect");
   });
 

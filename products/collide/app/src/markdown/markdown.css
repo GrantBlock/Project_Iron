@@ -9,8 +9,8 @@
 .mdtools { display: flex; align-items: center; gap: 2px; height: 52px; padding: 0 10px; border-bottom: var(--border-w) solid var(--line); background: var(--panel); flex: none; overflow-x: auto; }
 .mdtools[hidden] { display: none; }
 .mdtools > * { flex: none; }
-.mdtools .grow { flex: 1 1 0; min-width: 4px; }
-.mdtools .vsep { width: 1px; height: 20px; background: var(--line-2); margin: 0 4px; }
+.mdtools .grow, .ctoolbar .tbrow > .grow { flex: 1 1 0; min-width: 4px; }
+.mdtools .vsep, .ctoolbar .vsep { width: 1px; height: 20px; background: var(--line-2); margin: 0 4px; }
 .mdedit .tool { height: 32px; min-width: 30px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r-ctl); border: 0; background: transparent; color: var(--t2); }
 .mdedit .tool:hover, .mdedit .tbtn:hover { background: var(--hover); color: var(--t1); }
 .mdedit .tbtn { height: 30px; padding: 0 9px; display: inline-flex; align-items: center; gap: 6px; border-radius: var(--r-ctl); border: 0; background: transparent; color: var(--t2); font-size: 12.5px; white-space: nowrap; }

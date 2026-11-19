@@ -202,6 +202,21 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
 .savedstate { display: inline-flex; align-items: center; gap: 6px; color: var(--t3); white-space: nowrap; }
 .savedstate .d { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
 .savedstate.dirty .d { background: var(--warn); }
+/* T45 (6.4): the header's Save as menu. */
+.wshead .btn { flex: none; }
+.saveas { position: relative; display: inline-flex; flex: none; }
+.samenu { position: absolute; right: 0; top: calc(100% + 4px); min-width: 120px; padding: 4px; border-radius: var(--r-panel); background: var(--raised); border: var(--border-w) solid var(--line-2); box-shadow: var(--shadow); z-index: 30; display: grid; gap: 2px; }
+.samenu button { height: 30px; padding: 0 10px; text-align: left; border: 0; border-radius: var(--r-ctl); background: transparent; color: var(--t2); }
+.samenu button:hover, .samenu button:focus-visible { background: var(--hover); color: var(--t1); }
+/* T45 (6.1, 6.2, 6.5): the callout toolbar fills the width it has and scrolls across only when its buttons do not fit;
+   a second row (Markdown's text tools) sits under the first, inside the same scroll. */
+.ctoolbar { flex: none; display: flex; flex-direction: column; min-width: 0; overflow-x: auto; overflow-y: hidden; border-bottom: 1px solid var(--line-1); background: var(--surface-1); }
+.ctoolbar[hidden] { display: none; }
+.ctoolbar .tbrow { display: flex; align-items: center; gap: 4px; height: 52px; box-sizing: border-box; padding: 0 10px; min-width: max-content; flex: none; }
+.ctoolbar .tbrow + .tbrow { border-top: 1px solid var(--line-1); height: 44px; gap: 2px; }
+.ctoolbar .tbrow > * { flex: none; }
+.ctoolbar .tbrow > .tbname { flex: 1 1 auto; min-width: 8px; text-align: center; font: 400 12px/1 var(--font-mono); color: var(--text-3); white-space: nowrap; }
+.ctoolbar .tbsep { width: 1px; height: 20px; background: var(--line-2); margin: 0 6px; }
 .wsbody { flex: 1; display: grid; grid-template-columns: minmax(0,1fr) 288px; min-height: 0; }
 .wsfill { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 /* A Snip tab: the canvas with the Callouts list beside it (below it on a phone). */
@@ -270,4 +285,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
   .snipbody { flex-direction: column; }
   .snipbody .snipside { width: auto !important; max-height: 38vh; border-left: 0 !important; border-top: 1px solid var(--line-1); }
   .wshead .path, .savedstate .lbl { display: none; }
+  .wshead { gap: 6px; padding: 0 8px; }
+  .wshead .btn > span, .saveas .btn > span { display: none; }
+  .wshead .btn { padding: 0 8px; }
 }

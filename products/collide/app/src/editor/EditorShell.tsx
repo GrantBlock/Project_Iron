@@ -10,7 +10,8 @@ import { useEditorStore } from "./useEditorStore";
 import { StatusBar } from "./StatusBar";
 import { CalloutsPanel } from "./CalloutsPanel";
 import { Toolbar } from "./Toolbar";
-import { copyPngToClipboard, dataUrlToBlob, downloadPng, exportFileName, flatten, flattenArea, flattenFit, type Flattened } from "../io/flatten";
+import { copyPngToClipboard, dataUrlToBlob, flatten, flattenArea, flattenFit, type Flattened } from "../io/flatten";
+import { saveAsFormats, saveAsName, savePicture, type SaveFormat } from "../io/saveAs";
 import { cropImage, placeBeside, printArea } from "./engine";
 import { CropDialog, type CropBox } from "./CropDialog";
 import { isPng, MarkupError, markupFolderName, type ImageFile, type MarkupStore } from "../io";
@@ -174,15 +175,13 @@ interface Props {
   onDirty: (dirty: boolean) => void;
   /** Saved: the folder id the store gave, and the folder's name. */
   onSaved: (id: string, folderName: string) => void;
-  /** The tab's header (name, Save, Close), given the editor's Save. */
-  head: (save: { onSave: () => void; canSave: boolean }) => ReactNode;
+  /** The tab's header (name, Save, Close), given the editor's Save, Copy and Save as (T45). */
+  head: (save: { onSave: () => void; canSave: boolean; onCopy: () => void; saveAs: { formats: SaveFormat[]; onSave: (f: SaveFormat) => void } }) => ReactNode;
   /** Changes when the theme does, so the canvas repaints with the theme's colours. */
   themeKey: string;
-  /** RUN3 T35: the toolbar's Save as .collide. */
-  onSaveCollide?: () => void;
 }
 
-export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSaved, head, themeKey, onSaveCollide }: Props) {
+export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSaved, head, themeKey }: Props) {
   const image = session.image;
   const { state, dispatch, stateRef, canUndo, canRedo } = useEditorStore(session.history, (h) => (session.history = h));
   const shapes = useMemo(() => state.doc?.shapes ?? [], [state.doc]);
@@ -323,13 +322,20 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
     );
   }, [saveMarkup, fail, notify]);
 
-  const onExport = useCallback(() => {
-    notify(null);
-    void exportPng().then(
-      (f) => downloadPng(f.dataUrl, exportFileName(image.name)),
-      () => notify({ tone: "error", title: "Export failed", description: "The image could not be drawn. Try again or reopen the image." }),
-    );
-  }, [exportPng, image, notify]);
+  // T45 (6.4): Save as PNG, JPEG or PDF: the picture Export gave (source size, ISSUES 24 and 34).
+  const onSaveAs = useCallback(
+    (f: SaveFormat) => {
+      notify(null);
+      if (f !== "png" && f !== "jpeg" && f !== "pdf") return;
+      void exportPng()
+        .then((pic) => savePicture(pic.dataUrl, f, saveAsName(image.name, f)))
+        .then(
+          (where) => notify({ tone: "success", title: "Saved", description: where }),
+          (e: unknown) => fail(e, "Save as failed"),
+        );
+    },
+    [exportPng, fail, image, notify],
+  );
 
   // Copy: the print area (the image, shapes and shown bubbles, tight margin) to the clipboard.
   const copyArea = useCallback(async (): Promise<Flattened> => {
@@ -378,6 +384,12 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
     },
     [dispatch, stateRef],
   );
+  // T45 (6.6): Add border, a rectangle callout on the main image's edge (added images sit beside it and get none).
+  const onAddBorder = useCallback(() => {
+    setTool("select");
+    const { color: c, strokeWidth: w } = live.current;
+    onAdd({ type: "rect", x: 0, y: 0, w: image.width, h: image.height, stroke: c ?? lastColorRef.current, strokeWidth: w } as NewShape, true);
+  }, [image, onAdd, setTool]);
   const onRemoveMany = useCallback((ids: string[]) => dispatch({ type: "removeMany", ids }), [dispatch]);
   const onPatch = useCallback((id: string, patch: ShapePatch) => dispatch({ type: "update", id, patch }), [dispatch]);
   const onReorder = useCallback((id: string, index: number) => dispatch({ type: "reorder", id, index }), [dispatch]);
@@ -559,7 +571,7 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
   return (
     <div className="wsfill" data-theme-key={themeKey}>
       {/* Save stays on for an open snip, changed or not, as before the tabs: saving again writes the same folder (ISSUES 25). */}
-      {head({ onSave, canSave: true })}
+      {head({ onSave, canSave: true, onCopy, saveAs: { formats: saveAsFormats("snip"), onSave: onSaveAs } })}
       <Toolbar
         tool={tool}
         setTool={setTool}
@@ -568,10 +580,7 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
         strokeWidth={strokeWidth}
         setStrokeWidth={setStrokeWidth}
         fileName={image.name}
-        onExport={onExport}
-        onCopy={onCopy}
-        onSaveCollide={onSaveCollide}
-        canExport
+        onAddBorder={onAddBorder}
         onUndo={undo}
         onRedo={redo}
         canUndo={canUndo}

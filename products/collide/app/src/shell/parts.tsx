@@ -9,6 +9,7 @@ import type { Settings } from "./prefs";
 import type { StorageInfo } from "../native/bridge";
 import { UpdatesCard } from "./UpdatesCard";
 import type { Tab, TabKind } from "./tabs";
+import { SAVE_FORMATS, type SaveFormat } from "../io/saveAs";
 
 export const Logo = () => <img className="logo" src={logoUrl} alt="Collide" draggable={false} />;
 
@@ -76,10 +77,70 @@ export interface HeadProps {
   /** Controls after the name (the Markdown editor's Edit / Preview), and after Save (full width, hide the toolbar). */
   extra?: ReactNode;
   tail?: ReactNode;
+  /** T45 (6.3): Copy to clipboard, a PNG of the print area. */
+  onCopy?: () => void;
+  /** T45 (6.4): Save source, the tab as a `.collide` file. */
+  onSaveSource?: () => void;
+  /** T45 (6.4): Save as, the formats this tab offers. */
+  saveAs?: { formats: readonly SaveFormat[]; onSave: (f: SaveFormat) => void };
+}
+
+/** The prototype's words for Save as .collide, now the header's Save source (T45). */
+export const SAVE_SOURCE_TIP = "Save source: a Collide file (.collide) with the sources in their own formats plus every shape, bubble, note and order; reopens editable";
+
+/** T45 (6.4): Save as and its menu of formats. */
+function SaveAsButton({ formats, onSave }: { formats: readonly SaveFormat[]; onSave: (f: SaveFormat) => void }) {
+  const [open, setOpen] = useState(false);
+  const wrap = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const down = (e: PointerEvent) => {
+      if (!(e.target instanceof Node) || !wrap.current?.contains(e.target)) setOpen(false);
+    };
+    window.addEventListener("pointerdown", down, true);
+    return () => window.removeEventListener("pointerdown", down, true);
+  }, [open]);
+  return (
+    <span className="saveas" ref={wrap}>
+      <button type="button" className="btn" aria-haspopup="menu" aria-expanded={open} title="Save as a picture, a PDF or text" onClick={() => setOpen((o) => !o)}>
+        <Icon name="file-down" />
+        <span>Save as</span>
+        <Icon name="chevron-down" size={14} />
+      </button>
+      {open && (
+        <div
+          className="samenu"
+          role="menu"
+          aria-label="Save as"
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              e.stopPropagation();
+              setOpen(false);
+            }
+          }}
+        >
+          {formats.map((f, i) => (
+            <button
+              key={f}
+              type="button"
+              role="menuitem"
+              autoFocus={i === 0}
+              onClick={() => {
+                setOpen(false);
+                onSave(f);
+              }}
+            >
+              {SAVE_FORMATS[f].label}
+            </button>
+          ))}
+        </div>
+      )}
+    </span>
+  );
 }
 
 /** The header of the tab in front: what it is, saved or not, Save, Close. T44 (5.2): no collapse button here; collapse is in the sidebar. */
-export function WsHead({ kind, name, path, dirty, savedLabel = "Saved", onSave, canSave, onClose, onMenu, extra, tail }: HeadProps) {
+export function WsHead({ kind, name, path, dirty, savedLabel = "Saved", onSave, canSave, onClose, onMenu, extra, tail, onCopy, onSaveSource, saveAs }: HeadProps) {
   return (
     <div className="wshead">
       <button type="button" className="btn ghost icon mobile-only" aria-label="Recents" onClick={onMenu}>
@@ -110,6 +171,18 @@ export function WsHead({ kind, name, path, dirty, savedLabel = "Saved", onSave, 
         <button type="button" className="btn" data-testid="save-markup" title="Save (Ctrl+S)" disabled={!canSave} onClick={onSave}>
           <Icon name="save" />
           <span>Save</span>
+        </button>
+      )}
+      {onSaveSource && (
+        <button type="button" className="btn" title={SAVE_SOURCE_TIP} onClick={onSaveSource}>
+          <Icon name="package" />
+          <span>Save source</span>
+        </button>
+      )}
+      {saveAs && <SaveAsButton formats={saveAs.formats} onSave={saveAs.onSave} />}
+      {onCopy && (
+        <button type="button" className="btn icon" aria-label="Copy to clipboard" title="Copy to clipboard: a PNG of the print area (Ctrl+Shift+C)" data-testid="copy-btn" onClick={onCopy}>
+          <Icon name="clipboard-copy" />
         </button>
       )}
       {tail}

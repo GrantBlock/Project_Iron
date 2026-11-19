@@ -26,6 +26,7 @@ import type { PdfRefInput } from "../editor/refState";
 import type { Pen } from "../editor/EditorShell";
 import { copyPngToClipboard, dataUrlToBlob, flattenArea, type Flattened } from "../io/flatten";
 import { MarkupError } from "../io";
+import { saveAsFormats, saveAsName, savePicture, type SaveFormat } from "../io/saveAs";
 import { zoomPage } from "../markdown/page";
 import { fitPdfPage } from "./coords";
 import { EXPORT_FAILED, exportPdf, pdfExportName, type PdfPaint } from "./exportPdf";
@@ -118,7 +119,8 @@ interface Props {
   onHideTools: () => void;
   hint: (text: string) => void;
   notify: (n: { tone: "error" | "success"; title: string; description: string } | null) => void;
-  head: (h: { onSave: () => void; canSave: boolean; extra: ReactNode; tail: ReactNode }) => ReactNode;
+  /** The header, given Save, the pages, Copy and Save as (T45). */
+  head: (h: { onSave: () => void; canSave: boolean; extra: ReactNode; tail: ReactNode; onCopy: () => void; saveAs: { formats: SaveFormat[]; onSave: (f: SaveFormat) => void } }) => ReactNode;
   themeKey: string;
   /** Save as .collide (the header's Save, Ctrl+S and the toolbar's button). */
   onSaveCollide: () => void;
@@ -364,6 +366,30 @@ function PdfPageEditor(p: Props & { index: number; setPage: (n: number) => void 
     })().catch((e: unknown) => q.notify({ tone: "error", title: e instanceof MarkupError ? e.title : EXPORT_FAILED, description: e instanceof Error ? e.message : String(e) }));
   }, [count, exportBytes, session]);
 
+  // T45 (6.4): Save as PDF is the export above (the smallest one, ISSUES 43 stays open); PNG and JPEG are what Copy gives.
+  // (A) This tab shows one page at a time (T38), so the page nearest the centre of the view (6.3) is the page in front.
+  const onSaveAs = useCallback(
+    (f: SaveFormat) => {
+      if (f === "pdf") return onExport();
+      if (f !== "png" && f !== "jpeg") return;
+      const q = pRef.current;
+      q.notify(null);
+      renderPage()
+        .then((pic) => savePicture(pic.dataUrl, f, saveAsName(session.name, f)))
+        .then(
+          (where) => q.hint(`Saved page ${index + 1} · ${where}`),
+          (e: unknown) => q.notify({ tone: "error", title: "Save as failed", description: e instanceof Error ? e.message : String(e) }),
+        );
+    },
+    [index, onExport, renderPage, session],
+  );
+  // T45 (6.6, A): on a PDF the main image is the page in front: Add border puts a rectangle callout on its edge.
+  const onAddBorder = useCallback(() => {
+    setTool("select");
+    const { color: c, strokeWidth: w } = live.current;
+    onAdd({ type: "rect", x: 0, y: 0, w: pageImage.width, h: pageImage.height, stroke: c ?? lastColorRef.current, strokeWidth: w } as NewShape, true);
+  }, [onAdd, pageImage, setTool]);
+
   // ---------- Save as .collide ----------
   const collideContent = useCallback(async () => {
     let preview: Uint8Array;
@@ -490,7 +516,7 @@ function PdfPageEditor(p: Props & { index: number; setPage: (n: number) => void 
 
   return (
     <div className="wsfill pdfedit" data-theme-key={themeKey}>
-      {p.head({ onSave: save, canSave: true, extra, tail })}
+      {p.head({ onSave: save, canSave: true, extra, tail, onCopy, saveAs: { formats: saveAsFormats("pdf"), onSave: onSaveAs } })}
       <Toolbar
         label="PDF tools"
         hidden={hideTools}
@@ -501,12 +527,7 @@ function PdfPageEditor(p: Props & { index: number; setPage: (n: number) => void 
         strokeWidth={strokeWidth}
         setStrokeWidth={setStrokeWidth}
         fileName={session.name}
-        onExport={onExport}
-        onCopy={onCopy}
-        copyLabel="Copy PNG"
-        copyTip="Copy this page with its callouts as a PNG"
-        canExport
-        onSaveCollide={p.onSaveCollide}
+        onAddBorder={onAddBorder}
         onUndo={undo}
         onRedo={redo}
         canUndo={canUndo}
