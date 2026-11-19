@@ -135,7 +135,7 @@ test("4.1 / 8.2: a PDF opened from elsewhere is never autosaved; once saved it i
 
   // Save as .collide: now it is in Recents.
   const download = page.waitForEvent("download");
-  await ws(page).getByRole("toolbar", { name: "PDF tools" }).getByRole("button", { name: "Save as .collide", exact: true }).click();
+  await ws(page).getByRole("button", { name: "Save source", exact: true }).click(); // T45 (6.4): was the toolbar's Save as .collide
   await download;
   const row = recents(page).getByRole("button", { name: /^two-pages\.collide/ });
   await expect(row).toBeVisible();
@@ -158,7 +158,7 @@ test("8.2: a .collide file opened and saved again is in Recents", async ({ page 
   await page.getByTestId("file-input").setInputFiles(PDF_FILE);
   await expect(page.locator('[data-testid="pdf-page"][data-drawn="yes"]')).toBeVisible();
   const first = page.waitForEvent("download");
-  await ws(page).getByRole("toolbar", { name: "PDF tools" }).getByRole("button", { name: "Save as .collide", exact: true }).click();
+  await ws(page).getByRole("button", { name: "Save source", exact: true }).click(); // T45 (6.4): was the toolbar's Save as .collide
   const bytes = readFileSync(await (await first).path());
   await page.goto("/");
   await page.waitForFunction(() => !!window.__collide);
@@ -166,7 +166,7 @@ test("8.2: a .collide file opened and saved again is in Recents", async ({ page 
   await expect(page.getByTestId("notice")).toContainText("Collide file opened");
   await expect(recents(page).getByRole("button", { name: /^report\.collide/ })).toHaveCount(0);
   const again = page.waitForEvent("download");
-  await ws(page).getByRole("toolbar", { name: "PDF tools" }).getByRole("button", { name: "Save as .collide", exact: true }).click();
+  await ws(page).getByRole("button", { name: "Save source", exact: true }).click(); // T45 (6.4): was the toolbar's Save as .collide
   await again;
   await expect(recents(page).getByRole("button", { name: /^report\.collide/ })).toBeVisible();
 });

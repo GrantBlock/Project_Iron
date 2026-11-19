@@ -102,7 +102,7 @@ test("mark up page 2, save as .collide, reopen: the same items, order and page; 
   await ws(page).getByRole("button", { name: "Next page" }).click();
 
   const download = page.waitForEvent("download");
-  await ws(page).getByRole("toolbar", { name: "PDF tools" }).getByRole("button", { name: "Save as .collide", exact: true }).click();
+  await ws(page).getByRole("button", { name: "Save source", exact: true }).click(); // T45 (6.4): was the toolbar's Save as .collide
   const file = await (await download).path();
   await expect(page.getByRole("status")).toHaveText("Saved two-pages.collide · the PDF (2 pages) with 2 items · downloaded");
   expect((await state(page)).tabs[0].dirty).toBe(false);
@@ -137,7 +137,9 @@ test("Export writes a PDF with the same 2 pages and the markup drawn on page 2",
   await openFixture(page);
   await markPage2(page);
   const download = page.waitForEvent("download");
-  await ws(page).getByRole("button", { name: "Export", exact: true }).click();
+  // T45 (6.4): was the toolbar's Export; now the header's Save as → PDF.
+  await ws(page).getByRole("button", { name: "Save as", exact: true }).click();
+  await page.getByRole("menu", { name: "Save as" }).getByRole("menuitem", { name: "PDF", exact: true }).click();
   const dl = await download;
   expect(dl.suggestedFilename()).toBe("two-pages-markup.pdf");
   await expect(page.getByRole("status")).toHaveText("Exported two-pages-markup.pdf · 2 pages, markup on 1 · downloaded");
@@ -197,7 +199,7 @@ test("Copy PNG gives the page in front with its markup", async ({ page, context 
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await openFixture(page);
   await markPage2(page);
-  await ws(page).getByRole("button", { name: "Copy PNG", exact: true }).click();
+  await ws(page).getByRole("button", { name: "Copy to clipboard", exact: true }).click(); // T45 (6.3): was the toolbar's Copy PNG
   const toast = page.getByRole("status");
   await expect(toast).toHaveText(/^Copied page 2 and its callouts as a PNG · \d+ × \d+$/);
   const pic = await page.evaluate(async () => {

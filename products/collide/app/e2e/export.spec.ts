@@ -68,9 +68,11 @@ test("selection outline is absent and export matches the committed baseline", as
   expect(buf).toMatchSnapshot("export-400x300.png", { maxDiffPixelRatio: 0.002 });
 });
 
-test("toolbar Export downloads a PNG", async ({ page }) => {
+// T45 (6.4): Export left the toolbar; the header's Save as → PNG gives the same file.
+test("header Save as PNG downloads a PNG (was the toolbar's Export)", async ({ page }) => {
   const dl = page.waitForEvent("download");
-  await page.getByTestId("export-btn").click();
+  await page.getByRole("button", { name: "Save as" }).click();
+  await page.getByRole("menu", { name: "Save as" }).getByRole("menuitem", { name: "PNG", exact: true }).click();
   expect((await dl).suggestedFilename()).toBe("sample-400x300-markup.png");
 });
 

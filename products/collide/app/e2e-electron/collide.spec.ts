@@ -65,7 +65,8 @@ const snapshot = (page: Page) =>
   });
 const picture = (page: Page) => page.evaluate(async () => (await window.__collide!.exportPng()).dataUrl);
 const toast = (page: Page) => page.getByTestId("toast");
-const saveAs = (page: Page) => page.getByRole("toolbar").getByRole("button", { name: "Save as .collide", exact: true }).click();
+// T45 (6.4): Save as .collide left the toolbar; it is the header's Save source.
+const saveAs = (page: Page) => page.getByRole("button", { name: "Save source", exact: true }).click();
 
 test("a snip saved as .collide reopens in a new process with the same items, order and picture", async () => {
   const documents = realpathSync(mkdtempSync(join(tmpdir(), "collide-e2e-docs-")));

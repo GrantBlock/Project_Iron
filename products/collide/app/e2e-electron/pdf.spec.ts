@@ -52,9 +52,11 @@ test("open a PDF from the Desktop, mark up page 2, save as .collide and Export a
     expect(before.pdf).toEqual({ pageIndex: 1, pageCount: 2 });
     expect(before.items.map((i) => i.type)).toEqual(["rect"]);
 
-    await page.getByRole("toolbar", { name: "PDF tools" }).getByRole("button", { name: "Save as .collide", exact: true }).click();
+    await page.getByRole("button", { name: "Save source", exact: true }).click(); // T45 (6.4): was the toolbar's Save as .collide
     await expect(page.getByTestId("toast")).toHaveText("Saved two-pages.collide · the PDF (2 pages) with 1 item · Documents/Collide/Markups/");
-    await page.getByRole("button", { name: "Export", exact: true }).click();
+    // T45 (6.4): was the toolbar's Export; now the header's Save as → PDF.
+    await page.getByRole("button", { name: "Save as", exact: true }).click();
+    await page.getByRole("menu", { name: "Save as" }).getByRole("menuitem", { name: "PDF", exact: true }).click();
     await expect(page.getByTestId("toast")).toHaveText("Exported two-pages-markup.pdf · 2 pages, markup on 1 · Documents/Collide/Markups/");
 
     const root = join(documents, "Collide", "Markups");

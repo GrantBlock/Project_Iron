@@ -136,7 +136,7 @@ test("4.1 / 8.2: a PDF from the Desktop is never autosaved or written back; save
     const recents = page.getByRole("complementary", { name: "Recents" });
     await expect(recents.getByRole("button", { name: /^two-pages\.collide/ })).toHaveCount(0);
 
-    await page.getByRole("toolbar", { name: "PDF tools" }).getByRole("button", { name: "Save as .collide", exact: true }).click();
+    await page.getByRole("button", { name: "Save source", exact: true }).click(); // T45 (6.4): was the toolbar's Save as .collide
     await expect(page.getByTestId("toast")).toContainText("Saved two-pages.collide");
     expect(markupsOf(documents)).toEqual(["two-pages.collide"]);
     expect(readFileSync(pdf).equals(readFileSync(FIXTURE))).toBe(true);

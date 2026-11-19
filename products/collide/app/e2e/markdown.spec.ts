@@ -32,7 +32,7 @@ test("Insert image saves the picture into images/ and links it at the end of the
 test("Copy PNG puts the visible page with its callouts on the clipboard", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await openP06(page);
-  await ws(page).getByRole("button", { name: "Copy PNG", exact: true }).click();
+  await ws(page).getByRole("button", { name: "Copy to clipboard", exact: true }).click(); // T45 (6.3): was the toolbar's Copy PNG
   const toast = page.getByRole("status");
   await expect(toast).toHaveText(/^Copied the visible page and its callouts as a PNG · \d+ × \d+$/);
   const [w, h] = (await toast.textContent())!.match(/(\d+) × (\d+)/)!.slice(1).map(Number);
