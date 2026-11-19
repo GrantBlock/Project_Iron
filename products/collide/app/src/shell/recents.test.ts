@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AnnotationsDoc } from "../model";
-import { filterRecents, recentTags, flatFiles, folderBase, groupRecents, patchZipFile, pictureNames, snipMeta, sortFolders, storeRow, withPicture, zipFile, type RecentItem } from "./recents";
+import { collideRow, filterRecents, recentTags, flatFiles, folderBase, groupRecents, patchZipFile, pictureNames, snipMeta, sortFolders, storeRow, withPicture, zipFile, type RecentItem } from "./recents";
 import { sampleRecents, sampleDoc, SAMPLE_SNIPS } from "./sample";
 
 const today = new Date(2026, 10, 15, 9, 30);
@@ -104,5 +104,20 @@ describe("recentTags (Grant 2026-11-17: no sample tags in the real app)", () => 
   });
   it("the sample Recents (dev and the reference only) still carry the prototype's tags", () => {
     expect(recentTags(sampleRecents()).length).toBeGreaterThan(0);
+  });
+});
+
+describe("T43 (8.2): a saved Collide file in Recents", () => {
+  it("a .collide file saved this session is a Today row that opens that file", () => {
+    const row = collideRow("/home/g/Documents/Collide/Markups/two-pages.collide");
+    expect(row).toMatchObject({
+      kind: "snip",
+      id: "collide:/home/g/Documents/Collide/Markups/two-pages.collide",
+      name: "two-pages.collide",
+      day: "Today",
+      source: { from: "collide", file: "/home/g/Documents/Collide/Markups/two-pages.collide" },
+    });
+    expect(snipMeta(row)).toBe("Collide file");
+    expect(collideRow("C:\\Users\\g\\Documents\\Collide\\Markups\\pump.collide").name).toBe("pump.collide");
   });
 });

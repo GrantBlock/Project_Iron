@@ -68,6 +68,17 @@ export function markupFolderName(sourceName: string, date: Date = new Date()): s
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}_${slug}`;
 }
 
+/**
+ * T43 (4.1): `name`, or the first free `name-2`, `name-3`, ... among `taken` (folder ids or paths), so an autosave
+ * never replaces another snip's folder (two snips in the same minute get the same name).
+ */
+export function freeFolderName(name: string, taken: readonly string[]): string {
+  const used = new Set(taken.map((t) => t.replace(/[\\/]+$/, "").split(/[\\/]/).pop() ?? t));
+  let out = name;
+  for (let n = 2; used.has(out); n++) out = `${name}-${n}`;
+  return out;
+}
+
 /** Parse annotations.json text; a bad file becomes a MarkupError naming the cause and fix. */
 export function parseAnnotations(json: string): AnnotationsDoc {
   const r = parse(json);

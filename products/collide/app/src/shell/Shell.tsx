@@ -10,7 +10,7 @@ import { refState, type RefState } from "../editor/refState";
 import type { Point } from "../editor/viewport";
 import type { Flattened } from "../io/flatten";
 import type { StorageInfo } from "../native/bridge";
-import { createMarkupStore, MarkupError, type MarkupStore } from "../io";
+import { createMarkupStore, freeFolderName, MarkupError, markupFolderName, type MarkupStore } from "../io";
 import {
   collideFileName,
   COLLIDE_EXT,
@@ -31,7 +31,7 @@ import { createSnipFlow } from "../snip/flow";
 import { electronDeps, isDesktop } from "../snip/electronDeps";
 import { Blank, FileTab, SettingsTab, Splash, TabBar, Toasts, WsHead, type FileDoc, type Notice } from "./parts";
 import { applyTheme, loadPrefs, savePref, type Prefs } from "./prefs";
-import { flatFiles, patchZipFile, PICTURES, pictureNames, sortFolders, storeRow, withPicture, zipFile, type RecentItem, type RecentSnip, type RecentZip, type TreeNode } from "./recents";
+import { collideRow, flatFiles, patchZipFile, PICTURES, pictureNames, sortFolders, storeRow, withPicture, zipFile, type RecentItem, type RecentSnip, type RecentZip, type TreeNode } from "./recents";
 import { SAMPLE_OPEN, sampleArt, sampleDoc, sampleRecents, sampleSnip, wantsSample } from "./sample";
 import { Sidebar } from "./Sidebar";
 import { createMdSession, defaultMdPen, MarkdownEditor, type MdEditorApi, type MdSession } from "../markdown/MarkdownEditor";
@@ -271,7 +271,13 @@ export function Shell() {
       listing.current++;
     };
   }, [refreshRecents]);
-  const rows = useMemo<RecentItem[]>(() => [...stored, ...samples], [stored, samples]);
+  // T43 (8.2): the Collide files saved this session, newest first (A: this session only; not read from disk).
+  const [collideRows, setCollideRows] = useState<RecentSnip[]>([]);
+  /** A browser has no folder: a saved Collide file's bytes, by its row id, so the row can open it again. */
+  const collideBytes = useRef(new Map<string, Uint8Array>());
+  /** The tab a Collide file's row opens: the one that saved it or was opened from the row. */
+  const collideTabs = useRef(new Map<string, string>());
+  const rows = useMemo<RecentItem[]>(() => [...collideRows, ...stored, ...samples], [collideRows, stored, samples]);
 
   // ---------- Storage on the server PC (RUN3 T36) ----------
   // The desktop app's main process keeps "keep the newest N" and deletes; Settings → Storage shows its numbers.
@@ -383,26 +389,59 @@ export function Shell() {
     [addTab],
   );
 
-  const openImage = useCallback(
+  /** An image in a new Snip tab. Resolves with its size and the tab's id. */
+  const openImageTab = useCallback(
     async (url: string, name: string) => {
       const img = await loadImage(url, name);
       // Keep the original bytes so source.png is the untouched source image (fetched lazily, awaited on save).
       const bytes = fetch(url).then((r) => r.blob()).then(toPngBytes);
-      openSnipTab(createSnipSession(img, bytes), { key: `image:${nextId.current}`, title: name });
-      return { width: img.width, height: img.height };
+      const id = openSnipTab(createSnipSession(img, bytes), { key: `image:${nextId.current}`, title: name });
+      return { size: { width: img.width, height: img.height }, id };
     },
     [openSnipTab],
   );
+  const openImage = useCallback(async (url: string, name: string) => (await openImageTab(url, name)).size, [openImageTab]);
 
-  // A finished snip opens in a new tab and goes straight to the clipboard, like Snipping Tool.
+  /**
+   * T43 (4.1): a new snip saves itself into the markups store (Documents/Collide/Markups in the desktop app), with no
+   * name prompt, under the first free folder name. Autosave writes nowhere else: an image, PDF or Collide file opened
+   * from elsewhere is never autosaved, and (A) later changes to the snip wait for Save, like any marked-up image.
+   * It runs only while the snip's tab is in front (its editor saves it); otherwise the tab stays unsaved.
+   */
+  const autosaveSnip = useCallback(
+    async (tabId: string) => {
+      const session = sessions.current.get(tabId);
+      const inFront = () => live.current.tabs.active === tabId && editor.current !== null;
+      if (!session || session.source.folder !== null || session.baseDoc !== null || !inFront()) return;
+      const store = getStore();
+      let taken: string[] = [];
+      try {
+        taken = (await store.list?.()) ?? [];
+      } catch {
+        /* the save below reports a folder it cannot write */
+      }
+      if (!inFront() || session.source.folder !== null) return;
+      session.source.folder = freeFolderName(markupFolderName(session.image.name), taken);
+      try {
+        await editor.current!.saveMarkup();
+      } catch (e) {
+        session.source.folder = null;
+        fail(e, "Could not save markup");
+      }
+    },
+    [fail, getStore],
+  );
+
+  // A finished snip opens in a new tab and goes straight to the clipboard, like Snipping Tool, then saves itself (T43).
   // A failed copy only shows its own toast; the snip itself still counts as done.
   const openSnip = useCallback(
     async (url: string, name: string) => {
-      const size = await openImage(url, name);
+      const { size, id } = await openImageTab(url, name);
       await editor.current?.copyToClipboard("Snip copied to clipboard");
+      await autosaveSnip(id);
       return size;
     },
-    [openImage],
+    [autosaveSnip, openImageTab],
   );
 
   const openMarkup = useCallback(
@@ -642,6 +681,13 @@ export function Shell() {
     }
     session.collideFile = saved;
     afterSave?.();
+    // T43 (8.2): a saved Collide file is in Recents (a Markdown package already has its zip row there).
+    if (pkg.kind !== "markdown") {
+      const row = collideRow(saved);
+      if (!bridge?.collideFiles) collideBytes.current.set(row.id, bytes);
+      collideTabs.current.set(row.id, front.id);
+      setCollideRows((r) => [row, ...r.filter((x) => x.id !== row.id)]);
+    }
     showHint(`Saved ${baseName(saved)} · ${summary} · ${place}`);
     void pruneStorage();
   }, [pruneStorage, showHint]);
@@ -664,10 +710,24 @@ export function Shell() {
       }
       notify(null);
       const src = item.source;
+      if (src.from === "collide") {
+        // T43 (8.2): a saved Collide file: its tab if open, else the file (or, in a browser, the bytes saved this session).
+        const tabId = collideTabs.current.get(item.id);
+        if (tabId && live.current.tabs.tabs.some((t) => t.id === tabId)) return setTabs((s) => activateTab(s, tabId));
+        const bytes = collideBytes.current.get(item.id);
+        (bytes ? openCollideBytes(bytes, item.name, null) : openCollideFile(src.file)).then(
+          () => {
+            const t = activeTab(live.current.tabs);
+            if (t) collideTabs.current.set(item.id, t.id);
+          },
+          (e: unknown) => fail(e, COLLIDE_OPEN_FAILED),
+        );
+        return;
+      }
       const done = src.from === "sample" ? openSample(src.sample) : openMarkup(src.folder);
       done.catch((e: unknown) => fail(e, "Could not open markup"));
     },
-    [openSample, openMarkup, notify, fail],
+    [openSample, openMarkup, openCollideBytes, openCollideFile, notify, fail, setTabs],
   );
 
   const onOpen = useCallback(() => {
@@ -872,6 +932,14 @@ export function Shell() {
     if (a?.kind !== "delete") return;
     setAsk(null);
     const item = a.item;
+    if (item.kind === "snip" && item.source.from === "collide") {
+      // T43 (A): a Collide file's row only leaves Recents; the file and its tab stay.
+      setCollideRows((r) => r.filter((x) => x.id !== item.id));
+      collideBytes.current.delete(item.id);
+      collideTabs.current.delete(item.id);
+      notify({ tone: "success", title: `Removed ${item.name} from Recents`, description: "" });
+      return;
+    }
     try {
       if (item.kind === "snip" && item.source.from === "store") {
         const store = getStore();
@@ -1156,7 +1224,22 @@ export function Shell() {
           ]}
         />
       )}
-      {deleting && (
+      {deleting && deleting.kind === "snip" && deleting.source.from === "collide" && (
+        <Splash
+          title={`Remove ${deleting.name} from Recents?`}
+          body="The row leaves Recents. The file itself is kept."
+          hint="Enter removes · Esc cancels"
+          seed={13}
+          themeKey={themeKey}
+          onEnter={() => void doDelete()}
+          onCancel={cancelAsk}
+          buttons={[
+            { label: "Remove", variant: "danger", icon: "trash-2", onClick: () => void doDelete() },
+            { label: "Cancel", variant: "ghost", onClick: cancelAsk },
+          ]}
+        />
+      )}
+      {deleting && !(deleting.kind === "snip" && deleting.source.from === "collide") && (
         <Splash
           title={`Delete ${deleting.name}?`}
           body={`The ${deleting.kind === "snip" ? `markup and its ${deleting.callouts ?? 0} callout${deleting.callouts === 1 ? "" : "s"}` : "zip file and its unpacked folder"} are deleted${

@@ -22,7 +22,7 @@ export interface RecentSnip {
   /** Sample rows only: stored on the server (cloud) or only on this PC (cloud with an arrow). */
   saved?: boolean;
   /** Where it opens from: a markup folder of the store, or a sample of sample.ts. */
-  source: { from: "store"; folder: string } | { from: "sample"; sample: string };
+  source: { from: "store"; folder: string } | { from: "sample"; sample: string } | { from: "collide"; file: string };
 }
 
 export interface TreeNode {
@@ -107,7 +107,15 @@ export function storeRow(folder: string, today: Date, doc?: AnnotationsDoc, thum
 /** Newest first: Save puts the date at the start of the folder name. */
 export const sortFolders = (folders: readonly string[]) => [...folders].sort((a, b) => folderBase(b).localeCompare(folderBase(a)));
 
-export const snipMeta = (r: RecentSnip) => (r.callouts === null || r.width === null || r.height === null ? "Markup" : `${r.callouts} callout${r.callouts === 1 ? "" : "s"} · ${r.width} × ${r.height}`);
+/**
+ * T43 (8.2): a Collide file saved this session (its path, or its name in a browser) as a Recents row that opens it.
+ * (A) Rows for .collide files are kept for this session only; Recents does not read .collide files from disk.
+ */
+export function collideRow(file: string): RecentSnip {
+  return { kind: "snip", id: `collide:${file}`, name: folderBase(file), day: "Today", callouts: null, width: null, height: null, tags: [], notes: [], thumb: null, source: { from: "collide", file } };
+}
+
+export const snipMeta = (r: RecentSnip) => (r.source.from === "collide" ? "Collide file" : r.callouts === null || r.width === null || r.height === null ? "Markup" : `${r.callouts} callout${r.callouts === 1 ? "" : "s"} · ${r.width} × ${r.height}`);
 
 // ---------- A zip's files (RUN3 T34: the Markdown editor reads its pictures and writes its pictures and saves) ----------
 
