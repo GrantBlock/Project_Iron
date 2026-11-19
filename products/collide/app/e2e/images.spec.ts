@@ -89,40 +89,41 @@ test("a pasted image goes beside the image, moves, resizes with its aspect locke
   expect(await pasteImage(page)).toBe(true);
   await expect(page.getByTestId("toast")).toHaveText("Pasted image added beside the image · 320 × 200");
 
-  // Beside the 400 x 300 image, 24 px to the right, as tall as it, aspect kept; selected; in the list without a number.
+  // Beside the 400 x 300 image, 24 px to the right, its own size (T46, 2.1: was as tall as it, 480 x 300); selected; in the list without a number.
   const placed = (await imageShape(page))!;
-  expect(placed).toMatchObject({ x: 424, y: 0, w: 480, h: 300, src: "image-1.png" });
+  expect(placed).toMatchObject({ x: 424, y: 0, w: 320, h: 200, src: "image-1.png" });
   let s = await page.evaluate(() => window.__collide!.state());
   expect(s.selection).toEqual([placed.id]);
   expect(s.items[0]).toMatchObject({ type: "image", number: null, bubble: null });
-  await expect(page.getByLabel("Callouts").getByText("Image", { exact: true })).toBeVisible();
+  // T46 (3.2): its entry is "image 2" (was "Image"); the first snip is "image 1".
+  await expect(page.getByLabel("Callouts").getByText("image 2", { exact: true })).toBeVisible();
   // The canvas grew: the fitted view shows both, and the picture is drawn there.
   expect(s.zoom?.fit).toBe(true);
-  expect(await colourAt(page, 424 + 240, 150)).toEqual([0x1e, 0x88, 0xe5]);
+  expect(await colourAt(page, 424 + 160, 100)).toEqual([0x1e, 0x88, 0xe5]);
 
   // Move it with Select.
-  await dragBy(page, await screen(page, 424 + 240, 150), -40, 30);
+  await dragBy(page, await screen(page, 424 + 160, 100), -40, 30);
   await expect.poll(async () => (await imageShape(page))!.x).not.toBe(424);
   const moved = (await imageShape(page))!;
-  expect(moved.w).toBe(480);
+  expect(moved.w).toBe(320);
 
   // Resize from the bottom-right corner, with Shift held: the aspect stays locked.
   const corner = await screen(page, moved.x + moved.w, moved.y + moved.h);
   await dragBy(page, [corner[0] + 2, corner[1] + 2], -120, -10, true);
-  await expect.poll(async () => (await imageShape(page))!.w).toBeLessThan(480);
+  await expect.poll(async () => (await imageShape(page))!.w).toBeLessThan(320);
   const sized = (await imageShape(page))!;
-  expect(sized.w / sized.h).toBeCloseTo(480 / 300, 2);
+  expect(sized.w / sized.h).toBeCloseTo(320 / 200, 2);
   // The top-left corner stays put (to float precision).
   expect(sized.x).toBeCloseTo(moved.x, 3);
   expect(sized.y).toBeCloseTo(moved.y, 3);
 
   // Undo the resize, then delete it, then undo the delete.
   await page.keyboard.press("Control+z");
-  expect(await imageShape(page)).toMatchObject({ w: 480, h: 300 });
+  expect(await imageShape(page)).toMatchObject({ w: 320, h: 200 });
   await page.keyboard.press("Delete");
   expect(await imageShape(page)).toBeUndefined();
   await page.keyboard.press("Control+z");
-  expect(await imageShape(page)).toMatchObject({ x: moved.x, y: moved.y, w: 480 });
+  expect(await imageShape(page)).toMatchObject({ x: moved.x, y: moved.y, w: 320 });
   s = await page.evaluate(() => window.__collide!.state());
   expect(s.items.filter((i) => i.type === "image")).toHaveLength(1);
 });
@@ -140,10 +141,10 @@ test("save and open keep the added image (annotations.json lists its file)", asy
   await page.getByTestId("open-markup").click();
   await expect(page.getByTestId("notice")).toContainText("Markup opened");
   expect(await doc(page)).toEqual({ ...saved, images: [{ file: "image-1.png", width: 320, height: 200 }] });
-  await expect.poll(() => colourAt(page, 424 + 240, 150)).toEqual([0x1e, 0x88, 0xe5]);
+  await expect.poll(() => colourAt(page, 424 + 160, 100)).toEqual([0x1e, 0x88, 0xe5]);
 
   // Still an image item: select it from the list and delete it.
-  await page.getByLabel("Callouts").getByText("Image", { exact: true }).click();
+  await page.getByLabel("Callouts").getByText("image 2", { exact: true }).click();
   await page.getByRole("button", { name: "Delete Image" }).click();
   expect(await imageShape(page)).toBeUndefined();
 });

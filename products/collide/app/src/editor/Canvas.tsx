@@ -15,6 +15,8 @@ export interface LoadedImage {
   name: string;
   width: number;
   height: number;
+  /** T46 (3.4): the part of `el` that is shown (file px); `width` and `height` are its size. Absent = the whole file. */
+  crop?: { x: number; y: number; width: number; height: number };
 }
 
 export interface CanvasHandle {
@@ -843,7 +845,7 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
           }}
         >
           <Layer>
-            {image && !underlay && <KonvaImage name="background" image={image.el} width={image.width} height={image.height} listening={false} />}
+            {image && !underlay && <KonvaImage key={image.crop ? "cropped" : "whole"} name="background" image={image.el} width={image.width} height={image.height} crop={image.crop} listening={false} />}
             {image &&
               drawn.map((s) => (
                 <ShapeNode

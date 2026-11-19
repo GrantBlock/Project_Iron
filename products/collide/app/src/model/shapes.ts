@@ -85,6 +85,8 @@ export const AnnotationsSchema = z.object({
     kind: z.literal("image"),
     width: num.positive(),
     height: num.positive(),
+    /** T46 (3.4): Crop on "image 1" keeps part of the first snip, as fractions of source.png; absent = the whole file. */
+    crop: CropSchema.optional(),
   }),
   shapes: z.array(ShapeSchema),
   /** RUN3 T33: the added images' files and their size as captured. Optional, so older markups still open. */

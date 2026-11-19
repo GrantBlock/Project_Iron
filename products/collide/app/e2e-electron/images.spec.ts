@@ -47,7 +47,7 @@ test("Add snip: Current and Behind add beside the image; save and open keep both
     };
 
     // Current: the drag box over the screen as it is (Collide is not hidden); the box comes beside the base image,
-    // as tall as it, with the box's aspect. The file is the whole capture; the box is its crop.
+    // at its own size (T46, 2.1), with the box's aspect. The file is the whole capture; the box is its crop.
     await recents.getByRole("radio", { name: "Current" }).click();
     const opened = app.waitForEvent("window");
     await addSnip.click();
@@ -57,7 +57,10 @@ test("Add snip: Current and Behind add beside the image; save and open keep both
     await expect.poll(async () => (await images(page)).length).toBe(1);
     await expect(page.getByTestId("toast")).toHaveText("Snip added beside the image · copied to clipboard");
     const [first] = await images(page);
-    expect(first).toMatchObject({ x: 344, y: 0, h: 200, src: "image-1.png" });
+    // T46 (2.1): its own size, the captured pixels of the box (was: as tall as the base image, h 200).
+    expect(first).toMatchObject({ x: 344, y: 0, src: "image-1.png" });
+    expect(first.w).toBe(Math.round(first.crop!.w * display.width));
+    expect(first.h).toBe(Math.round(first.crop!.h * display.height));
     expect(first.w / first.h).toBeCloseTo(100 / 80, 1);
     expect(first.crop!.w).toBeGreaterThan(0);
     expect(first.crop!.w).toBeLessThan(1);
@@ -84,7 +87,8 @@ test("Add snip: Current and Behind add beside the image; save and open keep both
     await expect.poll(async () => (await images(page)).length).toBe(2);
     await expect(page.getByTestId("toast")).toHaveText("Snip from behind added beside the image · copied to clipboard");
     const second = (await images(page))[1];
-    expect(second).toMatchObject({ x: first.x + first.w + 24, y: 0, h: 200, src: "image-2.png" });
+    expect(second).toMatchObject({ x: first.x + first.w + 24, y: 0, src: "image-2.png" });
+    expect(second.h).toBe(Math.round(second.crop!.h * display.height)); // T46 (2.1): was h 200
     expect(second.w / second.h).toBeCloseTo(100 / 80, 1);
     expect(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.getTitle() === "Collide")!.isVisible())).toBe(true);
 

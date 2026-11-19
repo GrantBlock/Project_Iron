@@ -14,13 +14,15 @@ const rect: Shape = { id: "a1", type: "rect", x: 10, y: 10, w: 50, h: 40, stroke
 const measure = () => ({ w: 0, h: 0 });
 
 describe("images on the canvas (T33)", () => {
-  it("an added image goes beside the base image, as tall as it, aspect kept", () => {
-    expect(placeBeside(base, [rect], { width: 320, height: 200 })).toEqual({ x: 1280 + IMAGE_GAP, y: 0, w: 1152, h: 720 });
+  // T46 (2.1, Grant 2026-11-19): an added snip keeps its own size (was: as tall as the base image, w 1152, h 720).
+  it("an added image goes beside the base image, its own size (T46: was as tall as it)", () => {
+    expect(placeBeside(base, [rect], { width: 320, height: 200 })).toEqual({ x: 1280 + IMAGE_GAP, y: 0, w: 320, h: 200 });
   });
 
   it("the next one goes beside the images added before", () => {
     const first = image("a2", 1304, 1152);
-    expect(placeBeside(base, [rect, first], { width: 1920, height: 1080 })).toEqual({ x: 1304 + 1152 + IMAGE_GAP, y: 0, w: 1280, h: 720 });
+    // T46 (2.1): its own size (was w 1280, h 720).
+    expect(placeBeside(base, [rect, first], { width: 1920, height: 1080 })).toEqual({ x: 1304 + 1152 + IMAGE_GAP, y: 0, w: 1920, h: 1080 });
   });
 
   it("the canvas grows: the print area takes the added image", () => {

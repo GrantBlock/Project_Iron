@@ -62,7 +62,7 @@ Added 2026-11-19, before the run. The run adds results and any new check as it b
 9. **Toolbar (T45, 6.1):** narrow the window: the scroll bar appears only when icons no longer fit.
 10. **Header (T45, 6.3, 6.4):** Copy in the header on a snip, a Markdown tab and a PDF; paste into another app. Save source gives a `.collide`; Save as offers the right formats per tab type. Built (A, ISSUES 52): in the desktop app Save as PNG, JPEG, TXT and MD open Windows' Save dialog; Save as PDF writes into `Documents\Collide\Markups` (as Export did). Check the JPEG and the one-page PDF of a snip open in Photos and Edge. The cloud checks narrow windows in Chromium only (`e2e/headerToolbars.spec.ts`); Windows' classic scroll bars are manual.
 11. **Add snip size (T46, 2.1):** an added snip is the same size on screen as the original, at 100% and 150% scaling and on a second monitor.
-12. **Callout delete (T46, 3.3):** delete a callout, then Undo; it returns with its number.
+12. **Callout delete (T46, 3.3):** delete a callout, then Undo; it returns with its number. Also the list (3.1, 3.2, 3.4): "image 1" has Crop and no delete, each Add snip image is its own entry with Crop; crop "image 1" and check the callouts stay on what they mark (ISSUES 54).
 
 ## Known gaps / watch for
 

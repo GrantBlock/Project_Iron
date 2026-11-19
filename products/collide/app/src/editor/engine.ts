@@ -11,12 +11,30 @@ export const IMAGE_GAP = 24;
 
 /**
  * Where an added image goes (RUN3 T33, Grant 2026-11-15): beside the content, right of the base image and of every
- * image added before, at the top, as tall as the base image, its aspect kept. The canvas grows to fit (the print area).
+ * image added before, at the top. The canvas grows to fit (the print area).
+ * T46 (2.1, Grant 2026-11-19): an added snip is the same size as the original, measured on screen: it keeps its own
+ * pixel size, one image pixel per captured pixel like the first snip (it used to be stretched to the base's height).
  */
 export function placeBeside(base: { width: number; height: number }, shapes: readonly Shape[], size: { width: number; height: number }): { x: number; y: number; w: number; h: number } {
   const right = Math.max(base.width, ...shapes.filter((s) => s.type === "image").map((s) => s.x + s.w));
-  const h = base.height;
-  return { x: right + IMAGE_GAP, y: 0, w: Math.round((h * size.width) / size.height), h };
+  return { x: right + IMAGE_GAP, y: 0, w: Math.round(size.width), h: Math.round(size.height) };
+}
+
+/** T46 (3.1): the first snip's name in the list. */
+export const BASE_IMAGE_LABEL = "image 1";
+
+/** T46 (3.2): an added image's name in the list, from its file (`image-<n>.png` is "image n+1"), so names stay put. */
+export function imageLabel(src: string): string {
+  const m = /^image-(\d+)\.png$/.exec(src);
+  return m ? `image ${Number(m[1]) + 1}` : "image";
+}
+
+/** T46 (3.4): the part of the first snip's file that is shown, in file pixels; no crop = the whole file. */
+export function sourceCrop(source: { width: number; height: number; crop?: { x: number; y: number; w: number; h: number } }): { x: number; y: number; width: number; height: number } {
+  const c = source.crop;
+  if (!c) return { x: 0, y: 0, width: source.width, height: source.height };
+  const x = Math.round(c.x * source.width), y = Math.round(c.y * source.height);
+  return { x, y, width: Math.max(1, Math.round((c.x + c.w) * source.width) - x), height: Math.max(1, Math.round((c.y + c.h) * source.height) - y) };
 }
 
 /** Freehand strokes: the eraser takes them whole. */

@@ -13,7 +13,7 @@
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from "fflate";
 import { z } from "zod";
 import type { ZodIssue } from "zod";
-import { formatPath, ShapeSchema, type AnnotationsDoc, type Shape } from "../model";
+import { CropSchema, formatPath, ShapeSchema, type AnnotationsDoc, type Shape } from "../model";
 import { isPng, MarkupError, type ImageFile } from "./markupStore";
 
 export const COLLIDE_EXT = ".collide";
@@ -133,7 +133,7 @@ const SnipManifest = z.object({
   kind: z.literal("snip"),
   title,
   order: z.literal("back-to-front"),
-  source: z.object({ file: z.literal(SNIP_SOURCE), width: num.positive(), height: num.positive() }),
+  source: z.object({ file: z.literal(SNIP_SOURCE), width: num.positive(), height: num.positive(), crop: CropSchema.optional() }),
   images: z.array(z.object({ file: z.string().regex(/^sources\/image-[1-9][0-9]{0,5}\.png$/), width: num.positive(), height: num.positive() })),
   items: z.array(ShapeSchema),
   preview: z.literal(PREVIEW),
@@ -188,7 +188,7 @@ export function encodeCollide(pkg: CollidePackage): Uint8Array {
       kind: "snip",
       title: pkg.title,
       order: "back-to-front",
-      source: { file: SNIP_SOURCE, width: pkg.doc.source.width, height: pkg.doc.source.height },
+      source: { file: SNIP_SOURCE, width: pkg.doc.source.width, height: pkg.doc.source.height, ...(pkg.doc.source.crop ? { crop: pkg.doc.source.crop } : {}) },
       images: images.map((i) => ({ file: `${SOURCES}${i.meta.file}`, width: i.meta.width, height: i.meta.height })),
       items: pkg.doc.shapes,
       preview: PREVIEW,
@@ -308,7 +308,7 @@ export function decodeCollide(bytes: Uint8Array): CollidePackage {
     if (orphan?.type === "image") throw refuse(`${MANIFEST}: item "${orphan.id}" shows ${orphan.src}, which the package does not have.`);
     const doc: AnnotationsDoc = {
       version: 1,
-      source: { kind: "image", width: m.source.width, height: m.source.height },
+      source: { kind: "image", width: m.source.width, height: m.source.height, ...(m.source.crop ? { crop: m.source.crop } : {}) },
       shapes: m.items,
       ...(m.images.length ? { images: m.images.map((i) => ({ file: i.file.slice(SOURCES.length), width: i.width, height: i.height })) } : {}),
     };

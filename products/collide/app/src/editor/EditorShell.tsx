@@ -12,7 +12,7 @@ import { CalloutsPanel } from "./CalloutsPanel";
 import { Toolbar } from "./Toolbar";
 import { copyPngToClipboard, dataUrlToBlob, flatten, flattenArea, flattenFit, type Flattened } from "../io/flatten";
 import { saveAsFormats, saveAsName, savePicture, type SaveFormat } from "../io/saveAs";
-import { cropImage, placeBeside, printArea } from "./engine";
+import { cropImage, placeBeside, printArea, sourceCrop } from "./engine";
 import { CropDialog, type CropBox } from "./CropDialog";
 import { isPng, MarkupError, markupFolderName, type ImageFile, type MarkupStore } from "../io";
 import type { SnipPackage } from "../io/collideFile";
@@ -67,6 +67,9 @@ export async function loadPictures(files: readonly ImageFile[]): Promise<Map<str
   }
   return out;
 }
+
+/** T46: the Crop dialog's key for the first snip ("image 1"); shape ids are `a<n>`. */
+const SOURCE_CROP = ":source";
 
 /** The next free added-image file name. */
 export function nextImageFile(taken: Iterable<string>): string {
@@ -148,7 +151,7 @@ export interface SnipEditorApi {
   /** Copy the image plus every annotation to the clipboard and say so with `title`. */
   copyToClipboard: (title: string) => Promise<void>;
   /**
-   * RUN3 T33: add an image (Add snip, paste) beside the content: as tall as the base image, aspect kept, selected,
+   * RUN3 T33: add an image (Add snip, paste) beside the content: its own size (T46, 2.1), selected,
    * the view fitted to the grown canvas. One undo step. Resolves with the image's own size.
    */
   addImage: (url: string, crop?: CropBox) => Promise<{ width: number; height: number }>;
@@ -182,8 +185,15 @@ interface Props {
 }
 
 export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSaved, head, themeKey }: Props) {
-  const image = session.image;
   const { state, dispatch, stateRef, canUndo, canRedo } = useEditorStore(session.history, (h) => (session.history = h));
+  // T46 (3.4): the first snip as the editor shows it: its crop ("image 1" Crop) is the picture; items are relative to it.
+  const sc = state.doc?.source.crop;
+  const image = useMemo<LoadedImage>(() => {
+    const whole = session.image;
+    if (!sc) return whole;
+    const c = sourceCrop({ width: whole.width, height: whole.height, crop: sc });
+    return { ...whole, width: c.width, height: c.height, crop: c };
+  }, [session.image, sc]);
   const shapes = useMemo(() => state.doc?.shapes ?? [], [state.doc]);
   const [view, setViewState] = useState<View>(session.view ?? { scale: 1, x: 0, y: 0 });
   // True while the view is "fit to window": resizing refits and recentres. A user zoom/pan clears it; Ctrl+0 sets it again.
@@ -207,7 +217,7 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
   const sizeRef = useRef<Size>({ width: 0, height: 0 });
   const handleRef = useRef<CanvasHandle | null>(null);
   // Added images' pictures for the canvas (RUN3 T33); the session's map only grows, and a new image is a new document.
-  // T39: the added image whose Crop is open.
+  // T39: the added image whose Crop is open; T46: SOURCE_CROP for the first snip ("image 1").
   const [cropId, setCropId] = useState<string | null>(null);
   const pictures = useMemo(() => new Map([...session.pictures].map(([k, v]) => [k, v.el])), [session, state.doc]);
 
@@ -614,11 +624,27 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
           onReorder={onReorder}
           onRemove={onRemove}
           onCrop={setCropId}
+          base={{ cropped: !!sc, onCrop: () => setCropId(SOURCE_CROP) }}
           focus={focusNote}
           onEscape={() => setTool("select")}
         />
       </div>
       <StatusBar zoom={view.scale} dims={{ width: image.width, height: image.height }} />
+      {cropId === SOURCE_CROP && (
+        <CropDialog
+          src={session.image.el.src}
+          file={{ width: session.image.width, height: session.image.height }}
+          crop={sc}
+          onCancel={() => setCropId(null)}
+          onApply={(c) => {
+            setCropId(null);
+            setTool("select");
+            dispatch({ type: "cropSource", crop: c });
+            // The picture changed size: fit the view to it.
+            requestAnimationFrame(fitToWindow);
+          }}
+        />
+      )}
       {(() => {
         const s = cropId ? shapes.find((x) => x.id === cropId) : undefined;
         const el = s?.type === "image" ? session.pictures.get(s.src)?.el : undefined;

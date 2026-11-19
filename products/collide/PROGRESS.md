@@ -36,7 +36,7 @@ Scope: Grant's testing, items 1 to 8 in `../../docs/collide-improvement-plan.md`
 | T43 | Autosave and Recents (4.1, 4.2, 8.2) | Must | Done (Hrongar, `task/T43-autosave-recents`): Vitest 530 → 532 (+2), e2e 59 → 66 (+7), Electron e2e 22 → 24 (+2), ref 15/15 app; Windows Documents folder, Explorer and Recents on the installed build are manual (TESTER-NOTES Run 4 items 3 to 5); (A) choices in ISSUES 50 |
 | T44 | Sidebar and Connected (5.1 to 5.4) | If usage remains | Done (Hrongar, `task/T44-sidebar-connected`): Vitest 532 → 546 (+14), e2e 66 → 68 (+2), Electron e2e 24 → 24, ref 15/15 app; collapse window sizes and the look on Windows are manual (TESTER-NOTES Run 4 items 7, 8); (A) choices in ISSUES 51 |
 | T45 | Header and toolbars (6.1 to 6.6) | If usage remains | Done (Hrongar, `task/T45-header-toolbars`): 6.1 to 6.6 built; Vitest 546 → 565 (+19), e2e 68 → 82 (+14), Electron e2e 24 → 24, ref app 15/15 → 12/15 (three reference specs click the old toolbar's Export, Copy and Save as .collide: not edited, ISSUES 53); Windows look and the desktop Save dialog are manual (TESTER-NOTES Run 4 items 9, 10); (A) choices in ISSUES 52 |
-| T46 | Image list (2.1, 3.1 to 3.4) | If usage remains | Not started |
+| T46 | Image list (2.1, 3.1 to 3.4) | If usage remains | Done (Hrongar, `task/T46-image-list`): 2.1 and 3.1 to 3.4 built (Crop on image 1 included); Vitest 565 → 576 (+11), e2e 82 → 86 (+4), Electron e2e 24 → 24, ref app 12/15 (unchanged, ISSUES 53); DPI, second monitor and the Windows look are manual (TESTER-NOTES Run 4 items 11, 12); (A) choices and changed assertions in ISSUES 54 |
 | T47 | Handoff | Always last | Not started |
 
 ## Usage

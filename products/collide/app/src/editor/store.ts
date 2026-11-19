@@ -1,6 +1,7 @@
 // Editor document store: one pure reducer over the annotations doc and the selection.
 // Wrapped by history.ts (T05) for undo/redo; keep every doc change an action here.
-import { nextCalloutNumber, type AnnotationsDoc, type Shape } from "../model";
+import { nextCalloutNumber, type AnnotationsDoc, type Crop, type Shape } from "../model";
+import { sourceCrop } from "./engine";
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 
@@ -46,6 +47,8 @@ export type Action =
   | { type: "removeMany"; ids: string[] }
   /** Move a shape to `index` in draw order (0 = the back). */
   | { type: "reorder"; id: string; index: number }
+  /** T46 (3.4): crop the first snip ("image 1"), as fractions of its file; every item moves with the picture. */
+  | { type: "cropSource"; crop: Crop | undefined }
   | { type: "select"; id: string | null };
 
 export const initialState: EditorState = { doc: null, selectedId: null };
@@ -101,6 +104,21 @@ export function reducer(state: EditorState, action: Action): EditorState {
       const [moved] = shapes.splice(from, 1);
       shapes.splice(to, 0, moved);
       return { ...state, doc: { ...state.doc, shapes } };
+    }
+    case "cropSource": {
+      if (!state.doc) return state;
+      const src = state.doc.source;
+      const full = (c: Crop) => c.x < 1e-6 && c.y < 1e-6 && c.w > 1 - 1e-6 && c.h > 1 - 1e-6;
+      const crop = action.crop && !full(action.crop) ? { ...action.crop } : undefined;
+      const was = src.crop;
+      if ((["x", "y", "w", "h"] as const).every((k) => Math.abs((was?.[k] ?? (k === "w" || k === "h" ? 1 : 0)) - (crop?.[k] ?? (k === "w" || k === "h" ? 1 : 0))) < 1e-6)) return state;
+      // What stays visible stays where it was on the picture: items move by the change at the crop's top-left.
+      const a = sourceCrop(src), b = sourceCrop({ ...src, crop });
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const shapes = state.doc.shapes.map((s) => ({ ...s, x: s.x - dx, y: s.y - dy, ...(s.label ? { label: { ...s.label, x: s.label.x - dx, y: s.label.y - dy } } : {}) }) as Shape);
+      const { crop: _old, ...rest } = src;
+      void _old;
+      return { ...state, doc: { ...state.doc, source: crop ? { ...rest, crop } : rest, shapes } };
     }
     case "select":
       return state.doc && state.selectedId !== action.id ? { ...state, selectedId: action.id } : state;

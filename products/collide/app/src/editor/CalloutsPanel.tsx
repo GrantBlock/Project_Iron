@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { DragEvent } from "react";
 import { Badge, Icon } from "../ds";
 import type { Shape } from "../model";
-import { calloutNumbers, canFill, fillPctOf, hiddenOf, isCallout, switchType, type CardType } from "./engine";
+import { BASE_IMAGE_LABEL, calloutNumbers, canFill, fillPctOf, hiddenOf, imageLabel, isCallout, switchType, type CardType } from "./engine";
 import type { ShapePatch } from "./store";
 import { MAT, paintOf } from "./tools";
 
@@ -48,6 +48,8 @@ interface Props {
   onRemove: (id: string) => void;
   /** T39: open Crop for an added image. */
   onCrop?: (id: string) => void;
+  /** T46 (3.1, 3.4): the first snip, listed last as "image 1" with Crop and no delete. Snip tabs only. */
+  base?: { cropped: boolean; onCrop: () => void };
   /** Put the cursor in this callout's note (after a draw); `n` changes on every request. */
   focus: { id: string; n: number } | null;
   /** Esc in a note: leave it and go back to Select. */
@@ -57,7 +59,7 @@ interface Props {
 const tog = { flex: "none", width: 24, height: 24, display: "grid", placeItems: "center", border: "1px solid var(--line-2)", borderRadius: "var(--radius-sm)", cursor: "pointer" } as const;
 
 /** Right pane: every item front to back (RUN3 T32). Callouts get a card; strokes and added images a plain row without a number. */
-export function CalloutsPanel({ shapes, selectedId, onSelect, onNote, onCommit, onPatch, onReorder, onRemove, onCrop, focus, onEscape }: Props) {
+export function CalloutsPanel({ shapes, selectedId, onSelect, onNote, onCommit, onPatch, onReorder, onRemove, onCrop, base, focus, onEscape }: Props) {
   const numbers = calloutNumbers(shapes);
   const timer = useRef<number | undefined>(undefined);
   const notes = useRef(new Map<string, HTMLTextAreaElement>());
@@ -113,6 +115,20 @@ export function CalloutsPanel({ shapes, selectedId, onSelect, onNote, onCommit, 
       <Icon name={icon} size={13} />
     </button>
   );
+  const delBtn = (id: string, label: string) => (
+    <button
+      type="button"
+      aria-label={`Delete ${label}`}
+      title="Delete (Undo brings it back)"
+      onClick={(e) => {
+        e.stopPropagation();
+        onRemove(id);
+      }}
+      style={{ ...tog, background: "transparent", color: "var(--text-3)" }}
+    >
+      <Icon name="trash-2" size={13} />
+    </button>
+  );
   const front = [...shapes].reverse();
   return (
     <aside
@@ -149,10 +165,10 @@ export function CalloutsPanel({ shapes, selectedId, onSelect, onNote, onCommit, 
             },
           } as const;
           if (!isCallout(s)) {
-            const label = TYPE_LABEL[s.type];
+            const label = s.type === "image" ? imageLabel(s.src) : TYPE_LABEL[s.type];
             return (
-              <div key={s.id} data-testid="plain-row" {...card}>
-                {grip(s, label)}
+              <div key={s.id} data-testid={s.type === "image" ? "image-row" : "plain-row"} {...card}>
+                {grip(s, TYPE_LABEL[s.type])}
                 <span style={{ color: paint, display: "grid", placeItems: "center", paddingTop: 3 }}>
                   <Icon name={s.type === "hl" ? "highlighter" : s.type === "image" ? "image" : "pen-line"} size={14} />
                 </span>
@@ -163,7 +179,7 @@ export function CalloutsPanel({ shapes, selectedId, onSelect, onNote, onCommit, 
                 {s.type === "image" && onCrop && (
                   <button
                     type="button"
-                    aria-label="Crop image"
+                    aria-label={`Crop ${label}`}
                     aria-pressed={!!s.crop}
                     title={s.crop ? "Crop this image (cropped)" : "Crop this image"}
                     onClick={(e) => {
@@ -175,18 +191,7 @@ export function CalloutsPanel({ shapes, selectedId, onSelect, onNote, onCommit, 
                     <Icon name="crop" size={13} />
                   </button>
                 )}
-                <button
-                  type="button"
-                  aria-label={`Delete ${label}`}
-                  title="Delete"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRemove(s.id);
-                  }}
-                  style={{ ...tog, background: "transparent", color: "var(--text-3)" }}
-                >
-                  <Icon name="trash-2" size={13} />
-                </button>
+                {delBtn(s.id, label)}
               </div>
             );
           }
@@ -223,6 +228,8 @@ export function CalloutsPanel({ shapes, selectedId, onSelect, onNote, onCommit, 
                   {toggle(s, "hideText", "type", "Text hidden: click to show", "Hide the note text (keeps the number)", hid.text)}
                   {toggle(s, "hideBubble", "message-square", "Bubble hidden: click to show", "Hide the bubble and arrow (Copy and Export too)", hid.bubble)}
                   {toggle(s, "hideOutline", "square-dashed", "Outline hidden: click to show", "Hide the outline (keeps the fill)", hid.outline)}
+                  {/* T46 (3.3): delete at once, no confirmation; Undo brings it back with its number. */}
+                  {delBtn(s.id, `callout ${n}`)}
                 </div>
                 <textarea
                   ref={(el) => {
@@ -267,6 +274,32 @@ export function CalloutsPanel({ shapes, selectedId, onSelect, onNote, onCommit, 
             </div>
           );
         })}
+        {base && (
+          <div
+            data-testid="image-row"
+            style={{ display: "flex", gap: 8, alignItems: "flex-start", padding: "6px 8px", borderRadius: "var(--radius-sm)", boxShadow: "inset 0 0 0 1px var(--line-1)" }}
+          >
+            <span data-testid="base-image-row" style={{ display: "contents" }}>
+              <span style={{ flex: "none", width: 14 }} />
+              <span style={{ color: "var(--text-3)", display: "grid", placeItems: "center", paddingTop: 3 }}>
+                <Icon name="image" size={14} />
+              </span>
+              <span style={{ font: "500 12px/20px var(--font-sans)", color: "var(--text-1)" }}>{BASE_IMAGE_LABEL}</span>
+              <span style={{ font: "var(--type-sm)", lineHeight: "20px", color: "var(--text-4)" }}>first snip</span>
+              <span style={{ flex: 1 }} />
+              <button
+                type="button"
+                aria-label={`Crop ${BASE_IMAGE_LABEL}`}
+                aria-pressed={base.cropped}
+                title={base.cropped ? "Crop the first snip (cropped)" : "Crop the first snip"}
+                onClick={base.onCrop}
+                style={{ ...tog, background: base.cropped ? "var(--surface-3)" : "transparent", color: "var(--text-3)" }}
+              >
+                <Icon name="crop" size={13} />
+              </button>
+            </span>
+          </div>
+        )}
         {front.length === 0 && <div style={{ font: "var(--type-sm)", color: "var(--text-4)" }}>Draw on the image to add a callout.</div>}
       </div>
       <div data-testid="ai-pane" style={{ flex: "none", borderTop: "1px solid var(--line-1)" }} />
