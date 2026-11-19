@@ -1,6 +1,7 @@
 // The left panel (RUN3 T31, Grant 2026-11-15): New snip with its delay toggle, Add snip with Current / Behind,
-// Open, Search, then Recents (Today / Earlier: snips, and zip files with their folder trees) and Tags.
-// After ../../../layout-prototype.html.
+// Open, New file (T44, 5.4), Search, then Recents (Today / Earlier: snips, and zip files with their folder trees) and Tags.
+// After ../../../layout-prototype.html. T44 (5.2): collapsed, Search, Recents and Tags are hidden. T44 (5.1): the
+// "Connected" pill shows only while Connected mode is on; its light is green when the saved address answers.
 import { useEffect, useRef } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import { Icon } from "../ds";
@@ -52,6 +53,10 @@ export interface SidebarProps {
   onNewSnip: () => void;
   onAddSnip: () => void;
   onOpen: () => void;
+  /** T44 (5.4): a new Markdown file in a tab. */
+  onNewFile: () => void;
+  /** T44 (5.1): null = Connected mode is off (no pill); else whether the server answered. */
+  connected: { reached: boolean } | null;
   onSettings: () => void;
   rows: readonly RecentItem[];
   query: string;
@@ -183,10 +188,19 @@ export function Sidebar(p: SidebarProps) {
       <div className="brand">
         <Logo />
         <span className="word">Collide</span>
-        <button type="button" className="mode label" title={prefs.settings.mode === "server" ? "Server: this PC stores the snips, markups and zips" : "Connected to the server PC"} onClick={p.onSettings}>
-          <span className="dot" />
-          {prefs.settings.mode === "server" ? "Server" : "Connected"}
-        </button>
+        {p.connected && (
+          <button
+            type="button"
+            className="mode label"
+            data-testid="connected-pill"
+            data-light={p.connected.reached ? "on" : "off"}
+            title={p.connected.reached ? "Connected: the server answered" : "Connected mode is on: no server answered"}
+            onClick={p.onSettings}
+          >
+            <span className={`dot${p.connected.reached ? "" : " off"}`} />
+            Connected
+          </button>
+        )}
         <CollapseButton small collapsed={prefs.collapsed} onCollapse={p.onCollapse} />
       </div>
       <div className="actions">
@@ -210,42 +224,52 @@ export function Sidebar(p: SidebarProps) {
           <Icon name="folder-open" />
           Open
         </button>
+        <button type="button" className="btn wide" data-testid="new-file" title="A new Markdown file" onClick={p.onNewFile}>
+          <Icon name="file-text" />
+          New file
+        </button>
       </div>
-      <label className="search">
-        <Icon name="search" size={14} />
-        <input placeholder="Search" aria-label="Search" value={p.query} onChange={(e) => p.onQuery(e.target.value)} />
-      </label>
-      <div className="scroll">
-        {groups.map((g) => (
-          <div key={g.day}>
-            <div className="sec">
-              <span className="label">{aura ? `${g.day} {${String(g.rows.length).padStart(2, "0")}}` : g.day}</span>
-            </div>
-            {g.rows.map((r) => (
-              <Row key={r.id} item={r} p={p} />
-            ))}
-          </div>
-        ))}
-        {groups.length === 0 && (
-          <p className="hint" style={{ padding: "12px 8px", margin: 0 }}>
-            {p.query.trim() ? `Nothing matches "${p.query.trim()}".` : "No markups yet. New snip, or open an image, then Save."}
-          </p>
-        )}
-        {tags.length > 0 && (
-          <>
-            <div className="sec">
-              <span className="label">Tags</span>
-            </div>
-            <div className="tags">
-              {tags.map((t) => (
-                <button key={t} type="button" className="tag" onClick={() => p.onQuery(t)}>
-                  {t}
-                </button>
+      {!prefs.collapsed && (
+        <label className="search">
+          <Icon name="search" size={14} />
+          <input placeholder="Search" aria-label="Search" value={p.query} onChange={(e) => p.onQuery(e.target.value)} />
+        </label>
+      )}
+      {prefs.collapsed ? (
+        <div className="scroll" />
+      ) : (
+        <div className="scroll">
+          {groups.map((g) => (
+            <div key={g.day}>
+              <div className="sec">
+                <span className="label">{aura ? `${g.day} {${String(g.rows.length).padStart(2, "0")}}` : g.day}</span>
+              </div>
+              {g.rows.map((r) => (
+                <Row key={r.id} item={r} p={p} />
               ))}
             </div>
-          </>
-        )}
-      </div>
+          ))}
+          {groups.length === 0 && (
+            <p className="hint" style={{ padding: "12px 8px", margin: 0 }}>
+              {p.query.trim() ? `Nothing matches "${p.query.trim()}".` : "No markups yet. New snip, or open an image, then Save."}
+            </p>
+          )}
+          {tags.length > 0 && (
+            <>
+              <div className="sec">
+                <span className="label">Tags</span>
+              </div>
+              <div className="tags">
+                {tags.map((t) => (
+                  <button key={t} type="button" className="tag" onClick={() => p.onQuery(t)}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
       <div className="foot" ref={foot}>
         {pop && (
           <div className="pop" role="dialog" aria-label="Appearance">

@@ -40,7 +40,9 @@ describe("App", () => {
   it("the sidebar runs New snip, Add snip, Open, Search; both choices are toggles and are remembered (T31)", () => {
     const first = render(<App />);
     const side = within(recents());
-    expect(side.getAllByRole("button").slice(2, 5).map((b) => b.textContent)).toEqual(["New snip", "Add snip", "Open"]);
+    // T44 (5.1): the pill before New snip shows only in Connected mode, so the buttons are counted from New snip (ISSUES 51).
+    const names = side.getAllByRole("button").map((b) => b.textContent);
+    expect(names.slice(names.indexOf("New snip"), names.indexOf("New snip") + 3)).toEqual(["New snip", "Add snip", "Open"]);
     expect(side.getByRole("textbox", { name: "Search" })).toBeTruthy();
     const where = within(side.getByRole("radiogroup", { name: "Where Add snip captures" }));
     expect(where.getByRole("radio", { name: "Current" }).getAttribute("aria-checked")).toBe("true");

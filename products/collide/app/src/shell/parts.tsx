@@ -70,8 +70,6 @@ export interface HeadProps {
   savedLabel?: string;
   onSave?: () => void;
   canSave?: boolean;
-  collapsed: boolean;
-  onCollapse: () => void;
   onClose: () => void;
   /** Phone: opens Recents. */
   onMenu: () => void;
@@ -80,8 +78,8 @@ export interface HeadProps {
   tail?: ReactNode;
 }
 
-/** The header of the tab in front: what it is, saved or not, Save, collapse, Close. */
-export function WsHead({ kind, name, path, dirty, savedLabel = "Saved", onSave, canSave, collapsed, onCollapse, onClose, onMenu, extra, tail }: HeadProps) {
+/** The header of the tab in front: what it is, saved or not, Save, Close. T44 (5.2): no collapse button here; collapse is in the sidebar. */
+export function WsHead({ kind, name, path, dirty, savedLabel = "Saved", onSave, canSave, onClose, onMenu, extra, tail }: HeadProps) {
   return (
     <div className="wshead">
       <button type="button" className="btn ghost icon mobile-only" aria-label="Recents" onClick={onMenu}>
@@ -115,7 +113,6 @@ export function WsHead({ kind, name, path, dirty, savedLabel = "Saved", onSave, 
         </button>
       )}
       {tail}
-      <CollapseButton collapsed={collapsed} onCollapse={onCollapse} />
       <button type="button" className="btn" title="Close this tab (Ctrl+W)" onClick={onClose}>
         <Icon name="x" />
         <span>Close</span>
@@ -446,6 +443,23 @@ export function SettingsTab({ saved, onSave, onDirty, notify, head, password, on
               <input type="radio" name="collide-mode" checked={draft.mode === "client"} onChange={() => set({ mode: "client" })} /> <b>Connected</b>
               <span className="hint">opens the server PC's Collide; capture and Copy stay on this PC</span>
             </label>
+            <div className="btnrow">
+              <button
+                type="button"
+                className={`btn${saved.mode === "client" ? " primary" : ""}`}
+                aria-pressed={saved.mode === "client"}
+                title={saved.mode === "client" ? "Connected mode is on: click to turn it off" : "Turn Connected mode on: the Connected light shows at top left"}
+                onClick={() => {
+                  // T44 (5.1, A): applies at once; the Server / Connected choice below follows it.
+                  const mode = saved.mode === "client" ? "server" : "client";
+                  onSave({ ...saved, mode });
+                  set({ mode });
+                }}
+              >
+                <Icon name="globe" size={14} />
+                Enable Connected mode
+              </button>
+            </div>
             {draft.mode === "client" && (
               <label className="field">
                 <span className="hint">Server address</span>

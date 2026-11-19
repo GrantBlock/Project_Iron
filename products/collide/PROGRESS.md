@@ -34,7 +34,7 @@ Scope: Grant's testing, items 1 to 8 in `../../docs/collide-improvement-plan.md`
 | T41 | Callout fixes (8.1, 7.1) | Must | Done (Hrongar, `task/T41-callout-fixes`): Vitest 507 → 515 (+8), e2e 56 → 58 (+2), ref 15/15 app; Windows look not checked from the cloud |
 | T42 | Snip capture (1.1, 1.2) | Must | Done (Hrongar, `task/T42-snip-capture`): Vitest 515 → 530 (+15), e2e 58 → 59 (+1), Electron e2e 21 → 22 (+1), ref 15/15 app; crosshair look and delay on Windows are manual (TESTER-NOTES Run 4 items 1, 2); (A) choices in ISSUES 49 |
 | T43 | Autosave and Recents (4.1, 4.2, 8.2) | Must | Done (Hrongar, `task/T43-autosave-recents`): Vitest 530 → 532 (+2), e2e 59 → 66 (+7), Electron e2e 22 → 24 (+2), ref 15/15 app; Windows Documents folder, Explorer and Recents on the installed build are manual (TESTER-NOTES Run 4 items 3 to 5); (A) choices in ISSUES 50 |
-| T44 | Sidebar and Connected (5.1 to 5.4) | If usage remains | Not started |
+| T44 | Sidebar and Connected (5.1 to 5.4) | If usage remains | Done (Hrongar, `task/T44-sidebar-connected`): Vitest 532 → 546 (+14), e2e 66 → 68 (+2), Electron e2e 24 → 24, ref 15/15 app; collapse window sizes and the look on Windows are manual (TESTER-NOTES Run 4 items 7, 8); (A) choices in ISSUES 51 |
 | T45 | Header and toolbars (6.1 to 6.6) | If usage remains | Not started |
 | T46 | Image list (2.1, 3.1 to 3.4) | If usage remains | Not started |
 | T47 | Handoff | Always last | Not started |

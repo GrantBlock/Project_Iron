@@ -34,6 +34,7 @@ import { applyTheme, loadPrefs, savePref, type Prefs } from "./prefs";
 import { collideRow, flatFiles, patchZipFile, PICTURES, pictureNames, sortFolders, storeRow, withPicture, zipFile, type RecentItem, type RecentSnip, type RecentZip, type TreeNode } from "./recents";
 import { SAMPLE_OPEN, sampleArt, sampleDoc, sampleRecents, sampleSnip, wantsSample } from "./sample";
 import { Sidebar } from "./Sidebar";
+import { CHECK_EVERY_MS, checkServer } from "./connected";
 import { createMdSession, defaultMdPen, MarkdownEditor, type MdEditorApi, type MdSession } from "../markdown/MarkdownEditor";
 import { linkKey, type Resolve } from "../markdown/render";
 import { defaultPdfPen, loadPdfSession, PdfEditor, type PdfEditorApi, type PdfSession } from "../pdf/PdfEditor";
@@ -696,6 +697,42 @@ export function Shell() {
     saveCollide().catch((e: unknown) => fail(e, COLLIDE_SAVE_FAILED));
   }, [fail, notify, saveCollide]);
 
+  // ---------- T44 (5.4): New file, a Markdown file only, kept in memory like a zip's files ----------
+  const newFiles = useRef(0);
+  const newFile = useCallback(() => {
+    notify(null);
+    const n = ++newFiles.current;
+    const base = n === 1 ? "Untitled" : `Untitled ${n}`;
+    const name = `${base}.md`;
+    const zipId = `new-${nextId.current++}`;
+    const zip: RecentZip = { kind: "zip", id: zipId, name, day: "Today", meta: "New file · Markdown", tree: { name: base, kids: [{ name, type: "md", text: "" }] } };
+    const next = [zip, ...samplesRef.current];
+    samplesRef.current = next;
+    setSamples(next);
+    setOpenFolders((o) => new Set([...o, zipId]));
+    const tabId = openFile(zip, `${zipId}/${name}`);
+    const md = tabId ? mdSessions.current.get(tabId) : undefined;
+    // (A) A new file opens in Edit, ready to type.
+    if (md) md.mode = "edit";
+  }, [notify, openFile]);
+
+  // ---------- T44 (5.1): the Connected pill. (A, ISSUES 44) green = the address saved in Settings answers ----------
+  const connectedOn = prefs.settings.mode === "client";
+  const serverAddress = prefs.settings.server;
+  const [reached, setReached] = useState(false);
+  useEffect(() => {
+    setReached(false);
+    if (!connectedOn || !serverAddress.trim()) return;
+    let alive = true;
+    const run = () => void checkServer(serverAddress).then((r) => alive && setReached(r));
+    run();
+    const timer = setInterval(run, CHECK_EVERY_MS);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, [connectedOn, serverAddress]);
+
   const openSettings = useCallback(() => void addTab({ key: "settings", kind: "settings", title: "Settings", dirty: false }), [addTab]);
 
   const openItem = useCallback(
@@ -1041,8 +1078,6 @@ export function Shell() {
   const headBase = front && {
     kind: front.kind,
     dirty: front.dirty,
-    collapsed: prefs.collapsed,
-    onCollapse: collapse,
     onClose: () => requestClose(front.id),
     onMenu: () => setSideOpen((o) => !o),
   };
@@ -1182,6 +1217,8 @@ export function Shell() {
         onNewSnip={newSnip}
         onAddSnip={addSnip}
         onOpen={onOpen}
+        onNewFile={newFile}
+        connected={connectedOn ? { reached } : null}
         onSettings={openSettings}
         rows={rows}
         query={query}
