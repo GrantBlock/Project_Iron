@@ -728,7 +728,15 @@ export function Shell() {
   openSnipRef.current = openSnip;
   const snipRef = useRef<Pick<ReturnType<typeof createSnipFlow>, "start" | "isBusy">>({ start: async () => undefined, isBusy: () => false });
   useEffect(() => {
-    const flow = createSnipFlow(electronDeps({ openImage: (url, name) => openSnipRef.current(url, name), notify, delayMs: () => live.current.prefs.snipDelay * 1000 }));
+    const flow = createSnipFlow(
+      electronDeps({
+        openImage: (url, name) => openSnipRef.current(url, name),
+        notify,
+        delayMs: () => live.current.prefs.snipDelay * 1000,
+        // T42 (1.2): after a delayed snip the delay drops back to 0s (and 0s is remembered).
+        delayUsed: () => setPref("snipDelay", 0),
+      }),
+    );
     snipRef.current = flow;
     const bridge = window.collide;
     if (!bridge) return;
@@ -741,7 +749,7 @@ export function Shell() {
       () => undefined,
     );
     return off;
-  }, [notify]);
+  }, [notify, setPref]);
   const newSnip = useCallback(() => {
     if (snipRef.current.isBusy()) return;
     const d = live.current.prefs.snipDelay;

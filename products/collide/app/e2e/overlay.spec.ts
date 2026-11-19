@@ -90,3 +90,34 @@ test("dim outside, full brightness inside, mid-drag screenshot", async ({ page }
   await page.mouse.up();
   void info;
 });
+
+test("T42: the starting crosshair follows the pointer with a light core and a dark outline, and goes once the drag starts", async ({ page }) => {
+  await open(page, 1);
+  await page.mouse.move(150, 120);
+  const cross = page.getByTestId("overlay-crosshair");
+  // The holder is a 0 x 0 point at the pointer; its bars are what shows.
+  await expect(cross.locator("[data-part=bar]")).toHaveCount(2);
+  for (const bar of await cross.locator("[data-part=bar]").all()) await expect(bar).toBeVisible();
+  // The tokens resolve: --ink-50 core (243, 242, 239) and --ink-975 outline (6, 6, 7).
+  const looks = await cross.evaluate((el) =>
+    [...el.querySelectorAll<HTMLElement>("[data-part=bar]")].map((b) => ({ bg: getComputedStyle(b).backgroundColor, shadow: getComputedStyle(b).boxShadow })),
+  );
+  expect(looks).toHaveLength(2);
+  for (const l of looks) {
+    expect(l.bg).toBe("rgb(243, 242, 239)");
+    expect(l.shadow).toContain("rgb(6, 6, 7)");
+  }
+  // Light at the pointer, dark just outside the core, on the dimmed frame.
+  const lum = (c: number[]) => (c[0] + c[1] + c[2]) / 3;
+  expect(lum(await sample(page, 150 + 6, 120))).toBeGreaterThan(200);
+  expect(lum(await sample(page, 150 + 6, 120 - 2))).toBeLessThan(30);
+  // The crosshair moves with the pointer.
+  await page.mouse.move(60, 200);
+  await expect.poll(() => cross.evaluate((el) => [el.style.left, el.style.top])).toEqual(["60px", "200px"]);
+  // The drag: no crosshair, the box as before.
+  await page.mouse.down();
+  await page.mouse.move(200, 260, { steps: 4 });
+  await expect(cross).toHaveCount(0);
+  await expect(page.getByTestId("overlay-selection")).toBeVisible();
+  await page.mouse.up();
+});

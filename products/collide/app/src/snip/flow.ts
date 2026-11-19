@@ -49,6 +49,11 @@ export interface SnipDeps {
   delayMs?: () => number;
   /** Wait `ms` (the snip delay) with the editor hidden, so the user can set up the screen. */
   wait?: (ms: number) => Promise<void>;
+  /**
+   * T42 (1.2): a snip that waited a delay has ended (cropped, cancelled or failed). The shell sets the delay back to 0s,
+   * so the next snip is not delayed unless the user picks a delay again.
+   */
+  delayUsed?: () => void;
   /** Timeouts for the handshake only. Never for the user's crop/cancel. */
   readyTimeoutMs?: number;
   ackTimeoutMs?: number;
@@ -88,6 +93,7 @@ export const NOT_DESKTOP: SnipNotice = {
 export function createSnipFlow(deps: SnipDeps) {
   let busy = false;
   let lastSnipId = 0;
+  let waited = false;
 
   /**
    * Takes the crop. `whole` is the frozen frame and the box as fractions of it (T39: Add snip keeps the whole capture,
@@ -99,6 +105,7 @@ export function createSnipFlow(deps: SnipDeps) {
     if (hide) {
       await invoke("hide_editor");
       const delay = deps.delayMs?.() ?? 0;
+      if (delay > 0) waited = true;
       if (delay > 0) await (deps.wait ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms))))(delay);
       await deps.settle();
     } else {
@@ -146,6 +153,7 @@ export function createSnipFlow(deps: SnipDeps) {
       return;
     }
     busy = true;
+    waited = false;
     try {
       await run(invoke, ++lastSnipId, deliver, opts.hide ?? true);
     } catch (e) {
@@ -159,6 +167,7 @@ export function createSnipFlow(deps: SnipDeps) {
       await invoke("show_editor").catch(() => undefined);
     } finally {
       busy = false;
+      if (waited) deps.delayUsed?.();
     }
   }
 

@@ -226,6 +226,41 @@ test("snip delay: the editor hides at once, the capture and overlay come after t
   }
 });
 
+test("T42: after a delayed snip the delay returns to 0s (cancelled, then cropped), and stays 0s after a restart of the page", async () => {
+  const { app, close } = await launch({ fakeCapture: true });
+  try {
+    const page = await app.firstWindow();
+    await expect(page.getByTestId("canvas")).toBeVisible();
+    const display = await capturedDisplay(app);
+    const delay = page.getByTestId("snip-delay");
+    const delayWords = () => page.evaluate(() => window.__collide!.state().sidebar.delay);
+
+    // Cancelled with Esc.
+    await delay.getByRole("radio", { name: "3s", exact: true }).click();
+    await expect(delay).toHaveAttribute("data-value", "3");
+    const overlay = await startSnip(app, () => page.getByTestId("new-snip").click());
+    await overlay.keyboard.press("Escape");
+    await expect.poll(async () => (await windows(app)).Collide.visible).toBe(true);
+    await expect(delay).toHaveAttribute("data-value", "0");
+    await expect(delay.getByRole("radio", { checked: true })).toHaveText("0s");
+    expect(await delayWords()).toBe("No delay");
+
+    // Cropped: the delay was 3 s, the snip opens, the delay is 0s again.
+    await delay.getByRole("radio", { name: "3s", exact: true }).click();
+    await page.getByTestId("new-snip").click();
+    await expect.poll(async () => (await windows(app))["Collide overlay"].visible, { timeout: 10_000 }).toBe(true);
+    await dragCentreBox(overlay, display);
+    await expect(page.getByTestId("notice")).toContainText("Snip copied to clipboard");
+    await expect(delay).toHaveAttribute("data-value", "0");
+
+    // The 0s is what is remembered.
+    await page.reload();
+    await expect(page.getByTestId("snip-delay")).toHaveAttribute("data-value", "0");
+  } finally {
+    await close();
+  }
+});
+
 test("Copy falls back to the shell's clipboard when the web clipboard refuses", async () => {
   const { app, close } = await launch();
   try {

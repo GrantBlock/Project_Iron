@@ -32,7 +32,7 @@ Scope: Grant's testing, items 1 to 8 in `../../docs/collide-improvement-plan.md`
 | ID | Task | Level | Status |
 | --- | --- | --- | --- |
 | T41 | Callout fixes (8.1, 7.1) | Must | Done (Hrongar, `task/T41-callout-fixes`): Vitest 507 → 515 (+8), e2e 56 → 58 (+2), ref 15/15 app; Windows look not checked from the cloud |
-| T42 | Snip capture (1.1, 1.2) | Must | Not started |
+| T42 | Snip capture (1.1, 1.2) | Must | Done (Hrongar, `task/T42-snip-capture`): Vitest 515 → 530 (+15), e2e 58 → 59 (+1), Electron e2e 21 → 22 (+1), ref 15/15 app; crosshair look and delay on Windows are manual (TESTER-NOTES Run 4 items 1, 2); (A) choices in ISSUES 49 |
 | T43 | Autosave and Recents (4.1, 4.2, 8.2) | Must | Not started |
 | T44 | Sidebar and Connected (5.1 to 5.4) | If usage remains | Not started |
 | T45 | Header and toolbars (6.1 to 6.6) | If usage remains | Not started |

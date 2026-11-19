@@ -50,7 +50,7 @@ export function invokeOn(bridge: CollideBridge, cmd: string, args: Record<string
 }
 
 /** Real wiring: the preload bridge's methods + overlay events. The overlay window listens for FRAME_EVENT and emits RESULT_EVENT. */
-export function electronDeps(rest: Pick<SnipDeps, "openImage" | "notify" | "delayMs">): SnipDeps {
+export function electronDeps(rest: Pick<SnipDeps, "openImage" | "notify" | "delayMs" | "delayUsed">): SnipDeps {
   const bridge = isDesktop() ? window.collide : undefined;
   const need = (): CollideBridge => {
     if (!bridge) throw new Error(NO_BRIDGE);

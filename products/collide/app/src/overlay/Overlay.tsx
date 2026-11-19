@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { CROSSHAIR } from "./crosshair";
 import { effectiveScale, isEmptyBox, normalizeBox, readout, type Box, type Point } from "./box";
 
 export type OverlayResult = { kind: "crop"; box: Box; scale: number } | { kind: "cancel" };
@@ -18,6 +19,8 @@ export function Overlay({ frame, scale: passedScale, physicalWidth, onResult }: 
   const [start, setStart] = useState<Point | null>(null);
   const [box, setBox] = useState<Box | null>(null);
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
+  /** T42: where the pointer is before the press, for the starting crosshair; null when unknown or away. */
+  const [hover, setHover] = useState<Point | null>(null);
   const dragging = useRef(false);
   // Cancelled or lost capture mid-drag: drop the drag. A normal release keeps its box.
   const reset = () => {
@@ -54,6 +57,7 @@ export function Overlay({ frame, scale: passedScale, physicalWidth, onResult }: 
     setBox({ x: p.x, y: p.y, w: 0, h: 0 });
   };
   const move = (e: React.PointerEvent) => {
+    setHover(local(e));
     if (start) setBox(normalizeBox(start, local(e), bounds()));
   };
   const up = (e: React.PointerEvent) => {
@@ -61,6 +65,7 @@ export function Overlay({ frame, scale: passedScale, physicalWidth, onResult }: 
     dragging.current = false;
     const final = normalizeBox(start, local(e), bounds());
     setStart(null);
+    setHover(local(e));
     if (isEmptyBox(final)) {
       // Zero-size release (a plain click) is a no-op: the overlay stays open (A).
       setBox(null);
@@ -76,6 +81,8 @@ export function Overlay({ frame, scale: passedScale, physicalWidth, onResult }: 
   const frameW = natural?.w ?? Math.round((vp?.width ?? 0) * scale);
   const frameH = natural?.h ?? Math.round((vp?.height ?? 0) * scale);
   const shown = box && !isEmptyBox(box) ? box : null;
+  // T42: our own high-contrast crosshair replaces the thin system one before the press; the drag is as before.
+  const cross = !start && hover ? hover : null;
   return (
     <div
       ref={root}
@@ -85,11 +92,12 @@ export function Overlay({ frame, scale: passedScale, physicalWidth, onResult }: 
       onPointerUp={up}
       onPointerCancel={reset}
       onLostPointerCapture={reset}
+      onPointerLeave={() => setHover(null)}
       style={{
         position: "fixed",
         inset: 0,
         overflow: "hidden",
-        cursor: "crosshair",
+        cursor: cross ? "none" : "crosshair",
         userSelect: "none",
         touchAction: "none",
         background: "var(--ink-975)",
@@ -161,6 +169,7 @@ export function Overlay({ frame, scale: passedScale, physicalWidth, onResult }: 
           </div>
         </>
       )}
+      {cross && <Crosshair at={cross} />}
       <div
         data-testid="overlay-hud"
         style={{
@@ -188,6 +197,32 @@ export function Overlay({ frame, scale: passedScale, physicalWidth, onResult }: 
         <span style={{ width: 7, height: 7, borderRadius: 999, background: "var(--accent)", boxShadow: "0 0 10px var(--accent)" }} />
         <span>Esc to cancel · Release to crop</span>
       </div>
+    </div>
+  );
+}
+
+/** T42 (1.1): a plus centred on the pointer, each bar a light core inside a dark outline (`crosshair.ts`). */
+function Crosshair({ at }: { at: Point }) {
+  const { arm, coreWidth, outlineWidth, core, outline } = CROSSHAIR;
+  const half = coreWidth / 2;
+  const bar = (horizontal: boolean): React.CSSProperties => ({
+    position: "absolute",
+    left: horizontal ? -arm : -half,
+    top: horizontal ? -half : -arm,
+    width: horizontal ? arm * 2 : coreWidth,
+    height: horizontal ? coreWidth : arm * 2,
+    background: core,
+    boxShadow: `0 0 0 ${outlineWidth}px ${outline}`,
+  });
+  return (
+    <div data-testid="overlay-crosshair" style={{ position: "absolute", left: at.x, top: at.y, width: 0, height: 0, pointerEvents: "none" }}>
+      <span data-part="bar" style={bar(true)} />
+      <span data-part="bar" style={bar(false)} />
+      {/* The second bar's outline would cut the first bar's core where they cross: keep the centre light. */}
+      <span
+        data-part="joint"
+        style={{ position: "absolute", left: -half - outlineWidth, top: -half, width: coreWidth + outlineWidth * 2, height: coreWidth, background: core }}
+      />
     </div>
   );
 }

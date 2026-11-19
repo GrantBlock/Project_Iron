@@ -46,6 +46,50 @@ describe("snip flow", () => {
     expect(calls).not.toContain("wait");
   });
 
+  // T42 (1.2): after a delayed snip the delay drops back to 0s; the flow says when a delayed snip has ended.
+  it("T42: a delayed snip that crops reports the delay used, after the crop is delivered", async () => {
+    const { calls, deps } = setup({ result: { kind: "crop", box: { x: 10, y: 20, w: 40, h: 30 }, scale: 1 } });
+    deps.delayMs = () => 10_000;
+    deps.wait = vi.fn(async () => undefined);
+    deps.delayUsed = vi.fn(() => void calls.push("delayUsed"));
+    await createSnipFlow(deps).start();
+    expect(deps.delayUsed).toHaveBeenCalledTimes(1);
+    expect(calls[calls.length - 1]).toBe("delayUsed");
+    expect(calls).toContain("openImage");
+  });
+
+  it("T42: a delayed snip that is cancelled reports the delay used", async () => {
+    const { deps } = setup({ result: { kind: "cancel" } });
+    deps.delayMs = () => 3000;
+    deps.wait = vi.fn(async () => undefined);
+    deps.delayUsed = vi.fn();
+    await createSnipFlow(deps).start();
+    expect(deps.delayUsed).toHaveBeenCalledTimes(1);
+  });
+
+  it("T42: a delayed snip that fails after the wait reports the delay used (A)", async () => {
+    const { deps } = setup({ fail: { capture_monitor: new Error("no screen") } });
+    deps.delayMs = () => 5000;
+    deps.wait = vi.fn(async () => undefined);
+    deps.delayUsed = vi.fn();
+    await createSnipFlow(deps).start();
+    expect(deps.notify).toHaveBeenCalled();
+    expect(deps.delayUsed).toHaveBeenCalledTimes(1);
+  });
+
+  it("T42: no delay, or Add snip (Current) that never waits, does not report a delay", async () => {
+    const { deps } = setup({ result: { kind: "cancel" } });
+    deps.delayMs = () => 0;
+    deps.delayUsed = vi.fn();
+    await createSnipFlow(deps).start();
+    const current = setup({ result: { kind: "cancel" } });
+    current.deps.delayMs = () => 3000;
+    current.deps.delayUsed = vi.fn();
+    await createSnipFlow(current.deps).start(undefined, { hide: false });
+    expect(deps.delayUsed).not.toHaveBeenCalled();
+    expect(current.deps.delayUsed).not.toHaveBeenCalled();
+  });
+
   it("success: hides editor, captures, shows overlay on the monitor, crops, restores, opens the crop", async () => {
     const { calls, invoke, deps, flow } = setup({ result: { kind: "crop", box: { x: 10, y: 20, w: 40, h: 30 }, scale: 1.25 } });
     await flow.start();
