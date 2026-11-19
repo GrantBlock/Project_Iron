@@ -141,3 +141,6 @@ Status: **nothing below is built.** The app source is at the pre-coding state (`
 ### Open for the coder agent
 - Items 1 to 8 are not started. Each needs its own test before it is built.
 - The Windows checks from `TESTER-NOTES.md` still need Grant's run on the installed build.
+
+### Grant's answers, 2026-11-19
+Logged as dated `[stated]` lines in `docs/agentic-dev-plan.md` and in `products/collide/RUN4.md`. Run 4 builds items 1 to 8 in the order T41 to T46; T41 to T43 are must-haves. 5.1: Connected mode is not built; Settings gets an Enable Connected mode button and the pill follows it. 4.1: autosave only inside `Documents\Collide\Markups`.
