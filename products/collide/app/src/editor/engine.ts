@@ -1,6 +1,7 @@
 // Pure rules of the markup engine (RUN3 T32), after ../../layout-prototype.html. Everything is in image pixels.
 import type { Shape } from "../model";
 import type { Point } from "./viewport";
+import type { ShapePatch } from "./store";
 
 /** Pens, highlighters and added images are in the list without a number or a bubble (Grant 2026-11-15). */
 export const isCallout = (s: Pick<Shape, "type">): boolean => s.type !== "pen" && s.type !== "hl" && s.type !== "image";
@@ -178,3 +179,52 @@ export function cropImage(
 
 /** T39: the crop in file pixels, for drawing. */
 export const cropPixels = (c: CropBox, file: { width: number; height: number }) => ({ x: c.x * file.width, y: c.y * file.height, width: c.w * file.width, height: c.h * file.height });
+
+/** T41: size given to a shape switched from a point or a flat line, so it stays visible (as the prototype: 80 x 50). */
+export const DEFAULT_BOX = { w: 80, h: 50 } as const;
+/** Below this many image pixels a box side counts as flat (A). */
+const FLAT = 2;
+
+/** Types a callout card can switch between. */
+export type CardType = "rect" | "ellipse" | "line" | "cross" | "point";
+
+/**
+ * T41 (8.1): the patch that switches a callout card's type. Number, note and position stay. A line spans its box
+ * corner to corner (two points, adjustable at each end); a line switched back gives the rectangle over its box.
+ * A point, or a flat side, gets the default size centred where it was. A point sits at the old box's centre.
+ */
+export function switchType(s: Shape, to: CardType): ShapePatch {
+  if (to === s.type) return {};
+  if (to === "point") return { type: to, x: s.x + s.w / 2, y: s.y + s.h / 2, w: 0, h: 0, pts: undefined };
+  let { x, y, w, h } = s;
+  // A point is drawn at (x, y); a flat side has nothing to show: give them the default size around the centre.
+  if (s.type === "point" || w < FLAT) {
+    x = (s.type === "point" ? s.x : s.x + s.w / 2) - DEFAULT_BOX.w / 2;
+    w = DEFAULT_BOX.w;
+  }
+  if (s.type === "point" || (to !== "line" && h < FLAT)) {
+    y = (s.type === "point" ? s.y : s.y + s.h / 2) - DEFAULT_BOX.h / 2;
+    h = DEFAULT_BOX.h;
+  }
+  return { type: to, x, y, w, h, pts: to === "line" ? [0, 0, 1, 1] : undefined };
+}
+
+/** T41 (7.1): a line's two ends in image pixels, where its handles go; null for anything else (arrows keep the Transformer). */
+export function lineEnds(s: Shape): [Point, Point] | null {
+  if (s.type !== "line") return null;
+  const p = strokePoints(s);
+  if (p.length < 4) return null;
+  return [
+    { x: p[0], y: p[1] },
+    { x: p[p.length - 2], y: p[p.length - 1] },
+  ];
+}
+
+/** T41 (7.1): move one end of a line to `p` (image px); the other end stays. */
+export function moveLineEnd(s: Shape, end: 0 | 1, p: Point): ShapePatch {
+  const e = lineEnds(s);
+  if (!e) return {};
+  const next: [Point, Point] = end === 0 ? [p, e[1]] : [e[0], p];
+  const g = fromPoints(next);
+  return { x: g.x, y: g.y, w: g.w, h: g.h, pts: roundPts(g.pts) };
+}

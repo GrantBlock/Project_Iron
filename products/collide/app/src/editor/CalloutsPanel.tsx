@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { DragEvent } from "react";
 import { Badge, Icon } from "../ds";
 import type { Shape } from "../model";
-import { calloutNumbers, canFill, fillPctOf, hiddenOf, isCallout } from "./engine";
+import { calloutNumbers, canFill, fillPctOf, hiddenOf, isCallout, switchType, type CardType } from "./engine";
 import type { ShapePatch } from "./store";
 import { MAT, paintOf } from "./tools";
 
@@ -22,8 +22,7 @@ const TYPE_LABEL: Record<Shape["type"], string> = {
   highlight: "Highlight",
 };
 /** Types a callout card can switch between. */
-const CARD_TYPES = ["rect", "ellipse", "line", "cross", "point"] as const;
-type CardType = (typeof CARD_TYPES)[number];
+const CARD_TYPES: readonly CardType[] = ["rect", "ellipse", "line", "cross", "point"];
 const isCardType = (t: string): t is CardType => (CARD_TYPES as readonly string[]).includes(t);
 
 /** Readable text on a callout colour. */
@@ -208,7 +207,7 @@ export function CalloutsPanel({ shapes, selectedId, onSelect, onNote, onCommit, 
                       aria-label={`Type of callout ${n}`}
                       value={s.type}
                       onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => onPatch(s.id, { type: e.target.value as CardType })}
+                      onChange={(e) => onPatch(s.id, switchType(s, e.target.value as CardType))}
                       style={{ minWidth: 0, background: "transparent", color: "var(--text-2)", border: "1px solid var(--line-2)", borderRadius: "var(--radius-sm)", font: "500 11px/1 var(--font-sans)", padding: "3px 4px" }}
                     >
                       {CARD_TYPES.map((t) => (

@@ -7,7 +7,7 @@ import { BADGE_SIZE, isRealDrag, resizeShape, shapeFromDrag, type DrawTool, type
 import { hasNoteBox, layoutNotes, leader, noteUnit, snapNote, NOTE_BADGE, NOTE_BADGE_GAP, NOTE_FONT, NOTE_MIN_W, NOTE_PAD, NOTE_W, noteSize, noteTextWidth, type Box } from "./notes";
 import type { NewShape, ShapePatch } from "./store";
 import { paintOf, type Tool } from "./tools";
-import { calloutNumbers, fillPctOf, fromPoints, hiddenOf, highlighterWidth, pixelArea, printArea, strokesHit, cropPixels } from "./engine";
+import { calloutNumbers, fillPctOf, fromPoints, hiddenOf, highlighterWidth, lineEnds, moveLineEnd, pixelArea, printArea, strokesHit, cropPixels } from "./engine";
 import { imageToScreen, panBy, screenToImage, wheelFactor, zoomAt, type Point, type Size, type View } from "./viewport";
 
 export interface LoadedImage {
@@ -419,6 +419,8 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
   /** Live position/size while a shape or note box is being dragged, so arrows follow. */
   const [moving, setMoving] = useState<{ id: string; shape?: Point; box?: Point; w?: number } | null>(null);
   const [noteEdit, setNoteEdit] = useState<{ id: string; value: string } | null>(null);
+  /** T41: a line end being dragged: the line as it is drawn now (stored on release, one undo step). */
+  const [endDrag, setEndDrag] = useState<{ id: string; patch: ShapePatch } | null>(null);
 
   // Latest props for window-level handlers.
   const live = useRef({ view, tool, style, onAdd, onRemoveMany, shapes });
@@ -644,7 +646,8 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
     const tr = trRef.current;
     const stage = stageRef.current;
     if (!tr || !stage) return;
-    const node = selected ? stage.findOne<Konva.Group>(`#${selected.id}`)?.findOne(".main") : undefined;
+    // T41: a line has its own end handles instead (arrows keep the Transformer).
+    const node = selected && selected.type !== "line" ? stage.findOne<Konva.Group>(`#${selected.id}`)?.findOne(".main") : undefined;
     tr.nodes(node ? [node] : []);
     tr.getLayer()?.batchDraw();
   }, [selected, size, image]);
@@ -662,13 +665,17 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
 
   const sel = (id: string) => onSelect(id);
   const inkColor = cssVar("--ink-50");
-  const canResize = selected && selected.type !== "callout" && selected.type !== "point";
+  const canResize = selected && selected.type !== "callout" && selected.type !== "point" && selected.type !== "line";
 
+  /** Shapes with a line end being dragged applied. */
+  const drawn = useMemo(() => (endDrag ? shapes.map((s) => (s.id === endDrag.id ? ({ ...s, ...endDrag.patch } as Shape) : s)) : shapes), [shapes, endDrag]);
   // Shapes as drawn right now (a shape being dragged moves its arrow live).
   const liveShapes = useMemo(
-    () => shapes.map((s) => (moving?.shape && moving.id === s.id ? { ...s, x: moving.shape.x, y: moving.shape.y } : s)),
-    [shapes, moving],
+    () => drawn.map((s) => (moving?.shape && moving.id === s.id ? { ...s, x: moving.shape.x, y: moving.shape.y } : s)),
+    [drawn, moving],
   );
+  /** T41 (7.1): the selected line's ends, where its handles go (hidden while the whole line is dragged). */
+  const ends = selected && moving?.id !== selected.id ? lineEnds(liveShapes.find((s) => s.id === selected.id) ?? selected) : null;
   const notes = useMemo(() => {
     if (!image) return new Map<string, Box>();
     const boxes = layoutNotes(liveShapes, image, measureNote);
@@ -838,7 +845,7 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
           <Layer>
             {image && !underlay && <KonvaImage name="background" image={image.el} width={image.width} height={image.height} listening={false} />}
             {image &&
-              shapes.map((s) => (
+              drawn.map((s) => (
                 <ShapeNode
                   key={s.id}
                   shape={s}
@@ -933,6 +940,43 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
               }
               onTransformEnd={onTransformEnd}
             />
+            {selected &&
+              ends?.map((p, i) => (
+                <Circle
+                  key={`line-end-${i}`}
+                  name="line-end"
+                  x={p.x}
+                  y={p.y}
+                  radius={5 / view.scale}
+                  fill={cssVar("--ink-950")}
+                  stroke={inkColor}
+                  strokeWidth={1 / view.scale}
+                  hitStrokeWidth={8 / view.scale}
+                  draggable
+                  onMouseDown={(e) => {
+                    if (isPanButton(e.evt)) return;
+                    e.cancelBubble = true;
+                  }}
+                  onMouseEnter={(e) => {
+                    const el = e.target.getStage()?.container();
+                    if (el) el.style.cursor = "move";
+                  }}
+                  onMouseLeave={(e) => {
+                    const el = e.target.getStage()?.container();
+                    if (el) el.style.cursor = "";
+                  }}
+                  onDragMove={(e) => {
+                    e.cancelBubble = true;
+                    setEndDrag({ id: selected.id, patch: moveLineEnd(selected, i as 0 | 1, { x: e.target.x(), y: e.target.y() }) });
+                  }}
+                  onDragEnd={(e) => {
+                    e.cancelBubble = true;
+                    const patch = moveLineEnd(selected, i as 0 | 1, { x: e.target.x(), y: e.target.y() });
+                    setEndDrag(null);
+                    onUpdate(selected.id, patch);
+                  }}
+                />
+              ))}
           </Layer>
         </Stage>
       )}
