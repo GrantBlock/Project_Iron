@@ -1,0 +1,4 @@
+/* Overpass, bundled from the prototype's system kit (Vite copies the files into dist/assets).
+   No remote fonts: Lite runs offline. Same faces as prototype/exports/P16-lite/index.html. */
+@font-face{font-family:"Overpass";src:url("../../../../prototype/system-kit/fonts/Overpass.woff2") format("woff2");font-weight:300 800;font-style:normal;font-display:swap}
+@font-face{font-family:"Overpass Mono";src:url("../../../../prototype/system-kit/fonts/OverpassMono.woff2") format("woff2");font-weight:400 500;font-style:normal;font-display:swap}

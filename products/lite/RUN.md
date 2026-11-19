@@ -54,13 +54,19 @@ Task loop: as in `../collide/SPEC.md` (Coder → Reviewer → Tester, at most 2 
 
 L01–L05 and L07 are **must**; L06 and L08 run if usage remains; L09 always runs last.
 
+## Follow-up L10 (Grant 2026-11-17)
+
+| ID | Task | Acceptance check |
+| --- | --- | --- |
+| L10 | Grant's decisions after the run: frameless window with the prototype's drawn buttons (minimize, maximize/restore, close, drag region); fix ISSUES 1 (the "servicing" question gets its real answer) and ISSUES 3 (folders keep their open/closed state on select and search); Markdown formatted with markdown-it, raw HTML off. | Updated specs for ISSUES 1 and 3 pass on the app and are listed as "Grant 2026-11-17 overrides the prototype" in the prototype column; frameless and Markdown e2e pass; all other specs still 47-way green |
+
 ## Rules (in addition to `../collide/SPEC.md`)
 
 - Never change the prototype's behaviour to make a spec pass; only L02's read-only test hook may be added to it.
 - No spec is weakened, skipped or deleted to get green.
 - Lite makes no network requests. No sign-in, accounts, analytics or update checks.
 - Lite is read-only: it never changes, moves or uploads a file it opens.
-- New dependencies only from this list without asking: electron, electron-builder, vite, typescript, vitest, @playwright/test, eslint, three, pdfjs-dist (same version as Collide, 4.10.38). Anything else is a row in `ISSUES.md` for Grant.
+- New dependencies only from this list without asking: electron, electron-builder, vite, typescript, vitest, @playwright/test, eslint, three, pdfjs-dist (same version as Collide, 4.10.38), markdown-it (Grant 2026-11-17; same version as Collide if it has one). Anything else is a row in `ISSUES.md` for Grant.
 - No real customer content, names or contact details: this repository is public. Sample content stays the prototype's.
 - Pacing as in the Collide run: write the start time in `HANDOFF.md`, commit and push after every task, check push access before starting, and at a usage-limit stop park the task, update `HANDOFF.md` and push.
 

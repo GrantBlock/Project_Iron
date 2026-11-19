@@ -1,0 +1,12 @@
+{
+  "name": "lite-reference",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Target-agnostic acceptance specs for Lite, written from the P16 prototype.",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1"
+  }
+}
