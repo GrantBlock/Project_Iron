@@ -1,5 +1,6 @@
-/* The Markdown editor (RUN3 T34), after ../../../layout-prototype.html: Edit / Preview in the header, the text tools,
-   the source beside a live preview, and the page (680 px wide) that Preview marks up. App tokens only (shell.css). */
+/* The Markdown editor (RUN3 T34), after ../../../layout-prototype.html: the text tools and the page (680 px wide).
+   T49: one view, the page is a live CodeMirror editor under the markup. App tokens only (shell.css).
+   .viewseg: a segmented group in a header (the PDF editor's pager uses it). */
 .viewseg { display: inline-flex; align-items: stretch; height: 32px; padding: 2px; gap: 2px; border-radius: var(--r-btn); background: var(--sunk); border: var(--border-w) solid var(--line-2); }
 .viewseg button { padding: 0 12px; border: 0; border-radius: calc(var(--r-btn) - 2px); background: transparent; color: var(--t3); font-weight: 500; }
 .viewseg button:hover { color: var(--t1); }
@@ -18,12 +19,38 @@
 .mdedit .hsel select option { background: var(--raised); color: var(--t1); }
 
 .mdbody { flex: 1; min-height: 0; display: flex; }
-.mdsplit { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-.mdsrc { border: 0; outline: none; resize: none; padding: 20px 22px; background: var(--panel); color: var(--t1); font: 12.5px/1.65 var(--font-mono); tab-size: 4; min-width: 0; border-right: var(--border-w) solid var(--line); overflow: auto; }
-.mdlive { overflow: auto; padding: 20px 26px; background: var(--raised); min-width: 0; }
-.mdlive .mdpage { padding: 0; box-shadow: none; width: auto; max-width: 680px; }
 
-/* The page: the same in the live preview and under Preview's markup. */
+/* The page as markdown-it draws it: laid out off screen for Copy and Export only (T49). */
+.mdoffscreen { position: fixed; left: -100000px; top: 0; visibility: hidden; pointer-events: none; }
+
+/* T49: the live page. CodeMirror's own theme is overridden (font, focus ring) so the page reads like the rendered one.
+   With Select the text takes the pointer; a drawing tool leaves it to the canvas above. */
+.mdpage.mdcm { padding: 0; }
+.mdpage.mdcm .cm-editor { pointer-events: auto; background: transparent; color: var(--t1); }
+.mdpage.mdcm[data-tool]:not([data-tool="select"]) .cm-editor { pointer-events: none; }
+.mdpage.mdcm .cm-editor.cm-focused { outline: none; }
+.mdpage.mdcm .cm-editor .cm-scroller { font: inherit; line-height: inherit; overflow: visible; }
+.mdpage.mdcm .cm-editor .cm-content { padding: 28px 34px 40px; caret-color: var(--t1); font: inherit; color: var(--t1); }
+.mdpage.mdcm .cm-editor .cm-line { padding: 0; }
+.mdpage.mdcm .md-mark { color: var(--t4); opacity: 0.7; font-weight: 400; font-style: normal; }
+.mdpage.mdcm .cm-line.md-h1, .mdpage.mdcm .cm-line.md-h2, .mdpage.mdcm .cm-line.md-h3, .mdpage.mdcm .cm-line.md-h4, .mdpage.mdcm .cm-line.md-h5, .mdpage.mdcm .cm-line.md-h6 { letter-spacing: var(--title-track); font-weight: var(--title-weight); line-height: 1.3; }
+.mdpage.mdcm .cm-line.md-h1 { font-size: 24px; }
+.mdpage.mdcm .cm-line.md-h2 { font-size: 17px; }
+.mdpage.mdcm .cm-line.md-h3 { font-size: 14.5px; }
+.mdpage.mdcm .md-strong { font-weight: 600; }
+.mdpage.mdcm .md-em { font-style: italic; }
+.mdpage.mdcm .md-strike { text-decoration: line-through; }
+.mdpage.mdcm .md-code { font-family: var(--font-mono); font-size: 12px; background: var(--sunk); border-radius: 4px; }
+.mdpage.mdcm .cm-line.md-codeblock { font-family: var(--font-mono); font-size: 12px; background: var(--sunk); }
+.mdpage.mdcm .md-link { color: var(--accent); }
+.mdpage.mdcm .md-url { color: var(--t3); }
+.mdpage.mdcm .cm-line.md-quote { color: var(--t3); border-left: 3px solid var(--line-2); padding-left: 12px; }
+.mdpage.mdcm .cm-line.md-table { font-family: var(--font-mono); font-size: 12px; }
+.mdpage.mdcm .cm-line.md-hr { color: var(--t4); }
+.mdpage.mdcm .md-picture img { max-width: 100%; border-radius: 6px; display: block; margin: 6px 0 10px; }
+.mdpage.mdcm .md-picture .mdimg-missing { display: grid; place-items: center; height: 120px; max-width: 520px; margin: 6px 0 10px; border-radius: 6px; background: var(--sunk); color: var(--t4); font: 12px var(--font-mono); }
+
+/* The page: the same live and under the markup; the rendered elements below are markdown-it's (Copy and Export). */
 .mdpage { width: 680px; padding: 28px 34px 40px; background: var(--raised); color: var(--t1); border-radius: 6px; box-shadow: var(--shadow); font: 400 13.5px/1.45 var(--font-ui); overflow-wrap: anywhere; }
 .mdpage h1, .mdpage h2, .mdpage h3, .mdpage h4 { letter-spacing: var(--title-track); font-weight: var(--title-weight); line-height: 1.15; margin: 18px 0 8px; }
 .mdpage h1 { font-size: 24px; margin-top: 0; }
