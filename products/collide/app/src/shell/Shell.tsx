@@ -1085,7 +1085,15 @@ export function Shell() {
       alive = false;
     };
   }, [settingsInFront]);
-  const collapse = useCallback(() => setPref("collapsed", !live.current.prefs.collapsed), [setPref]);
+  const collapse = useCallback(() => {
+    setPop(false); // the Appearance pop is in the footer, which the compact view does not show
+    setPref("collapsed", !live.current.prefs.collapsed);
+  }, [setPref]);
+  // T48: Settings from the sidebar (the Connected pill, also in the compact view): expand first, so the tab is seen.
+  const sideSettings = useCallback(() => {
+    if (live.current.prefs.collapsed) setPref("collapsed", false);
+    openSettings();
+  }, [openSettings, setPref]);
   const headBase = front && {
     kind: front.kind,
     dirty: front.dirty,
@@ -1226,7 +1234,7 @@ export function Shell() {
         onOpen={onOpen}
         onNewFile={newFile}
         connected={connectedOn ? { reached } : null}
-        onSettings={openSettings}
+        onSettings={sideSettings}
         rows={rows}
         query={query}
         onQuery={setQuery}

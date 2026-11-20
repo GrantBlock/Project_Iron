@@ -83,6 +83,8 @@ export function createCollapse(deps: CollapseDeps) {
         const back = saved;
         saved = null;
         if (back.min[0] > 0 || back.min[1] > 0) w.setMinimumSize(back.min[0], back.min[1]);
+        // The user may have maximized the compact window: setBounds would then only change its normal bounds.
+        if (w.isMaximized()) w.unmaximize();
         if (!same(w.getBounds(), back.bounds)) w.setBounds(back.bounds);
         if (back.maximized) w.maximize();
         return { maximized: back.maximized };

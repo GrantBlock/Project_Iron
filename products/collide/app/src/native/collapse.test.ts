@@ -199,3 +199,15 @@ describe("the compact window (T48)", () => {
     expect(state.log).toEqual([]);
   });
 });
+
+describe("the compact window, review round 1 (T48, Farengar)", () => {
+  it("a compact window the user maximized: Expand unmaximizes it and restores the exact earlier bounds", () => {
+    const { state, win } = fakeWindow(START);
+    const c = make(win);
+    c.apply({ collapsed: true, height: H });
+    win.maximize(); // title-bar double-click or Win+Up while compact
+    expect(c.apply({ collapsed: false, height: H })).toEqual({ maximized: false });
+    expect(state.maximized).toBe(false);
+    expect(state.bounds).toEqual(START);
+  });
+});
