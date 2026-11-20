@@ -76,7 +76,7 @@ let quitting = false;
 /** What loading settings.json and registering the hotkey gave (the page reads it at startup). */
 let settingsStatus = null;
 
-function createEditorWindow() {
+function createEditorWindow(screen) {
   const win = new BrowserWindow({
     title: native.APP_NAME,
     // T50: 1280 x 800 and the minimum are the page area (content size), not the outer window.
@@ -92,6 +92,8 @@ function createEditorWindow() {
     webPreferences,
   });
 
+  // T50 review (A): on a small or high-scaling screen keep the window and its minimum inside the work area.
+  native.fitWindow(win, screen.getDisplayMatching(win.getBounds()).workArea);
   win.once("ready-to-show", () => win.show());
   win.on("closed", () => {
     editor = null;
@@ -242,7 +244,7 @@ app.whenReady().then(() => {
   // Same as the Rust shell's window: the native frame only, no menu bar.
   // Dev keeps Electron's default menu for reload and DevTools.
   if (app.isPackaged) Menu.setApplicationMenu(null);
-  editor = createEditorWindow();
+  editor = createEditorWindow(screen);
   updates.start();
 });
 

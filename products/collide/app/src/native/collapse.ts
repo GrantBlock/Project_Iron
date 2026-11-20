@@ -8,6 +8,7 @@
 // Electron's BrowserWindow and screen are passed in, so this is unit-tested with a fake window.
 // Window sizes, DPI and a second monitor on Windows are a manual check (TESTER-NOTES Run 4 item 7).
 import type { Rect, WindowLike } from "./windows";
+import { fitMinimum } from "./minSize";
 
 /** The panel's width: `--side-w` in src/shell/shell.css. */
 export const PANEL_WIDTH = 276;
@@ -88,15 +89,19 @@ export function createCollapse(deps: CollapseDeps) {
       if (r.collapsed === false && saved) {
         const back = saved;
         saved = null;
+        // The user may have maximized the compact window: setBounds would then only change its normal bounds, and
+        // the frame (T50) is read from the normal window.
+        if (w.isMaximized()) w.unmaximize();
         const full = deps.minimum?.();
         if (full) {
-          // T50: Electron's minimum size is the whole window's; the content minimum plus the frame.
+          // T50: Electron's minimum size is the whole window's: the content minimum plus the frame, at most the
+          // work area of the screen the window goes back to (a small or high-scaling screen).
           const now = w.getBounds();
           const content = w.getContentBounds();
-          w.setMinimumSize(full.width + Math.max(0, now.width - content.width), full.height + Math.max(0, now.height - content.height));
+          const frame = { width: Math.max(0, now.width - content.width), height: Math.max(0, now.height - content.height) };
+          const [mw, mh] = fitMinimum(frame, deps.workArea(back.bounds), full);
+          w.setMinimumSize(mw, mh);
         } else if (back.min[0] > 0 || back.min[1] > 0) w.setMinimumSize(back.min[0], back.min[1]);
-        // The user may have maximized the compact window: setBounds would then only change its normal bounds.
-        if (w.isMaximized()) w.unmaximize();
         if (!same(w.getBounds(), back.bounds)) w.setBounds(back.bounds);
         if (back.maximized) w.maximize();
         return { maximized: back.maximized };

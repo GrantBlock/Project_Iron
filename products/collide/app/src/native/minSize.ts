@@ -13,3 +13,43 @@
 export const MIN_WIDTH = 1197;
 /** The full view's minimum page-area height, CSS px. */
 export const MIN_HEIGHT = 415;
+
+type Box = { x: number; y: number; width: number; height: number };
+
+/**
+ * T50 review (A): on a small or high-scaling screen the minimum can be larger than the work area. The window's
+ * minimum (whole window, Electron's setMinimumSize) is the content minimum plus the frame, but never more than the
+ * work area per side.
+ */
+export function fitMinimum(frame: { width: number; height: number }, area: Box, min = { width: MIN_WIDTH, height: MIN_HEIGHT }): [number, number] {
+  return [Math.min(min.width + frame.width, area.width), Math.min(min.height + frame.height, area.height)];
+}
+
+/** Bounds moved and, if needed, shrunk to lie inside the work area; null when they already fit. */
+export function fitBounds(b: Box, area: Box): Box | null {
+  const width = Math.min(b.width, area.width);
+  const height = Math.min(b.height, area.height);
+  const x = Math.max(area.x, Math.min(b.x, area.x + area.width - width));
+  const y = Math.max(area.y, Math.min(b.y, area.y + area.height - height));
+  return x === b.x && y === b.y && width === b.width && height === b.height ? null : { x, y, width, height };
+}
+
+/** What a window needs for fitWindow: Electron's BrowserWindow has all of these. */
+export interface FitWindow {
+  getBounds(): Box;
+  getContentBounds(): Box;
+  setBounds(b: Box): void;
+  setMinimumSize(width: number, height: number): void;
+}
+
+/** The full view's minimum on a window: inside its work area, minimum = min(MIN + frame, work area) per side. */
+export function fitWindow(w: FitWindow, area: Box, min = { width: MIN_WIDTH, height: MIN_HEIGHT }): void {
+  const b = w.getBounds();
+  const c = w.getContentBounds();
+  const frame = { width: Math.max(0, b.width - c.width), height: Math.max(0, b.height - c.height) };
+  const [mw, mh] = fitMinimum(frame, area, min);
+  // Lower the minimum first, so a window being fitted to a small screen is not held up by it.
+  w.setMinimumSize(mw, mh);
+  const fitted = fitBounds(b, area);
+  if (fitted) w.setBounds(fitted);
+}

@@ -50,4 +50,52 @@ describe("the full view's minimum around the compact view (T50)", () => {
     c.apply({ collapsed: false });
     expect(state.min).toEqual([1000, 500]);
   });
+
+  it("Expand from a maximized compact window reads the frame of the normal window, after unmaximize (review round 1)", () => {
+    // Maximized, this window has no frame; normal, its frame is FRAME.
+    const state = { bounds: { x: 100, y: 100, width: 1400, height: 900 } as Rect, normal: null as Rect | null, maximized: false, min: [1000, 500] as [number, number], log: [] as string[] };
+    const win = {
+      isDestroyed: () => false,
+      getBounds: () => state.bounds,
+      setBounds: (b: Rect) => {
+        state.bounds = b;
+      },
+      getContentBounds: () =>
+        state.maximized ? { ...state.bounds } : { x: state.bounds.x + 8, y: state.bounds.y + 31, width: state.bounds.width - FRAME.w, height: state.bounds.height - FRAME.h },
+      getNormalBounds: () => state.normal ?? state.bounds,
+      isMaximized: () => state.maximized,
+      maximize: () => {
+        state.log.push("maximize");
+        state.normal = state.bounds;
+        state.maximized = true;
+        state.bounds = SCREEN;
+      },
+      unmaximize: () => {
+        state.log.push("unmaximize");
+        state.maximized = false;
+        state.bounds = state.normal ?? state.bounds;
+      },
+      getMinimumSize: () => [...state.min],
+      setMinimumSize: (w: number, h: number) => {
+        state.log.push(`setMinimumSize ${w}x${h}`);
+        state.min = [w, h];
+      },
+    };
+    const c = createCollapse({ editor: () => win, workArea: () => SCREEN, minimum: () => ({ width: MIN_WIDTH, height: MIN_HEIGHT }) });
+    c.apply({ collapsed: true, height: 312 });
+    win.maximize(); // the user maximizes the compact window
+    c.apply({ collapsed: false });
+    expect(state.min).toEqual([MIN_WIDTH + FRAME.w, MIN_HEIGHT + FRAME.h]);
+    expect(state.log.indexOf("unmaximize")).toBeLessThan(state.log.lastIndexOf(`setMinimumSize ${MIN_WIDTH + FRAME.w}x${MIN_HEIGHT + FRAME.h}`));
+    expect(state.bounds).toEqual({ x: 100, y: 100, width: 1400, height: 900 });
+  });
+
+  it("Expand on a small screen: the minimum is at most the work area (review round 1)", () => {
+    const small: Rect = { x: 0, y: 0, width: 1100, height: 400 };
+    const { state, win } = fakeWindow({ x: 0, y: 0, width: 1100, height: 400 }, [0, 0]);
+    const c = createCollapse({ editor: () => win, workArea: () => small, minimum: () => ({ width: MIN_WIDTH, height: MIN_HEIGHT }) });
+    c.apply({ collapsed: true, height: 312 });
+    c.apply({ collapsed: false });
+    expect(state.min).toEqual([1100, 400]);
+  });
 });

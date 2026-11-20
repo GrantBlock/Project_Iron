@@ -171,49 +171,75 @@ function useCompactHead(ref: RefObject<HTMLDivElement>) {
   const wordWidths = useRef(new Map<string, number>());
   const compactRef = useRef(compact);
   compactRef.current = compact;
-  useLayoutEffect(() => {
+  const measure = useRef(() => {});
+  measure.current = () => {
     const el = ref.current;
-    if (!el) return;
-    const measure = () => {
-      // Not laid out (hidden, or a test without layout): keep what it is.
-      if (el.clientWidth === 0) return;
-      const cs = getComputedStyle(el);
-      const gap = parseFloat(cs.columnGap) || 0;
-      const pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
-      const words = !compactRef.current;
-      let need = pad + HEAD_NAME_MIN;
-      let items = 0;
-      let unknown = false;
-      for (const c of el.children) {
-        if (c.classList.contains("names") || c.classList.contains("grow")) {
-          if (c.classList.contains("names")) items++;
-          continue;
-        }
-        if (getComputedStyle(c).display === "none") continue;
-        items++;
-        const hw = c.classList.contains("hw") ? c : c.querySelector(":scope > .hw");
-        const label = hw?.getAttribute("aria-label");
-        let w = c.getBoundingClientRect().width;
-        if (hw && label) {
-          if (words) wordWidths.current.set(label, w);
-          else if (wordWidths.current.has(label)) w = wordWidths.current.get(label)!;
-          else unknown = true;
-        }
-        need += w;
+    // Not there, or not laid out (hidden, or a test without layout): keep what it is.
+    if (!el || el.clientWidth === 0) return;
+    const cs = getComputedStyle(el);
+    const gap = parseFloat(cs.columnGap) || 0;
+    const pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+    const words = !compactRef.current;
+    let need = pad + HEAD_NAME_MIN;
+    let items = 0;
+    let unknown = false;
+    for (const c of el.children) {
+      if (c.classList.contains("names") || c.classList.contains("grow")) {
+        if (c.classList.contains("names")) items++;
+        continue;
       }
-      need += gap * Math.max(0, items - 1);
-      const next = unknown ? false : el.clientWidth < need;
-      if (next !== compactRef.current) {
-        compactRef.current = next;
-        setCompact(next);
+      if (getComputedStyle(c).display === "none") continue;
+      items++;
+      const hw = c.classList.contains("hw") ? c : c.querySelector(":scope > .hw");
+      const label = hw?.getAttribute("aria-label");
+      let w = c.getBoundingClientRect().width;
+      if (hw && label) {
+        if (words) wordWidths.current.set(label, w);
+        else if (wordWidths.current.has(label)) w = wordWidths.current.get(label)!;
+        else unknown = true;
       }
+      need += w;
+    }
+    need += gap * Math.max(0, items - 1);
+    const next = unknown ? false : el.clientWidth < need;
+    if (next !== compactRef.current) {
+      compactRef.current = next;
+      setCompact(next);
+    }
+  };
+  const observer = useRef<ResizeObserver | null>(null);
+  // One observer for the header's life; fonts that finish loading change the words' widths, so measure afresh.
+  useEffect(() => {
+    const run = () => measure.current();
+    const fonts = typeof document !== "undefined" ? document.fonts : undefined;
+    const refonts = () => {
+      wordWidths.current.clear();
+      run();
     };
-    measure();
-    if (typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(measure);
+    fonts?.addEventListener?.("loadingdone", refonts);
+    if (typeof ResizeObserver !== "undefined") {
+      const ro = new ResizeObserver(run);
+      observer.current = ro;
+      const el = ref.current;
+      if (el) {
+        ro.observe(el);
+        for (const c of el.children) if (!c.classList.contains("names") && !c.classList.contains("grow")) ro.observe(c);
+      }
+    }
+    return () => {
+      fonts?.removeEventListener?.("loadingdone", refonts);
+      observer.current?.disconnect();
+      observer.current = null;
+    };
+  }, [ref]);
+  // After each render: measure, and watch the header and its items (observe is a no-op for ones already watched).
+  useLayoutEffect(() => {
+    measure.current();
+    const el = ref.current;
+    const ro = observer.current;
+    if (!el || !ro) return;
     ro.observe(el);
     for (const c of el.children) if (!c.classList.contains("names") && !c.classList.contains("grow")) ro.observe(c);
-    return () => ro.disconnect();
   });
   return compact;
 }
