@@ -110,6 +110,10 @@ Related (in `GrantBlock/designengineering-ai`, `Builder v0.1/`): `development-pa
 - [stated] 2026-11-17: Lite uses a frameless window with the prototype's drawn window buttons (Grant).
 - [stated] 2026-11-17: Lite fixes two prototype quirks: the suggested question "What do I do before servicing the gearbox?" gets its real answer, and open/closed folders stay as they are when an item is selected or a search runs. The other two quirks (repeated citation chip, highlights after opening a result) stay as in the prototype (Grant).
 - [stated] 2026-11-17: Lite shows Markdown formatted with markdown-it (raw HTML off); markdown-it is added to Lite's dependency list (Grant).
+- [stated] 2026-11-20: Two teams. Team A (main Claude account): Lydia (Tester), Hrongar (Coder), Farengar (Reviewer). Team B (second Claude account, `claude-work` CLI, same GitHub user): Belethor (Tester), Ysolda (Coder), Carlotta (Reviewer). One planner (Irileth) and one issue queue for both; each issue carries `team-a` or `team-b` (Grant).
+- [stated] 2026-11-20: Reviewers cross-review: Farengar reviews Team B's pull requests and Carlotta reviews Team A's (Grant).
+- [stated] 2026-11-20: One combined morning report; Lydia is the spokesperson and reports for both teams on issue #2 (Grant).
+- [stated] 2026-11-20: Grant asked to merge the unmerged remote branches. All of them are already contained in `claude/hopeful-rubin-82u2jg` (Collide runs 1 to 4, Lite run, Grant's sessions); the `task/*` branches were squash-integrated through `collide/run` and `lite/run`. `task/T48-fit-key-compact` (WIP, stopped by Grant) is left out (Grant).
 
 ## Roles
 
@@ -119,6 +123,21 @@ Related (in `GrantBlock/designengineering-ai`, `Builder v0.1/`): `development-pa
 | Tester: Lydia | Scheduled cloud session | Claude Sonnet 5.5 | Writes acceptance tests from the spec before any code (Playwright, replaying the prototype flow); later checks the preview and posts screenshots | Tests merged, label `ready` |
 | Coder: Hrongar | Scheduled cloud session | Claude Fable 5.2 (`claude-fable-5-2`), high effort | Builds the next `ready` issue on its own branch until the tests pass; one pull request into `development` | Label `needs-review` |
 | Reviewer: Farengar | Scheduled cloud session | Claude Opus 5.5 | Checks the pull request against the spec, `design/DESIGN-SYSTEM.md` and the plan's rules (pricing, levels, numbers, source-of-truth order) | Label `review-passed` or `changes-requested` |
+
+### Two teams (decided 2026-11-20)
+
+| Role | Team A (main account) | Team B (`claude-work` account) |
+| --- | --- | --- |
+| Tester | Lydia (also writes the combined morning report) | Belethor |
+| Coder | Hrongar | Ysolda |
+| Reviewer | Farengar, reviews Team B's pull requests | Carlotta, reviews Team A's pull requests |
+| Issue label | `team-a` | `team-b` |
+| Branch prefix | `coder/` | `coder-b/` |
+| Lane (folders or product) | [Grant to assign] | [Grant to assign] |
+
+Same models, schedule and hand-off labels as the table above. Each team takes only issues with its own team label. Each account stops at its own 75% usage cap.
+
+Draft (not yet approved by Grant): Team B on Grant's PC uses a CLI alias `claude-work='CLAUDE_CONFIG_DIR="$HOME/.claude-work" claude'` and a separate clone folder (`Project_Iron-work`), so the two accounts never share a login or a checkout. Team B's scheduled tasks are created from the work account. Team B's role files reuse Team A's with its own names, label and branch prefix.
 
 Why tests first: the coder cannot weaken them. The acceptance-test folder needs Grant's approval for any change (CODEOWNERS plus branch protection).
 
@@ -275,7 +294,7 @@ An agent cannot reliably read the plan's usage meter from inside a session (A, t
 ## Rules for every agent
 
 - Never merge, never push to `development` or `main` directly, never touch `main`.
-- One coder at a time, one issue per branch, one pull request per issue.
+- One coder per team (two teams since 2026-11-20), each in its own lane; one issue per branch, one pull request per issue.
 - Stop rule: after 3 failed CI runs on one issue, label it `blocked`, write what was tried, move on.
 - No secrets in the repository. Keys live in Cloudflare secrets, GitHub Actions secrets and the cloud environment's credentials.
 - Follow `CLAUDE.md`: propose before changing a decision; never change pricing, levels or numbers; mark assumptions (A).
