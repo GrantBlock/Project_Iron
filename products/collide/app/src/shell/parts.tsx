@@ -152,12 +152,6 @@ export function WsHead({ kind, name, path, dirty, savedLabel = "Saved", onSave, 
       <div className="names">
         <span className="name">
           {name}
-          {dirty && (
-            <span className="unsaved-mark">
-              <span className="sdot changed" />
-              unsaved
-            </span>
-          )}
         </span>
         <span className="path mono">{path}</span>
       </div>
@@ -165,7 +159,7 @@ export function WsHead({ kind, name, path, dirty, savedLabel = "Saved", onSave, 
       {extra}
       <span className={`savedstate${dirty ? " dirty" : ""}`}>
         <span className="d" />
-        <span className="lbl">{dirty ? "Unsaved changes" : savedLabel}</span>
+        <span className="lbl">{dirty ? "Unsaved" : savedLabel}</span>
       </span>
       {onSave && (
         <button type="button" className="btn" data-testid="save-markup" title="Save (Ctrl+S)" disabled={!canSave} onClick={onSave}>
@@ -181,8 +175,9 @@ export function WsHead({ kind, name, path, dirty, savedLabel = "Saved", onSave, 
       )}
       {saveAs && <SaveAsButton formats={saveAs.formats} onSave={saveAs.onSave} />}
       {onCopy && (
-        <button type="button" className="btn icon" aria-label="Copy to clipboard" title="Copy to clipboard: a PNG of the print area (Ctrl+Shift+C)" data-testid="copy-btn" onClick={onCopy}>
+        <button type="button" className="btn" aria-label="Copy to clipboard" title="Copy to clipboard: a PNG of the print area (Ctrl+Shift+C)" data-testid="copy-btn" onClick={onCopy}>
           <Icon name="clipboard-copy" />
+          <span>Copy</span>
         </button>
       )}
       {tail}

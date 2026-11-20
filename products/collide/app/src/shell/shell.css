@@ -198,7 +198,6 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
 .wshead .names { min-width: 0; display: grid; }
 .wshead .name { font-weight: 600; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .wshead .path { color: var(--t4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.unsaved-mark { display: inline-flex; align-items: center; gap: 5px; margin-left: 6px; font: 500 11.5px var(--font-ui); color: var(--t3); }
 .savedstate { display: inline-flex; align-items: center; gap: 6px; color: var(--t3); white-space: nowrap; }
 .savedstate .d { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
 .savedstate.dirty .d { background: var(--warn); }
