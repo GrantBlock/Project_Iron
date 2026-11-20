@@ -1,5 +1,5 @@
 // Written before the code (Lydia, tests first). F is not a tool key today (TOOL_KEYS: v r o l x p n h e).
-// T48 (Grant 2026-11-20): the plain F key fits the canvas, like Ctrl+0 (kept), in the Snip editor, the Markdown Preview
+// T48 (Grant 2026-11-20): the plain F key fits the canvas, like Ctrl+0 (kept), in the Snip editor, the Markdown page
 // and a PDF page; never while typing (a callout note, the Markdown Edit text area).
 import { expect, test, type Page } from "@playwright/test";
 import { fileURLToPath } from "node:url";
@@ -64,7 +64,7 @@ test("Snip editor: F fits after a zoom; typing an f in a callout note does not",
   await expect.poll(() => zoom(page)).toEqual(fit);
 });
 
-test("Markdown: F fits the Preview; in Edit, an f typed in the text area is only text", async ({ page }) => {
+test("Markdown: F fits the page; an f typed in the text is only text", async ({ page }) => {
   await page.goto("/?sample");
   await recents(page).getByRole("button", { name: "P06-Project-Workspace-Spec.md", exact: true }).click();
   await ws(page).getByRole("toolbar", { name: "Markdown tools" }).waitFor();
@@ -75,14 +75,13 @@ test("Markdown: F fits the Preview; in Edit, an f typed in the text area is only
   await page.keyboard.press("f");
   await expect.poll(() => zoom(page)).toEqual(fit);
 
-  await ws(page).getByRole("button", { name: "Edit", exact: true }).click();
-  const text = ws(page).getByRole("textbox", { name: "P06-Project-Workspace-Spec.md" });
-  const before = await text.inputValue();
-  await text.focus();
-  await page.keyboard.press("End");
+  const lines = ws(page).locator(".cm-line");
+  const before = (await lines.allTextContents()).join("\n");
+  await ws(page).locator(".cm-content").click();
+  await page.keyboard.press("Control+End");
   await page.keyboard.type("f");
-  await expect(text).toHaveValue(/f/);
-  expect((await text.inputValue()).length).toBe(before.length + 1);
+  expect((await lines.allTextContents()).join("\n")).toBe(before + "f");
+  expect((await zoom(page))!.fit).toBe(true);
 });
 
 test("PDF: F fits the page after a zoom", async ({ page }) => {

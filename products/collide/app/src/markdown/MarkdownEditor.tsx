@@ -1,13 +1,18 @@
-// The Markdown editor inside a Markdown tab (RUN3 T34), after ../../../layout-prototype.html (renderDocWS):
-// Edit (the source with text tools and a live preview) and Preview (the T32 markup engine over the rendered page:
-// the same tools, bubbles with leaders outside the page, cards and the list; shapes can start in the margin;
-// Ctrl + wheel zooms around the cursor, Ctrl+= / Ctrl+− step, Ctrl+0 or F fits). Insert image and paste save the picture
-// into the zip's images/ folder and link it at the cursor (Preview: at the end of the file). T45 (Run 4): one callout
-// toolbar with the text tools as its second row in both modes (6.2); Copy and Save as are in the tab header and take
-// the visible page with its callouts (Edit: the rendered page). The colour and thickness are remembered apart from Snip's.
+// The Markdown editor inside a Markdown tab (RUN3 T34), after ../../../layout-prototype.html (renderDocWS).
+// T49 (Grant 2026-11-20): one view. The page is a live CodeMirror 6 editor (livePage.ts: the marks stay visible,
+// dimmed; headings, bold, code and the rest styled in place) under the T32 markup engine (the same tools, bubbles with
+// leaders outside the page, cards and the list; shapes can start in the margin; Ctrl + wheel zooms around the cursor,
+// Ctrl+= / Ctrl+− step, Ctrl+0 or F fits). With Select, a press on the page goes to the text unless it is on a
+// callout; a drawing tool draws on the page and the text is read-only. The text tools (second toolbar row, cmTools.ts)
+// act on the editor's selection. Insert image and paste save the picture into the zip's images/ folder and link it at
+// the caret (at the end of the file when the editor never had one). Copy and Save as take the visible page with its
+// callouts, the page drawn by markdown-it (render.ts). The colour and thickness are remembered apart from Snip's.
 //
 // Everything a tab keeps while another tab is in front is in its `MdSession`, which the shell owns.
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { Compartment, EditorState, StateEffect, type Extension, type TransactionSpec } from "@codemirror/state";
+import { EditorView, keymap } from "@codemirror/view";
 import type { ChangeEvent, MutableRefObject, ReactNode } from "react";
 import type { AnnotationsDoc, Shape } from "../model";
 import { Icon } from "../ds";
@@ -27,7 +32,9 @@ import { deliver, saveAsFormats, saveAsName, savePicture, type SaveFormat } from
 import { fitPage, PAGE_W, scrollPage, zoomPage } from "./page";
 import { pagePicture } from "./pagePicture";
 import { renderMarkdown, type Resolve } from "./render";
-import { bold, imageLink, insertImageLink, insertTable, link, linePrefix, pastedName, type TextEdit } from "./text";
+import { imageLink, pastedName } from "./text";
+import { boldTool, headingTool, imageLinkTool, labelTool, linkTool, listTool, numListTool, tableTool } from "./cmTools";
+import { livePage, resolveFacet } from "./livePage";
 import { isFitKey } from "../editor/fitKey";
 import "./markdown.css";
 
@@ -48,7 +55,10 @@ export interface MdSession {
   text: string;
   /** The text as last saved or opened. */
   baseText: string;
-  mode: "edit" | "preview";
+  /** T49: the live editor's state (text, selection, undo steps), kept while another tab is in front. */
+  cm: EditorState | null;
+  /** T49: the editor has had a caret (a picture goes at the caret; before that, at the end of the file). */
+  caret: boolean;
   /** The page markup (page pixels), its selection and undo steps. */
   history: HistoryState;
   baseDoc: AnnotationsDoc | null;
@@ -63,7 +73,7 @@ export interface MdSession {
 export function createMdSession(o: { name: string; path: string; zipId: string; zipName: string; file: string; text: string; shapes?: readonly Shape[] }): MdSession {
   const doc: AnnotationsDoc = { version: 1, source: { kind: "image", width: PAGE_W, height: START_H }, shapes: [...(o.shapes ?? [])] };
   const history = historyReducer(initialHistory, { type: "load", width: PAGE_W, height: START_H, doc });
-  return { ...o, text: o.text, baseText: o.text, mode: "preview", history, baseDoc: history.present.doc, view: null, fitted: true, pageH: START_H };
+  return { ...o, text: o.text, baseText: o.text, cm: null, caret: false, history, baseDoc: history.present.doc, view: null, fitted: true, pageH: START_H };
 }
 
 /** The Markdown editor's own tool, colour and thickness (Grant 2026-11-15: remembered per editor). */
@@ -75,10 +85,12 @@ export const defaultMdPen = (): Pen => {
 /** What the shell can ask of the Markdown editor in front. */
 export interface MdEditorApi {
   refInput: () => MdRefInput;
-  /** A pasted picture: saved to images/ and linked (Edit: at the cursor; Preview: at the end of the file). */
+  /** A pasted picture: saved to images/ and linked at the caret (at the end of the file when the editor never had one). */
   pasteImage: (file: Blob) => void;
   /** Save the text and the markup into the zip (this session). */
   save: () => void;
+  /** T49 (A): after Save source, the same as Save without its message: the tab reads Saved. */
+  markSaved: () => void;
   /** RUN3 T35: what a .collide file takes from the editor: the text, the page markup (back to front) and a preview picture. */
   collideContent: () => Promise<{ text: string; shapes: Shape[]; preview: Uint8Array }>;
 }
@@ -152,6 +164,30 @@ export function pictureFileName(name: string, taken: ReadonlySet<string>): strin
   return out;
 }
 
+/** A clipboard event that carries a picture (the shell saves it into images/). */
+const hasPicture = (e: ClipboardEvent) => [...(e.clipboardData?.items ?? [])].some((i) => i.kind === "file" && i.type.startsWith("image/"));
+
+/**
+ * The markdown-it page of `text` (what Copy and Export draw under the callouts), laid out off screen in `host` so it
+ * takes the theme's tokens, then drawn as a picture; it is removed again before this returns.
+ */
+async function renderedPage(host: HTMLElement, text: string, resolve: Resolve): Promise<{ image: HTMLImageElement; height: number }> {
+  const box = document.createElement("div");
+  box.setAttribute("aria-hidden", "true");
+  box.className = "mdoffscreen";
+  const el = document.createElement("div");
+  el.className = "mdpage";
+  el.innerHTML = renderMarkdown(text, resolve);
+  box.appendChild(el);
+  host.appendChild(box);
+  try {
+    await Promise.all([...el.querySelectorAll("img")].map((i) => i.decode().catch(() => undefined)));
+    return { image: await pagePicture(el), height: el.offsetHeight };
+  } finally {
+    box.remove();
+  }
+}
+
 export function MarkdownEditor(p: Props) {
   const { session, pen, apiRef, resolve, onDirty, full, hideTools, themeKey } = p;
   const [text, setTextState] = useState(session.text);
@@ -162,7 +198,6 @@ export function MarkdownEditor(p: Props) {
     },
     [session],
   );
-  const [mode, setModeState] = useState(session.mode);
   const { state, dispatch, stateRef, canUndo, canRedo } = useEditorStore(session.history, (h) => (session.history = h));
   const shapes = useMemo(() => state.doc?.shapes ?? [], [state.doc]);
 
@@ -177,23 +212,6 @@ export function MarkdownEditor(p: Props) {
     setToolState(t);
     if (drawsWithColor(t)) setColorState((c) => c ?? lastColorRef.current);
   }, []);
-  const setMode = useCallback(
-    (m: "edit" | "preview") => {
-      session.mode = m;
-      setModeState(m);
-      setTool("select");
-    },
-    [session, setTool],
-  );
-
-  // T45 (6.2, A): a drawing tool picked in Edit opens the Preview, where the page is marked up.
-  const pickTool = useCallback(
-    (t: Tool) => {
-      if (t !== "select" && live.current.mode === "edit") setMode("preview");
-      setTool(t);
-    },
-    [setMode, setTool],
-  );
 
   // ---------- Page and view ----------
   const [pageH, setPageH] = useState(session.pageH);
@@ -202,9 +220,8 @@ export function MarkdownEditor(p: Props) {
   const fittedRef = useRef(session.fitted);
   const sizeRef = useRef<Size>({ width: 0, height: 0 });
   const handleRef = useRef<CanvasHandle | null>(null);
-  const pageRef = useRef<HTMLDivElement | null>(null);
-  const live = useRef({ view, tool, color, strokeWidth, mode, pageH });
-  live.current = { view, tool, color, strokeWidth, mode, pageH };
+  const live = useRef({ view, tool, color, strokeWidth, pageH });
+  live.current = { view, tool, color, strokeWidth, pageH };
   useEffect(() => {
     session.view = view;
     session.fitted = fittedRef.current;
@@ -252,7 +269,6 @@ export function MarkdownEditor(p: Props) {
   // The page's height, as laid out (pictures can change it after they load).
   const observer = useRef<ResizeObserver | null>(null);
   const measure = useCallback((el: HTMLDivElement | null) => {
-    pageRef.current = el;
     observer.current?.disconnect();
     observer.current = null;
     if (!el) return;
@@ -261,8 +277,6 @@ export function MarkdownEditor(p: Props) {
     observer.current = new ResizeObserver(() => setPageH(Math.max(1, el.offsetHeight)));
     observer.current.observe(el);
   }, []);
-
-  const html = useMemo(() => renderMarkdown(text, resolve), [text, resolve]);
 
   // ---------- Unsaved changes ----------
   const dirty = text !== session.baseText || state.doc !== session.baseDoc;
@@ -275,37 +289,131 @@ export function MarkdownEditor(p: Props) {
   const pRef = useRef(p);
   pRef.current = p;
   const [, setSavedTick] = useState(0);
-  const save = useCallback(() => {
+  const save = useCallback((quiet = false) => {
     const doc = stateRef.current.doc;
     pRef.current.onSave(session.text, [...(doc?.shapes ?? [])]);
     session.baseText = session.text;
     session.baseDoc = doc;
     dirtyRef.current(false);
     setSavedTick((n) => n + 1); // re-render: the unsaved mark goes
-    pRef.current.notify({ tone: "success", title: "Saved", description: `${session.zipName} · kept until Collide closes (zip files on disk come later)` });
+    if (!quiet) pRef.current.notify({ tone: "success", title: "Saved", description: `${session.zipName} · kept until Collide closes (zip files on disk come later)` });
   }, [session, stateRef]);
 
-  // ---------- Edit: the text tools ----------
-  const srcRef = useRef<HTMLTextAreaElement | null>(null);
-  const pendingSel = useRef<[number, number] | null>(null);
-  const applyEdit = useCallback(
-    (fn: (text: string, start: number, end: number) => TextEdit) => {
-      const ta = srcRef.current;
-      if (!ta) return;
-      const r = fn(ta.value, ta.selectionStart, ta.selectionEnd);
-      pendingSel.current = [r.start, r.end];
-      setText(r.text);
+  // ---------- The live page: one CodeMirror editor ----------
+  const cmRef = useRef<EditorView | null>(null);
+  const editable = useRef(new Compartment()).current;
+  const resolveConf = useRef(new Compartment()).current;
+  /** Apply a text tool to the editor's selection: one undo step; the caret goes back into the text. */
+  const applyTool = useCallback(
+    (fn: (s: EditorState) => TransactionSpec) => {
+      const v = cmRef.current;
+      if (!v) return;
+      v.dispatch(fn(v.state));
+      session.caret = true;
+      if (live.current.tool === "select") v.focus();
     },
-    [setText],
+    [session],
   );
-  useLayoutEffect(() => {
-    const sel = pendingSel.current;
-    const ta = srcRef.current;
-    if (!sel || !ta) return;
-    pendingSel.current = null;
-    ta.focus();
-    ta.setSelectionRange(sel[0], sel[1]);
-  }, [text]);
+  const extensions = useCallback(
+    (): Extension[] => [
+      history(),
+      keymap.of([{ key: "Mod-b", preventDefault: true, run: (v) => (v.dispatch(boldTool(v.state)), true) }, ...defaultKeymap, ...historyKeymap]),
+      livePage(),
+      editable.of(EditorView.editable.of(live.current.tool === "select")),
+      resolveConf.of(resolveFacet.of(pRef.current.resolve)),
+      EditorView.contentAttributes.of({ "aria-label": session.name, spellcheck: "false" }),
+      // A pasted picture is the shell's (saved into images/ and linked); CodeMirror leaves it alone.
+      EditorView.domEventHandlers({ paste: (e) => hasPicture(e) }),
+      EditorView.updateListener.of((u) => {
+        session.cm = u.state;
+        if (u.docChanged) setText(u.state.doc.toString());
+        if (u.focusChanged && u.view.hasFocus) session.caret = true;
+      }),
+    ],
+    [editable, resolveConf, session, setText],
+  );
+  const host = useCallback(
+    (el: HTMLDivElement | null) => {
+      const old = cmRef.current;
+      if (old) {
+        session.cm = old.state;
+        old.destroy();
+        cmRef.current = null;
+      }
+      if (!el) return;
+      const prev = session.cm && session.cm.doc.toString() === session.text ? session.cm : null;
+      const exts = extensions();
+      const st = prev ? prev.update({ effects: StateEffect.reconfigure.of(exts) }).state : EditorState.create({ doc: session.text, extensions: exts });
+      cmRef.current = new EditorView({ state: st, parent: el });
+    },
+    [extensions, session],
+  );
+  // A drawing tool draws on the page: the text is read-only until Select is back.
+  useEffect(() => {
+    const v = cmRef.current;
+    if (!v) return;
+    v.dispatch({ effects: editable.reconfigure(EditorView.editable.of(tool === "select")) });
+    if (tool !== "select") v.contentDOM.blur();
+  }, [editable, tool]);
+  // The zip's pictures, shown under their links.
+  useEffect(() => {
+    const v = cmRef.current;
+    if (v && v.state.facet(resolveFacet) !== resolve) v.dispatch({ effects: resolveConf.reconfigure(resolveFacet.of(resolve)) });
+  }, [resolve, resolveConf]);
+
+  // With Select, the page's text takes the pointer except over a callout (the canvas then has it, to select and move).
+  const bodyRef = useRef<HTMLDivElement | null>(null);
+  const overShape = useRef(false);
+  const routePointer = useCallback(() => {
+    const c = handleRef.current?.stage()?.container();
+    if (c) c.style.pointerEvents = live.current.tool !== "select" || overShape.current ? "" : "none";
+  }, []);
+  useEffect(routePointer);
+  useEffect(() => {
+    const body = bodyRef.current;
+    if (!body) return;
+    const hit = (e: PointerEvent | WheelEvent) => {
+      const stage = handleRef.current?.stage();
+      if (!stage || live.current.tool !== "select") return (overShape.current = false);
+      const r = stage.container().getBoundingClientRect();
+      const x = e.clientX - r.left;
+      const y = e.clientY - r.top;
+      overShape.current = x >= 0 && y >= 0 && x <= r.width && y <= r.height && !!stage.getIntersection({ x, y });
+      routePointer();
+      return overShape.current;
+    };
+    const move = (e: PointerEvent) => {
+      if (e.buttons === 0) hit(e); // not while a shape or the text selection is being dragged
+    };
+    const down = (e: PointerEvent) => {
+      if (hit(e)) return;
+      // A press in the text with Select: no callout is selected any more.
+      if (live.current.tool === "select" && e.target instanceof Element && e.target.closest(".cm-editor") && stateRef.current.selectedId) dispatch({ type: "select", id: null });
+    };
+    const leave = () => {
+      overShape.current = false;
+      routePointer();
+    };
+    // The wheel over the page (text or canvas) scrolls and zooms the page; the text never scrolls on its own.
+    const wheel = (e: WheelEvent) => {
+      const wrap = handleRef.current?.container();
+      if (!wrap || !(e.target instanceof Node) || !wrap.contains(e.target)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const r = wrap.getBoundingClientRect();
+      onWheelAt(e, { x: e.clientX - r.left, y: e.clientY - r.top });
+    };
+    body.addEventListener("pointermove", move, true);
+    body.addEventListener("pointerdown", down, true);
+    body.addEventListener("pointerleave", leave);
+    body.addEventListener("wheel", wheel, { capture: true, passive: false });
+    return () => {
+      body.removeEventListener("pointermove", move, true);
+      body.removeEventListener("pointerdown", down, true);
+      body.removeEventListener("pointerleave", leave);
+      body.removeEventListener("wheel", wheel, true);
+    };
+  }, [dispatch, onWheelAt, routePointer, stateRef]);
 
   // ---------- Pictures: paste and Insert image ----------
   const placePicture = useCallback(
@@ -317,19 +425,16 @@ export function MarkdownEditor(p: Props) {
         const taken = q.pictureNames();
         const fileName = name ? pictureFileName(name, taken) : pastedName(taken);
         const rel = q.addPicture(url, fileName);
-        const alt = verb === "Pasted" ? "Pasted image" : fileName.replace(/\.[^.]+$/, "");
-        const ta = srcRef.current;
-        if (live.current.mode === "edit" && ta) {
-          const r = insertImageLink(ta.value, ta.selectionStart, ta.selectionEnd, imageLink(alt, rel));
-          pendingSel.current = [r.start, r.end];
-          setText(r.text);
-        } else setText(insertImageLink(session.text, null, null, imageLink(alt, rel)).text);
+        // (A) T49: the alt text is the file's name without its extension, pasted or inserted.
+        const line = imageLink(fileName.replace(/\.[^.]+$/, ""), rel);
+        const v = cmRef.current;
+        if (v) v.dispatch(imageLinkTool(v.state, line, { atEnd: !session.caret }));
         q.hint(`${verb} image saved to ${rel} and linked`);
       } catch (e) {
         pRef.current.notify({ tone: "error", title: "Could not add the picture", description: e instanceof Error ? e.message : String(e) });
       }
     },
-    [session, setText],
+    [session],
   );
   const fileRef = useRef<HTMLInputElement | null>(null);
   const onFile = (e: ChangeEvent<HTMLInputElement>) => {
@@ -338,7 +443,7 @@ export function MarkdownEditor(p: Props) {
     if (f) void placePicture(f, f.name, "Inserted");
   };
 
-  // ---------- Preview: the markup ----------
+  // ---------- The markup ----------
   const [focusNote, setFocusNote] = useState<{ id: string; n: number } | null>(null);
   const onAdd = useCallback(
     (shape: NewShape, numbered: boolean) => {
@@ -351,11 +456,10 @@ export function MarkdownEditor(p: Props) {
   );
   // T45 (6.6, A): on a Markdown tab the main image is the page: Add border puts a rectangle callout on its edge.
   const onAddBorder = useCallback(() => {
-    if (live.current.mode === "edit") setMode("preview");
-    else setTool("select");
+    setTool("select");
     const { color: c, strokeWidth: w, pageH: h } = live.current;
     onAdd({ type: "rect", x: 0, y: 0, w: PAGE_W, h, stroke: c ?? lastColorRef.current, strokeWidth: w } as NewShape, true);
-  }, [onAdd, setMode, setTool]);
+  }, [onAdd, setTool]);
   const onUpdate = useCallback((id: string, patch: ShapePatch) => dispatch({ type: "update", id, patch }), [dispatch]);
   const onRemove = useCallback((id: string) => dispatch({ type: "remove", id }), [dispatch]);
   const onRemoveMany = useCallback((ids: string[]) => dispatch({ type: "removeMany", ids }), [dispatch]);
@@ -383,10 +487,11 @@ export function MarkdownEditor(p: Props) {
   };
 
   // ---------- Copy PNG and Export: the visible page with its callouts ----------
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const renderVisible = useCallback(async (): Promise<Flattened> => {
     const stage = handleRef.current?.stage();
-    const pg = pageRef.current;
-    if (!stage || !pg) throw new Error("Open the Preview to copy the page.");
+    const root = rootRef.current;
+    if (!stage || !root) throw new Error("The page is not on screen yet. Try again.");
     const v = live.current.view;
     const s = sizeRef.current;
     const seen = { x: -v.x / v.scale, y: -v.y / v.scale, w: s.width / v.scale, h: s.height / v.scale };
@@ -399,7 +504,9 @@ export function MarkdownEditor(p: Props) {
     const area = { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
     let under: Under | undefined;
     try {
-      under = { image: await pagePicture(pg), width: PAGE_W, height: pg.offsetHeight };
+      // The page as markdown-it draws it (no marks), under the callouts at the same page pixels.
+      const pg = await renderedPage(root, session.text, pRef.current.resolve);
+      under = { image: pg.image, width: PAGE_W, height: pg.height };
     } catch {
       under = undefined; // the callouts alone, on the canvas colour
     }
@@ -410,37 +517,17 @@ export function MarkdownEditor(p: Props) {
       if (!under) throw e;
       return flattenArea(stage, area, bg, { pixelRatio: 2 });
     }
-  }, [pageImage, stateRef]);
-
-  // Edit has no canvas: the rendered page alone (callouts are drawn in Preview).
-  const liveRef = useRef<HTMLDivElement | null>(null);
-  const renderPage = useCallback(async (): Promise<Flattened> => {
-    const el = liveRef.current;
-    if (!el) throw new Error("The page is not on screen yet. Try again.");
-    const img = await pagePicture(el);
-    const c = document.createElement("canvas");
-    c.width = Math.max(1, img.width);
-    c.height = Math.max(1, img.height);
-    const g = c.getContext("2d");
-    if (!g) throw new Error("The page could not be drawn.");
-    g.fillStyle = cssVar("--bg-canvas");
-    g.fillRect(0, 0, c.width, c.height);
-    g.drawImage(img, 0, 0, c.width, c.height);
-    return { dataUrl: c.toDataURL("image/png"), width: c.width, height: c.height };
-  }, []);
-  /** What Copy and Save as take: Preview, the visible page with its callouts (ISSUES 24); Edit, the rendered page. */
-  const picture = useCallback(() => (live.current.mode === "preview" ? renderVisible() : renderPage()), [renderPage, renderVisible]);
+  }, [pageImage, session, stateRef]);
 
   const onCopy = useCallback(() => {
     pRef.current.notify(null);
-    const preview = live.current.mode === "preview";
-    void picture()
+    void renderVisible()
       .then(async (f) => {
         await copyPngToClipboard(f.dataUrl);
-        pRef.current.hint(`${preview ? "Copied the visible page and its callouts as a PNG" : "Copied the page as a PNG"} · ${f.width} × ${f.height}`);
+        pRef.current.hint(`Copied the visible page and its callouts as a PNG · ${f.width} × ${f.height}`);
       })
       .catch((e: unknown) => pRef.current.notify({ tone: "error", title: "Copy failed", description: e instanceof Error ? e.message : String(e) }));
-  }, [picture]);
+  }, [renderVisible]);
 
   // T45 (6.4): Save as PNG, JPEG or PDF (the picture Copy gives), TXT or MD (the file's text).
   const onSaveAs = useCallback(
@@ -448,22 +535,22 @@ export function MarkdownEditor(p: Props) {
       const q = pRef.current;
       q.notify(null);
       const name = saveAsName(session.name, f);
-      const done = f === "txt" || f === "md" ? deliver(session.text, name, f) : picture().then((pic) => savePicture(pic.dataUrl, f, name));
+      const done = f === "txt" || f === "md" ? deliver(session.text, name, f) : renderVisible().then((pic) => savePicture(pic.dataUrl, f, name));
       done.then(
         (where) => q.hint(`Saved ${where}`),
         (e: unknown) => q.notify({ tone: "error", title: "Save as failed", description: e instanceof Error ? e.message : String(e) }),
       );
     },
-    [picture, session],
+    [renderVisible, session],
   );
 
-  // RUN3 T35: Preview gives the visible page with its callouts (what Copy PNG gives); Edit the rendered page alone.
+  // RUN3 T35: the visible page with its callouts (what Copy PNG gives); the rendered page alone without a canvas.
   const collideContent = useCallback(async () => {
     const doc = stateRef.current.doc;
     let preview: Uint8Array;
     try {
-      if (live.current.mode === "preview") preview = new Uint8Array(await dataUrlToBlob((await renderVisible()).dataUrl).arrayBuffer());
-      else if (liveRef.current) preview = await pngOf(await pagePicture(liveRef.current));
+      if (handleRef.current?.stage()) preview = new Uint8Array(await dataUrlToBlob((await renderVisible()).dataUrl).arrayBuffer());
+      else if (rootRef.current) preview = await pngOf((await renderedPage(rootRef.current, session.text, pRef.current.resolve)).image);
       else preview = await blankPng();
     } catch {
       preview = await blankPng();
@@ -481,11 +568,12 @@ export function MarkdownEditor(p: Props) {
         save();
         return;
       }
-      if (live.current.mode === "edit") {
-        if (ctrl && k === "b" && e.target === srcRef.current) {
-          e.preventDefault();
-          applyEdit(bold);
-        }
+      // In the text, the zoom keys still zoom the page; every other key is the editor's.
+      const inText = e.target instanceof Element && !!e.target.closest(".cm-editor");
+      if (inText && ctrl && !e.altKey && (k === "0" || k === "=" || k === "+" || k === "-")) {
+        e.preventDefault();
+        if (k === "0") fit();
+        else zoomBy(k === "-" ? -1 : 1);
         return;
       }
       if (isTyping(e.target) || e.altKey) return;
@@ -524,7 +612,7 @@ export function MarkdownEditor(p: Props) {
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [applyEdit, dispatch, fit, onCopy, redo, save, setTool, stateRef, undo, zoomBy]);
+  }, [dispatch, fit, onCopy, redo, save, setTool, stateRef, undo, zoomBy]);
 
   // With a drawing tool on, a press outside the page pane (not on the toolbar) goes back to Select and still lands.
   useEffect(() => {
@@ -542,18 +630,19 @@ export function MarkdownEditor(p: Props) {
   useLayoutEffect(() => {
     const api: MdEditorApi = {
       refInput: () => ({
-        mode: live.current.mode,
+        mode: "preview", // T49: one view, the page you type into and mark up
         shapes: stateRef.current.doc?.shapes ?? [],
         selectedId: stateRef.current.selectedId,
         tool: live.current.tool,
         color: live.current.color,
         strokeWidth: live.current.strokeWidth,
-        scale: live.current.mode === "preview" ? live.current.view.scale : null,
+        scale: live.current.view.scale,
         fitted: fittedRef.current,
-        bubbles: live.current.mode === "preview" ? handleRef.current?.notes() : undefined,
+        bubbles: handleRef.current?.notes(),
       }),
       pasteImage: (file) => void placePicture(file, null, "Pasted"),
-      save,
+      save: () => save(),
+      markSaved: () => save(true),
       collideContent,
     };
     apiRef.current = api;
@@ -563,20 +652,8 @@ export function MarkdownEditor(p: Props) {
   }, [apiRef, placePicture, save, stateRef, collideContent]);
 
   // ---------- Render ----------
-  const preview = mode === "preview";
   const callouts = shapes.filter(isCallout).length;
   const lines = text.split("\n").length;
-  const viewButton = (m: "edit" | "preview", label: string, title: string) => (
-    <button type="button" aria-pressed={mode === m} title={title} onClick={() => mode !== m && setMode(m)}>
-      {label}
-    </button>
-  );
-  const extra = (
-    <span className="viewseg" role="group" aria-label="View">
-      {viewButton("edit", "Edit", "Edit the Markdown, with a live preview beside it")}
-      {viewButton("preview", "Preview", "Preview the page and mark it up")}
-    </span>
-  );
   const tail = (
     <>
       <button type="button" className="btn icon" aria-label="Full width" aria-pressed={full} title={full ? "Show the sidebar and callouts" : "Full width: hide the sidebar and callouts"} onClick={p.onFull}>
@@ -602,13 +679,13 @@ export function MarkdownEditor(p: Props) {
   );
 
   return (
-    <div className="wsfill mdedit" data-theme-key={themeKey}>
-      {p.head({ onSave: save, canSave: true, extra, tail, onCopy, saveAs: { formats: saveAsFormats("markdown"), onSave: onSaveAs } })}
+    <div className="wsfill mdedit" data-theme-key={themeKey} ref={rootRef}>
+      {p.head({ onSave: () => save(), canSave: true, extra: null, tail, onCopy, saveAs: { formats: saveAsFormats("markdown"), onSave: onSaveAs } })}
       <Toolbar
         label="Markdown tools"
         hidden={hideTools}
         tool={tool}
-        setTool={pickTool}
+        setTool={setTool}
         color={color}
         setColor={setColor}
         strokeWidth={strokeWidth}
@@ -621,16 +698,15 @@ export function MarkdownEditor(p: Props) {
         canRedo={canRedo}
         second={
           <>
-            {/* (A) The text tools edit the source: on in Edit, shown but off in Preview. */}
+            {/* T49: the text tools act on the live page's selection, always on. */}
             <label className="tbtn hsel">
               <Icon name="heading" size={14} />
               <select
                 aria-label="Heading"
                 value=""
-                disabled={preview}
                 onChange={(e) => {
                   const v = e.target.value;
-                  if (v !== "") applyEdit((t, s, en) => linePrefix(t, s, en, v === "0" ? "" : "#".repeat(Number(v)) + " ", true));
+                  if (v !== "") applyTool((s) => headingTool(s, Number(v)));
                 }}
               >
                 <option value="">Heading</option>
@@ -640,27 +716,27 @@ export function MarkdownEditor(p: Props) {
                 <option value="3">Heading 3</option>
               </select>
             </label>
-            <button type="button" className="tbtn" title="Bulleted list" disabled={preview} onClick={() => applyEdit((t, s, e) => linePrefix(t, s, e, "- "))}>
+            <button type="button" className="tbtn" aria-label="Bulleted list" title="Bulleted list" onClick={() => applyTool(listTool)}>
               <Icon name="list" size={14} />
               List
             </button>
-            <button type="button" className="tbtn" title="Insert a table" disabled={preview} onClick={() => applyEdit(insertTable)}>
+            <button type="button" className="tbtn" aria-label="Insert a table" title="Insert a table" onClick={() => applyTool(tableTool)}>
               <Icon name="table" size={14} />
               Table
             </button>
-            <button type="button" className="tbtn" title="Label line, like **Status:** PASS" disabled={preview} onClick={() => applyEdit((t, s, e) => linePrefix(t, s, e, "**Label:** "))}>
+            <button type="button" className="tbtn" aria-label="Label line" title="Label line, like **Status:** PASS" onClick={() => applyTool(labelTool)}>
               <Icon name="tag" size={14} />
               Label
             </button>
-            <button type="button" className="tbtn" title="Numbered list" disabled={preview} onClick={() => applyEdit((t, s, e) => linePrefix(t, s, e, "1. "))}>
+            <button type="button" className="tbtn" aria-label="Numbered list" title="Numbered list" onClick={() => applyTool(numListTool)}>
               <Icon name="list-ordered" size={14} />
               Num list
             </button>
             <span className="vsep" />
-            <button type="button" className="tool" aria-label="Bold" title="Bold (Ctrl+B)" disabled={preview} onClick={() => applyEdit(bold)}>
+            <button type="button" className="tool" aria-label="Bold" title="Bold (Ctrl+B)" onClick={() => applyTool(boldTool)}>
               <Icon name="bold" />
             </button>
-            <button type="button" className="tool" aria-label="Link" title="Link" disabled={preview} onClick={() => applyEdit(link)}>
+            <button type="button" className="tool" aria-label="Link" title="Link" onClick={() => applyTool(linkTool)}>
               <Icon name="link" />
             </button>
             <span className="vsep" />
@@ -668,49 +744,30 @@ export function MarkdownEditor(p: Props) {
           </>
         }
       />
-      <div className={`mdbody${preview && !full ? " with-list" : ""}`}>
-        {preview ? (
-          <Canvas
-            image={pageImage}
-            shapes={shapes}
-            selectedId={state.selectedId}
-            tool={tool}
-            style={{ stroke: color ?? lastColor, strokeWidth }}
-            view={view}
-            onViewChange={setViewState /* a right-drag or Space-drag pan: the zoom stays as it was */}
-            onSize={onSize}
-            onAdd={onAdd}
-            onUpdate={onUpdate}
-            onRemove={onRemove}
-            onRemoveMany={onRemoveMany}
-            onSelect={onSelect}
-            handleRef={handleRef}
-            onWheelAt={onWheelAt}
-            underlay={<div className="mdpage" ref={measure} dangerouslySetInnerHTML={{ __html: html }} />}
-          />
-        ) : (
-          <div className="mdsplit">
-            <textarea
-              ref={srcRef}
-              className="mdsrc"
-              aria-label={session.name}
-              spellCheck={false}
-              wrap="off"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-            />
-            <div
-              className="mdlive"
-              onClick={(e) => {
-                // Links in the preview never take the window anywhere.
-                if (e.target instanceof Element && e.target.closest("a")) e.preventDefault();
-              }}
-            >
-              <div className="mdpage" ref={liveRef} dangerouslySetInnerHTML={{ __html: html }} />
+      <div ref={bodyRef} className={`mdbody${!full ? " with-list" : ""}`}>
+        <Canvas
+          image={pageImage}
+          shapes={shapes}
+          selectedId={state.selectedId}
+          tool={tool}
+          style={{ stroke: color ?? lastColor, strokeWidth }}
+          view={view}
+          onViewChange={setViewState /* a right-drag or Space-drag pan: the zoom stays as it was */}
+          onSize={onSize}
+          onAdd={onAdd}
+          onUpdate={onUpdate}
+          onRemove={onRemove}
+          onRemoveMany={onRemoveMany}
+          onSelect={onSelect}
+          handleRef={handleRef}
+          onWheelAt={onWheelAt}
+          underlay={
+            <div className="mdpage mdcm" ref={measure} data-tool={tool}>
+              <div ref={host} />
             </div>
-          </div>
-        )}
-        {preview && !full && (
+          }
+        />
+        {!full && (
           <CalloutsPanel
             shapes={shapes}
             selectedId={state.selectedId}
@@ -728,8 +785,8 @@ export function MarkdownEditor(p: Props) {
       <div className="statusbar">
         <span>{session.zipName}</span>
         <span>UTF-8 · LF</span>
-        {preview && <span>{`${callouts} callout${callouts === 1 ? "" : "s"} on the page`}</span>}
-        {preview && <span title="Ctrl + mouse wheel zooms; Ctrl+0 or F fits">{`${Math.round(view.scale * 100)}%${fittedRef.current ? " · fit" : ""}`}</span>}
+        <span>{`${callouts} callout${callouts === 1 ? "" : "s"} on the page`}</span>
+        <span title="Ctrl + mouse wheel zooms; Ctrl+0 or F fits">{`${Math.round(view.scale * 100)}%${fittedRef.current ? " · fit" : ""}`}</span>
         <span style={{ marginLeft: "auto" }}>{`${lines} lines`}</span>
       </div>
       <input ref={fileRef} type="file" accept="image/*" hidden onChange={onFile} />

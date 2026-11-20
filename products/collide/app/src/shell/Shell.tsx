@@ -655,7 +655,9 @@ export function Shell() {
     } else if (front.kind === "markdown" && mdEditor.current && mdSessions.current.get(front.id)) {
       const md = mdSessions.current.get(front.id)!;
       session = md;
-      const c = await mdEditor.current.collideContent();
+      const api = mdEditor.current;
+      const c = await api.collideContent();
+      afterSave = () => api.markSaved(); // T49 (A): the text and markup are in the file: the tab reads Saved
       // The pictures the text links, from the zip, in their own formats.
       const tree = zipById(md.zipId)?.tree;
       const pictures = pictureLinks(c.text).flatMap((link) => {
@@ -718,10 +720,8 @@ export function Shell() {
     samplesRef.current = next;
     setSamples(next);
     setOpenFolders((o) => new Set([...o, zipId]));
-    const tabId = openFile(zip, `${zipId}/${name}`);
-    const md = tabId ? mdSessions.current.get(tabId) : undefined;
-    // (A) A new file opens in Edit, ready to type.
-    if (md) md.mode = "edit";
+    // T49: a new file opens in the one live view, ready to type.
+    openFile(zip, `${zipId}/${name}`);
   }, [notify, openFile]);
 
   // ---------- T44 (5.1): the Connected pill. (A, ISSUES 44) green = the address saved in Settings answers ----------
