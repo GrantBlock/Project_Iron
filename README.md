@@ -2,7 +2,7 @@
 
 Agentic build of **Design Engineering AI** (designengineering.ai), a Block Concepts LLC product. Owner: Grant Block.
 
-Four agents build the app overnight from approved feature specs, and Grant plans, tries the results and merges during business hours (Central time).
+Two teams of agents build the app overnight from approved feature specs, and Grant plans, tries the results and merges during business hours (Central time).
 
 | Agent | Role | Runs |
 | --- | --- | --- |
@@ -10,6 +10,11 @@ Four agents build the app overnight from approved feature specs, and Grant plans
 | Lydia | Tester: acceptance tests before code, preview checks, morning report | 6pm and 5am |
 | Hrongar | Coder: one issue per pull request | 8pm and 3am |
 | Farengar | Reviewer: checks each pull request against the spec, design system and plan | 1am |
+| Belethor | Team B Tester (second Claude account, `claude-work`) | 6pm and 5am |
+| Ysolda | Team B Coder | 8pm and 3am |
+| Carlotta | Team B Reviewer | 1am |
+
+Two teams since 2026-11-20: Team A (Lydia, Hrongar, Farengar) on the main Claude account, Team B (Belethor, Ysolda, Carlotta) on the second. One planner and one issue queue (labels `team-a` / `team-b`); reviewers cross-review the other team's pull requests; Lydia writes one combined morning report. Details: `docs/agentic-dev-plan.md`, Roles.
 
 ## Where things are
 
