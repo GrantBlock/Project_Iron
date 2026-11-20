@@ -2,11 +2,13 @@
 // { collapsed, height }: height is the compact block (brand row + the five controls) measured in CSS px.
 // Collapsing unmaximizes the window (remembered), lifts any minimum size, and makes the page area exactly PANEL_WIDTH
 // wide and `height` tall, docked at the right edge of the work area of its screen, y kept but inside the work area.
-// While compact, a new height (a pill appears) resizes it. Expanding restores the minimum size, the exact earlier
+// While compact, a new height (a pill appears) resizes it. Expanding restores the minimum size (T50: the full view's
+// MIN_WIDTH x MIN_HEIGHT content size from minSize.ts when main.cjs passes `minimum`), the exact earlier
 // bounds, and maximizes again if it was maximized.
 // Electron's BrowserWindow and screen are passed in, so this is unit-tested with a fake window.
 // Window sizes, DPI and a second monitor on Windows are a manual check (TESTER-NOTES Run 4 item 7).
 import type { Rect, WindowLike } from "./windows";
+import { fitMinimum } from "./minSize";
 
 /** The panel's width: `--side-w` in src/shell/shell.css. */
 export const PANEL_WIDTH = 276;
@@ -25,6 +27,11 @@ export interface CollapseDeps {
   workArea: (bounds: Rect) => Rect;
   /** The page's zoom factor (CSS px to window units); 1 when absent. */
   zoom?: () => number;
+  /**
+   * T50: the full view's minimum page-area size (src/native/minSize.ts, window units). When given, Expand restores
+   * exactly this (plus the window's frame) instead of the size read before the collapse.
+   */
+  minimum?: () => { width: number; height: number };
 }
 
 export interface CollapseReply {
@@ -82,9 +89,19 @@ export function createCollapse(deps: CollapseDeps) {
       if (r.collapsed === false && saved) {
         const back = saved;
         saved = null;
-        if (back.min[0] > 0 || back.min[1] > 0) w.setMinimumSize(back.min[0], back.min[1]);
-        // The user may have maximized the compact window: setBounds would then only change its normal bounds.
+        // The user may have maximized the compact window: setBounds would then only change its normal bounds, and
+        // the frame (T50) is read from the normal window.
         if (w.isMaximized()) w.unmaximize();
+        const full = deps.minimum?.();
+        if (full) {
+          // T50: Electron's minimum size is the whole window's: the content minimum plus the frame, at most the
+          // work area of the screen the window goes back to (a small or high-scaling screen).
+          const now = w.getBounds();
+          const content = w.getContentBounds();
+          const frame = { width: Math.max(0, now.width - content.width), height: Math.max(0, now.height - content.height) };
+          const [mw, mh] = fitMinimum(frame, deps.workArea(back.bounds), full);
+          w.setMinimumSize(mw, mh);
+        } else if (back.min[0] > 0 || back.min[1] > 0) w.setMinimumSize(back.min[0], back.min[1]);
         if (!same(w.getBounds(), back.bounds)) w.setBounds(back.bounds);
         if (back.maximized) w.maximize();
         return { maximized: back.maximized };

@@ -76,16 +76,24 @@ let quitting = false;
 /** What loading settings.json and registering the hotkey gave (the page reads it at startup). */
 let settingsStatus = null;
 
-function createEditorWindow() {
+function createEditorWindow(screen) {
   const win = new BrowserWindow({
     title: native.APP_NAME,
+    // T50: 1280 x 800 and the minimum are the page area (content size), not the outer window.
     width: 1280,
     height: 800,
+    useContentSize: true,
+    minWidth: native.MIN_WIDTH,
+    minHeight: native.MIN_HEIGHT,
+    // T50 (A): no menu bar taking page height in a dev build (Alt shows it); the packaged app has no menu at all.
+    autoHideMenuBar: true,
     show: false,
     icon: path.join(__dirname, "icons", "icon.png"),
     webPreferences,
   });
 
+  // T50 review (A): on a small or high-scaling screen keep the window and its minimum inside the work area.
+  native.fitWindow(win, screen.getDisplayMatching(win.getBounds()).workArea);
   win.once("ready-to-show", () => win.show());
   win.on("closed", () => {
     editor = null;
@@ -166,6 +174,8 @@ app.whenReady().then(() => {
     editor: () => editor,
     workArea: (bounds) => screen.getDisplayMatching(bounds).workArea,
     zoom: () => (editor && !editor.isDestroyed() ? editor.webContents.getZoomFactor() : 1),
+    // T50: Expand puts back the full view's minimum (src/native/minSize.ts).
+    minimum: () => ({ width: native.MIN_WIDTH, height: native.MIN_HEIGHT }),
   });
   // Updates: only the installed Windows app updates itself; the portable exe and dev builds say why not.
   const updateBlocked = native.cannotUpdate({ packaged: app.isPackaged, platform: process.platform, portable: !!process.env.PORTABLE_EXECUTABLE_DIR });
@@ -234,7 +244,7 @@ app.whenReady().then(() => {
   // Same as the Rust shell's window: the native frame only, no menu bar.
   // Dev keeps Electron's default menu for reload and DevTools.
   if (app.isPackaged) Menu.setApplicationMenu(null);
-  editor = createEditorWindow();
+  editor = createEditorWindow(screen);
   updates.start();
 });
 

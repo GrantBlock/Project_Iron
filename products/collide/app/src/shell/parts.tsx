@@ -1,8 +1,9 @@
 // The pieces of the layout shell (RUN3 T31), after ../../../layout-prototype.html:
 // tab bar, tab header, blank canvas, the two ask-first splash screens, toasts, the Settings tab and a zip file's tab.
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 import { Icon } from "../ds";
+import { ICON_URLS } from "../ds/icons";
 // The logo is the design system's file, never redrawn or recoloured.
 import logoUrl from "../../../design-system/assets/logo/favicon.svg?url";
 import type { Settings } from "./prefs";
@@ -88,6 +89,23 @@ export interface HeadProps {
 /** The prototype's words for Save as .collide, now the header's Save source (T45). */
 export const SAVE_SOURCE_TIP = "Save source: a Collide file (.collide) with the sources in their own formats plus every shape, bubble, note and order; reopens editable";
 
+/**
+ * T50: the icon of a header button that can drop its words: the design system's Icon (the same Lucide mask in
+ * currentColor), drawn on an <svg> box so the button reads as "icon" to assistive tech and to the tests.
+ */
+function HeadIcon({ name, size = 16 }: { name: string; size?: number }) {
+  const url = `url("${ICON_URLS[name] ?? ""}")`;
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      width={size}
+      height={size}
+      style={{ display: "inline-block", flex: "none", background: "currentColor", WebkitMask: `${url} center / contain no-repeat`, mask: `${url} center / contain no-repeat` }}
+    />
+  );
+}
+
 /** T45 (6.4): Save as and its menu of formats. */
 function SaveAsButton({ formats, onSave }: { formats: readonly SaveFormat[]; onSave: (f: SaveFormat) => void }) {
   const [open, setOpen] = useState(false);
@@ -102,9 +120,9 @@ function SaveAsButton({ formats, onSave }: { formats: readonly SaveFormat[]; onS
   }, [open]);
   return (
     <span className="saveas" ref={wrap}>
-      <button type="button" className="btn" aria-haspopup="menu" aria-expanded={open} title="Save as a picture, a PDF or text" onClick={() => setOpen((o) => !o)}>
-        <Icon name="file-down" />
-        <span>Save as</span>
+      <button type="button" className="btn hw" aria-label="Save as" aria-haspopup="menu" aria-expanded={open} title="Save as a picture, a PDF or text" onClick={() => setOpen((o) => !o)}>
+        <HeadIcon name="file-down" />
+        <span className="w">Save as</span>
         <Icon name="chevron-down" size={14} />
       </button>
       {open && (
@@ -139,10 +157,99 @@ function SaveAsButton({ formats, onSave }: { formats: readonly SaveFormat[]; onS
   );
 }
 
+/** T50 (A): the name keeps at least this many CSS px before the header's buttons drop their words. */
+export const HEAD_NAME_MIN = 120;
+
+/**
+ * T50: true when the header (its own measured width, so open side panels count) is too narrow for the words of
+ * Save, Save source, Save as and Copy. Each of those buttons is measured while it shows its words and remembered by
+ * its label, so the switch does not depend on the state it is in; a button never seen with words switches back once
+ * to be measured.
+ */
+function useCompactHead(ref: RefObject<HTMLDivElement>) {
+  const [compact, setCompact] = useState(false);
+  const wordWidths = useRef(new Map<string, number>());
+  const compactRef = useRef(compact);
+  compactRef.current = compact;
+  const measure = useRef(() => {});
+  measure.current = () => {
+    const el = ref.current;
+    // Not there, or not laid out (hidden, or a test without layout): keep what it is.
+    if (!el || el.clientWidth === 0) return;
+    const cs = getComputedStyle(el);
+    const gap = parseFloat(cs.columnGap) || 0;
+    const pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+    const words = !compactRef.current;
+    let need = pad + HEAD_NAME_MIN;
+    let items = 0;
+    let unknown = false;
+    for (const c of el.children) {
+      if (c.classList.contains("names") || c.classList.contains("grow")) {
+        if (c.classList.contains("names")) items++;
+        continue;
+      }
+      if (getComputedStyle(c).display === "none") continue;
+      items++;
+      const hw = c.classList.contains("hw") ? c : c.querySelector(":scope > .hw");
+      const label = hw?.getAttribute("aria-label");
+      let w = c.getBoundingClientRect().width;
+      if (hw && label) {
+        if (words) wordWidths.current.set(label, w);
+        else if (wordWidths.current.has(label)) w = wordWidths.current.get(label)!;
+        else unknown = true;
+      }
+      need += w;
+    }
+    need += gap * Math.max(0, items - 1);
+    const next = unknown ? false : el.clientWidth < need;
+    if (next !== compactRef.current) {
+      compactRef.current = next;
+      setCompact(next);
+    }
+  };
+  const observer = useRef<ResizeObserver | null>(null);
+  // One observer for the header's life; fonts that finish loading change the words' widths, so measure afresh.
+  useEffect(() => {
+    const run = () => measure.current();
+    const fonts = typeof document !== "undefined" ? document.fonts : undefined;
+    const refonts = () => {
+      wordWidths.current.clear();
+      run();
+    };
+    fonts?.addEventListener?.("loadingdone", refonts);
+    if (typeof ResizeObserver !== "undefined") {
+      const ro = new ResizeObserver(run);
+      observer.current = ro;
+      const el = ref.current;
+      if (el) {
+        ro.observe(el);
+        for (const c of el.children) if (!c.classList.contains("names") && !c.classList.contains("grow")) ro.observe(c);
+      }
+    }
+    return () => {
+      fonts?.removeEventListener?.("loadingdone", refonts);
+      observer.current?.disconnect();
+      observer.current = null;
+    };
+  }, [ref]);
+  // After each render: measure, and watch the header and its items (observe is a no-op for ones already watched).
+  useLayoutEffect(() => {
+    measure.current();
+    const el = ref.current;
+    const ro = observer.current;
+    if (!el || !ro) return;
+    ro.observe(el);
+    for (const c of el.children) if (!c.classList.contains("names") && !c.classList.contains("grow")) ro.observe(c);
+  });
+  return compact;
+}
+
 /** The header of the tab in front: what it is, saved or not, Save, Close. T44 (5.2): no collapse button here; collapse is in the sidebar. */
 export function WsHead({ kind, name, path, dirty, savedLabel = "Saved", onSave, canSave, onClose, onMenu, extra, tail, onCopy, onSaveSource, saveAs }: HeadProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const compact = useCompactHead(ref);
   return (
-    <div className="wshead">
+    <div className="wshead" ref={ref} data-compact={compact ? "true" : "false"}>
       <button type="button" className="btn ghost icon mobile-only" aria-label="Recents" onClick={onMenu}>
         <Icon name="menu" />
       </button>
@@ -162,22 +269,22 @@ export function WsHead({ kind, name, path, dirty, savedLabel = "Saved", onSave, 
         <span className="lbl">{dirty ? "Unsaved" : savedLabel}</span>
       </span>
       {onSave && (
-        <button type="button" className="btn" data-testid="save-markup" title="Save (Ctrl+S)" disabled={!canSave} onClick={onSave}>
-          <Icon name="save" />
-          <span>Save</span>
+        <button type="button" className="btn hw" aria-label="Save" data-testid="save-markup" title="Save (Ctrl+S)" disabled={!canSave} onClick={onSave}>
+          <HeadIcon name="save" />
+          <span className="w">Save</span>
         </button>
       )}
       {onSaveSource && (
-        <button type="button" className="btn" title={SAVE_SOURCE_TIP} onClick={onSaveSource}>
-          <Icon name="package" />
-          <span>Save source</span>
+        <button type="button" className="btn hw" aria-label="Save source" title={SAVE_SOURCE_TIP} onClick={onSaveSource}>
+          <HeadIcon name="package" />
+          <span className="w">Save source</span>
         </button>
       )}
       {saveAs && <SaveAsButton formats={saveAs.formats} onSave={saveAs.onSave} />}
       {onCopy && (
-        <button type="button" className="btn" aria-label="Copy to clipboard" title="Copy to clipboard: a PNG of the print area (Ctrl+Shift+C)" data-testid="copy-btn" onClick={onCopy}>
-          <Icon name="clipboard-copy" />
-          <span>Copy</span>
+        <button type="button" className="btn hw" aria-label="Copy to clipboard" title="Copy to clipboard: a PNG of the print area (Ctrl+Shift+C)" data-testid="copy-btn" onClick={onCopy}>
+          <HeadIcon name="clipboard-copy" />
+          <span className="w">Copy</span>
         </button>
       )}
       {tail}
