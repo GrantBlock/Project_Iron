@@ -85,6 +85,8 @@ function createEditorWindow() {
     useContentSize: true,
     minWidth: native.MIN_WIDTH,
     minHeight: native.MIN_HEIGHT,
+    // T50 (A): no menu bar taking page height in a dev build (Alt shows it); the packaged app has no menu at all.
+    autoHideMenuBar: true,
     show: false,
     icon: path.join(__dirname, "icons", "icon.png"),
     webPreferences,
