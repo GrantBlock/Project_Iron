@@ -107,6 +107,7 @@ test("the splash banner dots are drawn in the paper ink and show against the spl
   await openPaper(page);
   await page.getByRole("button", { name: "Appearance" }).click(); // close the popover
   await page.getByTestId("file-input").setInputFiles(IMAGE_FILE);
+  await expect(page.getByTestId("status-dims")).toHaveText("400 × 300");
   await page.evaluate(() => window.__collide!.seedShape({ x: 20, y: 20, w: 80, h: 40 }));
   await page.getByRole("button", { name: "Close sample-400x300.png", exact: true }).click();
   const splash = page.getByRole("alertdialog");
