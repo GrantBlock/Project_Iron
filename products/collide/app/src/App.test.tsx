@@ -54,23 +54,47 @@ describe("App", () => {
     expect(window.__collide!.state().sidebar).toEqual({ delay: "10 s", addMode: "Behind", collapsed: false });
   });
 
-  it("themes apply to the whole app: the choice goes on <html> and is remembered (T31)", () => {
+  it("themes apply to the whole app: five swatches and a Match system switch; the choice goes on <html> and is remembered (T31, simplified 2026-11-20)", () => {
     const first = render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
-    const pop = within(screen.getByRole("dialog", { name: "Appearance" }));
-    fireEvent.click(pop.getByRole("button", { name: "Light" }));
+    let pop = within(screen.getByRole("dialog", { name: "Appearance" }));
+    // jsdom has no matchMedia, so "system" resolves to Dark here.
+    const swatches = () => pop.getAllByRole("button").filter((b) => b.classList.contains("sw"));
+    expect(swatches().map((b) => b.getAttribute("aria-label"))).toEqual(["Paper", "Lichen", "Ash", "Slate", "Dark"]);
+    expect(pop.getByRole("switch", { name: "Match system" }).getAttribute("aria-checked")).toBe("true");
+    expect(pop.getByRole("button", { name: "Dark" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(pop.getByRole("button", { name: "Paper" }));
     expect(document.documentElement.dataset.appTheme).toBe("light");
-    fireEvent.click(pop.getByRole("button", { name: "Aura" }));
-    fireEvent.click(pop.getByRole("button", { name: "moss" }));
-    expect(document.documentElement.dataset).toMatchObject({ appTheme: "aura", auraTheme: "moss" });
-    expect(window.__collide!.state()).toMatchObject({ theme: "aura", aura: "moss" });
+    expect(pop.getByRole("switch", { name: "Match system" }).getAttribute("aria-checked")).toBe("false");
+    fireEvent.click(pop.getByRole("button", { name: "Slate" }));
+    expect(document.documentElement.dataset).toMatchObject({ appTheme: "aura", auraTheme: "slate" });
+    expect(window.__collide!.state()).toMatchObject({ theme: "aura", aura: "slate" });
     first.unmount();
     render(<App />);
-    expect(window.__collide!.state()).toMatchObject({ theme: "aura", aura: "moss" });
+    expect(window.__collide!.state()).toMatchObject({ theme: "aura", aura: "slate" });
     fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
-    fireEvent.click(within(screen.getByRole("dialog", { name: "Appearance" })).getByRole("button", { name: "Dark" }));
+    pop = within(screen.getByRole("dialog", { name: "Appearance" }));
+    expect(pop.getByRole("button", { name: "Slate" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(pop.getByRole("button", { name: "Dark" }));
     expect(document.documentElement.dataset.appTheme).toBe("dark");
     expect(document.documentElement.dataset.auraTheme).toBeUndefined();
+  });
+
+  it("Match system on follows the computer (Paper in light, Dark in dark); off keeps the look in use (2026-11-20)", () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
+    const pop = within(screen.getByRole("dialog", { name: "Appearance" }));
+    const sw = () => pop.getByRole("switch", { name: "Match system" });
+    fireEvent.click(pop.getByRole("button", { name: "Lichen" }));
+    expect(window.__collide!.state()).toMatchObject({ theme: "aura", aura: "lichen" });
+    expect(sw().getAttribute("aria-checked")).toBe("false");
+    fireEvent.click(sw());
+    expect(window.__collide!.state()).toMatchObject({ theme: "system" });
+    expect(sw().getAttribute("aria-checked")).toBe("true");
+    expect(pop.getByRole("button", { name: "Lichen" }).getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(sw()); // off: keeps what system resolved to (Dark in jsdom) as the chosen look
+    expect(window.__collide!.state()).toMatchObject({ theme: "dark" });
+    expect(pop.getByRole("button", { name: "Dark" }).getAttribute("aria-pressed")).toBe("true");
   });
 
   it("collapse moves Recents to the right and is remembered (T31)", () => {

@@ -172,7 +172,14 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
 .seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
 .seg button { height: 30px; padding: 0; border-radius: var(--r-btn); border: var(--border-w) solid var(--line-2); background: transparent; color: var(--t2); font-size: 12px; }
 .seg button[aria-pressed="true"] { background: var(--t1); color: var(--bg); border-color: var(--t1); }
-.swatches { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.swatches { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.sysrow { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 30px; padding: 0 2px; border: 0; background: transparent; color: var(--t2); font: 500 12px var(--font-ui); }
+.sysrow .knob { position: relative; width: 30px; height: 18px; border-radius: 999px; background: var(--sunk); border: var(--border-w) solid var(--line-2); }
+.sysrow .knob::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--t3); transition: transform var(--dur-fast, 120ms); }
+.sysrow[aria-checked="true"] .knob { background: var(--t1); }
+.sysrow[aria-checked="true"] .knob::after { transform: translateX(12px); background: var(--bg); }
+.sw.dark { background: var(--ink-900); box-shadow: inset 0 0 0 1px var(--line-2); }
+.sw.dark::after { background: var(--signal-500); }
 .sw { aspect-ratio: 1; width: 100%; border-radius: 50%; border: 0; position: relative; padding: 0; background: var(--aura-bg); }
 .sw::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 38%; height: 38%; border-radius: 50%; background: var(--aura-accent); }
 .sw[aria-pressed="true"] { outline: 2px solid var(--t1); outline-offset: 2px; }
