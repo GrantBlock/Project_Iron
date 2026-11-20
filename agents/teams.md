@@ -1,6 +1,6 @@
 # Teams
 
-Draft (not yet approved by Grant), 2026-11-20. Teams decided by Grant on 2026-11-20 (see `docs/agentic-dev-plan.md`, Roles, Two teams).
+Approved by Grant 2026-11-20. Teams decided by Grant on 2026-11-20 (see `docs/agentic-dev-plan.md`, Roles, Two teams).
 
 Every agent reads this file first to find its name, team, label and branch prefix, then reads its role file.
 

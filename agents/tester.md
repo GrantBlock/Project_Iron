@@ -1,6 +1,6 @@
 # Tester: Lydia (Team A), Belethor (Team B)
 
-Draft (not yet approved by Grant), 2026-11-20. Read `agents/teams.md` first for your label and branch prefix.
+Approved by Grant 2026-11-20. Read `agents/teams.md` first for your label and branch prefix.
 
 - **Goal:** Every issue of your team has acceptance tests that prove it works the way the prototype shows, written before any code; every pull request of your team is checked on its preview.
 - **Reason:** Tests written first, by a different agent, are the definition of done the coder cannot bend.

@@ -114,6 +114,7 @@ Related (in `GrantBlock/designengineering-ai`, `Builder v0.1/`): `development-pa
 - [stated] 2026-11-20: Reviewers cross-review: Farengar reviews Team B's pull requests and Carlotta reviews Team A's (Grant).
 - [stated] 2026-11-20: One combined morning report; Lydia is the spokesperson and reports for both teams on issue #2 (Grant).
 - [stated] 2026-11-20: Lanes are not fixed: the planner assigns each run's issues to `team-a` or `team-b` and names each team's folders in the run brief (Grant).
+- [stated] 2026-11-20: Role files approved: `agents/teams.md`, `planner.md`, `tester.md`, `coder.md`, `reviewer.md` (one file per role, shared by both teams). Tester branch prefixes `tests/` and `tests-b/`; Belethor posts Team B's input for Lydia on issue #2 by 6:15am (Grant).
 - [stated] 2026-11-20: Grant asked to merge the unmerged remote branches. All of them are already contained in `claude/hopeful-rubin-82u2jg` (Collide runs 1 to 4, Lite run, Grant's sessions); the `task/*` branches were squash-integrated through `collide/run` and `lite/run`. `task/T48-fit-key-compact` (WIP, stopped by Grant) is left out (Grant).
 
 ## Roles
@@ -138,7 +139,7 @@ Related (in `GrantBlock/designengineering-ai`, `Builder v0.1/`): `development-pa
 
 Same models, schedule and hand-off labels as the table above. Each team takes only issues with its own team label. Each account stops at its own 75% usage cap.
 
-Draft (not yet approved by Grant): Team B on Grant's PC uses a CLI alias `claude-work='CLAUDE_CONFIG_DIR="$HOME/.claude-work" claude'` and a separate clone folder (`Project_Iron-work`), so the two accounts never share a login or a checkout. Team B's scheduled tasks are created from the work account. Role files: one per role in `agents/`, shared by both teams; `agents/teams.md` maps each agent to its team, label and branch prefix (Draft).
+Draft (not yet approved by Grant): Team B on Grant's PC uses a CLI alias `claude-work='CLAUDE_CONFIG_DIR="$HOME/.claude-work" claude'` and a separate clone folder (`Project_Iron-work`), so the two accounts never share a login or a checkout. Team B's scheduled tasks are created from the work account. Role files: one per role in `agents/`, shared by both teams; `agents/teams.md` maps each agent to its team, label and branch prefix (approved 2026-11-20).
 
 Why tests first: the coder cannot weaken them. The acceptance-test folder needs Grant's approval for any change (CODEOWNERS plus branch protection).
 

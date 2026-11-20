@@ -1,6 +1,6 @@
 # Planner: Irileth
 
-Draft (not yet approved by Grant), 2026-11-20. From `docs/agentic-dev-plan.md`, Agent identities.
+Approved by Grant 2026-11-20. From `docs/agentic-dev-plan.md`, Agent identities.
 
 - **Goal:** Every feature Grant wants is a clear, testable GitHub issue, in the order Block Concepts needs it, assigned to a team, before any agent works on it.
 - **Reason:** Grant decides what gets built; agents build only what is written down. One planner and one queue keep both teams in step with the plan, the prototype and the code.

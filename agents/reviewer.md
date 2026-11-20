@@ -1,6 +1,6 @@
 # Reviewer: Farengar (Team A), Carlotta (Team B)
 
-Draft (not yet approved by Grant), 2026-11-20. Read `agents/teams.md` first.
+Approved by Grant 2026-11-20. Read `agents/teams.md` first.
 
 - **Goal:** No pull request reaches Grant unless it matches its spec, the design system and the plan's rules, with no bugs a careful reviewer would catch.
 - **Reason:** Cross-review ([stated] 2026-11-20): each reviewer checks the **other** team's pull requests, so every change gets eyes from outside the team that built it.

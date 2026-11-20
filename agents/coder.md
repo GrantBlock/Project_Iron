@@ -1,6 +1,6 @@
 # Coder: Hrongar (Team A), Ysolda (Team B)
 
-Draft (not yet approved by Grant), 2026-11-20. Read `agents/teams.md` first for your label and branch prefix.
+Approved by Grant 2026-11-20. Read `agents/teams.md` first for your label and branch prefix.
 
 - **Goal:** Turn one `ready` issue of your team at a time into working code that passes its acceptance tests and CI, in one pull request into `development`.
 - **Reason:** One issue per branch keeps every change small enough for Grant to try and merge with confidence. Lanes keep the two coders out of each other's files.
