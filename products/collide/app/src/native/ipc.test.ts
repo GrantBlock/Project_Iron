@@ -136,10 +136,10 @@ describe("registerBridge", () => {
     expect(failing.state.frame).toBeNull();
   });
 
-  it("T31: collapse reaches the window code with the page's request and answers whether the window is maximized", async () => {
+  it("T31, T48: collapse reaches the window code with the page's request ({ collapsed, height }) and answers whether the window is maximized", async () => {
     const { invoke, collapsed } = setup();
-    expect(await invoke("collapse", fromApp, { collapsed: true, canvas: false })).toEqual({ ok: true, value: { maximized: true } });
-    expect(collapsed).toEqual([{ collapsed: true, canvas: false }]);
+    expect(await invoke("collapse", fromApp, { collapsed: true, height: 312 })).toEqual({ ok: true, value: { maximized: true } });
+    expect(collapsed).toEqual([{ collapsed: true, height: 312 }]);
   });
 
   it("T16: no stubs are left; the markups channels reach the store with the page's arguments, and its typed errors come back as messages", async () => {
