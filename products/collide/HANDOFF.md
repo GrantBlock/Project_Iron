@@ -9,6 +9,7 @@
 | --- | --- | --- |
 | T48 | F fits the canvas; compact view | Done (merged 07:39Z): Vitest 603, e2e 92, Electron 28 (+1 skipped), ref app 12/15, lint 11; ISSUES 57, 58 |
 | T49 | Markdown: one live editor (CodeMirror 6) | Done (merged 08:12Z): Vitest 613, e2e 105, Electron 28 (+1 skipped), ref app 10/15 (2 new: Edit button removed, ISSUES 60), lint 11; bundle +100 KB gzip; ISSUES 59, 60 |
+| T50 | Compact header buttons and a minimum window size | Done (merged 08:50Z): minimum 1197 x 415; Vitest 626, e2e 112, Electron 31 (+1 skipped), ref app 10/15, lint 11; ISSUES 61 |
 
 ---
 
