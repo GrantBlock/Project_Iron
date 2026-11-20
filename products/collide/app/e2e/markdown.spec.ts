@@ -1,6 +1,6 @@
 // RUN3 T34: the Markdown editor in the browser build, past what the reference specs check: Insert image saves into
 // the zip's images/ folder, Copy PNG gives a real picture of the visible page, Save keeps the text and the markup
-// for the session, and the page's scroll survives Edit / Preview and tab switches.
+// for the session, and the page's scroll survives tab switches (T49: no Edit / Preview any more).
 import { expect, test, type Page } from "@playwright/test";
 import { fileURLToPath } from "node:url";
 
@@ -10,6 +10,8 @@ const FIXTURE = fileURLToPath(new URL("../tests/fixtures/sample-400x300.png", im
 const ws = (page: Page) => page.getByRole("region", { name: "Workspace" });
 const recents = (page: Page) => page.getByRole("complementary", { name: "Recents" });
 const state = (page: Page) => page.evaluate(() => window.__collide!.state());
+// T49: one live editor. The file's text is the lines of the CodeMirror editor on the page (`.cm-line`, marks included).
+const mdText = async (page: Page) => (await ws(page).locator(".cm-line").allTextContents()).join("\n");
 
 async function openP06(page: Page) {
   await page.goto("/?sample");
@@ -17,14 +19,13 @@ async function openP06(page: Page) {
   await ws(page).getByRole("toolbar", { name: "Markdown tools" }).waitFor();
 }
 
-test("Insert image saves the picture into images/ and links it at the end of the file (Preview)", async ({ page }) => {
+test("Insert image saves the picture into images/ and links it at the caret (the end of the file when the editor was never clicked)", async ({ page }) => {
   await openP06(page);
   await ws(page).locator('input[type="file"]').setInputFiles(FIXTURE);
   await expect(page.getByRole("status")).toHaveText("Inserted image saved to images/sample-400x300.png and linked");
   await expect(recents(page).getByRole("button", { name: "sample-400x300.png", exact: true })).toBeVisible();
   expect((await state(page)).tabs[0].dirty).toBe(true);
-  await ws(page).getByRole("button", { name: "Edit", exact: true }).click();
-  const src = await ws(page).getByRole("textbox", { name: NAME }).inputValue();
+  const src = await mdText(page);
   expect(src.trimEnd().split("\n").pop()).toBe("![sample-400x300](images/sample-400x300.png)");
   await expect(ws(page).getByRole("img", { name: "sample-400x300" })).toBeVisible();
 });
@@ -64,14 +65,13 @@ test("Save keeps the text and the markup until Collide closes; closing and openi
   await openP06(page);
   // A rectangle on the page, then a line of text.
   await page.keyboard.press("r");
-  const h1 = (await ws(page).getByRole("heading", { level: 1 }).boundingBox())!;
+  const h1 = (await ws(page).locator(".md-h1").first().boundingBox())!;
   await page.mouse.move(h1.x + 40, h1.y + 120);
   await page.mouse.down();
   await page.mouse.move(h1.x + 140, h1.y + 160, { steps: 3 });
   await page.mouse.up();
   await page.keyboard.press("Escape");
-  await ws(page).getByRole("button", { name: "Edit", exact: true }).click();
-  const src = ws(page).getByRole("textbox", { name: NAME });
+  const src = ws(page).locator(".cm-content");
   await src.click();
   await page.keyboard.press("Control+End");
   await page.keyboard.type("Saved line");
@@ -86,13 +86,12 @@ test("Save keeps the text and the markup until Collide closes; closing and openi
   await recents(page).getByRole("button", { name: NAME, exact: true }).click();
   await ws(page).getByRole("toolbar", { name: "Markdown tools" }).waitFor();
   expect((await state(page)).items).toHaveLength(items);
-  await ws(page).getByRole("button", { name: "Edit", exact: true }).click();
-  expect((await ws(page).getByRole("textbox", { name: NAME }).inputValue()).endsWith("Saved line")).toBe(true);
+  expect((await mdText(page)).endsWith("Saved line")).toBe(true);
 });
 
-test("the page keeps its scroll through Edit / Preview and another tab", async ({ page }) => {
+test("the page keeps its scroll through another tab", async ({ page }) => {
   await openP06(page);
-  const heading = ws(page).getByRole("heading", { level: 1 });
+  const heading = ws(page).locator(".md-h1").first();
   const top0 = (await heading.boundingBox())!.y;
   const h1 = (await heading.boundingBox())!;
   await page.mouse.move(h1.x + 100, h1.y + 200);
@@ -101,8 +100,6 @@ test("the page keeps its scroll through Edit / Preview and another tab", async (
   const scrolled = (await heading.boundingBox())!.y;
   expect((await state(page)).zoom!.fit).toBe(true); // a scroll is no zoom
 
-  await ws(page).getByRole("button", { name: "Edit", exact: true }).click();
-  await ws(page).getByRole("button", { name: "Preview", exact: true }).click();
   await expect.poll(async () => (await heading.boundingBox())!.y).toBeCloseTo(scrolled, 0);
 
   await recents(page).getByRole("button", { name: "README.md", exact: true }).click();

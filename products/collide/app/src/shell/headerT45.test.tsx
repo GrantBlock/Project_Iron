@@ -134,10 +134,11 @@ describe("Markdown tabs: a double-row toolbar (6.2)", () => {
     return screen.getByRole("region", { name: "Workspace" });
   };
 
-  it("Edit and Preview both show the callout tools on row 1 and the text tools on row 2", () => {
+  it("the one view shows the callout tools on row 1 and the text tools on row 2; there is no Edit / Preview (T49)", () => {
     const ws = openNewFile();
-    for (const mode of ["Edit", "Preview"]) {
-      fireEvent.click(within(ws).getByRole("button", { name: mode }));
+    expect(within(ws).queryByRole("button", { name: "Edit" })).toBeNull();
+    expect(within(ws).queryByRole("button", { name: "Preview" })).toBeNull();
+    {
       const tb = within(ws).getByRole("toolbar", { name: "Markdown tools" });
       expect(within(ws).getAllByRole("toolbar")).toHaveLength(1);
       const rows = tb.querySelectorAll(":scope > .tbrow");
@@ -160,12 +161,10 @@ describe("Markdown tabs: a double-row toolbar (6.2)", () => {
     expect(within(screen.getByRole("menu", { name: "Save as" })).getAllByRole("menuitem").map((b) => b.textContent)).toEqual(["PNG", "JPEG", "PDF", "TXT", "MD"]);
   });
 
-  it("a callout tool picked in Edit opens the Preview with that tool on", () => {
+  it("a callout tool picked turns that tool on, with no view to switch (T49)", () => {
     const ws = openNewFile();
-    fireEvent.click(within(ws).getByRole("button", { name: "Edit" }));
-    expect(window.__collide!.state().mode).toBe("edit");
     fireEvent.click(within(ws).getByRole("button", { name: "Rectangle" }));
-    expect(within(ws).getByRole("button", { name: "Preview" }).getAttribute("aria-pressed")).toBe("true");
+    expect(within(ws).queryByRole("button", { name: "Preview" })).toBeNull();
     expect(window.__collide!.state().activeTool).toBe("rect");
   });
 

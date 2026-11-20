@@ -163,9 +163,8 @@ test("a Markdown file saved as .collide reopens with the same text, items and pi
       expect(await snapshot(page)).toEqual({ ...before, dirty: false });
       // The picture comes from the package: the page shows it, not a missing-picture box.
       await expect(page.getByRole("img", { name: "Line 3 conveyor guard" })).toHaveJSProperty("tagName", "IMG");
-      // The text is the same, byte for byte: Edit shows it.
-      await page.getByRole("button", { name: "Edit", exact: true }).click();
-      await expect(page.getByRole("textbox", { name: "P06-Project-Workspace-Spec.md" })).toHaveValue(text);
+      // The text is the same, byte for byte: the one live editor shows it (T49: no Edit button).
+      expect((await page.locator(".cm-line").allTextContents()).join("\n")).toBe(text);
     } finally {
       await second.close();
     }
