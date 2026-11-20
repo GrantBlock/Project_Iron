@@ -1,5 +1,6 @@
 // T11: the snip orchestrator. All side effects come in through `SnipDeps`, so the
-// order of calls is unit-testable with mocks. Window moves are Rust commands (src-tauri/src/snip.rs).
+// order of calls is unit-testable with mocks. Window moves are main-process calls (src/native/windows.ts).
+import { cropRect } from "./crop";
 
 export interface CaptureInfo {
   width: number;
@@ -14,6 +15,11 @@ export interface CropInfo {
   height: number;
   png: string;
 }
+/** T39: the whole frozen frame and the snipped box as fractions of it. */
+export interface WholeCapture {
+  png: string;
+  crop: { x: number; y: number; w: number; h: number };
+}
 export type OverlayResult =
   | { kind: "crop"; box: { x: number; y: number; w: number; h: number }; scale: number }
   | { kind: "cancel" };
@@ -25,7 +31,7 @@ export interface SnipNotice {
 }
 
 export interface SnipDeps {
-  /** Tauri `invoke`; undefined outside the desktop app. */
+  /** The desktop shell's `invoke`; undefined outside the desktop app. */
   invoke?: (cmd: string, args?: Record<string, unknown>) => Promise<unknown>;
   /** Resolve once the overlay window is listening (it answers a ping). */
   waitForOverlayReady: () => Promise<void>;
@@ -43,6 +49,11 @@ export interface SnipDeps {
   delayMs?: () => number;
   /** Wait `ms` (the snip delay) with the editor hidden, so the user can set up the screen. */
   wait?: (ms: number) => Promise<void>;
+  /**
+   * T42 (1.2): a snip that waited a delay has ended (cropped, cancelled or failed). The shell sets the delay back to 0s,
+   * so the next snip is not delayed unless the user picks a delay again.
+   */
+  delayUsed?: () => void;
   /** Timeouts for the handshake only. Never for the user's crop/cancel. */
   readyTimeoutMs?: number;
   ackTimeoutMs?: number;
@@ -76,18 +87,31 @@ const cause = (e: unknown) => (e instanceof Error ? e.message : String(e));
 export const NOT_DESKTOP: SnipNotice = {
   tone: "error",
   title: "New snip needs the Collide desktop app",
-  description: "Screen capture is not available in a browser. Open Collide from its installed app (or pnpm tauri dev) and try again.",
+  description: "Screen capture is not available in a browser. Open Collide from its installed app (or pnpm electron:dev) and try again.",
 };
 
 export function createSnipFlow(deps: SnipDeps) {
   let busy = false;
   let lastSnipId = 0;
+  let waited = false;
 
-  async function run(invoke: NonNullable<SnipDeps["invoke"]>, snipId: number) {
-    await invoke("hide_editor");
-    const delay = deps.delayMs?.() ?? 0;
-    if (delay > 0) await (deps.wait ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms))))(delay);
-    await deps.settle();
+  /**
+   * Takes the crop. `whole` is the frozen frame and the box as fractions of it (T39: Add snip keeps the whole capture,
+   * so Crop can widen the box later); New snip ignores it.
+   */
+  type Deliver = (url: string, name: string, whole?: WholeCapture) => Promise<unknown>;
+
+  async function run(invoke: NonNullable<SnipDeps["invoke"]>, snipId: number, deliver: Deliver, hide: boolean) {
+    if (hide) {
+      await invoke("hide_editor");
+      const delay = deps.delayMs?.() ?? 0;
+      if (delay > 0) waited = true;
+      if (delay > 0) await (deps.wait ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms))))(delay);
+      await deps.settle();
+    } else {
+      // T39 Add snip, Current: the editor stays; the overlay window must still be open and loaded.
+      await invoke("prepare_overlay");
+    }
     const cap = (await invoke("capture_monitor")) as CaptureInfo;
     await withTimeout(
       deps.waitForOverlayReady(),
@@ -112,11 +136,16 @@ export function createSnipFlow(deps: SnipDeps) {
     const crop = (await invoke("crop_capture", { x: box.x, y: box.y, w: box.w, h: box.h, scale })) as CropInfo;
     await invoke("hide_overlay");
     await invoke("show_editor");
-    await deps.openImage(crop.png, snipName(deps.now()));
+    // The box as fractions of the frame, from the same rounding the crop used.
+    const r = cropRect(box, scale, cap.width, cap.height);
+    await deliver(crop.png, snipName(deps.now()), { png: cap.png, crop: { x: r.x / cap.width, y: r.y / cap.height, w: r.w / cap.width, h: r.h / cap.height } });
   }
 
-  /** Start a snip. Ignored while one is already in progress. Never throws. */
-  async function start(): Promise<void> {
+  /**
+   * Start a snip. Ignored while one is already in progress. Never throws.
+   * `deliver` takes the crop instead of opening it in a new tab (Add snip, Behind: RUN3 T33).
+   */
+  async function start(deliver: Deliver = (url, name) => deps.openImage(url, name), opts: { hide?: boolean } = {}): Promise<void> {
     if (busy) return;
     const invoke = deps.invoke;
     if (!invoke) {
@@ -124,8 +153,9 @@ export function createSnipFlow(deps: SnipDeps) {
       return;
     }
     busy = true;
+    waited = false;
     try {
-      await run(invoke, ++lastSnipId);
+      await run(invoke, ++lastSnipId, deliver, opts.hide ?? true);
     } catch (e) {
       deps.notify({
         tone: "error",
@@ -137,6 +167,7 @@ export function createSnipFlow(deps: SnipDeps) {
       await invoke("show_editor").catch(() => undefined);
     } finally {
       busy = false;
+      if (waited) deps.delayUsed?.();
     }
   }
 

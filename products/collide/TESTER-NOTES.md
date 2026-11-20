@@ -2,7 +2,7 @@
 
 2026-11-14 · From Grant's session `claude/peaceful-babbage-04aj3j`, merged into `development`. These changes came from Grant testing Collide on Windows 11. What is automated is listed under each item; the **Windows** lines are what still needs a real check on Grant's PC (no Windows box in the cloud).
 
-Run: `cd products/collide/app && pnpm install && pnpm test && pnpm e2e --trace off` (Vitest 117, Playwright 39 at merge). Rust: `cd src-tauri && cargo test` (20).
+Run: `cd products/collide/app && pnpm install && pnpm test && pnpm e2e --trace off && xvfb-run -a pnpm e2e:electron --trace off` (`xvfb-run -a` on Linux only). Desktop app: `pnpm electron:dev`. At the 2026-11-14 merge: Vitest 117, Playwright 39, `cargo` 20; since T17 (run 2) there is no Rust, and the 20 `cargo` tests are Vitest tests (table in `app/CLAUDE.md`).
 
 ## What changed and how to test it
 
@@ -17,7 +17,7 @@ Run: `cd products/collide/app && pnpm install && pnpm test && pnpm e2e --trace o
    - Automated: `src/editor/notes.test.ts`, `e2e/fit.spec.ts`.
 5. **Toolbar:** Select, Rectangle, Ellipse, Filled rectangle, Filled ellipse, X mark (X), Point (P). The Arrow, Text and Callout tools were removed. Old markups with those shapes still open and display (`e2e/tools.spec.ts`).
 6. **Desktop window: one border, one title.** In Tauri, the native Windows title bar is kept and the in-app frame/title row is dropped. The browser build keeps the framed look (`e2e/frame.spec.ts`).
-   - Windows: `pnpm tauri dev`. One title bar, no rounded inner panel, no gap at the edges.
+   - Windows: `pnpm electron:dev`. One title bar, no rounded inner panel, no gap at the edges.
 
 7. **A finished snip is copied to the clipboard automatically**, like Snipping Tool. Toast: "Snip copied to clipboard". If the copy fails, the snip still opens and the toast says why (`e2e/snip.spec.ts`).
    - Windows: Ctrl+Alt+S, drag a box, then paste straight into another app without clicking Copy.
@@ -30,13 +30,47 @@ Run: `cd products/collide/app && pnpm install && pnpm test && pnpm e2e --trace o
 10. **Right-drag pans the canvas** in every tool (Space + left-drag still works). A right-press never selects, moves or draws, and the browser/WebView context menu is suppressed on the canvas (`e2e/editor.spec.ts`).
    - Windows: right-drag over a shape and over empty canvas with a mouse; also try a touchpad two-finger click.
 
+## Run 2+3 (Electron) — Windows manual checks (Grant/Lydia)
+
+Do these on Windows. Note pass/fail and attach a screenshot for each.
+
+1. In `products/collide/app`: `pnpm install && pnpm electron:dev`. The app opens in an Electron window.
+2. Run TESTER-NOTES items 1-10 above on Electron.
+3. `pnpm dist`, then run the portable `.exe` from `release/`. Check items 1, 2, 7 and 9 at 100% and at 150% display scaling.
+4. Press the real Ctrl+Alt+S from another app (not Collide). The overlay must appear and the snip must open in Collide.
+5. Overlay on a second monitor: place it left of or above the primary monitor (negative origin) and use mixed scaling (e.g. 100% and 150%). The capture must match the area you dragged.
+6. Add snip, Current and Behind: both toggles, with a snip added to an open markup.
+7. Collapse the window in both sizes, windowed and maximized, and check the sidebar and toolbar layout.
+8. Open dialogs: the folder Open dialog and the file Open dialog; also open a folder outside Markups.
+9. Save as .collide, close, and reopen the file. Markups, notes and order must be unchanged.
+10. Markdown in a zip: save a Markdown markup with images and open the zip to check its contents.
+11. Settings -> Storage with a retention period set: old items go as set and recent ones stay.
+12. Open a real PDF, mark it up, Export PDF, and Copy PNG; paste the PNG into another app.
+
+## Run 4 — Windows manual checks (Grant/Lydia)
+
+Added 2026-11-19, before the run. The run adds results and any new check as it builds T41 to T46. Do these on the build the run produces; note pass/fail with a screenshot.
+
+1. **Crosshair (T42, 1.1):** start New snip. The crosshair at the start point is easy to see on a light and a dark screen; the drag box looks as before.
+2. **Delay (T42, 1.2):** set the delay to 10s and take a snip. After it, the delay shows 0s.
+3. **Autosave (T43, 4.1):** take a first snip. It appears in `Documents\Collide\Markups` with no name prompt. Open a PDF or an image from another folder, change it: nothing is written back to that file without Save or Save as.
+4. **Recents (T43, 8.2):** open a file, save it, and see it in Recents.
+5. **Close splash (T43, 4.2):** closing an autosaved original does not ask; closing a marked-up image offers "Close without saving".
+6. **Line and rectangle (T41, 8.1, 7.1):** switch a rectangle callout to a line and back; number, note and position stay. Drag the line's end handles.
+7. **Collapse view (T44, 5.2):** collapsed, the sidebar shows New snip, delay, Add snip, Open and New file only; New file makes a Markdown file.
+8. **Connected (T44, 5.1):** the pill appears only after Settings → Enable Connected mode; off light with no server.
+9. **Toolbar (T45, 6.1):** narrow the window: the scroll bar appears only when icons no longer fit.
+10. **Header (T45, 6.3, 6.4):** Copy in the header on a snip, a Markdown tab and a PDF; paste into another app. Save source gives a `.collide`; Save as offers the right formats per tab type. Built (A, ISSUES 52): in the desktop app Save as PNG, JPEG, TXT and MD open Windows' Save dialog; Save as PDF writes into `Documents\Collide\Markups` (as Export did). Check the JPEG and the one-page PDF of a snip open in Photos and Edge. The cloud checks narrow windows in Chromium only (`e2e/headerToolbars.spec.ts`); Windows' classic scroll bars are manual.
+11. **Add snip size (T46, 2.1):** an added snip is the same size on screen as the original, at 100% and 150% scaling and on a second monitor.
+12. **Callout delete (T46, 3.3):** delete a callout, then Undo; it returns with its number. Also the list (3.1, 3.2, 3.4): "image 1" has Crop and no delete, each Add snip image is its own entry with Crop; crop "image 1" and check the callouts stay on what they mark (ISSUES 54).
+
 ## Known gaps / watch for
 
 - **Export still saves at the source image size**, so note boxes outside the image are cut off in Export and `export.png`. Grant hasn't decided yet whether Export should crop like Copy. Report it, don't file it as a bug.
 - Auto-placed boxes keep their place in shape order. Deleting an early shape can shift the auto-placed boxes after it; boxes the user moved stay where they are.
 - All keyboard shortcuts are provisional until the accessibility spec (ISSUES #10).
 - `e2e/history.spec.ts` "row and shape selection stay in sync" failed once under a full parallel run and then passed on every rerun. Watch for flakiness.
-- The e2e desktop check (`frame.spec.ts`) uses a stub Tauri bridge. It proves the layout switch, not the real window.
+- The e2e desktop check (`frame.spec.ts`) uses a stub `window.collide` bridge (Tauri until run 2 T17). It proves the layout switch, not the real window.
 
 ## Please report back (issue #2 nightly report)
 

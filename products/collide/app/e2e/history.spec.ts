@@ -23,7 +23,8 @@ test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   await page.waitForFunction(() => !!window.__collide);
-  await page.getByTestId("canvas").locator("canvas").first().waitFor();
+  // T31: home is the blank canvas; the Konva canvas comes with the Snip tab an image opens in.
+  await page.getByTestId("canvas").waitFor();
   await page.evaluate((u) => window.__collide!.openImage(u), FIXTURE);
 });
 
@@ -31,18 +32,21 @@ test("empty state, then rows with numbered badges; row and shape selection stay 
   await expect(page.getByTestId("callouts")).toContainText("Draw on the image to add a callout.");
   await page.keyboard.press("r");
   await drag(page, [40, 30], [140, 90]);
+  // T32: the new note has the cursor; Esc leaves it.
+  await page.keyboard.press("Escape");
   await page.keyboard.press("o");
   await drag(page, [200, 150], [300, 230]);
+  await page.keyboard.press("Escape");
   await expect(page.getByTestId("callout-row")).toHaveCount(2);
-  await expect(page.getByTestId("callout-badge")).toHaveText(["1", "2"]);
-  await expect(page.getByTestId("callout-row").nth(1)).toHaveAttribute("aria-selected", "true");
-  await page.getByTestId("callout-row").first().click({ position: { x: 4, y: 4 } });
-  await expect(page.getByTestId("callout-row").first()).toHaveAttribute("aria-selected", "true");
+  // T32: the list runs front to back, so the newest (number 2) is first.
+  await expect(page.getByTestId("callout-badge")).toHaveText(["2", "1"]);
+  await expect(page.getByTestId("callout-row").nth(0)).toHaveAttribute("aria-selected", "true");
+  await page.getByTestId("callout-row").last().click({ position: { x: 4, y: 4 } });
+  await expect(page.getByTestId("callout-row").last()).toHaveAttribute("aria-selected", "true");
   // Selecting on the canvas selects the row.
-  await page.keyboard.press("v");
   const p = await toPage(page, 250, 190);
   await page.mouse.click(p.x, p.y);
-  await expect(page.getByTestId("callout-row").nth(1)).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByTestId("callout-row").nth(0)).toHaveAttribute("aria-selected", "true");
 });
 
 test("note edits persist in the doc and are one undo step per burst", async ({ page }) => {
@@ -73,8 +77,8 @@ test("undo/redo across draw, move, delete and note edit via keyboard and buttons
   expect(await shapes(page)).toHaveLength(1);
   await expect(undoBtn).toBeEnabled();
 
-  // Move (+60, +30)
-  await page.keyboard.press("v");
+  // Move (+60, +30). T32: the new note has the cursor; Esc leaves it and goes back to Select.
+  await page.keyboard.press("Escape");
   const mid = await toPage(page, 160, 110);
   await page.mouse.move(mid.x, mid.y);
   await page.mouse.down();

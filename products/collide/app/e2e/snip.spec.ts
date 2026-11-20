@@ -44,63 +44,66 @@ test("if the clipboard refuses, the snip still opens and the toast says why", as
   await expect(page.getByTestId("notice")).toContainText("Clipboard is busy");
 });
 
-test("Canvas snip: drag a box over image + markups; it is copied and opened as a new markup", async ({ page, context }) => {
+test("Copy takes the image + markups past its edge (Canvas snip is removed, Grant 2026-11-15): copied as the print area", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   await page.waitForFunction(() => !!window.__collide);
   await page.evaluate(() => window.__collide!.openImage("/tests/fixtures/sample-400x300.png"));
-  // A markup sticking out past the left edge, so the snip area can include canvas background.
+  // A markup sticking out past the left edge, so the copied area includes canvas background.
   await page.evaluate(() => window.__collide!.seedShape({ x: -40, y: 20, w: 100, h: 60 }));
-  await page.getByTestId("canvas-snip").click();
-  await expect(page.getByTestId("canvas")).toHaveAttribute("data-tool", "canvas-snip");
+  await expect(page.getByTestId("canvas-snip")).toHaveCount(0);
+  const frame = await page.getByTestId("canvas").getByText(/^Print area · \d+ × \d+$/).textContent();
+  const [w, h] = frame!.replace("Print area · ", "").split(" × ").map(Number);
+  expect(w).toBeGreaterThan(400 + 40);
 
-  const box = (await page.getByTestId("canvas").boundingBox())!;
-  const s = (await page.evaluate(() => window.__collide!.getState().stage))!;
-  const at = (x: number, y: number) => ({ x: box.x + s.x + x * s.scale, y: box.y + s.y + y * s.scale });
-  const a = at(-60, 0);
-  const b = at(140, 100);
-  await page.mouse.move(a.x, a.y);
-  await page.mouse.down();
-  await page.mouse.move(b.x, b.y, { steps: 5 });
-  await page.mouse.up();
-
-  await expect(page.getByTestId("notice")).toContainText("Snip copied to clipboard");
-  await expect(page.getByTestId("file-name")).toHaveText(/^canvas-snip-\d{4}-\d{2}-\d{2}-\d{4}$/);
-  await expect(page.getByTestId("canvas")).toHaveAttribute("data-tool", "select");
-  const st = (await page.evaluate(() => window.__collide!.getState())) as { image: { width: number; height: number } };
-  expect([st.image.width, st.image.height]).toEqual([200, 100]);
-  // The new markup starts empty: the old rectangle is now part of the picture.
-  expect(((await page.evaluate(() => window.__collide!.getDoc())) as { shapes: unknown[] }).shapes).toHaveLength(0);
+  await page.getByTestId("copy-btn").click();
+  await expect(page.getByTestId("notice")).toContainText(`Copied the print area · ${w} × ${h} with note boxes`);
+  // Copy stays in the same markup: the tab and its shapes are as they were.
+  await expect(page.getByTestId("file-name")).toHaveText("sample-400x300.png");
+  expect(((await page.evaluate(() => window.__collide!.getDoc())) as { shapes: unknown[] }).shapes).toHaveLength(1);
   const size = await page.evaluate(async () => {
     const [item] = await navigator.clipboard.read();
     const bmp = await createImageBitmap(await item.getType("image/png"));
     return [bmp.width, bmp.height];
   });
-  expect(size).toEqual([200, 100]);
+  expect(size).toEqual([w, h]);
 });
 
-test("Canvas snip: Esc leaves the mode without snipping", async ({ page }) => {
+test("Esc leaves a drawing tool without drawing (Canvas snip mode is gone)", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   await page.waitForFunction(() => !!window.__collide);
-  await expect(page.getByTestId("canvas-snip")).toBeDisabled();
+  await expect(page.getByTestId("canvas-snip")).toHaveCount(0);
   await page.evaluate(() => window.__collide!.openImage("/tests/fixtures/sample-400x300.png"));
-  await page.getByTestId("canvas-snip").click();
+  await expect(page.getByTestId("canvas-snip")).toHaveCount(0);
+  await page.keyboard.press("r");
+  await expect(page.getByTestId("canvas")).toHaveAttribute("data-tool", "rect");
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("canvas")).toHaveAttribute("data-tool", "select");
   await expect(page.getByTestId("file-name")).toHaveText("sample-400x300.png");
+  expect(((await page.evaluate(() => window.__collide!.getDoc())) as { shapes: unknown[] }).shapes).toHaveLength(0);
 });
 
 test("snip delay: choices match Snipping Tool and the choice is remembered", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   await page.waitForFunction(() => !!window.__collide);
-  const sel = page.getByTestId("snip-delay");
-  await expect(sel).toHaveValue("0");
-  await expect(sel.locator("option")).toHaveText(["No delay", "3 s", "5 s", "10 s"]);
-  await sel.selectOption("5");
+  // T31 (Grant 2026-11-15): the delay is a toggle in the sidebar, 0s / 3s / 5s / 10s (was a drop-down in the toolbar).
+  const delay = page.getByTestId("snip-delay");
+  const words = () => page.evaluate(() => window.__collide!.state().sidebar.delay);
+  await expect(delay).toHaveAttribute("data-value", "0");
+  await expect(delay.getByRole("radio", { checked: true })).toHaveText("0s");
+  await expect(delay.getByRole("radio")).toHaveText(["0s", "3s", "5s", "10s"]);
+  // The same four choices in words: No delay, 3 s, 5 s, 10 s.
+  const said: (string | null)[] = [await words()];
+  for (const c of ["3s", "10s", "5s"]) {
+    await delay.getByRole("radio", { name: c, exact: true }).click();
+    said.push(await words());
+  }
+  expect(said).toEqual(["No delay", "3 s", "10 s", "5 s"]);
   await page.reload();
   await page.waitForFunction(() => !!window.__collide);
-  await expect(page.getByTestId("snip-delay")).toHaveValue("5");
+  await expect(page.getByTestId("snip-delay")).toHaveAttribute("data-value", "5");
+  await expect(page.getByTestId("snip-delay").getByRole("radio", { checked: true })).toHaveText("5s");
 });

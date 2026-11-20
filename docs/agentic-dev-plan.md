@@ -29,6 +29,70 @@ Related (in `GrantBlock/designengineering-ai`, `Builder v0.1/`): `development-pa
 - [stated] 2026-11-13: Cloud sessions cannot reach Grant's PC, so the morning report goes through GitHub: Lydia comments on issue #2 "Nightly report" and Agent Chat pulls it in (Grant). Answers open question 1 (option C). Format: `docs/morning-report.md`.
 - [stated] 2026-11-13: No Agent Chat `.exe` builds unless Grant asks and approves (Grant).
 - [stated] 2026-11-09: Claude builds; Grant decides and reviews results, not code. No throwaway work.
+- [stated] 2026-11-15: Collide layout (prototype `products/collide/layout-prototype.html`): chat is home on the right; the left panel holds snips, zips and roles only; chats change from a switcher on the chat name (a list is enough); the Reports button is removed (Grant).
+- [stated] 2026-11-15: Collide opens one item at a time (snip, file or role files) as a workspace with Save and Close (Grant).
+- [stated] 2026-11-15: Collide themes Dark, Light and Aura apply to the whole app (Grant).
+- [stated] 2026-11-15: Snip callout note boxes start slightly off the shape's centre line so every arrow is angled, about 20°, box above the line. Markdown page callouts (box and circle, no arrow) stay as they are (Grant).
+- [stated] 2026-11-15: Collapsing Collide moves Recents and Chat to the right. Windowed: the window shrinks to those two panels, and a new or opened snip fits to the canvas. Maximized: a blank canvas fills the rest of the window (Grant).
+- [stated] 2026-11-15: Agent files are edited in Collide and belong to a role with no personality (Planner, Coder, Reviewer, Tester) in the software project it works in, such as Project Iron (Grant).
+- [stated] 2026-11-15: Collide stores everything in a Collide folder in the project it is working on, or in the server app's storage until it is deleted automatically after [number of files] (Grant).
+- [stated] 2026-11-15 (later the same day; replaces the chat, switcher, Reports and role-file lines above): Collide has no agent chat for now; a project-based agent chat may come later. Agents are worked on separately from Collide (Grant).
+- [stated] 2026-11-15: Collide is Collide Snip plus the Zip editor, with storage on the server (Grant).
+- [stated] 2026-11-15: Collide run 2 is redone from the last merge as a straight move from Tauri/Rust to Electron/Node, with no change in what Collide does (`products/collide/RUN2.md`) (Grant).
+- [stated] 2026-11-15 (replaces "one item at a time" above): Collide's canvas has tabs. Each tab shows a dot for changed or saved, and closing a tab with unsaved changes asks first on a splash screen (Grant).
+- [stated] 2026-11-15: Collide sidebar order is New snip (with delay), Add snip (with Current or Behind), Open, Search; the All / Snips / Zips chips are removed (Grant).
+- [stated] 2026-11-15: Add snip adds a capture to the open canvas. Current takes a new screenshot of the program that is open; Behind hides Collide and captures the screen behind it, like New snip (Grant).
+- [stated] 2026-11-15: Collide Snip toolbar drops Canvas snip, Open file and the shaded rectangle and ellipse tools. Annotation colours and note bubbles use Aura themes (Grant).
+- [stated] 2026-11-15: Each callout card has number and type, hide text, hide bubble, hide outline, a grip to reorder, and a Fill percentage (0% means no fill) in place of shading and transparency. Arrows to an ellipse end on its edge (Grant).
+- [stated] 2026-11-15: Add snip places the capture beside the image and the canvas grows; the added image stays selectable and movable. Shapes resize more easily; added images resize with their aspect locked (Grant).
+- [stated] 2026-11-15 (replaces "Annotation colours and note bubbles use Aura themes" above): annotations use the same four colours in every theme, red, blue, yellow and gray, as material-style gradient buttons in a white box, with no theme changer; note bubbles are white boxes (Grant).
+- [stated] 2026-11-15: Collide Snip and the Markdown editor have a Line tool. The Markdown editor has the common shape tools (select, box, circle, line, X mark, colours, stroke, resize, undo/redo, delete), a Copy to clipboard as PNG for the marked-up page, and its Copy and Canvas snip stay inside the visible area (Grant).
+- [stated] 2026-11-15: After a shape is drawn, no colour stays selected, so the next shape's colour can be picked. Esc returns to the Select tool (Grant).
+- [stated] 2026-11-15: Collide remembers the last selected colour and line thickness; going back to a drawing tool after finishing (for example Select, then Circle) brings them back (Grant).
+- [stated] 2026-11-15: The New snip delay and the Add snip Current / Behind choice are toggles, not drop-downs (Grant).
+- [stated] 2026-11-15: The Markdown markup has the same leaders and callout card editing as the image markup. New tools go to both editors from now on. Both get Pen and Highlighter tools (Grant).
+- [stated] 2026-11-15: Pasting an image works like inserting one, in both the image editor and the Markdown editor (Grant).
+- [stated] 2026-11-15: Pens, highlighters and added images appear in the callout list without numbers or bubbles. The list runs front to back, and callout numbers follow front-to-back order instead of the order they were added (Grant).
+- [stated] 2026-11-15: An eraser for pen and highlighter removes the whole stroke and leaves shapes alone (Grant).
+- [stated] 2026-11-15: In the Markdown markup, shapes can start in the margin beside the page, and Ctrl + mouse wheel zooms the page (Grant).
+- [stated] 2026-11-15: The canvas can be saved as its own file type, a Collide file with the extension `.collide`, holding the source files and the markup so it reopens editable (Grant). Package layout is Draft (not yet approved by Grant): manifest.json, sources/, preview.png.
+- [stated] 2026-11-15: Collide callout numbers count up as callouts are added (counted from the back), so existing numbers stay (Grant). Replaces "numbers follow front-to-back order" above for the direction.
+- [stated] 2026-11-15: PDF is in Collide's scope for the scheduled run (RUN3 task T38), kept to the smallest version (Grant).
+- [stated] 2026-11-15: T38 scope approved: a PDF works the same as the other formats: open, mark up, save in a `.collide`, export in its own format (PDF), Copy as PNG; no text editing, forms or OCR (Grant).
+- [stated] 2026-11-15: Collide Run 2 (Tauri/Rust to Electron/Node) and Run 3 (build the prototype, tested against it, with PDF) are one run, scheduled at 2:45 AM Central (Grant).
+- [stated] 2026-11-15: The Snip canvas shows a print area marker; notes may go over it. Autofit works with the annotations on a tighter margin (Grant).
+- [stated] 2026-11-15: Annotation bubbles can stack to the right, top, bottom or left of another bubble (Grant).
+- [stated] 2026-11-15: Collide's scroll bars follow the theme. With a drawing tool on, a click outside the view area goes back to the Select tool (Grant).
+- [stated] 2026-11-15: The Markdown markup toolbar uses the Snip toolbar's layout (tools, colours, stroke; undo/redo and actions on the right). The Markdown editor gets Edit / Preview, an unsaved mark, Save, full width and hide-toolbar buttons, and Heading, List, Table, Label and Num list tools (Grant).
+- [stated] 2026-11-15: Canvas snip is removed from Collide (Snip and the Markdown editor). The Open markup (folder) button is removed from the Snip toolbar; the sidebar Open covers it (Grant).
+- [stated] 2026-11-15: Items in the left panel can be deleted (Grant). Assumed (A): the snips and zip files in Recents, since Collide has no chats; a splash screen asks first.
+- [stated] 2026-11-15: The scheduled Collide run is approved. It is paced for the 5-hour usage limit: session 1 at 2:45 AM Central, session 2 at 7:45 AM Central (5 hours later) continues from `HANDOFF.md` on `collide/run` (Grant).
+- [stated] 2026-11-15: Each agent runs on the model that fits its role: Planner (Irileth) Opus 5.5; Coder (Hrongar) Fable 5.2 at high effort; Reviewer (Farengar) Opus 5.5; Tester (Lydia) Sonnet 5.5; read-only file searches Haiku 5.5 (Grant asked for the optimal model per role; the split is Claude's recommendation).
+- [stated] 2026-11-15: Every agent run checks it can push before it starts work, and stops at once if it cannot. Before any overnight run, a short test run creates the branch and posts "ready" on issue #2 so Grant sees it working before he leaves it. Reason: the first scheduled Collide run had no repository access and did nothing (Grant).
+- [stated] 2026-11-16: Collide run session 2 (T32 onward) starts at 1:00 AM Central on 2026-11-17, with the Coder (Hrongar) on Opus 5.5 instead of Fable 5.2 (Grant).
+- [stated] 2026-11-17: In Collide, Add snip (Current and Behind) shows the same drag box as New snip, and the box is added beside the image. Added and pasted images have a Crop button in their callout card that re-crops them from the whole capture (Grant). Assumed (A): the crop keeps the image's scale and position; Reset returns to the whole capture.
+- [stated] 2026-11-17: Collide is packaged for coworkers as a Windows installer (per-user, no admin, Start menu and desktop shortcuts) plus a portable exe, with an install note (`products/collide/INSTALL.md`) (Grant). Assumed (A): version 0.1.0, unsigned for now.
+- [stated] 2026-11-17: The real Collide app shows no sample tags; Tags lists the tags on the snips in Recents and is hidden when there are none (Grant).
+- [stated] 2026-11-17: Collide is distributed with a web installer and updates itself from a static release folder on Cloudflare R2 (bucket `collide-releases`, public `r2.dev` address). Settings has an Updates section (Grant). Assumed (A): checks on start and every 6 hours, downloads in the background, installs on restart or quit, automatic checks on by default; the portable exe does not update; a self-contained offline installer stays available with `pnpm dist:offline`.
+- [stated] 2026-11-17: Collide 0.1.1 published to the Cloudflare release folder, to test updates from 0.1.0 (Grant).
+- [stated] 2026-11-17: The next scheduled run builds Lite (P16) as a working Electron app from its standalone prototype, tested against the prototype like the Collide run. Brief: `products/lite/RUN.md`; prototype copy in `products/lite/prototype/`. Schedule to be set by Grant after reading the brief (Grant).
+- [stated] 2026-11-17: Lite run scope: the prototype's sample content is built in (no Builder or package format work); the Assistant keeps the prototype's canned answers (no on-device model; D12 stays open); 3D viewer is Three.js (D8) with simple generated sample models; Search, document pages, the under-900px tabs and Open a folder from disk work for real (Grant).
+- [stated] 2026-11-17: Lite lives in `products/lite/` as its own Electron app on Collide's stack (pnpm, Vite, TypeScript, Vitest, Playwright, portable `.exe`); same roles and task loop as the Collide run, with the Coder on Opus 5.5 (Grant).
+- [stated] 2026-11-19: Collide improvements from Grant's testing (scope items 1 to 8 in `docs/collide-improvement-plan.md`) run as Run 4, brief `products/collide/RUN4.md`, tonight (Grant). Must-have T41 to T43 (callout fixes, snip capture, autosave and Recents), then T44 to T46 if usage remains, T47 handoff last. Coder on Opus 5.5.
+- [stated] 2026-11-19: Settings gets an Enable Connected mode button; the top-left "Connected" pill shows only when it is enabled (off light = not connected, green = server reached). Connected mode itself and the server stay unbuilt (Grant). Assumed (A): "reached" is a reachability check of the saved address.
+- [stated] 2026-11-19: Save as: TXT and MD for Markdown tabs only, PDF for every tab. Copy on a PDF tab copies the page nearest the centre of the view. Undo after deleting a callout restores its original number (Grant). Assumed (A) for the Undo reading.
+- [stated] 2026-11-19: Autosave re-saves only inside `Documents\Collide\Markups`; source files opened from elsewhere are never autosaved (Grant).
+- [stated] 2026-11-19: Grant approved every open (A) default and question in `products/collide/ISSUES.md` (rows 3 to 47, except row 10 deferred to the accessibility spec and row 30, a manual Windows check) and in `products/lite/ISSUES.md` as stated or built ("approve on everything"). Rows are marked Resolved, not deleted. Includes the Run 4 assumptions (rows 44 to 47).
+- [stated] 2026-11-19: Lite's run branches (`lite/run`) are merged into the session branch with the Collide work (Grant). Where the Lite brief or prototype copy conflicted, `lite/run`'s version was kept.
+- [stated] 2026-11-19: The improved Collide (Run 4, T41 to T46) is built in this session, in task order, rather than waiting for the 2:45 AM run (Grant).
+- 2026-11-19 (record, not a decision): Run 4 T41 to T46 were built and merged into the session branch (Coder Opus 5.5, tests first, each reviewed by the Planner); T47 handoff written. Three reference specs fail on the app by design until Grant decides ISSUES 53. No pull request is open yet.
+- [stated] 2026-11-20: Collide Appearance is simplified to five swatches with a Match system on/off switch; lightest to darkest: Paper (system light), Lichen, Ash, Slate, Dark (system dark) (Grant). Assumed (A), ISSUES 56: a swatch turns Match system off; the other Aura grounds are no longer offered.
+- [stated] 2026-11-20: Collide: the plain `F` key fits the canvas; the collapse button reduces the app to the compact view (brand row, New snip with delay, Add snip with Current/Behind, Open, New file) and swaps back to the full app (Grant). Ticket `products/collide/tickets/T48.md`.
+- [stated] 2026-11-20: Collide Markdown tabs get one live editor: type directly in the rendered page with the Markdown marks visible; the Edit/Preview toggle goes away. Uses CodeMirror 6 as a new dependency (Grant: "use code mirror"). Assumed (A): marks always visible; callouts stay where drawn. Ticket `products/collide/tickets/T49.md`.
+- [stated] 2026-11-20: Collide header buttons Save, Save source, Save as and Copy become icon-only when the window is small, and the full app gets a minimum window size that fits the toolbars (Grant). Ticket `products/collide/tickets/T50.md`.
+- [stated] 2026-11-20: Coding on T48 to T50 waits until 1:00 AM Central (Grant); queued as a scheduled task.
+- [stated] 2026-11-20: When T48 to T50 are complete, Collide is built into an installer and a portable exe so Grant can test the installed program (Grant). Assumed (A): version 0.2.0; uploaded to the `windows/test/` folder of the release bucket only, never to the live update feed or the stable download links; releasing to the live feed is Grant's separate go. Ticket `products/collide/tickets/T51.md`.
+- [stated] 2026-11-20: In Appearance, Paper (and Match system on a light computer) uses the Aura paper colours instead of the old Collide Light, which Grant liked less (Grant). Ticket `products/collide/tickets/T52.md`; queued for the 1:00 AM run.
 - [stated] 2026-11-14: Collide keyboard shortcuts (incl. Ctrl+Shift+C Copy and Ctrl+0 fit-to-window) are decided later in an accessibility spec; current bindings are provisional.
 - [stated] 2026-11-14: Collide callouts: every rectangle, ellipse and new Point gets a numbered note box placed outside the image on the nearest side (stacked, draggable), with an arrow to the shape; box width is adjustable and height fits the text; edit on canvas (double-click) or in the Callouts panel; empty boxes are left out of Copy/Export. Toolbar becomes Select, Rectangle, Ellipse, Point (Arrow, Text, Callout tools removed); old markups with those shapes still open and display (Grant).
 - [stated] 2026-11-14: Collide: a callout with an empty note still shows its number (as a chip) and arrow in the editor, Copy and Export. A "Hide #" toggle in the Callouts sidebar leaves a callout's number box and arrow out of Copy/Export (dimmed in the editor); per callout (A) (Grant).
@@ -40,6 +104,18 @@ Related (in `GrantBlock/designengineering-ai`, `Builder v0.1/`): `development-pa
 - [stated] 2026-11-14: One app named Collide, with sections Collide Snip and Collide Chat (Agent Chat moves in). Collide moves from Tauri to Electron + Node first, then Agent Chat becomes Collide Chat; server on port 3500 with Server/Connected modes like Agent Chat; autosave on the server; laptops keep local sessions in the left sidebar with a save-to-server icon and auto-retry; single user (Grant); AI queue 2; required access code. Run brief: `products/collide/RUN2.md` (Grant).
 - [stated] 2026-11-14: Collide adds a third section, Collide Editor: unpack a zip, open and edit its Markdown files with images, insert images from snip saves, repack the zip. Collide is a hosted chat and product editor custom built for Grant's multi-PC, multi-chat-session AI development workflow (Grant).
 - [stated] 2026-11-14: Collide Editor opens zips of any file type with a sub-folder tree (e.g. a zipped VS Code project), edits text/code and Markdown, inserts snips, repacks. Approved deps: fflate, markdown-it. Collide Editor runs before server markups and access codes (Grant).
+- [stated] 2026-11-17: The next scheduled run builds Lite (P16) as a working Electron app from its standalone prototype, tested against the prototype like the Collide run. Brief: `products/lite/RUN.md`; prototype copy in `products/lite/prototype/`. Schedule to be set by Grant after reading the brief (Grant).
+- [stated] 2026-11-17: Lite run scope: the prototype's sample content is built in (no Builder or package format work); the Assistant keeps the prototype's canned answers (no on-device model; D12 stays open); 3D viewer is Three.js (D8) with simple generated sample models; Search, document pages, the under-900px tabs and Open a folder from disk work for real (Grant).
+- [stated] 2026-11-17: Lite lives in `products/lite/` as its own Electron app on Collide's stack (pnpm, Vite, TypeScript, Vitest, Playwright, portable `.exe`); same roles and task loop as the Collide run, with the Coder on Opus 5.5 (Grant).
+- [stated] 2026-11-17: Lite uses a frameless window with the prototype's drawn window buttons (Grant).
+- [stated] 2026-11-17: Lite fixes two prototype quirks: the suggested question "What do I do before servicing the gearbox?" gets its real answer, and open/closed folders stay as they are when an item is selected or a search runs. The other two quirks (repeated citation chip, highlights after opening a result) stay as in the prototype (Grant).
+- [stated] 2026-11-17: Lite shows Markdown formatted with markdown-it (raw HTML off); markdown-it is added to Lite's dependency list (Grant).
+- [stated] 2026-11-20: Two teams. Team A (main Claude account): Lydia (Tester), Hrongar (Coder), Farengar (Reviewer). Team B (second Claude account, `claude-work` CLI, same GitHub user): Belethor (Tester), Ysolda (Coder), Carlotta (Reviewer). One planner (Irileth) and one issue queue for both; each issue carries `team-a` or `team-b` (Grant).
+- [stated] 2026-11-20: Reviewers cross-review: Farengar reviews Team B's pull requests and Carlotta reviews Team A's (Grant).
+- [stated] 2026-11-20: One combined morning report; Lydia is the spokesperson and reports for both teams on issue #2 (Grant).
+- [stated] 2026-11-20: Lanes are not fixed: the planner assigns each run's issues to `team-a` or `team-b` and names each team's folders in the run brief (Grant).
+- [stated] 2026-11-20: Role files approved: `agents/teams.md`, `planner.md`, `tester.md`, `coder.md`, `reviewer.md` (one file per role, shared by both teams). Tester branch prefixes `tests/` and `tests-b/`; Belethor posts Team B's input for Lydia on issue #2 by 6:15am (Grant).
+- [stated] 2026-11-20: Grant asked to merge the unmerged remote branches. All of them are already contained in `claude/hopeful-rubin-82u2jg` (Collide runs 1 to 4, Lite run, Grant's sessions); the `task/*` branches were squash-integrated through `collide/run` and `lite/run`. `task/T48-fit-key-compact` (WIP, stopped by Grant) is left out (Grant).
 
 ## Roles
 
@@ -49,6 +125,21 @@ Related (in `GrantBlock/designengineering-ai`, `Builder v0.1/`): `development-pa
 | Tester: Lydia | Scheduled cloud session | Claude Sonnet 5.5 | Writes acceptance tests from the spec before any code (Playwright, replaying the prototype flow); later checks the preview and posts screenshots | Tests merged, label `ready` |
 | Coder: Hrongar | Scheduled cloud session | Claude Fable 5.2 (`claude-fable-5-2`), high effort | Builds the next `ready` issue on its own branch until the tests pass; one pull request into `development` | Label `needs-review` |
 | Reviewer: Farengar | Scheduled cloud session | Claude Opus 5.5 | Checks the pull request against the spec, `design/DESIGN-SYSTEM.md` and the plan's rules (pricing, levels, numbers, source-of-truth order) | Label `review-passed` or `changes-requested` |
+
+### Two teams (decided 2026-11-20)
+
+| Role | Team A (main account) | Team B (`claude-work` account) |
+| --- | --- | --- |
+| Tester | Lydia (also writes the combined morning report) | Belethor |
+| Coder | Hrongar | Ysolda |
+| Reviewer | Farengar, reviews Team B's pull requests | Carlotta, reviews Team A's pull requests |
+| Issue label | `team-a` | `team-b` |
+| Branch prefix | `coder/` | `coder-b/` |
+| Lane (folders or product) | Set by the planner per run | Set by the planner per run |
+
+Same models, schedule and hand-off labels as the table above. Each team takes only issues with its own team label. Each account stops at its own 75% usage cap.
+
+Draft (not yet approved by Grant): Team B on Grant's PC uses a CLI alias `claude-work='CLAUDE_CONFIG_DIR="$HOME/.claude-work" claude'` and a separate clone folder (`Project_Iron-work`), so the two accounts never share a login or a checkout. Team B's scheduled tasks are created from the work account. Role files: one per role in `agents/`, shared by both teams; `agents/teams.md` maps each agent to its team, label and branch prefix (approved 2026-11-20).
 
 Why tests first: the coder cannot weaken them. The acceptance-test folder needs Grant's approval for any change (CODEOWNERS plus branch protection).
 
@@ -151,6 +242,47 @@ How a spec gets made: Irileth drafts it from the prototype page and the logs (tr
 | 5am | Lydia (Tester) | Checks preview URLs, posts screenshots and test results |
 | 6:30am | Lydia's report | One comment on issue #2: ready to merge, blocked, cost of the night; Agent Chat pulls it in |
 
+## Scheduled run: Collide prototype to Electron/Node (approved by Grant 2026-11-15)
+
+Grant asked (2026-11-15) for a scheduled run that turns the Collide prototype into the real app on Electron/Node and tests the app against the prototype. Brief: `products/collide/RUN3.md`. Reference: `products/collide/layout-prototype.html` (live copy: the Collide Layout Prototype artifact). Seed checks: `products/collide/prototype-checks/`.
+
+**One run at 2:45 AM Central** (Grant 2026-11-15). Phase E first (`products/collide/RUN2.md` T13–T17: straight move from Tauri/Rust to Electron/Node, no behaviour change), then the prototype's layout and features on that base (T30 onward in `RUN3.md`). One integration branch `collide/run`, one pull request into `development`.
+
+**How "tested against the prototype" works.**
+1. Lydia writes each acceptance spec from the prototype, using only visible UI and one shared read-only test hook (`window.__collide.state()`) that the prototype and the app both provide.
+2. Every spec runs against the prototype first. It must pass there; that proves the spec describes the prototype.
+3. The same spec then runs against the app. App failures are the coder's work list; prototype failures are bad specs.
+4. Screenshots (desktop and phone, Dark / Light / Aura) of the app are compared with the prototype's; differences go in the morning report for Grant.
+5. Nobody changes the prototype to make a spec pass, and no spec is weakened or skipped.
+
+**Schedule (paced for the 5-hour usage limit).**
+
+| Session | Time (Central) | Does |
+| --- | --- | --- |
+| 1 | 2:45 AM | Setup, Phase E (T13–T17), then T30 onward |
+| 2 | 7:45 AM (5 hours later, when the limit resets) | Continues from `HANDOFF.md` on `collide/run` until the board is done |
+
+Each session is the Planner and runs the SPEC.md task loop (Coder → Reviewer → Tester per task). Pacing rules:
+- Write the start time in `HANDOFF.md`; commit and push after every task, so nothing is lost when the limit hits.
+- From 4 h 15 min after the start, or at the first usage warning, start no new task: finish or park the current one, update `HANDOFF.md`, push, post the report.
+- Keep the Planner's own context small: delegate code, review and tests to subagents and read their short reports, not whole files.
+
+**Models per role.**
+
+| Role | Model | Why |
+| --- | --- | --- |
+| Planner (Irileth), the session itself | Opus 5.5 | Planning and unblocking; long session at half Fable's price |
+| Coder (Hrongar) | Fable 5.2, high effort | The hardest work (port, markup engine, PDF); fewer retries |
+| Reviewer (Farengar) | Opus 5.5 | Careful diff review without Fable's price |
+| Tester (Lydia) | Sonnet 5.5 | Writing and running Playwright specs |
+| File searches | Haiku 5.5 | Read-only searches |
+
+If the board is still not done after session 2, Grant decides the next session.
+
+**Done when** every reference spec passes on the app, the screenshot differences are accepted by Grant, and the one pull request from `collide/run` into `development` is open for Grant to merge.
+
+**Open questions** (storage count and folder, `.collide` layout, screenshot tolerance, Export) are not answered yet; the run uses the (A) defaults in `RUN3.md` and lists them in `ISSUES.md` for Grant.
+
 ## Usage limit (Draft (not yet approved by Grant))
 
 Goal ([stated]): stop each night at 75% of usage, so 25% is left for Grant's business hours.
@@ -164,7 +296,7 @@ An agent cannot reliably read the plan's usage meter from inside a session (A, t
 ## Rules for every agent
 
 - Never merge, never push to `development` or `main` directly, never touch `main`.
-- One coder at a time, one issue per branch, one pull request per issue.
+- One coder per team (two teams since 2026-11-20), each in its own lane; one issue per branch, one pull request per issue.
 - Stop rule: after 3 failed CI runs on one issue, label it `blocked`, write what was tried, move on.
 - No secrets in the repository. Keys live in Cloudflare secrets, GitHub Actions secrets and the cloud environment's credentials.
 - Follow `CLAUDE.md`: propose before changing a decision; never change pricing, levels or numbers; mark assumptions (A).

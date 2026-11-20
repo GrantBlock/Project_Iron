@@ -1,12 +1,13 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "../../../design-system/styles.css";
-import { emit, listen } from "@tauri-apps/api/event";
 import { flushSync } from "react-dom";
 import { createOverlayBridge, type FramePayload } from "./bridge";
 import { Overlay, type OverlayResult } from "./Overlay";
+import type { OverlayEvent } from "../native/bridge";
 
-const inTauri = "__TAURI_INTERNALS__" in window;
+/** The preload bridge; present only in the desktop app. */
+const collide = window.collide;
 const bridge = createOverlayBridge({
   decode: async (png) => {
     const img = new Image();
@@ -14,10 +15,10 @@ const bridge = createOverlayBridge({
     await img.decode();
   },
   setFrame: (png, scale, w) => window.__collideOverlay.setFrame(png, scale, w),
-  emit: (event, payload) => void emit(event, payload),
+  emit: (event, payload) => collide?.overlay.emit(event as OverlayEvent, payload),
 });
 
-// Test/host hook. T11 (Tauri) sets the frame via setFrame and listens for results
+// Test/host hook. The desktop app sets the frame via setFrame and listens for results
 // through the "collide:overlay-result" window event or onResult.
 export interface OverlayHook {
   lastResult: OverlayResult | null;
@@ -43,14 +44,14 @@ function Root() {
   React.useEffect(() => {
     window.__collideOverlay.setFrame = (frame, scale, physW) =>
       flushSync(() => setState((s) => ({ frame, scale, physW, n: (s?.n ?? 0) + 1 })));
-    if (!inTauri) return;
+    if (!collide) return;
     // T11 handshake: register listeners first, then announce ready. See bridge.ts for frame/ack/result.
     const unlisteners = [
-      listen<FramePayload>("collide:overlay-frame", (e) => void bridge.onFrame(e.payload)),
-      listen("collide:overlay-ping", () => void emit("collide:overlay-ready")),
+      collide.overlay.on("collide:overlay-frame", (payload) => void bridge.onFrame(payload as FramePayload)),
+      collide.overlay.on("collide:overlay-ping", () => collide.overlay.emit("collide:overlay-ready")),
     ];
-    void Promise.all(unlisteners).then(() => emit("collide:overlay-ready"));
-    return () => unlisteners.forEach((u) => void u.then((f) => f()));
+    collide.overlay.emit("collide:overlay-ready");
+    return () => unlisteners.forEach((off) => off());
   }, []);
   const onResult = React.useCallback((r: OverlayResult) => {
     const hook = window.__collideOverlay;
@@ -58,7 +59,7 @@ function Root() {
     hook.results.push(r);
     hook.onResult?.(r);
     window.dispatchEvent(new CustomEvent("collide:overlay-result", { detail: r }));
-    if (inTauri) bridge.onResult(r); // to the editor window (T11), tagged with the snipId
+    if (collide) bridge.onResult(r); // to the editor window (T11), tagged with the snipId
   }, []);
   // Esc must work even when no frame arrived (a blank topmost overlay must never trap the user).
   React.useEffect(() => {

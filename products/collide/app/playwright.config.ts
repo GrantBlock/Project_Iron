@@ -11,6 +11,8 @@ export default defineConfig({
   snapshotPathTemplate: "{testDir}/__snapshots__/{testFilePath}/{arg}{ext}",
   use: {
     baseURL: "http://localhost:1420",
+    // T31: the theme follows the computer (System). These specs were written on the dark look, so the browser asks for dark.
+    colorScheme: "dark",
     trace: "off",
     launchOptions: existsSync(preinstalled) ? { executablePath: preinstalled } : {},
   },

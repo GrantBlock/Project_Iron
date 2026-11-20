@@ -1,6 +1,9 @@
 node_modules
 dist
+dist-electron
+release
 target
-src-tauri/gen
 test-results
 playwright-report
+reference-out
+release-linux

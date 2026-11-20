@@ -13,13 +13,17 @@ test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   await page.waitForFunction(() => !!window.__collide);
-  await page.getByTestId("canvas").locator("canvas").first().waitFor();
+  // T31: home is the blank canvas; the Konva canvas comes with the Snip tab an image opens in.
+  await page.getByTestId("canvas").waitFor();
 });
 
 test("shell has the design-system layout and an empty AI pane", async ({ page }) => {
   const box = async (id: string) => (await page.getByTestId(id).boundingBox())!;
+  // T31: the sidebar is the prototype's Recents panel, 276 wide (was 232); it is there on the blank canvas too.
+  expect((await box("sidebar")).width).toBe(276);
+  // T31: the toolbar and the inspector belong to a Snip tab, so an image is opened first.
+  await page.evaluate((u) => window.__collide!.openImage(u), FIXTURE);
   expect((await box("toolbar")).height).toBe(52);
-  expect((await box("sidebar")).width).toBe(232);
   expect((await box("inspector")).width).toBe(296);
   await expect(page.getByTestId("ai-pane")).toBeEmpty();
 });

@@ -1,5 +1,5 @@
 // Markup folder storage behind a small interface (T06): `source.png`, `annotations.json`, `export.png`.
-// TauriMarkupStore (tauriStore.ts) writes real folders; MemoryMarkupStore backs Vitest and the browser/e2e build.
+// ElectronMarkupStore (electronStore.ts) writes real folders through the main process; MemoryMarkupStore backs Vitest and the browser/e2e build.
 import { parse, serialize, type AnnotationsDoc } from "../model";
 
 export const MARKUPS_SUBPATH = "Collide/Markups";
@@ -7,10 +7,18 @@ export const FILE_SOURCE = "source.png";
 export const FILE_ANNOTATIONS = "annotations.json";
 export const FILE_EXPORT = "export.png";
 
+/** An added image's file beside source.png (RUN3 T33): `image-<n>.png`. */
+export interface ImageFile {
+  name: string;
+  png: Uint8Array;
+}
+
 export interface SaveInput {
   sourcePng: Uint8Array;
   annotations: AnnotationsDoc;
   exportPng: Uint8Array;
+  /** Added images, as the document's `images` list names them. */
+  images?: ImageFile[];
 }
 
 export interface OpenedMarkup {
@@ -18,6 +26,8 @@ export interface OpenedMarkup {
   folderName: string;
   sourcePng: Uint8Array;
   annotations: AnnotationsDoc;
+  /** The added images annotations.json lists (none for an older markup). */
+  images: ImageFile[];
 }
 
 export interface MarkupStore {
@@ -28,6 +38,8 @@ export interface MarkupStore {
   /** Let the user choose a folder to open; null if cancelled. */
   pick(): Promise<string | null>;
   list?(): Promise<string[]>;
+  /** Delete a markup folder for good (an id returned by save/pick/list). Recents asks first (RUN3 T31). */
+  remove?(folder: string): Promise<void>;
 }
 
 /** A save/open failure whose message names the cause and the fix (shown in a Toast). */
@@ -56,6 +68,17 @@ export function markupFolderName(sourceName: string, date: Date = new Date()): s
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}_${slug}`;
 }
 
+/**
+ * T43 (4.1): `name`, or the first free `name-2`, `name-3`, ... among `taken` (folder ids or paths), so an autosave
+ * never replaces another snip's folder (two snips in the same minute get the same name).
+ */
+export function freeFolderName(name: string, taken: readonly string[]): string {
+  const used = new Set(taken.map((t) => t.replace(/[\\/]+$/, "").split(/[\\/]/).pop() ?? t));
+  let out = name;
+  for (let n = 2; used.has(out); n++) out = `${name}-${n}`;
+  return out;
+}
+
 /** Parse annotations.json text; a bad file becomes a MarkupError naming the cause and fix. */
 export function parseAnnotations(json: string): AnnotationsDoc {
   const r = parse(json);
@@ -78,6 +101,8 @@ interface Entry {
   source: string; // base64
   annotations: string;
   export: string; // base64
+  /** Added images by file name, base64 (T33). */
+  images?: Record<string, string>;
   savedAt: number;
 }
 
@@ -117,6 +142,7 @@ export class MemoryMarkupStore implements MarkupStore {
       source: toB64(input.sourcePng),
       annotations: annotationsText(input.annotations),
       export: toB64(input.exportPng),
+      ...(input.images?.length ? { images: Object.fromEntries(input.images.map((i) => [i.name, toB64(i.png)])) } : {}),
       savedAt: Date.now(),
     });
     this.flush();
@@ -126,11 +152,21 @@ export class MemoryMarkupStore implements MarkupStore {
   async open(folder: string): Promise<OpenedMarkup> {
     const e = this.map.get(folder);
     if (!e) throw new MarkupError("Could not open markup", `No saved markup named "${folder}". Save one first or pick another.`);
-    return { folderName: folder, sourcePng: fromB64(e.source), annotations: parseAnnotations(e.annotations) };
+    const annotations = parseAnnotations(e.annotations);
+    const images = (annotations.images ?? []).flatMap((i) => {
+      const b = e.images?.[i.file];
+      return b === undefined ? [] : [{ name: i.file, png: fromB64(b) }];
+    });
+    return { folderName: folder, sourcePng: fromB64(e.source), annotations, images };
   }
 
   async list(): Promise<string[]> {
     return [...this.map.entries()].sort((a, b) => b[1].savedAt - a[1].savedAt).map(([k]) => k);
+  }
+
+  async remove(folder: string): Promise<void> {
+    if (!this.map.delete(folder)) throw new MarkupError("Could not delete markup", `No saved markup named "${folder}". It may already be deleted.`);
+    this.flush();
   }
 
   /** No dialog in the browser: opens the most recently saved markup (A). */

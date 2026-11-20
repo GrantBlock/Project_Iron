@@ -46,6 +46,50 @@ describe("snip flow", () => {
     expect(calls).not.toContain("wait");
   });
 
+  // T42 (1.2): after a delayed snip the delay drops back to 0s; the flow says when a delayed snip has ended.
+  it("T42: a delayed snip that crops reports the delay used, after the crop is delivered", async () => {
+    const { calls, deps } = setup({ result: { kind: "crop", box: { x: 10, y: 20, w: 40, h: 30 }, scale: 1 } });
+    deps.delayMs = () => 10_000;
+    deps.wait = vi.fn(async () => undefined);
+    deps.delayUsed = vi.fn(() => void calls.push("delayUsed"));
+    await createSnipFlow(deps).start();
+    expect(deps.delayUsed).toHaveBeenCalledTimes(1);
+    expect(calls[calls.length - 1]).toBe("delayUsed");
+    expect(calls).toContain("openImage");
+  });
+
+  it("T42: a delayed snip that is cancelled reports the delay used", async () => {
+    const { deps } = setup({ result: { kind: "cancel" } });
+    deps.delayMs = () => 3000;
+    deps.wait = vi.fn(async () => undefined);
+    deps.delayUsed = vi.fn();
+    await createSnipFlow(deps).start();
+    expect(deps.delayUsed).toHaveBeenCalledTimes(1);
+  });
+
+  it("T42: a delayed snip that fails after the wait reports the delay used (A)", async () => {
+    const { deps } = setup({ fail: { capture_monitor: new Error("no screen") } });
+    deps.delayMs = () => 5000;
+    deps.wait = vi.fn(async () => undefined);
+    deps.delayUsed = vi.fn();
+    await createSnipFlow(deps).start();
+    expect(deps.notify).toHaveBeenCalled();
+    expect(deps.delayUsed).toHaveBeenCalledTimes(1);
+  });
+
+  it("T42: no delay, or Add snip (Current) that never waits, does not report a delay", async () => {
+    const { deps } = setup({ result: { kind: "cancel" } });
+    deps.delayMs = () => 0;
+    deps.delayUsed = vi.fn();
+    await createSnipFlow(deps).start();
+    const current = setup({ result: { kind: "cancel" } });
+    current.deps.delayMs = () => 3000;
+    current.deps.delayUsed = vi.fn();
+    await createSnipFlow(current.deps).start(undefined, { hide: false });
+    expect(deps.delayUsed).not.toHaveBeenCalled();
+    expect(current.deps.delayUsed).not.toHaveBeenCalled();
+  });
+
   it("success: hides editor, captures, shows overlay on the monitor, crops, restores, opens the crop", async () => {
     const { calls, invoke, deps, flow } = setup({ result: { kind: "crop", box: { x: 10, y: 20, w: 40, h: 30 }, scale: 1.25 } });
     await flow.start();
@@ -60,6 +104,26 @@ describe("snip flow", () => {
     expect(deps.openImage).toHaveBeenCalledWith(CROP.png, "snip-2026-11-14-0905");
     expect(deps.notify).not.toHaveBeenCalled();
     expect(flow.isBusy()).toBe(false);
+  });
+
+  it("T39 Add snip, Current: no hide, no delay; the box comes with the whole frame and the box as fractions", async () => {
+    const { calls, deps, flow } = setup({ result: { kind: "crop", box: { x: 96, y: 54, w: 768, h: 432 }, scale: 1 } });
+    deps.delayMs = () => 3000;
+    const deliver = vi.fn(async () => undefined);
+    await flow.start(deliver, { hide: false });
+    expect(calls).not.toContain("hide_editor");
+    expect(calls).not.toContain("settle");
+    expect(calls.slice(0, 2)).toEqual(["prepare_overlay", "capture_monitor"]);
+    expect(deliver).toHaveBeenCalledWith(CROP.png, "snip-2026-11-14-0905", { png: CAP.png, crop: { x: 0.05, y: 0.05, w: 0.4, h: 0.4 } });
+    expect(deps.openImage).not.toHaveBeenCalled();
+  });
+
+  it("T39 Add snip, Behind: hides first, like New snip", async () => {
+    const { calls, flow } = setup({ result: { kind: "crop", box: { x: 10, y: 20, w: 40, h: 30 }, scale: 1 } });
+    const deliver = vi.fn(async () => undefined);
+    await flow.start(deliver, { hide: true });
+    expect(calls[0]).toBe("hide_editor");
+    expect(deliver).toHaveBeenCalledTimes(1);
   });
 
   it("cancel: overlay hidden, editor shown, nothing opened, no toast", async () => {
@@ -126,7 +190,7 @@ describe("snip flow", () => {
     expect(calls.slice(-2)).toEqual(["hide_overlay", "show_editor"]);
   });
 
-  it("a string rejection (Tauri errors are strings) still produces a readable toast", async () => {
+  it("a string rejection (the desktop shell's errors can be strings) still produces a readable toast", async () => {
     const { deps, flow, invoke } = setup();
     invoke.mockRejectedValueOnce("No monitor found under the cursor — try again.");
     await flow.start();

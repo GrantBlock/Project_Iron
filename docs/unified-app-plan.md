@@ -1,5 +1,7 @@
 # One server app: Agent Chat + Collide
 
+> **On hold for chat (Grant, 2026-11-15):** Collide has no agent chat for now. A project-based agent chat may come later, and agents are worked on separately. Collide is Collide Snip plus the Zip editor, with storage on the server. Run 2 is now a straight move from Tauri/Rust to Electron/Node: see `products/collide/RUN2.md`. The server, storage and access parts below still guide later runs; the Agent Chat parts (P1, P4's chat features, report flow) do not apply until Grant brings chat back.
+
 Draft (not yet approved by Grant): 2026-11-14. Working name **[App name]**. Nothing in this plan is built yet.
 
 **What Collide is (Grant):** a hosted chat and product editor, custom built for Grant's multi-PC, multi-chat-session workflow in AI development.

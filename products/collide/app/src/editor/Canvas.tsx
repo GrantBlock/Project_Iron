@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { PointerEvent as ReactPointerEvent } from "react";
-import { Arrow, Circle, Ellipse, Group, Image as KonvaImage, Label, Layer, Rect, Shape as KonvaShape, Stage, Tag, Text, Transformer } from "react-konva";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
+import { Arrow, Circle, Ellipse, Group, Image as KonvaImage, Label, Layer, Line, Rect, Shape as KonvaShape, Stage, Tag, Text, Transformer } from "react-konva";
 import Konva from "konva";
 import type { Shape } from "../model";
-import { BADGE_SIZE, dragBounds, isRealDrag, resizeShape, shapeFromDrag, type DrawTool, type Style } from "./geometry";
-import { hasNoteBox, layoutNotes, leader, NOTE_BADGE, NOTE_BADGE_GAP, NOTE_FONT, NOTE_MIN_W, NOTE_PAD, NOTE_W, noteSize, noteTextWidth, type Box } from "./notes";
+import { BADGE_SIZE, isRealDrag, resizeShape, shapeFromDrag, type DrawTool, type Style } from "./geometry";
+import { hasNoteBox, layoutNotes, leader, noteUnit, snapNote, NOTE_BADGE, NOTE_BADGE_GAP, NOTE_FONT, NOTE_MIN_W, NOTE_PAD, NOTE_W, noteSize, noteTextWidth, type Box } from "./notes";
 import type { NewShape, ShapePatch } from "./store";
-import type { Tool } from "./tools";
+import { paintOf, type Tool } from "./tools";
+import { calloutNumbers, fillPctOf, fromPoints, hiddenOf, highlighterWidth, lineEnds, moveLineEnd, pixelArea, printArea, strokesHit, cropPixels } from "./engine";
 import { imageToScreen, panBy, screenToImage, wheelFactor, zoomAt, type Point, type Size, type View } from "./viewport";
 
 export interface LoadedImage {
@@ -14,11 +15,15 @@ export interface LoadedImage {
   name: string;
   width: number;
   height: number;
+  /** T46 (3.4): the part of `el` that is shown (file px); `width` and `height` are its size. Absent = the whole file. */
+  crop?: { x: number; y: number; width: number; height: number };
 }
 
 export interface CanvasHandle {
   stage: () => Konva.Stage | null;
   container: () => HTMLDivElement | null;
+  /** The note bubbles as laid out now (image px). */
+  notes: () => ReadonlyMap<string, Box>;
 }
 
 interface Props {
@@ -35,9 +40,18 @@ interface Props {
   onUpdate: (id: string, patch: ShapePatch) => void;
   onRemove: (id: string) => void;
   onSelect: (id: string | null) => void;
-  /** Canvas snip: the dragged area, in image pixels (may extend past the image). */
-  onCanvasSnip?: (area: { x: number; y: number; w: number; h: number }) => void;
+  /** The eraser took these strokes (one step). */
+  onRemoveMany?: (ids: string[]) => void;
   handleRef: React.MutableRefObject<CanvasHandle | null>;
+  /** Added images' pictures by file name (RUN3 T33). */
+  pictures?: ReadonlyMap<string, HTMLImageElement>;
+  /**
+   * RUN3 T34: a page drawn under the shapes (the Markdown page), in image pixels at the view's zoom and pan.
+   * The image is then only the page's size: it is not drawn, there is no print-area frame and the canvas is no picture.
+   */
+  underlay?: ReactNode;
+  /** Takes the wheel instead of the canvas's own zoom (the Markdown page scrolls; Ctrl + wheel zooms). */
+  onWheelAt?: (e: WheelEvent, cursor: Point) => void;
 }
 
 /** Resolve a design-system CSS variable to a colour string Konva can paint. */
@@ -58,30 +72,35 @@ const measureText = (text: string, fontSize: number) => {
   return { w: t.width(), h: t.height() };
 };
 
-/** Drag tools → the shape they draw and whether it is filled. */
-const DRAG_TOOLS: Partial<Record<Tool, { shape: DrawTool; fill?: true; snip?: true }>> = {
-  "canvas-snip": { shape: "rect", snip: true },
-  rect: { shape: "rect" },
-  ellipse: { shape: "ellipse" },
-  "rect-fill": { shape: "rect", fill: true },
-  "ellipse-fill": { shape: "ellipse", fill: true },
-  cross: { shape: "cross" },
-};
+/** Drag tools → the shape they draw. */
+const DRAG_TOOLS: Partial<Record<Tool, DrawTool | "line">> = { rect: "rect", ellipse: "ellipse", cross: "cross", line: "line" };
 
-const draftShapeOf = (d: Draft, style: Style) => ({ ...shapeFromDrag(d.tool, d.a, d.b, style), ...(d.fill ? { fill: true } : {}) }) as NewShape;
+const draftShapeOf = (d: Draft, style: Style): NewShape =>
+  d.tool === "line" ? { type: "line", ...fromPoints([d.a, d.b]), ...style } : shapeFromDrag(d.tool, d.a, d.b, style);
+
+/** "#RRGGBB" with an alpha, for fills. */
+const withAlpha = (hex: string, a: number) => {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex);
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+};
 
 /** Placeholder in the on-canvas note editor. */
 export const NOTE_PLACEHOLDER = "Describe…";
 
 /** Height of `text` wrapped to `width` at the note font size. */
-const measureNote = (text: string, width: number) =>
-  new Konva.Text({ text: text || " ", fontSize: NOTE_FONT, fontFamily: cssVar("--font-sans"), width, wrap: "word", lineHeight: 1.25 }).height();
+const measureNote = (text: string, width: number) => {
+  try {
+    return new Konva.Text({ text: text || " ", fontSize: NOTE_FONT, fontFamily: cssVar("--font-sans"), width, wrap: "word", lineHeight: 1.25 }).height();
+  } catch {
+    // No 2D canvas to measure with (a test's DOM): an estimate, about half an em per character.
+    return Math.max(1, Math.ceil(((text || " ").length * NOTE_FONT * 0.55) / Math.max(1, width))) * NOTE_FONT * 1.25;
+  }
+};
 
 interface Draft {
-  tool: DrawTool;
-  fill?: true;
-  /** Canvas snip selection, not a shape. */
-  snip?: true;
+  tool: DrawTool | "line";
   a: Point;
   b: Point;
 }
@@ -102,6 +121,8 @@ interface NodeProps {
   onMoved?: (id: string, x: number, y: number) => void;
   onEditText?: (id: string) => void;
   onDragMove?: (id: string, x: number, y: number) => void;
+  /** An added image's picture. */
+  picture?: HTMLImageElement;
 }
 
 /** Longest a note label grows before it wraps, in image pixels (A). */
@@ -122,7 +143,7 @@ function NoteLabel({ x, y, note }: { x: number; y: number; note: string }) {
   );
 }
 
-function ShapeNode({ shape, interactive, hidden, onSelect, onMoved, onEditText, onDragMove }: NodeProps) {
+function ShapeNode({ shape, interactive, hidden, onSelect, onMoved, onEditText, onDragMove, picture }: NodeProps) {
   const steel = cssVar("--steel-500");
   const onInk = cssVar("--ink-50");
   const badge = (cx: number, cy: number, n: number) => (
@@ -133,10 +154,29 @@ function ShapeNode({ shape, interactive, hidden, onSelect, onMoved, onEditText, 
   );
   let main: React.ReactNode = null;
   let tail: Point = { x: 0, y: 0 };
+  const paint = paintOf(shape.stroke);
+  const hid = hiddenOf(shape);
+  const fp = fillPctOf(shape);
+  const fillOf = fp > 0 ? withAlpha(paint, fp / 100) : "transparent";
+  const rel = () => {
+    const p = shape.pts ?? [];
+    return p.map((v, i) => (i % 2 === 0 ? v * shape.w : v * shape.h));
+  };
   switch (shape.type) {
     case "rect":
     case "highlight":
-      main = <Rect name="main" width={shape.w} height={shape.h} stroke={shape.stroke} strokeWidth={shape.strokeWidth} cornerRadius={4} fill={shape.fill ? shape.stroke : "transparent"} />;
+      main = <Rect name="main" width={shape.w} height={shape.h} stroke={paint} strokeEnabled={!hid.outline} strokeWidth={shape.strokeWidth} cornerRadius={4} fill={fillOf} />;
+      break;
+    case "line":
+      main = <Line name="main" points={rel()} stroke={paint} strokeWidth={shape.strokeWidth} lineCap="round" hitStrokeWidth={Math.max(12, shape.strokeWidth)} />;
+      break;
+    case "pen":
+      main = <Line name="main" points={rel()} stroke={paint} strokeEnabled={!hid.outline} strokeWidth={shape.strokeWidth} lineCap="round" lineJoin="round" hitStrokeWidth={Math.max(12, shape.strokeWidth)} />;
+      break;
+    case "hl":
+      main = (
+        <Line name="main" points={rel()} stroke={paint} strokeEnabled={!hid.outline} strokeWidth={highlighterWidth(shape.strokeWidth)} opacity={0.4} lineCap="round" lineJoin="round" hitStrokeWidth={Math.max(12, highlighterWidth(shape.strokeWidth))} />
+      );
       break;
     case "cross":
       main = (
@@ -144,7 +184,7 @@ function ShapeNode({ shape, interactive, hidden, onSelect, onMoved, onEditText, 
           name="main"
           width={shape.w}
           height={shape.h}
-          stroke={shape.stroke}
+          stroke={paint}
           strokeWidth={shape.strokeWidth}
           lineCap="round"
           hitStrokeWidth={Math.max(12, shape.strokeWidth)}
@@ -163,12 +203,12 @@ function ShapeNode({ shape, interactive, hidden, onSelect, onMoved, onEditText, 
       break;
     case "ellipse":
       main = (
-        <Ellipse name="main" x={shape.w / 2} y={shape.h / 2} radiusX={shape.w / 2} radiusY={shape.h / 2} stroke={shape.stroke} strokeWidth={shape.strokeWidth} fill={shape.fill ? shape.stroke : "transparent"} />
+        <Ellipse name="main" x={shape.w / 2} y={shape.h / 2} radiusX={shape.w / 2} radiusY={shape.h / 2} stroke={paint} strokeEnabled={!hid.outline} strokeWidth={shape.strokeWidth} fill={fillOf} />
       );
       break;
     case "point": {
       const r = Math.max(4, shape.strokeWidth * 1.5);
-      main = <Circle name="main" radius={r} fill={shape.stroke} stroke={cssVar("--ink-950")} strokeWidth={1.5} hitStrokeWidth={12} />;
+      main = <Circle name="main" radius={r} fill={paint} stroke={cssVar("--ink-950")} strokeWidth={1.5} hitStrokeWidth={12} />;
       break;
     }
     case "arrow": {
@@ -178,8 +218,8 @@ function ShapeNode({ shape, interactive, hidden, onSelect, onMoved, onEditText, 
         <Arrow
           name="main"
           points={shape.points}
-          stroke={shape.stroke}
-          fill={shape.stroke}
+          stroke={paint}
+          fill={paint}
           strokeWidth={shape.strokeWidth}
           pointerLength={len}
           pointerWidth={len}
@@ -190,8 +230,16 @@ function ShapeNode({ shape, interactive, hidden, onSelect, onMoved, onEditText, 
       );
       break;
     }
+    case "image":
+      // An added image: its picture, or a plain frame while it loads (RUN3 T33).
+      main = picture ? (
+        <KonvaImage name="main" image={picture} width={shape.w} height={shape.h} crop={shape.crop ? cropPixels(shape.crop, { width: picture.naturalWidth || picture.width, height: picture.naturalHeight || picture.height }) : undefined} />
+      ) : (
+        <Rect name="main" width={shape.w} height={shape.h} fill={cssVar("--surface-2")} stroke={cssVar("--line-2")} strokeWidth={1} />
+      );
+      break;
     case "text":
-      main = <Text name="main" text={shape.text} fontSize={shape.fontSize} fontFamily={cssVar("--font-sans")} fill={shape.stroke} />;
+      main = <Text name="main" text={shape.text} fontSize={shape.fontSize} fontFamily={cssVar("--font-sans")} fill={paint} />;
       break;
     case "callout":
       return (
@@ -229,6 +277,10 @@ function ShapeNode({ shape, interactive, hidden, onSelect, onMoved, onEditText, 
 
 interface NoteBoxProps {
   shape: Shape;
+  /** Display number (counted from the back). */
+  number: number;
+  /** Note unit: image px per bubble unit. */
+  u: number;
   box: Box;
   selected: boolean;
   interactive: boolean;
@@ -239,8 +291,10 @@ interface NoteBoxProps {
 }
 
 /** A numbered note box (auto-fit height, drag to move, drag the right edge to resize). */
-function NoteBox({ shape, box, selected, interactive, onSelect, onMove, onResize, onEdit }: NoteBoxProps) {
-  const note = shape.note?.trim() ?? "";
+function NoteBox({ shape, number, u, box: outer, selected, interactive, onSelect, onMove, onResize, onEdit }: NoteBoxProps) {
+  const note = hiddenOf(shape).text ? "" : (shape.note?.trim() ?? "");
+  // Drawn in bubble units inside a group scaled by u.
+  const box = { ...outer, w: outer.w / u, h: outer.h / u };
   const empty = note === "";
   const fontFamily = cssVar("--font-sans");
   const textX = NOTE_PAD + NOTE_BADGE + NOTE_BADGE_GAP;
@@ -250,10 +304,12 @@ function NoteBox({ shape, box, selected, interactive, onSelect, onMove, onResize
   };
   return (
     <Group
-      name={shape.hideNumber ? "note-box note-hidden" : "note-box"}
-      opacity={shape.hideNumber ? 0.35 : 1}
-      x={box.x}
-      y={box.y}
+      name={hiddenOf(shape).bubble ? "note-box note-hidden" : "note-box"}
+      opacity={hiddenOf(shape).bubble ? 0.35 : 1}
+      x={outer.x}
+      y={outer.y}
+      scaleX={u}
+      scaleY={u}
       listening={interactive}
       draggable={interactive}
       onMouseDown={(e) => {
@@ -271,7 +327,7 @@ function NoteBox({ shape, box, selected, interactive, onSelect, onMove, onResize
         width={box.w}
         height={box.h}
         fill={cssVar("--surface-2")}
-        stroke={selected ? shape.stroke : cssVar("--line-2")}
+        stroke={selected ? paintOf(shape.stroke) : cssVar("--line-2")}
         strokeWidth={1}
         cornerRadius={4}
       />
@@ -283,7 +339,7 @@ function NoteBox({ shape, box, selected, interactive, onSelect, onMove, onResize
         height={NOTE_BADGE}
         align="center"
         verticalAlign="middle"
-        text={String(shape.callout)}
+        text={String(number)}
         fontSize={10}
         fontStyle="600"
         fontFamily={cssVar("--font-mono")}
@@ -318,11 +374,11 @@ function NoteBox({ shape, box, selected, interactive, onSelect, onMove, onResize
             e.cancelBubble = true;
             const w = Math.max(NOTE_MIN_W, e.target.x() + 4);
             e.target.position({ x: w - 4, y: 0 });
-            onResize(shape.id, w, false);
+            onResize(shape.id, w * u, false);
           }}
           onDragEnd={(e) => {
             e.cancelBubble = true;
-            onResize(shape.id, Math.max(NOTE_MIN_W, e.target.x() + 4), true);
+            onResize(shape.id, Math.max(NOTE_MIN_W, e.target.x() + 4) * u, true);
           }}
         />
       )}
@@ -344,7 +400,7 @@ function handlers(shape: Shape, onSelect?: (id: string) => void, onMoved?: (id: 
   };
 }
 
-export function Canvas({ image, shapes, selectedId, tool, style, view, onViewChange, onSize, onAdd, onUpdate, onRemove, onSelect, onCanvasSnip, handleRef }: Props) {
+export function Canvas({ image, shapes, selectedId, tool, style, view, onViewChange, onSize, onAdd, onUpdate, onRemove, onRemoveMany, onSelect, handleRef, pictures, underlay, onWheelAt }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const trRef = useRef<Konva.Transformer>(null);
@@ -352,6 +408,10 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
   const [spaceDown, setSpaceDown] = useState(false);
   const [panning, setPanning] = useState(false);
   const [draft, setDraft] = useState<Draft | null>(null);
+  /** Pen or highlighter stroke being drawn, in image pixels. */
+  const [ink, setInk] = useState<{ tool: "pen" | "hl"; points: Point[] } | null>(null);
+  /** Strokes the eraser has touched in this drag (removed on release, as one step). */
+  const [erased, setErased] = useState<string[]>([]);
   const [edit, setEdit] = useState<TextEdit | null>(null);
   const spaceRef = useRef(false);
   /** Pan in progress: pointer and view at the start. The view follows (now - start), so a dropped move event cannot lose distance. */
@@ -361,12 +421,26 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
   /** Live position/size while a shape or note box is being dragged, so arrows follow. */
   const [moving, setMoving] = useState<{ id: string; shape?: Point; box?: Point; w?: number } | null>(null);
   const [noteEdit, setNoteEdit] = useState<{ id: string; value: string } | null>(null);
+  /** T41: a line end being dragged: the line as it is drawn now (stored on release, one undo step). */
+  const [endDrag, setEndDrag] = useState<{ id: string; patch: ShapePatch } | null>(null);
 
   // Latest props for window-level handlers.
-  const live = useRef({ view, tool, style, onAdd, onCanvasSnip });
-  live.current = { view, tool, style, onAdd, onCanvasSnip };
+  const live = useRef({ view, tool, style, onAdd, onRemoveMany, shapes });
+  live.current = { view, tool, style, onAdd, onRemoveMany, shapes };
 
-  handleRef.current = { stage: () => stageRef.current, container: () => wrapRef.current };
+  const notesRef = useRef<ReadonlyMap<string, Box>>(new Map());
+  handleRef.current = { stage: () => stageRef.current, container: () => wrapRef.current, notes: () => notesRef.current };
+
+  // Measure once before the first paint: a Snip tab mounts its canvas when it opens, and whoever opened it
+  // (the test hook too) expects the stage to be there as soon as the tab is.
+  useLayoutEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const s = { width: el.clientWidth, height: el.clientHeight };
+    if (s.width <= 0 || s.height <= 0) return;
+    setSize(s);
+    onSize(s);
+  }, [onSize]);
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -431,10 +505,11 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
       const rect = wrapRef.current?.getBoundingClientRect();
       if (!rect) return;
       const cursor = { x: e.evt.clientX - rect.left, y: e.evt.clientY - rect.top };
+      if (onWheelAt) return onWheelAt(e.evt, cursor);
       const factor = wheelFactor(e.evt.deltaY);
       onViewChange((v) => zoomAt(v, cursor, v.scale * factor));
     },
-    [onViewChange],
+    [onViewChange, onWheelAt],
   );
 
   // Pan: right-drag, or Space + left-drag.
@@ -469,9 +544,62 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
       live.current.onAdd({ type: "point", x: p.x, y: p.y, w: 0, h: 0, ...live.current.style }, true);
       return;
     }
+    if (t === "pen" || t === "hl") {
+      const pts: Point[] = [p];
+      setInk({ tool: t, points: pts });
+      const move = (ev: PointerEvent) => {
+        const evs = typeof ev.getCoalescedEvents === "function" ? ev.getCoalescedEvents() : [];
+        for (const c of evs.length ? evs : [ev]) {
+          const q = toImage(c.clientX, c.clientY);
+          const last = pts[pts.length - 1];
+          if (q.x !== last.x || q.y !== last.y) pts.push(q);
+        }
+        setInk({ tool: t, points: [...pts] });
+      };
+      const up = (ev: PointerEvent) => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+        window.removeEventListener("pointercancel", up);
+        setInk(null);
+        if (ev.type !== "pointerup" || pts.length < 2) return;
+        live.current.onAdd({ type: t, ...fromPoints(pts), ...live.current.style }, false);
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+      window.addEventListener("pointercancel", up);
+      return;
+    }
+    if (t === "eraser") {
+      const reach = 6 / live.current.view.scale;
+      const took = new Set<string>();
+      let last = p;
+      const touch = (a: Point, b: Point) => {
+        const before = took.size;
+        for (const id of strokesHit(live.current.shapes, a, b, reach)) took.add(id);
+        if (took.size !== before) setErased([...took]);
+      };
+      touch(p, p);
+      const move = (ev: PointerEvent) => {
+        const q = toImage(ev.clientX, ev.clientY);
+        touch(last, q);
+        last = q;
+      };
+      const up = (ev: PointerEvent) => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+        window.removeEventListener("pointercancel", up);
+        if (ev.type === "pointerup") touch(last, toImage(ev.clientX, ev.clientY));
+        setErased([]);
+        if (took.size) live.current.onRemoveMany?.([...took]);
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+      window.addEventListener("pointercancel", up);
+      return;
+    }
     const dt = DRAG_TOOLS[t];
     if (!dt) return;
-    const d: Draft = { tool: dt.shape, fill: dt.fill, snip: dt.snip, a: p, b: p };
+    const d: Draft = { tool: dt, a: p, b: p };
     draftRef.current = d;
     setDraft(d);
     const move = (ev: PointerEvent) => {
@@ -488,10 +616,7 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
       setDraft(null);
       if (!cur) return;
       const b = toImage(ev.clientX, ev.clientY);
-      if (ev.type === "pointerup" && isRealDrag(cur.a, b, live.current.view.scale)) {
-        if (cur.snip) live.current.onCanvasSnip?.(dragBounds(cur.a, b));
-        else live.current.onAdd(draftShapeOf({ ...cur, b }, live.current.style), true);
-      }
+      if (ev.type === "pointerup" && isRealDrag(cur.a, b, live.current.view.scale)) live.current.onAdd(draftShapeOf({ ...cur, b }, live.current.style), true);
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
@@ -523,7 +648,8 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
     const tr = trRef.current;
     const stage = stageRef.current;
     if (!tr || !stage) return;
-    const node = selected ? stage.findOne<Konva.Group>(`#${selected.id}`)?.findOne(".main") : undefined;
+    // T41: a line has its own end handles instead (arrows keep the Transformer).
+    const node = selected && selected.type !== "line" ? stage.findOne<Konva.Group>(`#${selected.id}`)?.findOne(".main") : undefined;
     tr.nodes(node ? [node] : []);
     tr.getLayer()?.batchDraw();
   }, [selected, size, image]);
@@ -540,14 +666,18 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
   };
 
   const sel = (id: string) => onSelect(id);
-  const ink = cssVar("--ink-50");
-  const canResize = selected && selected.type !== "callout" && selected.type !== "point";
+  const inkColor = cssVar("--ink-50");
+  const canResize = selected && selected.type !== "callout" && selected.type !== "point" && selected.type !== "line";
 
+  /** Shapes with a line end being dragged applied. */
+  const drawn = useMemo(() => (endDrag ? shapes.map((s) => (s.id === endDrag.id ? ({ ...s, ...endDrag.patch } as Shape) : s)) : shapes), [shapes, endDrag]);
   // Shapes as drawn right now (a shape being dragged moves its arrow live).
   const liveShapes = useMemo(
-    () => shapes.map((s) => (moving?.shape && moving.id === s.id ? { ...s, x: moving.shape.x, y: moving.shape.y } : s)),
-    [shapes, moving],
+    () => drawn.map((s) => (moving?.shape && moving.id === s.id ? { ...s, x: moving.shape.x, y: moving.shape.y } : s)),
+    [drawn, moving],
   );
+  /** T41 (7.1): the selected line's ends, where its handles go (hidden while the whole line is dragged). */
+  const ends = selected && moving?.id !== selected.id ? lineEnds(liveShapes.find((s) => s.id === selected.id) ?? selected) : null;
   const notes = useMemo(() => {
     if (!image) return new Map<string, Box>();
     const boxes = layoutNotes(liveShapes, image, measureNote);
@@ -555,11 +685,59 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
       const b = boxes.get(moving.id);
       const s = liveShapes.find((x) => x.id === moving.id);
       if (b && s) {
-        boxes.set(moving.id, { ...b, ...(moving.box ?? {}), ...noteSize(s, moving.w ?? b.w, measureNote) });
+        const nu = noteUnit(image);
+        const size = noteSize(s, (moving.w ?? b.w) / nu, measureNote);
+        boxes.set(moving.id, { ...b, ...(moving.box ?? {}), w: size.w * nu, h: size.h * nu });
       }
     }
     return boxes;
   }, [liveShapes, image, moving]);
+  notesRef.current = notes;
+  const numbers = useMemo(() => calloutNumbers(shapes), [shapes]);
+  const unit = image ? noteUnit(image) : 1;
+  const uk = unit * view.scale;
+  const area = useMemo(() => (image && !underlay ? printArea(image, shapes, notes) : null), [image, shapes, notes, underlay]);
+  const areaPx = area ? pixelArea(area) : null;
+  /** A bubble being dragged from the overlay: pointer and box at the start. */
+  const bubbleDrag = useRef<{ id: string; x: number; y: number; box: Box; moved: boolean } | null>(null);
+  const onBubbleDown = (id: string) => (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    const b = notes.get(id);
+    if (!b) return;
+    e.stopPropagation();
+    onSelect(id);
+    bubbleDrag.current = { id, x: e.clientX, y: e.clientY, box: b, moved: false };
+    const start = bubbleDrag.current;
+    const at = (ev: PointerEvent) => {
+      const d = start;
+      const k = live.current.view.scale;
+      return { x: d.box.x + (ev.clientX - d.x) / k, y: d.box.y + (ev.clientY - d.y) / k };
+    };
+    const move = (ev: PointerEvent) => {
+      const d = bubbleDrag.current;
+      if (!d) return;
+      if (!d.moved && Math.hypot(ev.clientX - d.x, ev.clientY - d.y) < 3) return;
+      d.moved = true;
+      setMoving({ id, box: at(ev) });
+    };
+    const up = (ev: PointerEvent) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+      const d = bubbleDrag.current;
+      bubbleDrag.current = null;
+      setMoving(null);
+      if (!d || !d.moved || ev.type !== "pointerup") return;
+      const p = at(ev);
+      // Dropped near a spot beside another bubble: it snaps there.
+      const others = [...notes.entries()].filter(([k]) => k !== id).map(([, v]) => v);
+      const snap = snapNote({ ...d.box, ...p }, others, 16 / live.current.view.scale);
+      onUpdate(id, { label: { ...(snap ?? p), w: d.box.w } });
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
+  };
 
   const onShapeDragMove = (id: string, x: number, y: number) => {
     // A rect/ellipse/point node sits at (x, y); an ellipse's Group is at its top-left too.
@@ -598,12 +776,13 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
     if (cur && value !== null && value.trim() !== (shapes.find((x) => x.id === cur.id)?.note ?? "").trim()) onUpdate(cur.id, { note: value.trim() });
   };
   const editBox = noteEdit ? notes.get(noteEdit.id) : undefined;
-  const editBoxPos = editBox ? imageToScreen(view, { x: editBox.x + NOTE_PAD + NOTE_BADGE + NOTE_BADGE_GAP, y: editBox.y + NOTE_PAD }) : null;
-  const keepRatio = selected?.type === "text";
+  const editBoxPos = editBox ? imageToScreen(view, { x: editBox.x + (NOTE_PAD + NOTE_BADGE + NOTE_BADGE_GAP) * unit, y: editBox.y + NOTE_PAD * unit }) : null;
+  // Shift keeps the aspect (Konva flips keepRatio while Shift is held).
+  // Added images: corners only, aspect always locked, Shift or not (RUN3 T33).
+  const keepRatio = selected?.type === "text" || selected?.type === "image";
   const cursor = panning ? "grabbing" : spaceDown ? "grab" : tool === "select" ? "default" : "crosshair";
-  const draftShape: Shape | null = draft && !draft.snip
-    ? ({ ...draftShapeOf(draft, style), id: "draft" } as Shape)
-    : null;
+  const draftShape: Shape | null = draft ? ({ ...draftShapeOf(draft, style), id: "draft" } as Shape) : null;
+  const inkShape: Shape | null = ink && ink.points.length > 1 ? ({ type: ink.tool, ...fromPoints(ink.points), ...style, id: "ink" } as Shape) : null;
   const editPos = edit ? imageToScreen(view, edit.at) : null;
 
   return (
@@ -611,6 +790,8 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
       ref={wrapRef}
       data-testid="canvas"
       data-tool={tool}
+      role={image && !underlay ? "img" : undefined}
+      aria-label={underlay ? undefined : image?.name}
       onPointerDownCapture={onPointerDownCapture}
       onContextMenu={(e) => e.preventDefault()}
       onPointerDown={onPointerDown}
@@ -623,11 +804,28 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
         minWidth: 0,
         minHeight: 0,
         overflow: "hidden",
-        background: "var(--pattern-dots), var(--ink-950)",
+        // The prototype's stage: the theme's canvas colour with a 16 px dot grid.
+        background: "radial-gradient(var(--canvas-dot) 1px, transparent 1.2px) 0 0 / 16px 16px, var(--bg-canvas)",
         cursor,
         touchAction: "none",
       }}
     >
+      {underlay && image && (
+        <div
+          data-testid="underlay"
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: image.width,
+            transformOrigin: "0 0",
+            transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
+            pointerEvents: "none",
+          }}
+        >
+          {underlay}
+        </div>
+      )}
       {size.width > 0 && size.height > 0 && (
         <Stage
           ref={stageRef}
@@ -647,14 +845,14 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
           }}
         >
           <Layer>
-            {image && <KonvaImage name="background" image={image.el} width={image.width} height={image.height} listening={false} />}
+            {image && !underlay && <KonvaImage key={image.crop ? "cropped" : "whole"} name="background" image={image.el} width={image.width} height={image.height} crop={image.crop} listening={false} />}
             {image &&
-              shapes.map((s) => (
+              drawn.map((s) => (
                 <ShapeNode
                   key={s.id}
                   shape={s}
                   interactive={tool === "select"}
-                  hidden={edit?.id === s.id}
+                  hidden={edit?.id === s.id || erased.includes(s.id)}
                   onSelect={sel}
                   onMoved={(id, x, y) => {
                     setMoving(null);
@@ -662,6 +860,7 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
                   }}
                   onDragMove={onShapeDragMove}
                   onEditText={editText}
+                  picture={s.type === "image" ? pictures?.get(s.src) : undefined}
                 />
               ))}
             {image &&
@@ -672,11 +871,11 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
                 return (
                   <Arrow
                     key={`leader-${s.id}`}
-                    name={s.hideNumber ? "note-leader note-hidden" : "note-leader"}
-                    opacity={s.hideNumber ? 0.35 : 1}
+                    name={hiddenOf(s).bubble ? "note-leader note-hidden" : "note-leader"}
+                    opacity={hiddenOf(s).bubble ? 0.35 : 1}
                     points={pts}
-                    stroke={s.stroke}
-                    fill={s.stroke}
+                    stroke={paintOf(s.stroke)}
+                    fill={paintOf(s.stroke)}
                     strokeWidth={1.5}
                     pointerLength={8}
                     pointerWidth={8}
@@ -693,6 +892,8 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
                   <NoteBox
                     key={`note-${s.id}`}
                     shape={s}
+                    number={numbers.get(s.id) ?? 0}
+                    u={unit}
                     box={box}
                     selected={s.id === selectedId}
                     interactive={tool === "select" && noteEdit?.id !== s.id}
@@ -704,33 +905,33 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
                 );
               })}
             {draftShape && <ShapeNode shape={draftShape} interactive={false} />}
-            {draft?.snip && (() => {
-              const r = dragBounds(draft.a, draft.b);
-              return (
-                <Group name="snip-selection" listening={false}>
-                  <Rect x={r.x} y={r.y} width={r.w} height={r.h} stroke={ink} strokeWidth={1 / view.scale} dash={[6 / view.scale, 4 / view.scale]} fill={cssVar("--line-1")} />
-                  <Text
-                    x={r.x}
-                    y={r.y - 18 / view.scale}
-                    text={`${Math.round(r.w)} × ${Math.round(r.h)}`}
-                    fontSize={11 / view.scale}
-                    fontFamily={cssVar("--font-mono")}
-                    fill={ink}
-                  />
-                </Group>
-              );
-            })()}
+            {inkShape && <ShapeNode shape={inkShape} interactive={false} />}
+            {area && (
+              <Rect
+                name="print-area"
+                x={area.x}
+                y={area.y}
+                width={area.w}
+                height={area.h}
+                stroke={inkColor}
+                opacity={0.5}
+                strokeWidth={1 / view.scale}
+                dash={[6 / view.scale, 4 / view.scale]}
+                listening={false}
+              />
+            )}
             <Transformer
               ref={trRef}
               rotateEnabled={false}
               flipEnabled={false}
               ignoreStroke
               keepRatio={keepRatio}
-              enabledAnchors={canResize ? ["top-left", "top-right", "bottom-left", "bottom-right"] : []}
-              borderStroke={ink}
+              shiftBehavior={selected?.type === "image" ? "none" : "default"}
+              enabledAnchors={canResize ? (keepRatio ? ["top-left", "top-right", "bottom-left", "bottom-right"] : ["top-left", "top-center", "top-right", "middle-right", "bottom-right", "bottom-center", "bottom-left", "middle-left"]) : []}
+              borderStroke={inkColor}
               borderStrokeWidth={1}
               borderDash={[4, 4]}
-              anchorStroke={ink}
+              anchorStroke={inkColor}
               anchorFill={cssVar("--ink-950")}
               anchorStrokeWidth={1}
               anchorSize={8}
@@ -741,8 +942,96 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
               }
               onTransformEnd={onTransformEnd}
             />
+            {selected &&
+              ends?.map((p, i) => (
+                <Circle
+                  key={`line-end-${i}`}
+                  name="line-end"
+                  x={p.x}
+                  y={p.y}
+                  radius={5 / view.scale}
+                  fill={cssVar("--ink-950")}
+                  stroke={inkColor}
+                  strokeWidth={1 / view.scale}
+                  hitStrokeWidth={8 / view.scale}
+                  draggable
+                  onMouseDown={(e) => {
+                    if (isPanButton(e.evt)) return;
+                    e.cancelBubble = true;
+                  }}
+                  onMouseEnter={(e) => {
+                    const el = e.target.getStage()?.container();
+                    if (el) el.style.cursor = "move";
+                  }}
+                  onMouseLeave={(e) => {
+                    const el = e.target.getStage()?.container();
+                    if (el) el.style.cursor = "";
+                  }}
+                  onDragMove={(e) => {
+                    e.cancelBubble = true;
+                    setEndDrag({ id: selected.id, patch: moveLineEnd(selected, i as 0 | 1, { x: e.target.x(), y: e.target.y() }) });
+                  }}
+                  onDragEnd={(e) => {
+                    e.cancelBubble = true;
+                    const patch = moveLineEnd(selected, i as 0 | 1, { x: e.target.x(), y: e.target.y() });
+                    setEndDrag(null);
+                    onUpdate(selected.id, patch);
+                  }}
+                />
+              ))}
           </Layer>
         </Stage>
+      )}
+      {image && (
+        <div data-testid="bubble-layer" style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
+          {areaPx && area && (() => {
+            const p = imageToScreen(view, { x: area.x, y: area.y });
+            return (
+              <span style={{ position: "absolute", left: p.x, top: Math.max(0, p.y - 16), font: "500 10px/14px var(--font-mono)", color: "var(--text-3)", whiteSpace: "nowrap" }}>
+                {`Print area · ${areaPx.width} × ${areaPx.height}`}
+              </span>
+            );
+          })()}
+          {liveShapes.map((s) => {
+            const b = notes.get(s.id);
+            if (!b || noteEdit?.id === s.id) return null;
+            const p = imageToScreen(view, b);
+            const text = hiddenOf(s).text ? "" : (s.note?.trim() ?? "");
+            return (
+              <div
+                key={s.id}
+                data-testid="bubble"
+                onPointerDown={tool === "select" ? onBubbleDown(s.id) : undefined}
+                onDoubleClick={() => editNote(s.id)}
+                style={{
+                  position: "absolute",
+                  left: p.x,
+                  top: p.y,
+                  width: Math.max(0, b.w * view.scale - 6),
+                  height: b.h * view.scale,
+                  pointerEvents: tool === "select" ? "auto" : "none",
+                  cursor: "move",
+                }}
+              >
+                {text && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      left: (NOTE_PAD + NOTE_BADGE + NOTE_BADGE_GAP) * uk,
+                      top: NOTE_PAD * uk,
+                      width: noteTextWidth(b.w / unit) * uk,
+                      font: `400 ${NOTE_FONT * uk}px/1.25 var(--font-sans)`,
+                      color: "transparent",
+                      userSelect: "none",
+                    }}
+                  >
+                    {text}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
       )}
       {edit && editPos && (
         <textarea
@@ -773,7 +1062,7 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
             margin: 0,
             padding: 0,
             border: 0,
-            outline: `1px dashed ${ink}`,
+            outline: `1px dashed ${inkColor}`,
             outlineOffset: 2,
             resize: "none",
             overflow: "hidden",
@@ -804,18 +1093,18 @@ export function Canvas({ image, shapes, selectedId, tool, style, view, onViewCha
             position: "absolute",
             left: editBoxPos.x,
             top: editBoxPos.y,
-            width: noteTextWidth(Math.max(editBox.w, NOTE_W)) * view.scale,
-            height: Math.max(editBox.h - NOTE_PAD * 2, NOTE_BADGE) * view.scale,
+            width: noteTextWidth(Math.max(editBox.w / unit, NOTE_W)) * uk,
+            height: Math.max(editBox.h / unit - NOTE_PAD * 2, NOTE_BADGE) * uk,
             margin: 0,
             padding: 0,
             border: 0,
-            outline: `1px dashed ${ink}`,
+            outline: `1px dashed ${inkColor}`,
             outlineOffset: 2,
             resize: "none",
             overflow: "hidden",
             background: "var(--surface-2)",
             color: "var(--text-1)",
-            font: `400 ${NOTE_FONT * view.scale}px/1.25 var(--font-sans)`,
+            font: `400 ${NOTE_FONT * uk}px/1.25 var(--font-sans)`,
           }}
         />
       )}

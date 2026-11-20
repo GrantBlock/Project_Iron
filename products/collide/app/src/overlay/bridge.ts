@@ -1,4 +1,4 @@
-// T11: the overlay's side of the editor handshake, free of Tauri and React so it is unit-testable.
+// T11: the overlay's side of the editor handshake, free of the desktop shell and React so it is unit-testable.
 import type { OverlayResult } from "./Overlay";
 
 export interface FramePayload {

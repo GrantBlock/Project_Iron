@@ -1,6 +1,6 @@
 # Current Issues
 
-Updated 2026-11-13 · Grant Block. Open problems and decisions waiting on Grant. Close an item by moving it to Resolved with the date. Progress lives in `docs/progress-tracker.md`.
+Updated 2026-11-19 · Grant Block. Open problems and decisions waiting on Grant. Close an item by moving it to Resolved with the date. Progress lives in `docs/progress-tracker.md`.
 
 ## Waiting on Grant (decisions and approvals)
 
@@ -13,6 +13,11 @@ Updated 2026-11-13 · Grant Block. Open problems and decisions waiting on Grant.
 | 5 | Agent Chat branch | `claude/intelligent-brown-2hlzyu` has 5 Agent Chat commits since PR #1 (0.3.3 to the icons). Open a pull request into `development`? | Branch |
 | 6 | `snip-markup/run-1` branch | Separate app (Collide spec, design system, mockups). Not merged into the Agent Chat branch; decide where it merges and when | Branch |
 | 7 | Setup steps 1 to 9 | None started; step 1 (prototype review and feature specs) comes first | Plan, Setup steps |
+| 8 | Collide Run 4b scheduled task | Scheduled task `trig_01UShuroskSvc3f4d4PndEZP` runs at 1:00 AM Central on 2026-11-20 in the **Project_Iron** environment (it has the repository, the setup script, the Cloudflare token and the allowed hosts) and builds T48 to T52, then the test build T51. It replaces `trig_01HrkMzX7oCpyRwUePpJ4Lcx`, which ran in the Default environment (no repository, no Cloudflare token) and is disabled. Still open: no model is set on the task, and it holds no GitHub connector (the prompt loads the GitHub tools itself and falls back to HANDOFF.md). Also `trig_016GPySqk8hjYmx2zvbcVavr` (an hourly resume for 2026-11-17, next fire 2027-11-17) is a leftover: disable it | `products/collide/tickets/T48.md` to `T52.md` |
+| 12 | Collide Run 4 decisions | ISSUES 50 (autosave first save only), 52 (Markdown Export removed; header Copy and Save as), 53 (three reference specs click the old toolbar: update them or keep), 54 (added snips keep their own pixel size) | `products/collide/ISSUES.md` |
+| 9 | Collide Windows checks | Run `TESTER-NOTES.md` "Run 2+3 (Electron)" items 1 to 12 on Collide 0.1.1, and "Run 4" after the run | `products/collide/TESTER-NOTES.md` |
+| 10 | Collide decisions still owed | The groups in section 2 of the improvement plan that Run 4 does not cover (ISSUES 3 without Undo, 4, 5, 8, 9, 11 to 13, 21, 24, 33 to 36, 39 to 43); and ISSUES 44 to 47 (Run 4 assumptions) | `docs/collide-improvement-plan.md` |
+| 11 | Lite branches | `claude/practical-newton-utto9s` (brief) is merged into the session branch; `lite/run` and `task/L*` are not. Merge them, and when does the Lite run start? | Plan, 2026-11-17 lines |
 
 ## Agent Chat (known problems)
 

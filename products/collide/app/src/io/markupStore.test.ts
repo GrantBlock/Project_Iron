@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MarkupError, MemoryMarkupStore, markupFolderName, parseAnnotations } from "./markupStore";
+import { freeFolderName, MarkupError, MemoryMarkupStore, markupFolderName, parseAnnotations } from "./markupStore";
 import type { AnnotationsDoc } from "../model";
 
 const doc: AnnotationsDoc = {
@@ -44,6 +44,21 @@ describe("MemoryMarkupStore", () => {
   });
 });
 
+describe("MemoryMarkupStore: remove (T31)", () => {
+  it("removes the markup for good, also after a reload; removing it twice names the cause", async () => {
+    localStorage.clear();
+    const store = new MemoryMarkupStore(true);
+    const input = { sourcePng: new Uint8Array([137, 80, 78, 71]), annotations: { version: 1 as const, source: { kind: "image" as const, width: 2, height: 2 }, shapes: [] }, exportPng: new Uint8Array([1]) };
+    await store.save("2026-11-15_a", input);
+    await store.save("2026-11-15_b", input);
+    await store.remove("2026-11-15_a");
+    expect(await store.list()).toEqual(["2026-11-15_b"]);
+    expect(await new MemoryMarkupStore(true).list()).toEqual(["2026-11-15_b"]);
+    await expect(store.remove("2026-11-15_a")).rejects.toMatchObject({ title: "Could not delete markup" });
+    localStorage.clear();
+  });
+});
+
 describe("parseAnnotations", () => {
   it("throws a MarkupError with a title", () => {
     try {
@@ -53,5 +68,15 @@ describe("parseAnnotations", () => {
       expect(e).toBeInstanceOf(MarkupError);
       expect((e as MarkupError).title).toBe("Could not open markup");
     }
+  });
+});
+
+describe("T43 (4.1): the autosave's folder name never replaces another snip's folder", () => {
+  it("is the plain name when it is free, else the next free -2, -3, ... (ids may be full paths)", () => {
+    expect(freeFolderName("2026-11-19_snip-2026-11-19-1200", [])).toBe("2026-11-19_snip-2026-11-19-1200");
+    expect(freeFolderName("2026-11-19_snip-2026-11-19-1200", ["/m/Markups/2026-11-19_snip-2026-11-19-1200"])).toBe("2026-11-19_snip-2026-11-19-1200-2");
+    expect(
+      freeFolderName("2026-11-19_snip", ["C:\\Users\\g\\Documents\\Collide\\Markups\\2026-11-19_snip", "2026-11-19_snip-2", "2026-11-19_other"]),
+    ).toBe("2026-11-19_snip-3");
   });
 });

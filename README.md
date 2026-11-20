@@ -2,7 +2,7 @@
 
 Agentic build of **Design Engineering AI** (designengineering.ai), a Block Concepts LLC product. Owner: Grant Block.
 
-Four agents build the app overnight from approved feature specs, and Grant plans, tries the results and merges during business hours (Central time).
+Two teams of agents build the app overnight from approved feature specs, and Grant plans, tries the results and merges during business hours (Central time).
 
 | Agent | Role | Runs |
 | --- | --- | --- |
@@ -10,6 +10,11 @@ Four agents build the app overnight from approved feature specs, and Grant plans
 | Lydia | Tester: acceptance tests before code, preview checks, morning report | 6pm and 5am |
 | Hrongar | Coder: one issue per pull request | 8pm and 3am |
 | Farengar | Reviewer: checks each pull request against the spec, design system and plan | 1am |
+| Belethor | Team B Tester (second Claude account, `claude-work`) | 6pm and 5am |
+| Ysolda | Team B Coder | 8pm and 3am |
+| Carlotta | Team B Reviewer | 1am |
+
+Two teams since 2026-11-20: Team A (Lydia, Hrongar, Farengar) on the main Claude account, Team B (Belethor, Ysolda, Carlotta) on the second. One planner and one issue queue (labels `team-a` / `team-b`); reviewers cross-review the other team's pull requests; Lydia writes one combined morning report. Details: `docs/agentic-dev-plan.md`, Roles.
 
 ## Where things are
 
@@ -19,6 +24,9 @@ Four agents build the app overnight from approved feature specs, and Grant plans
 | `docs/morning-report.md` | Lydia's morning report: steps and the exact comment format (Draft) |
 | `docs/progress-tracker.md` | Where everything stands: setup steps, report pipeline, Agent Chat, Iron steps |
 | `docs/current-issues.md` | Open problems and decisions waiting on Grant |
+| `docs/collide-improvement-plan.md` | Collide improvements: where it stands, decisions owed, work tracks, Grant's scope from testing |
+| `products/collide/` | Collide (snip and markup desktop app): spec, run briefs, tickets, app source |
+| `products/lite/` | Lite (P16) run brief and prototype copy |
 | `tools/project-chat/` | Agent Chat, the local app for agent reports and chat |
 | `agents/` | Role files, one per agent (added after Grant approves each) |
 | `CLAUDE.md` | Rules for every Claude session in this repository |
@@ -27,4 +35,4 @@ The product plan, the clickable prototype and the design system live in `GrantBl
 
 ## Status
 
-Setup. Grant is reviewing the prototype and the plan. No application code yet.
+Setup for the Iron build: Grant is reviewing the prototype and the plan; no Iron application code yet. Collide (`products/collide/`) is built and shipped as 0.1.1; its Run 4 improvements are scheduled for 2026-11-20.

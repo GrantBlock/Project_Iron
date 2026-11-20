@@ -90,6 +90,11 @@ export function resizeShape(
     const size = measure(shape.text ?? "", fontSize);
     return { x: shape.x + t.x, y: shape.y + t.y, ...size, fontSize };
   }
+  if (shape.type === "image") {
+    // Added images: aspect always locked (RUN3 T33). Konva keeps the ratio; one scale makes it exact.
+    const k = Math.max(sx, sy);
+    return { x: shape.x + t.x, y: shape.y + t.y, w: shape.w * k, h: shape.h * k };
+  }
   const w = shape.w * sx;
   const h = shape.h * sy;
   if (shape.type === "ellipse") {

@@ -1,0 +1,38 @@
+const { chromium } = require('playwright');
+(async () => {
+  const b = await chromium.launch(); const out = process.argv[3];
+  const p = await b.newPage({ viewport: { width: 1440, height: 860 } });
+  const errs = []; p.on('pageerror', (e) => errs.push(e.message + ' @ ' + (e.stack || '').split('\n')[1]));
+  await p.goto('file://' + process.argv[2]); await p.evaluate(() => { try { localStorage.clear(); } catch (e) {} }); await p.reload(); await p.waitForTimeout(400);
+  await p.click('#side [data-snip="s-line3"]'); await p.waitForTimeout(400);
+  const st = await (await p.$('#zoomer [data-image] rect')).boundingBox();
+  await p.click('[data-tool="pen"]'); await p.mouse.move(st.x + 60, st.y + 220); await p.mouse.down();
+  for (let i = 1; i <= 10; i++) await p.mouse.move(st.x + 60 + i * 8, st.y + 220 + (i % 2) * 10);
+  await p.mouse.up();
+  await p.click('[data-tool="hl"]'); await p.mouse.move(st.x + 30, st.y + 100); await p.mouse.down(); await p.mouse.move(st.x + 200, st.y + 102, { steps: 6 }); await p.mouse.up();
+  await p.click('#addSnip'); await p.waitForTimeout(700); // Add snip shows the drag box (2026-11-17): drag one.
+  await p.mouse.move(300, 200); await p.mouse.down(); await p.mouse.move(900, 560, { steps: 4 }); await p.mouse.up(); await p.waitForTimeout(400);
+  const list = await p.evaluate(() => [...document.querySelectorAll('#calloutList .ccard')].map((c) => (c.querySelector('.num') ? '#' + c.querySelector('.num').textContent : '-') + ' ' + (c.querySelector('select.typesel') ? c.querySelector('select.typesel').value : c.querySelector('.typesel').textContent)));
+  const bubbles = await p.evaluate(() => document.querySelectorAll('#zoomer [data-box]').length);
+  await p.screenshot({ path: out + '/na.png' });
+  await p.click('[data-tool="eraser"]');
+  await p.mouse.move(st.x + 70, st.y + 225); await p.mouse.down();
+  await p.mouse.move(st.x + 100, st.y + 101, { steps: 8 }); await p.mouse.move(st.x + 150, st.y + 101, { steps: 4 }); await p.mouse.move(st.x + 260, st.y + 150, { steps: 6 });
+  await p.mouse.up();
+  const after = await p.evaluate(() => snipOf().shapes.map((s) => s.type));
+  await p.click('[data-tool="select"]');
+  const nGrips = await p.locator('#calloutList .ccard .grip').count();
+  await p.locator('#calloutList .ccard .grip').nth(nGrips - 1).dragTo(p.locator('#calloutList .ccard').nth(0));
+  const after2 = await p.evaluate(() => [...document.querySelectorAll('#calloutList .ccard .num')].map((n) => n.textContent).join(',') + ' | ' + snipOf().shapes.map((s) => s.type + s.n).join(','));
+  await p.screenshot({ path: out + '/nb.png' });
+  await p.evaluate(() => [...document.querySelectorAll('[data-file]')].find((x) => x.dataset.file.includes('P06')).click()); await p.waitForTimeout(400);
+  await p.keyboard.press('n'); const pg = await (await p.$('#page')).boundingBox();
+  await p.mouse.move(pg.x + 100, pg.y + 120); await p.mouse.down();
+  for (let i = 1; i <= 8; i++) await p.mouse.move(pg.x + 100 + i * 10, pg.y + 120 + (i % 2) * 6);
+  await p.mouse.up();
+  const md1 = await p.evaluate(() => [S.ws.marks.map((m) => m.type).join(','), document.querySelectorAll('#docOverlay [data-box]').length]);
+  await p.keyboard.press('e'); await p.mouse.move(pg.x + 130, pg.y + 118); await p.mouse.down(); await p.mouse.move(pg.x + 150, pg.y + 126, { steps: 5 }); await p.mouse.up();
+  const md2 = await p.evaluate(() => S.ws.marks.map((m) => m.type).join(','));
+  console.log(JSON.stringify({ errs, list, bubbles, after, after2, md1, md2 }));
+  await b.close();
+})();

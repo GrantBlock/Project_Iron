@@ -6,7 +6,8 @@ test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   await page.waitForFunction(() => !!window.__collide);
-  await page.getByTestId("canvas").locator("canvas").first().waitFor();
+  // T31: home is the blank canvas; the Konva canvas comes with the Snip tab an image opens in.
+  await page.getByTestId("canvas").waitFor();
   await page.evaluate((u) => window.__collide!.openImage(u), FIXTURE);
   await page.evaluate(() => {
     window.__collide!.seedShape({ x: 40, y: 30, w: 140, h: 80 });
@@ -67,9 +68,11 @@ test("selection outline is absent and export matches the committed baseline", as
   expect(buf).toMatchSnapshot("export-400x300.png", { maxDiffPixelRatio: 0.002 });
 });
 
-test("toolbar Export downloads a PNG", async ({ page }) => {
+// T45 (6.4): Export left the toolbar; the header's Save as → PNG gives the same file.
+test("header Save as PNG downloads a PNG (was the toolbar's Export)", async ({ page }) => {
   const dl = page.waitForEvent("download");
-  await page.getByTestId("export-btn").click();
+  await page.getByRole("button", { name: "Save as" }).click();
+  await page.getByRole("menu", { name: "Save as" }).getByRole("menuitem", { name: "PNG", exact: true }).click();
   expect((await dl).suggestedFilename()).toBe("sample-400x300-markup.png");
 });
 
