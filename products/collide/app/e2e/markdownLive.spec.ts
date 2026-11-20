@@ -43,7 +43,8 @@ test.describe("one view", () => {
     await openP06(page);
     await expect(ws(page).getByRole("button", { name: "Edit", exact: true })).toHaveCount(0);
     await expect(ws(page).getByRole("button", { name: "Preview", exact: true })).toHaveCount(0);
-    await expect(ws(page).locator("textarea")).toHaveCount(0);
+    // The callout cards keep their note textareas (ticket); the source text has none: not in the page or the editor.
+    await expect(ws(page).locator(".mdpage textarea, .cm-editor textarea")).toHaveCount(0);
     await expect(ws(page).locator(".cm-editor")).toHaveCount(1);
     await expect(content(page)).toHaveAttribute("contenteditable", "true");
     expect(await text(page)).toContain("# P06 Project Workspace Spec");
