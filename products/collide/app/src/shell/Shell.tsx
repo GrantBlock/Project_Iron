@@ -204,33 +204,41 @@ export function Shell() {
     return () => document.body.classList.remove("compact-bg");
   }, [prefs.collapsed]);
 
-  // The desktop window follows the collapsed layout: windowed, it shrinks to the Recents panel until something is open.
-  // Maximized (and in a browser, where the window cannot shrink) the canvas stays beside the panel.
-  const [maximized, setMaximized] = useState(true);
-  const hasTab = tabs.active !== null;
+  // T48: the desktop window follows the view. Collapsed, it becomes the compact view: the compact block's size (measured
+  // here in CSS px), docked at the right of its screen; expanded, it gets its earlier bounds back (src/native/collapse.ts).
+  // In a browser the window cannot shrink: the compact block sits alone at the top left (shell.css).
+  const blockRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const bridge = window.collide;
     if (typeof bridge?.collapse !== "function") return;
-    let on = true;
-    let timer: number | undefined;
-    const sync = () =>
-      void bridge.collapse({ collapsed: prefs.collapsed, canvas: hasTab }).then(
-        (r) => on && setMaximized(!!r?.maximized),
-        () => undefined,
-      );
-    sync();
-    // Maximizing or restoring the window changes its size: ask again.
-    const resized = () => {
-      window.clearTimeout(timer);
-      timer = window.setTimeout(sync, 150);
+    let sent = -1;
+    const send = () => {
+      const height = blockRef.current?.getBoundingClientRect().height ?? 0;
+      if (prefs.collapsed && height === sent) return;
+      sent = height;
+      void bridge.collapse({ collapsed: prefs.collapsed, height }).catch(() => undefined);
     };
-    window.addEventListener("resize", resized);
-    return () => {
-      on = false;
-      window.clearTimeout(timer);
-      window.removeEventListener("resize", resized);
+    send();
+    const block = blockRef.current;
+    if (!prefs.collapsed || !block || typeof ResizeObserver === "undefined") return;
+    // A new height while compact (the Connected pill appears, another theme's font): the window follows.
+    const ro = new ResizeObserver(send);
+    ro.observe(block);
+    return () => ro.disconnect();
+  }, [prefs.collapsed]);
+
+  // T48: while compact the workspace is hidden, so its editors take no keys. A key reaches the sidebar's own controls
+  // first (React listens on the root); it is stopped at the document, before the editors' window listeners. The New snip
+  // hotkey (Ctrl+Alt+S) still works.
+  useEffect(() => {
+    if (!prefs.collapsed) return;
+    const stop = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.altKey && e.key.toLowerCase() === "s") return;
+      e.stopPropagation();
     };
-  }, [prefs.collapsed, hasTab]);
+    document.addEventListener("keydown", stop);
+    return () => document.removeEventListener("keydown", stop);
+  }, [prefs.collapsed]);
 
   // ---------- Recents ----------
   const [samples, setSamples] = useState<RecentItem[]>(() =>
@@ -836,15 +844,18 @@ export function Shell() {
     );
     snipRef.current = flow;
     const bridge = window.collide;
-    if (!bridge) return;
+    // A partial bridge (a test stand-in) has only some of these.
+    if (typeof bridge?.onSnipRequest !== "function") return;
     const off = bridge.onSnipRequest(() => void flow.start());
-    void bridge.settingsStatus().then(
-      (s) => {
-        const warning = s?.warning;
-        if (warning) notify({ tone: "error", title: "Hotkey setting not used", description: warning });
-      },
-      () => undefined,
-    );
+    if (typeof bridge.settingsStatus === "function") {
+      void bridge.settingsStatus().then(
+        (s) => {
+          const warning = s?.warning;
+          if (warning) notify({ tone: "error", title: "Hotkey setting not used", description: warning });
+        },
+        () => undefined,
+      );
+    }
     return off;
   }, [notify, setPref]);
   const newSnip = useCallback(() => {
@@ -1196,7 +1207,7 @@ export function Shell() {
   }
 
   const frontFile = front && file ? (front.key.startsWith("doc:") ? front.key.slice(4) : null) : null;
-  const cls = ["app", full && (front?.kind === "markdown" || front?.kind === "pdf") ? "focus" : "", prefs.collapsed ? "compact" : "", prefs.collapsed && (maximized || hasTab) ? "with-canvas" : "", sideOpen ? "side-open" : ""].filter(Boolean).join(" ");
+  const cls = ["app", full && (front?.kind === "markdown" || front?.kind === "pdf") ? "focus" : "", prefs.collapsed ? "compact" : "", sideOpen ? "side-open" : ""].filter(Boolean).join(" ");
   const closing = ask?.kind === "close" ? tabs.tabs.find((t) => t.id === ask.tabId) : undefined;
   const deleting = ask?.kind === "delete" ? ask.item : undefined;
   const openTabsOfDeleting = deleting ? tabs.tabs.filter((t) => t.owner === deleting.id).length : 0;
@@ -1234,8 +1245,10 @@ export function Shell() {
         onDelete={(item) => setAsk({ kind: "delete", item })}
         pop={pop}
         onPop={setPop}
+        blockRef={blockRef}
       />
-      <section className="ws" aria-label="Workspace">
+      {/* T48: hidden (not unmounted) while compact, so every tab keeps its state. */}
+      <section className="ws" aria-label="Workspace" hidden={prefs.collapsed}>
         <TabBar tabs={tabs.tabs} active={tabs.active} onActivate={(id) => setTabs((s) => activateTab(s, id))} onClose={requestClose} />
         {body}
       </section>

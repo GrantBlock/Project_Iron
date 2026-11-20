@@ -2,8 +2,10 @@
 // Open, New file (T44, 5.4), Search, then Recents (Today / Earlier: snips, and zip files with their folder trees) and Tags.
 // After ../../../layout-prototype.html. T44 (5.2): collapsed, Search, Recents and Tags are hidden. T44 (5.1): the
 // "Connected" pill shows only while Connected mode is on; its light is green when the saved address answers.
+// T48 (Grant 2026-11-20): collapsed is the compact view: the top block alone (data-testid="compact-block": the brand row
+// and the five controls); Search, Recents, Tags and the footer are not rendered.
 import { useEffect, useRef } from "react";
-import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, Ref } from "react";
 import { Icon } from "../ds";
 import { CollapseButton, Logo } from "./parts";
 import { ADD_MODES, SNIP_DELAYS, prefersDark, type AddMode, type AuraGround, type Prefs, type Theme } from "./prefs";
@@ -81,6 +83,8 @@ export interface SidebarProps {
   onDelete: (item: RecentItem) => void;
   pop: boolean;
   onPop: (open: boolean) => void;
+  /** T48: the compact block, measured by the shell for the compact window's height. */
+  blockRef?: Ref<HTMLDivElement>;
 }
 
 function Tree({ node, path, depth, zip, p }: { node: TreeNode; path: string; depth: number; zip: RecentZip; p: SidebarProps }): ReactNode {
@@ -204,49 +208,51 @@ export function Sidebar(p: SidebarProps) {
   }, [pop, onPop]);
   return (
     <aside className="side" aria-label="Recents" data-testid="sidebar">
-      <div className="brand">
-        <Logo />
-        <span className="word">Collide</span>
-        {p.connected && (
-          <button
-            type="button"
-            className="mode label"
-            data-testid="connected-pill"
-            data-light={p.connected.reached ? "on" : "off"}
-            title={p.connected.reached ? "Connected: the server answered" : "Connected mode is on: no server answered"}
-            onClick={p.onSettings}
-          >
-            <span className={`dot${p.connected.reached ? "" : " off"}`} />
-            Connected
+      <div className="block" data-testid="compact-block" ref={p.blockRef}>
+        <div className="brand">
+          <Logo />
+          <span className="word">Collide</span>
+          {p.connected && (
+            <button
+              type="button"
+              className="mode label"
+              data-testid="connected-pill"
+              data-light={p.connected.reached ? "on" : "off"}
+              title={p.connected.reached ? "Connected: the server answered" : "Connected mode is on: no server answered"}
+              onClick={p.onSettings}
+            >
+              <span className={`dot${p.connected.reached ? "" : " off"}`} />
+              Connected
+            </button>
+          )}
+          <CollapseButton small collapsed={prefs.collapsed} onCollapse={p.onCollapse} />
+        </div>
+        <div className="actions">
+          <button type="button" className="btn primary" data-testid="new-snip" title="New snip (Ctrl+Alt+S)" onClick={p.onNewSnip}>
+            <Icon name="scissors" />
+            New snip
           </button>
-        )}
-        <CollapseButton small collapsed={prefs.collapsed} onCollapse={p.onCollapse} />
-      </div>
-      <div className="actions">
-        <button type="button" className="btn primary" data-testid="new-snip" title="New snip (Ctrl+Alt+S)" onClick={p.onNewSnip}>
-          <Icon name="scissors" />
-          New snip
-        </button>
-        <SegToggle
-          label="Delay before New snip captures"
-          testId="snip-delay"
-          value={prefs.snipDelay}
-          onChange={p.onDelay}
-          options={SNIP_DELAYS.map((d) => ({ value: d as number, text: `${d}s`, title: `${DELAY_TITLE[d]}, then capture` }))}
-        />
-        <button type="button" className="btn" title="Add a snip to the open canvas: Current = the program that is open; Behind = Collide hides and you snip the screen behind it" onClick={p.onAddSnip}>
-          <Icon name="plus" />
-          Add snip
-        </button>
-        <SegToggle label="Where Add snip captures" value={prefs.addMode} onChange={p.onAddMode} options={ADD_MODES.map((m) => ({ value: m, text: m, title: ADD_TITLE[m] }))} />
-        <button type="button" className="btn wide" data-testid="open-markup" title="Open a saved markup" onClick={p.onOpen}>
-          <Icon name="folder-open" />
-          Open
-        </button>
-        <button type="button" className="btn wide" data-testid="new-file" title="A new Markdown file" onClick={p.onNewFile}>
-          <Icon name="file-text" />
-          New file
-        </button>
+          <SegToggle
+            label="Delay before New snip captures"
+            testId="snip-delay"
+            value={prefs.snipDelay}
+            onChange={p.onDelay}
+            options={SNIP_DELAYS.map((d) => ({ value: d as number, text: `${d}s`, title: `${DELAY_TITLE[d]}, then capture` }))}
+          />
+          <button type="button" className="btn" title="Add a snip to the open canvas: Current = the program that is open; Behind = Collide hides and you snip the screen behind it" onClick={p.onAddSnip}>
+            <Icon name="plus" />
+            Add snip
+          </button>
+          <SegToggle label="Where Add snip captures" value={prefs.addMode} onChange={p.onAddMode} options={ADD_MODES.map((m) => ({ value: m, text: m, title: ADD_TITLE[m] }))} />
+          <button type="button" className="btn wide" data-testid="open-markup" title="Open a saved markup" onClick={p.onOpen}>
+            <Icon name="folder-open" />
+            Open
+          </button>
+          <button type="button" className="btn wide" data-testid="new-file" title="A new Markdown file" onClick={p.onNewFile}>
+            <Icon name="file-text" />
+            New file
+          </button>
+        </div>
       </div>
       {!prefs.collapsed && (
         <label className="search">
@@ -254,9 +260,7 @@ export function Sidebar(p: SidebarProps) {
           <input placeholder="Search" aria-label="Search" value={p.query} onChange={(e) => p.onQuery(e.target.value)} />
         </label>
       )}
-      {prefs.collapsed ? (
-        <div className="scroll" />
-      ) : (
+      {!prefs.collapsed && (
         <div className="scroll">
           {groups.map((g) => (
             <div key={g.day}>
@@ -289,30 +293,32 @@ export function Sidebar(p: SidebarProps) {
           )}
         </div>
       )}
-      <div className="foot" ref={foot}>
-        {pop && (
-          <div className="pop" role="dialog" aria-label="Appearance">
-            <button type="button" role="switch" className="sysrow" aria-checked={prefs.theme === "system"} aria-label="Match system" onClick={() => pickSystem(prefs.theme !== "system")}>
-              <span>Match system</span>
-              <span className="knob" aria-hidden="true" />
-            </button>
-            <div className="swatches">
-              {LOOKS.map((l) => (
-                <button key={l.id} type="button" className={`sw ${l.id}`} data-aura-theme={l.aura ?? (l.id === "paper" ? "paper" : undefined)} title={l.name} aria-label={l.name} aria-pressed={look === l.id} onClick={() => pickLook(l)} />
-              ))}
+      {!prefs.collapsed && (
+        <div className="foot" ref={foot}>
+          {pop && (
+            <div className="pop" role="dialog" aria-label="Appearance">
+              <button type="button" role="switch" className="sysrow" aria-checked={prefs.theme === "system"} aria-label="Match system" onClick={() => pickSystem(prefs.theme !== "system")}>
+                <span>Match system</span>
+                <span className="knob" aria-hidden="true" />
+              </button>
+              <div className="swatches">
+                {LOOKS.map((l) => (
+                  <button key={l.id} type="button" className={`sw ${l.id}`} data-aura-theme={l.aura ?? (l.id === "paper" ? "paper" : undefined)} title={l.name} aria-label={l.name} aria-pressed={look === l.id} onClick={() => pickLook(l)} />
+                ))}
+              </div>
+              <span className="hint">{prefs.theme === "system" ? `Follows Windows: ${look === "dark" ? "Dark" : "Paper"}.` : look ? LOOKS.find((l) => l.id === look)!.name : "Another Aura ground; pick a swatch to change it."}</span>
             </div>
-            <span className="hint">{prefs.theme === "system" ? `Follows Windows: ${look === "dark" ? "Dark" : "Paper"}.` : look ? LOOKS.find((l) => l.id === look)!.name : "Another Aura ground; pick a swatch to change it."}</span>
-          </div>
-        )}
-        <button type="button" className="btn ghost" aria-expanded={pop} onClick={() => onPop(!pop)}>
-          <Icon name="palette" />
-          Appearance
-        </button>
-        <span className="grow" />
-        <button type="button" className="btn ghost icon" title="Settings and Connect" aria-label="Settings and Connect" onClick={p.onSettings}>
-          <Icon name="settings" />
-        </button>
-      </div>
+          )}
+          <button type="button" className="btn ghost" aria-expanded={pop} onClick={() => onPop(!pop)}>
+            <Icon name="palette" />
+            Appearance
+          </button>
+          <span className="grow" />
+          <button type="button" className="btn ghost icon" title="Settings and Connect" aria-label="Settings and Connect" onClick={p.onSettings}>
+            <Icon name="settings" />
+          </button>
+        </div>
+      )}
     </aside>
   );
 }

@@ -194,7 +194,7 @@ export function CollapseButton({ collapsed, onCollapse, small }: { collapsed: bo
     <button
       type="button"
       className={small ? "btn ghost icon small" : "btn icon"}
-      title={collapsed ? "Expand the window" : "Collapse: Recents moves to the right"}
+      title={collapsed ? "Expand: back to the full app" : "Collapse to the compact view"}
       aria-label={collapsed ? "Expand window" : "Collapse window"}
       aria-pressed={collapsed}
       onClick={onCollapse}
