@@ -30,7 +30,7 @@ import {
 import { createSnipFlow } from "../snip/flow";
 import { electronDeps, isDesktop } from "../snip/electronDeps";
 import { Blank, FileTab, SettingsTab, Splash, TabBar, Toasts, WsHead, type FileDoc, type Notice } from "./parts";
-import { applyTheme, loadPrefs, savePref, type Prefs } from "./prefs";
+import { applyTheme, loadPrefs, prefersDark, savePref, type Prefs } from "./prefs";
 import { collideRow, flatFiles, patchZipFile, PICTURES, pictureNames, sortFolders, storeRow, withPicture, zipFile, type RecentItem, type RecentSnip, type RecentZip, type TreeNode } from "./recents";
 import { SAMPLE_OPEN, sampleArt, sampleDoc, sampleRecents, sampleSnip, wantsSample } from "./sample";
 import { Sidebar } from "./Sidebar";
@@ -190,15 +190,23 @@ export function Shell() {
   );
 
   // ---------- Theme ----------
+  // T52 review: whether the computer asks for dark, kept live from its change event, so with Match system on the
+  // pressed swatch, the hint, the Recents labels, the splash banner and the canvases follow a switch at once.
+  const [systemDark, setSystemDark] = useState(prefersDark);
+  const systemDarkRef = useRef(systemDark);
+  systemDarkRef.current = systemDark;
   useEffect(() => {
-    applyTheme(prefs.theme, prefs.aura);
-    if (prefs.theme !== "system" || typeof window.matchMedia !== "function") return;
+    if (typeof window.matchMedia !== "function") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const follow = () => applyTheme("system", prefs.aura);
+    const follow = () => setSystemDark(prefersDark());
+    follow();
     mq.addEventListener?.("change", follow);
     return () => mq.removeEventListener?.("change", follow);
-  }, [prefs.theme, prefs.aura]);
-  const themeKey = `${prefs.theme}:${prefs.aura}`;
+  }, []);
+  useEffect(() => {
+    applyTheme(prefs.theme, prefs.aura, document.documentElement, systemDark);
+  }, [prefs.theme, prefs.aura, systemDark]);
+  const themeKey = `${prefs.theme}:${prefs.aura}:${systemDark}`;
   useEffect(() => {
     document.body.classList.toggle("compact-bg", prefs.collapsed);
     return () => document.body.classList.remove("compact-bg");
@@ -1040,7 +1048,7 @@ export function Shell() {
       state: () => {
         const { prefs: p, tabs: t, ask: a } = live.current;
         return refState(
-          { tabs: t.tabs, active: t.active, theme: p.theme, aura: p.aura, snipDelay: p.snipDelay, addMode: p.addMode, collapsed: p.collapsed, splash: a ? { kind: a.kind, title: askTitle(a) } : null },
+          { tabs: t.tabs, active: t.active, theme: p.theme, aura: p.aura, systemDark: systemDarkRef.current, snipDelay: p.snipDelay, addMode: p.addMode, collapsed: p.collapsed, splash: a ? { kind: a.kind, title: askTitle(a) } : null },
           activeTab(t)?.kind === "snip" ? (editor.current?.refInput() ?? null) : null,
           activeTab(t)?.kind === "markdown" ? (mdEditor.current?.refInput() ?? null) : null,
           activeTab(t)?.kind === "pdf" ? (pdfEditor.current?.refInput() ?? null) : null,
@@ -1224,6 +1232,7 @@ export function Shell() {
     <div className={cls} data-testid="app-root" data-frame={isDesktop() ? "native" : "browser"}>
       <Sidebar
         prefs={prefs}
+        systemDark={systemDark}
         onDelay={(s) => setPref("snipDelay", s)}
         onAddMode={(m) => setPref("addMode", m)}
         onTheme={(t) => setPref("theme", t)}

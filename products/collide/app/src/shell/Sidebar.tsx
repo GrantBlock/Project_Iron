@@ -8,7 +8,7 @@ import { useEffect, useRef } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, Ref } from "react";
 import { Icon } from "../ds";
 import { CollapseButton, Logo } from "./parts";
-import { ADD_MODES, SNIP_DELAYS, groundInUse, prefersDark, resolveTheme, type AddMode, type AuraGround, type Prefs, type Theme } from "./prefs";
+import { ADD_MODES, SNIP_DELAYS, groundInUse, resolveTheme, type AddMode, type AuraGround, type Prefs, type Theme } from "./prefs";
 import { filterRecents, groupRecents, recentTags, snipMeta, type RecentItem, type RecentZip, type TreeNode } from "./recents";
 
 const DELAY_TITLE: Record<number, string> = { 0: "No delay", 3: "Wait 3 seconds", 5: "Wait 5 seconds", 10: "Wait 10 seconds" };
@@ -27,8 +27,7 @@ const LOOKS = [
 ] as const;
 type LookId = (typeof LOOKS)[number]["id"];
 /** The look in use, or null for one that is not among the five (an older saved choice: another Aura ground, or the old Light). */
-function currentLook(theme: Theme, aura: AuraGround): LookId | null {
-  const dark = prefersDark();
+function currentLook(theme: Theme, aura: AuraGround, dark: boolean): LookId | null {
   if (resolveTheme(theme, dark) === "dark") return "dark";
   const ground = groundInUse(theme, aura, dark);
   return LOOKS.find((l) => l.aura !== null && l.aura === ground)?.id ?? null;
@@ -57,6 +56,8 @@ function SegToggle<T extends string | number>({ label, value, options, onChange,
 
 export interface SidebarProps {
   prefs: Prefs;
+  /** The computer asks for dark (kept live by the shell, T52 review), for Match system. */
+  systemDark: boolean;
   onDelay: (seconds: number) => void;
   onAddMode: (m: AddMode) => void;
   onTheme: (t: Theme) => void;
@@ -186,8 +187,8 @@ export function Sidebar(p: SidebarProps) {
   // Tags come from the snips in Recents (Grant 2026-11-17: no sample tags in the real app); none, no Tags section.
   const tags = recentTags(p.rows);
   // The Aura label style follows the look in use, so Match system on a light computer (Paper) gets it too (T52).
-  const aura = resolveTheme(prefs.theme, prefersDark()) === "aura";
-  const look = currentLook(prefs.theme, prefs.aura);
+  const aura = resolveTheme(prefs.theme, p.systemDark) === "aura";
+  const look = currentLook(prefs.theme, prefs.aura, p.systemDark);
   // A swatch picks that look and turns Match system off; the switch back on follows the computer again.
   const pickLook = (l: (typeof LOOKS)[number]) => {
     p.onTheme(l.theme);

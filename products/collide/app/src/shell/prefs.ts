@@ -114,8 +114,7 @@ export function groundInUse(theme: Theme, aura: AuraGround, dark: boolean): Aura
 }
 
 /** Put the theme on <html>: data-app-theme is the look in use (light, dark or aura); data-aura-theme the Aura ground. */
-export function applyTheme(theme: Theme, aura: AuraGround, root: HTMLElement = document.documentElement): void {
-  const dark = prefersDark();
+export function applyTheme(theme: Theme, aura: AuraGround, root: HTMLElement = document.documentElement, dark: boolean = prefersDark()): void {
   root.dataset.appTheme = resolveTheme(theme, dark);
   const ground = groundInUse(theme, aura, dark);
   if (ground) root.dataset.auraTheme = ground;
