@@ -1,7 +1,7 @@
 // The Markdown editor inside a Markdown tab (RUN3 T34), after ../../../layout-prototype.html (renderDocWS):
 // Edit (the source with text tools and a live preview) and Preview (the T32 markup engine over the rendered page:
 // the same tools, bubbles with leaders outside the page, cards and the list; shapes can start in the margin;
-// Ctrl + wheel zooms around the cursor, Ctrl+= / Ctrl+− step, Ctrl+0 fits). Insert image and paste save the picture
+// Ctrl + wheel zooms around the cursor, Ctrl+= / Ctrl+− step, Ctrl+0 or F fits). Insert image and paste save the picture
 // into the zip's images/ folder and link it at the cursor (Preview: at the end of the file). T45 (Run 4): one callout
 // toolbar with the text tools as its second row in both modes (6.2); Copy and Save as are in the tab header and take
 // the visible page with its callouts (Edit: the rendered page). The colour and thickness are remembered apart from Snip's.
@@ -28,6 +28,7 @@ import { fitPage, PAGE_W, scrollPage, zoomPage } from "./page";
 import { pagePicture } from "./pagePicture";
 import { renderMarkdown, type Resolve } from "./render";
 import { bold, imageLink, insertImageLink, insertTable, link, linePrefix, pastedName, type TextEdit } from "./text";
+import { isFitKey } from "../editor/fitKey";
 import "./markdown.css";
 
 /** Markdown tools in Preview: the Snip keys plus B (box) and C (circle), as in the prototype. */
@@ -488,6 +489,12 @@ export function MarkdownEditor(p: Props) {
         return;
       }
       if (isTyping(e.target) || e.altKey) return;
+      // T48: the plain F key fits, like Ctrl+0 (never while typing: fitKey.ts).
+      if (isFitKey(e)) {
+        e.preventDefault();
+        fit();
+        return;
+      }
       if (ctrl) {
         if (k === "0") fit();
         else if (k === "=" || k === "+") zoomBy(1);
@@ -722,7 +729,7 @@ export function MarkdownEditor(p: Props) {
         <span>{session.zipName}</span>
         <span>UTF-8 · LF</span>
         {preview && <span>{`${callouts} callout${callouts === 1 ? "" : "s"} on the page`}</span>}
-        {preview && <span title="Ctrl + mouse wheel zooms; Ctrl+0 fits">{`${Math.round(view.scale * 100)}%${fittedRef.current ? " · fit" : ""}`}</span>}
+        {preview && <span title="Ctrl + mouse wheel zooms; Ctrl+0 or F fits">{`${Math.round(view.scale * 100)}%${fittedRef.current ? " · fit" : ""}`}</span>}
         <span style={{ marginLeft: "auto" }}>{`${lines} lines`}</span>
       </div>
       <input ref={fileRef} type="file" accept="image/*" hidden onChange={onFile} />
