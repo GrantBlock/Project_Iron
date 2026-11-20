@@ -161,7 +161,12 @@ app.whenReady().then(() => {
     documents: () => app.getPath("documents"),
     showOpenDialog: (options) => (editor && !editor.isDestroyed() ? dialog.showOpenDialog(editor, options) : dialog.showOpenDialog(options)),
   });
-  const collapse = native.createCollapse({ editor: () => editor, workArea: (bounds) => screen.getDisplayMatching(bounds).workArea });
+  // T48: the compact view: the window becomes the panel's width and the compact block's height, docked right; Expand restores it.
+  const collapse = native.createCollapse({
+    editor: () => editor,
+    workArea: (bounds) => screen.getDisplayMatching(bounds).workArea,
+    zoom: () => (editor && !editor.isDestroyed() ? editor.webContents.getZoomFactor() : 1),
+  });
   // Updates: only the installed Windows app updates itself; the portable exe and dev builds say why not.
   const updateBlocked = native.cannotUpdate({ packaged: app.isPackaged, platform: process.platform, portable: !!process.env.PORTABLE_EXECUTABLE_DIR });
   let updater = null;
@@ -201,7 +206,7 @@ app.whenReady().then(() => {
     }),
     copyImage: (png) => native.copyImage(png, { imageFromPng: decodePng, writeImage: (image) => clipboard.writeImage(image) }),
     settingsStatus: () => settingsStatus,
-    // T31: the collapsed window shrinks to the Recents panel at the right of its screen (src/native/collapse.ts).
+    // T31, T48: the compact view's window size (src/native/collapse.ts).
     collapse: collapse.apply,
     // Files only under Documents/Collide/Markups: src/native/markups.ts checks every path.
     markups,

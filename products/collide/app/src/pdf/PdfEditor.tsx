@@ -2,7 +2,7 @@
 // other formats). Each page is drawn by pdf.js under the T32 markup engine (the Canvas's `underlay`), one page at
 // a time, with page arrows in the header (PageUp / PageDown too). The same tools, colours, bubbles, cards and list
 // as Snip and the Markdown page. Items are stored per page in PDF points (coords.ts), so they stay on the same
-// spot at any zoom. Ctrl + wheel zooms around the cursor, a plain wheel scrolls, Ctrl+0 fits.
+// spot at any zoom. Ctrl + wheel zooms around the cursor, a plain wheel scrolls, Ctrl+0 or F fits.
 // Save (and Ctrl+S) is Save as .collide: the original PDF plus every page's items. Export writes a PDF with the
 // markup drawn on each page (pdf-lib, exportPdf.ts); Copy PNG gives the page in front with its markup.
 // No PDF text editing, forms or OCR.
@@ -31,6 +31,7 @@ import { zoomPage } from "../markdown/page";
 import { fitPdfPage } from "./coords";
 import { EXPORT_FAILED, exportPdf, pdfExportName, type PdfPaint } from "./exportPdf";
 import { drawPage, openPdfDoc, pageSizes, type PageSize } from "./pdfjs";
+import { isFitKey, isTypingTarget, workspaceHidden } from "../editor/fitKey";
 import "../markdown/markdown.css";
 import "./pdf.css";
 
@@ -148,7 +149,7 @@ function download(bytes: Uint8Array, name: string, type: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
-const isTyping = (t: EventTarget | null) => t instanceof HTMLElement && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
+const isTyping = isTypingTarget;
 
 let blank: HTMLImageElement | null = null;
 /** The page is drawn under the canvas, so the canvas's "image" is only its size. */
@@ -409,6 +410,7 @@ function PdfPageEditor(p: Props & { index: number; setPage: (n: number) => void 
   // ---------- Keys ----------
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
+      if (workspaceHidden()) return;
       const ctrl = e.ctrlKey || e.metaKey;
       const k = e.key.toLowerCase();
       if (ctrl && !e.altKey && !e.shiftKey && k === "s") {
@@ -417,6 +419,12 @@ function PdfPageEditor(p: Props & { index: number; setPage: (n: number) => void 
         return;
       }
       if (isTyping(e.target) || e.altKey) return;
+      // T48: the plain F key fits, like Ctrl+0.
+      if (isFitKey(e)) {
+        e.preventDefault();
+        fit();
+        return;
+      }
       if (e.key === "PageDown" || e.key === "PageUp") {
         e.preventDefault();
         setPage(index + (e.key === "PageDown" ? 1 : -1));
@@ -571,7 +579,7 @@ function PdfPageEditor(p: Props & { index: number; setPage: (n: number) => void 
         <span>{session.name}</span>
         <span>{`Page ${index + 1} of ${count} · ${Math.round(pageState.width)} × ${Math.round(pageState.height)} pt`}</span>
         <span>{`${callouts} callout${callouts === 1 ? "" : "s"} on this page`}</span>
-        <span style={{ marginLeft: "auto" }} title="Ctrl + mouse wheel zooms; Ctrl+0 fits">{`${Math.round(view.scale * 100)}%${fittedRef.current ? " · fit" : ""}`}</span>
+        <span style={{ marginLeft: "auto" }} title="Ctrl + mouse wheel zooms; Ctrl+0 or F fits">{`${Math.round(view.scale * 100)}%${fittedRef.current ? " · fit" : ""}`}</span>
       </div>
     </div>
   );

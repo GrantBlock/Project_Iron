@@ -125,10 +125,11 @@ export interface CollideBridge {
   /** The hotkey in use, and a warning when settings.json or the registration had a problem. */
   settingsStatus(): Promise<SettingsStatus | null>;
   /**
-   * T31: fit the window to the collapsed layout. Windowed and collapsed with nothing open (`canvas` false), it shrinks to
-   * the Recents panel at the right of its screen; otherwise it gets its size back. Says whether the window is maximized.
+   * T31, T48: the compact view. Collapsed, the window unmaximizes (remembered) and becomes the panel's width and `height`
+   * (the compact block in CSS px) at the right edge of its screen, with or without a tab open; expanded, it gets its exact
+   * earlier bounds back and is maximized again if it was. Says whether the window is maximized afterwards.
    */
-  collapse(state: { collapsed: boolean; canvas: boolean }): Promise<{ maximized: boolean }>;
+  collapse(state: { collapsed: boolean; height?: number }): Promise<{ maximized: boolean }>;
   /** Call `cb` when the global shortcut asks for a snip Returns the unsubscribe function. */
   onSnipRequest(cb: () => void): () => void;
   /** Markup folders under Documents/Collide/Markups. The main process refuses any path outside that folder. */

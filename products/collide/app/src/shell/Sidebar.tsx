@@ -1,6 +1,7 @@
 // The left panel (RUN3 T31, Grant 2026-11-15): New snip with its delay toggle, Add snip with Current / Behind,
 // Open, New file (T44, 5.4), Search, then Recents (Today / Earlier: snips, and zip files with their folder trees) and Tags.
-// After ../../../layout-prototype.html. T44 (5.2): collapsed, Search, Recents and Tags are hidden. T44 (5.1): the
+// After ../../../layout-prototype.html. T44 (5.2): collapsed, Search, Recents and Tags are hidden; T48: the footer
+// (Appearance, Settings) too, so the compact view is the brand row and the six controls. T44 (5.1): the
 // "Connected" pill shows only while Connected mode is on; its light is green when the saved address answers.
 import { useEffect, useRef } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
@@ -254,9 +255,7 @@ export function Sidebar(p: SidebarProps) {
           <input placeholder="Search" aria-label="Search" value={p.query} onChange={(e) => p.onQuery(e.target.value)} />
         </label>
       )}
-      {prefs.collapsed ? (
-        <div className="scroll" />
-      ) : (
+      {!prefs.collapsed && (
         <div className="scroll">
           {groups.map((g) => (
             <div key={g.day}>
@@ -289,6 +288,7 @@ export function Sidebar(p: SidebarProps) {
           )}
         </div>
       )}
+      {!prefs.collapsed && (
       <div className="foot" ref={foot}>
         {pop && (
           <div className="pop" role="dialog" aria-label="Appearance">
@@ -313,6 +313,7 @@ export function Sidebar(p: SidebarProps) {
           <Icon name="settings" />
         </button>
       </div>
+      )}
     </aside>
   );
 }

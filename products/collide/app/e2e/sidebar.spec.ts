@@ -23,6 +23,9 @@ test("New file sits below Open and opens a Markdown file; the collapse view show
   await expect(side.getByText("Today")).toHaveCount(0);
 
   await side.getByRole("button", { name: "New file" }).click();
+  // T48 (Grant 2026-11-20): the compact view hides the tabs even when one is open; Expand shows it (was: visible at once).
+  await expect(page.getByRole("tab", { name: /\.md/ })).toBeHidden();
+  await side.getByRole("button", { name: "Expand window" }).click();
   await expect(page.getByRole("tab", { name: /\.md/ })).toBeVisible();
   // The tab header has no collapse button.
   await expect(page.getByRole("button", { name: /^(Collapse|Expand) window$/ })).toHaveCount(1);

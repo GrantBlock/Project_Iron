@@ -5,6 +5,7 @@ import type { AnnotationsDoc, Shape } from "../model";
 import { Canvas, cssVar, type CanvasHandle, type LoadedImage } from "./Canvas";
 import { historyReducer, initialHistory, type HistoryState } from "./history";
 import { nextShapeId, type NewShape, type ShapePatch } from "./store";
+import { isFitKey, isTypingTarget, workspaceHidden } from "./fitKey";
 import { drawsWithColor, loadPenMemory, savePenMemory, TOOL_KEYS, type Role, type Tool } from "./tools";
 import { useEditorStore } from "./useEditorStore";
 import { StatusBar } from "./StatusBar";
@@ -196,7 +197,7 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
   }, [session.image, sc]);
   const shapes = useMemo(() => state.doc?.shapes ?? [], [state.doc]);
   const [view, setViewState] = useState<View>(session.view ?? { scale: 1, x: 0, y: 0 });
-  // True while the view is "fit to window": resizing refits and recentres. A user zoom/pan clears it; Ctrl+0 sets it again.
+  // True while the view is "fit to window": resizing refits and recentres. A user zoom/pan clears it; Ctrl+0 or F (T48) sets it again.
   const fittedRef = useRef(session.view ? session.fitted : true);
   const setView = useCallback((update: View | ((v: View) => View)) => {
     fittedRef.current = false;
@@ -432,8 +433,13 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
   // Undo / redo shortcuts; inside text fields the browser's own text undo applies.
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
-      const t = e.target;
-      if (t instanceof HTMLElement && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if (isTypingTarget(e.target) || workspaceHidden()) return;
+      // T48: the plain F key fits, like Ctrl+0.
+      if (isFitKey(e)) {
+        e.preventDefault();
+        fitToWindow();
+        return;
+      }
       if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
       const k = e.key.toLowerCase();
       if (k === "0" && !e.shiftKey) {
@@ -463,8 +469,7 @@ export function SnipEditor({ session, pen, store, apiRef, notify, onDirty, onSav
   // Tool hotkeys and Delete/Backspace.
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
-      const t = e.target;
-      if (t instanceof HTMLElement && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if (isTypingTarget(e.target) || workspaceHidden()) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === "Delete" || e.key === "Backspace") {
         const id = stateRef.current.selectedId;

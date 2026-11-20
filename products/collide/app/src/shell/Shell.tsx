@@ -1,7 +1,7 @@
 // The layout shell (RUN3 T31), after ../../../layout-prototype.html: Recents on the left, a blank canvas as home,
 // tabs on the canvas (each keeps its own document, undo steps and zoom), the two ask-first splash screens,
 // collapse, themes and the Settings tab. The Snip editor (../editor/EditorShell.tsx) lives inside a Snip tab.
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { flushSync } from "react-dom";
 import type { AnnotationsDoc, Shape } from "../model";
@@ -204,33 +204,30 @@ export function Shell() {
     return () => document.body.classList.remove("compact-bg");
   }, [prefs.collapsed]);
 
-  // The desktop window follows the collapsed layout: windowed, it shrinks to the Recents panel until something is open.
-  // Maximized (and in a browser, where the window cannot shrink) the canvas stays beside the panel.
-  const [maximized, setMaximized] = useState(true);
-  const hasTab = tabs.active !== null;
-  useEffect(() => {
+  // T48 (Grant 2026-11-20): collapsed is the compact view: the sidebar's top block alone, even with tabs open (they are
+  // kept). The desktop window shrinks to that block: the page measures its height (CSS px) and sends it; it is sent
+  // again when the block's height changes (the Connected pill). In a browser the block sits alone at the top left.
+  useLayoutEffect(() => {
     const bridge = window.collide;
     if (typeof bridge?.collapse !== "function") return;
-    let on = true;
-    let timer: number | undefined;
-    const sync = () =>
-      void bridge.collapse({ collapsed: prefs.collapsed, canvas: hasTab }).then(
-        (r) => on && setMaximized(!!r?.maximized),
-        () => undefined,
-      );
-    sync();
-    // Maximizing or restoring the window changes its size: ask again.
-    const resized = () => {
-      window.clearTimeout(timer);
-      timer = window.setTimeout(sync, 150);
+    if (!prefs.collapsed) {
+      void bridge.collapse({ collapsed: false }).catch(() => undefined);
+      return;
+    }
+    const block = document.querySelector<HTMLElement>('[data-testid="sidebar"]');
+    let last = -1;
+    const send = () => {
+      const height = Math.ceil(block?.getBoundingClientRect().height ?? 0);
+      if (height === last) return;
+      last = height;
+      void bridge.collapse({ collapsed: true, height: height > 0 ? height : undefined }).catch(() => undefined);
     };
-    window.addEventListener("resize", resized);
-    return () => {
-      on = false;
-      window.clearTimeout(timer);
-      window.removeEventListener("resize", resized);
-    };
-  }, [prefs.collapsed, hasTab]);
+    send();
+    if (!block || typeof ResizeObserver !== "function") return;
+    const watch = new ResizeObserver(send);
+    watch.observe(block);
+    return () => watch.disconnect();
+  }, [prefs.collapsed]);
 
   // ---------- Recents ----------
   const [samples, setSamples] = useState<RecentItem[]>(() =>
@@ -1196,7 +1193,7 @@ export function Shell() {
   }
 
   const frontFile = front && file ? (front.key.startsWith("doc:") ? front.key.slice(4) : null) : null;
-  const cls = ["app", full && (front?.kind === "markdown" || front?.kind === "pdf") ? "focus" : "", prefs.collapsed ? "compact" : "", prefs.collapsed && (maximized || hasTab) ? "with-canvas" : "", sideOpen ? "side-open" : ""].filter(Boolean).join(" ");
+  const cls = ["app", full && (front?.kind === "markdown" || front?.kind === "pdf") ? "focus" : "", prefs.collapsed ? "compact" : "", sideOpen ? "side-open" : ""].filter(Boolean).join(" ");
   const closing = ask?.kind === "close" ? tabs.tabs.find((t) => t.id === ask.tabId) : undefined;
   const deleting = ask?.kind === "delete" ? ask.item : undefined;
   const openTabsOfDeleting = deleting ? tabs.tabs.filter((t) => t.owner === deleting.id).length : 0;
@@ -1235,7 +1232,7 @@ export function Shell() {
         pop={pop}
         onPop={setPop}
       />
-      <section className="ws" aria-label="Workspace">
+      <section className="ws" aria-label="Workspace" hidden={prefs.collapsed}>
         <TabBar tabs={tabs.tabs} active={tabs.active} onActivate={(id) => setTabs((s) => activateTab(s, id))} onClose={requestClose} />
         {body}
       </section>
