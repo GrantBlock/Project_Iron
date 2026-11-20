@@ -31,6 +31,9 @@ The Planner reads this file, `SPEC.md` (team, task loop, rules), `HANDOFF.md`, `
 | T44 | Sidebar and Connected | 5.1 to 5.4 | New file under Open, Markdown only, also in the collapse view; collapse view shows New snip, delay, Add snip, Open, New file (no Search, no Recents); Current/Behind switch stays; Enable Connected mode button and the pill as above | If usage remains |
 | T45 | Header and toolbars | 6.1 to 6.6 | Copy in the header on every tab type; Save source (`.collide`) and Save as (PNG, JPEG, TXT, MD, PDF) after the Saved/Unsaved indicator, removed from the callout toolbar; one callout toolbar for all tab types; Markdown double-row text toolbar; toolbar scrolls only when the window is too narrow; Add border on the main image only | If usage remains |
 | T46 | Image list | 2.1, 3.1 to 3.4 | First snip listed as "image 1" with no delete; each Add snip image its own entry with Crop; an added snip has the original's size on screen; every callout has a delete that acts at once with Undo | If usage remains |
+| T48 | F fits the canvas; collapse becomes the compact view | 2026-11-20 requests | Per `tickets/T48.md` | Queued 2026-11-20 night |
+| T49 | Markdown: one live editor (CodeMirror 6) | 2026-11-20 request | Per `tickets/T49.md` | Queued, after T48 |
+| T50 | Compact header buttons and a minimum window size | 2026-11-20 request | Per `tickets/T50.md` | Queued, after T48 |
 | T47 | Handoff | all | `HANDOFF.md`, ISSUES rows for anything new, Windows checks for Grant in `TESTER-NOTES.md`; matches the final board | Always last |
 
 ## Branches

@@ -37,3 +37,4 @@ Beyond the Tech stack table and test tooling:
 
 - 2026-11-14: order change only — T07 (export) runs before T06 (save/open) so T06 writes `export.png` with the real `flatten()` instead of a stub. Both depend only on T04.
 - 2026-11-19: Run 4 (`RUN4.md`) is Grant's improvements from testing, on `collide/run-4`. It adds no dependency. Order: T41, T42, T43 (must), T44 to T46 if usage remains, T47 last. Any new dependency still needs a row in this file first.
+- 2026-11-20: Dependency approved by Grant for T49: CodeMirror 6 (`@codemirror/state`, `view`, `commands`, `lang-markdown`, `language`; MIT), pinned exact versions. Replaces the Markdown Edit textarea.
