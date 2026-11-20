@@ -1,3 +1,16 @@
+# Collide — Run 4b Handoff (T48 to T52, `collide/run-4`)
+
+- Start (UTC): 2026-11-20T07:02Z · Planner (Irileth), autonomous (Grant asleep). Stop starting new tasks at 11:17Z or at the first usage warning.
+- Push check passed. Merged at start (CLAUDE.md step 1): `claude/two-teams` (agent role files, two-team decisions; includes PR #8).
+- Baseline: Vitest 577, Playwright e2e 86, Electron e2e 24, `pnpm ref` app 12/15 (ISSUES 53), `pnpm lint` 11 errors. Wine 9.0 present.
+- Task loop per `SPEC.md`: Lydia tests first, Hrongar (Opus 5.5) builds, Farengar reviews, Lydia tests; one task branch each, merged in order.
+
+| ID | Task | Result |
+| --- | --- | --- |
+| T48 | F fits the canvas; compact view | Done (merged 07:39Z): Vitest 603, e2e 92, Electron 28 (+1 skipped), ref app 12/15, lint 11; ISSUES 57, 58 |
+
+---
+
 # Collide — Run 4 Handoff (scheduled run, `collide/run-4`)
 
 Updated 2026-11-19 by the Planner. **Built in the 2026-11-19 session instead of the scheduled 2:45 AM run (Grant's call).** Board: T41 to T46 Done, T47 (this section) Done. Nothing blocked. Branch `claude/hopeful-rubin-82u2jg` (also pushed as `collide/run-4`); task branches `task/T41` to `T46`, merged in order; no pull request opened yet.
