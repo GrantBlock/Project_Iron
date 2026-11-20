@@ -5,6 +5,7 @@
 // Real sizes, DPI and a second monitor on Windows stay manual (TESTER-NOTES Run 4 item 7).
 import { expect, test, type ElectronApplication, type Page } from "@playwright/test";
 import { launch } from "./launch";
+import { MIN_HEIGHT, MIN_WIDTH } from "../src/native/minSize";
 
 type Rect = { x: number; y: number; width: number; height: number };
 type Win = { bounds: Rect; content: Rect; area: Rect; maximized: boolean };
@@ -46,7 +47,7 @@ test("windowed, no tab: compact size at the right edge, y kept; Expand restores 
     const page = await app.firstWindow();
     const side = page.getByTestId("sidebar");
     await side.waitFor();
-    const place = { x: 100, y: 80, width: 1100, height: 700 };
+    const place = { x: 100, y: 80, width: MIN_WIDTH + 100, height: 700 };
     await windowed(app, place);
     await side.getByRole("button", { name: "Collapse window" }).click();
     await expectCompact(app, page, 80);
@@ -64,7 +65,7 @@ test("windowed, a tab open: still compact (was: the window kept its size); the t
     const page = await app.firstWindow();
     const side = page.getByTestId("sidebar");
     await side.waitFor();
-    const place = { x: 120, y: 60, width: 1000, height: 650 };
+    const place = { x: 120, y: 60, width: MIN_WIDTH + 100, height: 650 };
     await windowed(app, place);
     await side.getByRole("button", { name: "New file" }).click();
     await expect(page.getByRole("tab")).toHaveCount(1);
@@ -86,7 +87,7 @@ test("a window low on the screen is moved up so the compact view stays inside th
     const side = page.getByTestId("sidebar");
     await side.waitFor();
     const area = (await win(app)).area;
-    const place = { x: area.x + 50, y: area.y + area.height - 420, width: 900, height: 400 };
+    const place = { x: area.x + 50, y: area.y + area.height - 420, width: MIN_WIDTH + 100, height: MIN_HEIGHT + 10 };
     await windowed(app, place);
     await side.getByRole("button", { name: "Collapse window" }).click();
     await expectCompact(app, page);
@@ -123,7 +124,7 @@ test("the window's minimum size does not block the compact size and comes back o
     const page = await app.firstWindow();
     const side = page.getByTestId("sidebar");
     await side.waitFor();
-    const place = { x: 100, y: 80, width: 1100, height: 700 };
+    const place = { x: 100, y: 80, width: MIN_WIDTH + 100, height: 700 };
     await windowed(app, place);
     const minBefore = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getMinimumSize());
     await side.getByRole("button", { name: "Collapse window" }).click();
