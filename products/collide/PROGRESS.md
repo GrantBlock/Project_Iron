@@ -4,7 +4,7 @@ Live status board for `snip-markup/run-1`, kept current by the **Planner** as th
 
 **Status (Run 1, `snip-markup/run-1`):** Stopped — all tasks Done, pull request open · **Last updated:** 2026-11-14 by Planner
 
-**Run 4 (`collide/run-4`):** Built 2026-11-19, T41 to T47 Done; Run 4b (2026-11-20) T48 Done · **Current task:** T49 · **Last updated:** 2026-11-20 by Planner (board below; Runs 2 and 3 are on `collide/run`, see `HANDOFF.md`)
+**Run 4 (`collide/run-4`):** Built 2026-11-19, T41 to T47 Done; Run 4b (2026-11-20) T48, T49 Done · **Current task:** T50 · **Last updated:** 2026-11-20 by Planner (board below; Runs 2 and 3 are on `collide/run`, see `HANDOFF.md`)
 
 ## Task board
 
@@ -38,7 +38,7 @@ Scope: Grant's testing, items 1 to 8 in `../../docs/collide-improvement-plan.md`
 | T45 | Header and toolbars (6.1 to 6.6) | If usage remains | Done (Hrongar, `task/T45-header-toolbars`): 6.1 to 6.6 built; Vitest 546 → 565 (+19), e2e 68 → 82 (+14), Electron e2e 24 → 24, ref app 15/15 → 12/15 (three reference specs click the old toolbar's Export, Copy and Save as .collide: not edited, ISSUES 53); Windows look and the desktop Save dialog are manual (TESTER-NOTES Run 4 items 9, 10); (A) choices in ISSUES 52 |
 | T46 | Image list (2.1, 3.1 to 3.4) | If usage remains | Done (Hrongar, `task/T46-image-list`): 2.1 and 3.1 to 3.4 built (Crop on image 1 included); Vitest 565 → 576 (+11), e2e 82 → 86 (+4), Electron e2e 24 → 24, ref app 12/15 (unchanged, ISSUES 53); DPI, second monitor and the Windows look are manual (TESTER-NOTES Run 4 items 11, 12); (A) choices and changed assertions in ISSUES 54 |
 | T48 | F fit key and compact view | Queued | Done (Run 4b, Hrongar, `task/T48-fit-key-compact-view`): Vitest 577 → 603 (+26), e2e 86 → 92 (+6), Electron e2e 24 → 28 (+4, 1 skipped: maximize needs a window manager), ref app 12/15 (unchanged, ISSUES 53), lint 11; review 2 rounds (Farengar); changed old-rule assertions ISSUES 57, (A) choices ISSUES 58; window sizes, DPI and maximize on Windows are manual (TESTER-NOTES Run 4 items 7, 13) |
-| T49 | Markdown live editor (CodeMirror 6) | Queued | Not started |
+| T49 | Markdown live editor (CodeMirror 6) | Queued | Done (Run 4b, Hrongar, `task/T49-markdown-live-editor`): CodeMirror 6 pinned (PLAN.md); Vitest 603 → 613, e2e 92 → 105, Electron e2e 28 (+1 skipped), ref app 12/15 → 10/15 (`markdown-text-tools`, `paste-image` click the removed Edit button: not edited, ISSUES 60), lint 11; bundle main JS +308 KB (+100 KB gzip); review 1 round (Farengar); changed assertions ISSUES 59, (A) choices ISSUES 60; IME, touch and the look are manual |
 | T50 | Compact header buttons, minimum window size | Queued | Not started |
 | T52 | Paper uses the Aura paper colours | Queued | Not started |
 | T51 | Test build (installer and portable exe, test folder) | Queued | Not started |
