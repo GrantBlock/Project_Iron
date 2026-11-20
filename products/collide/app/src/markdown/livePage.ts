@@ -3,8 +3,8 @@
 // (`.md-code`, code blocks `md-codeblock`), links (`.md-link`), block quotes (`md-quote`) and tables (`md-table`) are
 // styled in place. A picture link shows its picture under its line (from the zip only, as render.ts does).
 // The look is in markdown.css (design-system tokens).
-import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-import { syntaxTree } from "@codemirror/language";
+import { markdownLanguage } from "@codemirror/lang-markdown";
+import { LanguageSupport, syntaxTree } from "@codemirror/language";
 import { Facet, RangeSetBuilder, StateField, type EditorState, type Extension, type Range } from "@codemirror/state";
 import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 import { renderMarkdown, type Resolve } from "./render";
@@ -22,7 +22,13 @@ const LINES: Record<string, string> = {
 
 const markDeco = Decoration.mark({ class: "md-mark" });
 const spanDeco: Record<string, Decoration> = Object.fromEntries(Object.entries(SPANS).map(([k, c]) => [k, Decoration.mark({ class: c })]));
-const lineDeco: Record<string, Decoration> = Object.fromEntries([...new Set(Object.values(LINES))].map((c) => [c, Decoration.line({ class: c })]));
+// A heading line is also a heading to assistive tech (its level), as markdown-it's <h1>..<h6> were.
+const lineDeco: Record<string, Decoration> = Object.fromEntries(
+  [...new Set(Object.values(LINES))].map((c) => {
+    const h = /^md-h(\d)$/.exec(c);
+    return [c, Decoration.line({ class: c, attributes: h ? { role: "heading", "aria-level": h[1] } : undefined })];
+  }),
+);
 
 function styles(view: EditorView): DecorationSet {
   const out: Range<Decoration>[] = [];
@@ -119,5 +125,7 @@ const wholePage = ViewPlugin.define((view) => {
 
 /** The language, the styling and the pictures of the live page. */
 export function livePage(): Extension {
-  return [markdown({ base: markdownLanguage, addKeymap: false, completeHTMLTags: false, pasteURLAsLink: false }), styling, pictureField, wholePage, EditorView.lineWrapping];
+  // (A) The Markdown language (GFM: tables, strikethrough, task lists) alone, not `markdown()`: no list-continuing
+  // Enter, no URL-paste links, no HTML or code-block languages, so the HTML/CSS/JS parsers stay out of the bundle.
+  return [new LanguageSupport(markdownLanguage), styling, pictureField, wholePage, EditorView.lineWrapping];
 }
