@@ -1,6 +1,7 @@
 /* The layout shell (RUN3 T31): app tokens per theme and the shell's styles, from ../../../layout-prototype.html.
    Themes: Light (the base), Dark (the Collide design system as written) and Aura (aura.css grounds).
-   <html data-app-theme="light|dark|aura"> is set by prefs.ts; "system" resolves to light or dark there.
+   <html data-app-theme="light|dark|aura"> is set by prefs.ts; "system" resolves to dark, or to aura with the paper ground (T52).
+   Light is no longer offered (T52: Paper replaced it); its tokens stay for a stored collide.theme = light (and the reference harness).
    The annotation colours and the logo are never themed. */
 
 /* ---------- App tokens. Bare :root = Collide Light (Draft, not yet approved by Grant). ---------- */
@@ -74,7 +75,8 @@
 
 /* ---------- Base ---------- */
 html, body, #root { height: 100%; }
-body { margin: 0; background: var(--bg); color: var(--t1); font: 400 13.5px/1.45 var(--font-ui); overflow: hidden; transition: background-color 240ms ease-out, color 240ms ease-out; }
+/* T52 (A): no colour fade on body; a theme change is instant, like the rest of the shell (the fade only moved the body's ground). */
+body { margin: 0; background: var(--bg); color: var(--t1); font: 400 13.5px/1.45 var(--font-ui); overflow: hidden; }
 body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
 .app, .app *, .splash, .splash * { box-sizing: border-box; }
 /* No specificity, so each control's own class decides its font and colour. */

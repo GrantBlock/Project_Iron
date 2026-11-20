@@ -89,9 +89,13 @@ export function savePref<K extends keyof Prefs>(key: K, value: Prefs[K], store: 
   }
 }
 
-/** Light or Dark for "system", from the computer's own setting. */
+/** The Aura ground "system" gives on a light computer (T52, Grant 2026-11-20: Paper replaces the old Collide Light). */
+export const SYSTEM_LIGHT_GROUND: AuraGround = "paper";
+
+/** The look for "system", from the computer's own setting: Dark, or the Aura look (the paper ground, T52).
+ *  The old Light ("light") is reached only from a stored collide.theme = light. */
 export function resolveTheme(theme: Theme, prefersDark: boolean): Exclude<Theme, "system"> {
-  return theme === "system" ? (prefersDark ? "dark" : "light") : theme;
+  return theme === "system" ? (prefersDark ? "dark" : "aura") : theme;
 }
 
 export const prefersDark = (): boolean => {
@@ -102,9 +106,18 @@ export const prefersDark = (): boolean => {
   }
 };
 
+/** The Aura ground in use, or null when the look is not Aura. "system" on a light computer is always paper,
+ *  whatever ground is remembered (T52). */
+export function groundInUse(theme: Theme, aura: AuraGround, dark: boolean): AuraGround | null {
+  if (resolveTheme(theme, dark) !== "aura") return null;
+  return theme === "system" ? SYSTEM_LIGHT_GROUND : aura;
+}
+
 /** Put the theme on <html>: data-app-theme is the look in use (light, dark or aura); data-aura-theme the Aura ground. */
 export function applyTheme(theme: Theme, aura: AuraGround, root: HTMLElement = document.documentElement): void {
-  root.dataset.appTheme = resolveTheme(theme, prefersDark());
-  if (theme === "aura") root.dataset.auraTheme = aura;
+  const dark = prefersDark();
+  root.dataset.appTheme = resolveTheme(theme, dark);
+  const ground = groundInUse(theme, aura, dark);
+  if (ground) root.dataset.auraTheme = ground;
   else delete root.dataset.auraTheme;
 }

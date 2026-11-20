@@ -8,7 +8,7 @@ import { useEffect, useRef } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, Ref } from "react";
 import { Icon } from "../ds";
 import { CollapseButton, Logo } from "./parts";
-import { ADD_MODES, SNIP_DELAYS, prefersDark, type AddMode, type AuraGround, type Prefs, type Theme } from "./prefs";
+import { ADD_MODES, SNIP_DELAYS, groundInUse, prefersDark, resolveTheme, type AddMode, type AuraGround, type Prefs, type Theme } from "./prefs";
 import { filterRecents, groupRecents, recentTags, snipMeta, type RecentItem, type RecentZip, type TreeNode } from "./recents";
 
 const DELAY_TITLE: Record<number, string> = { 0: "No delay", 3: "Wait 3 seconds", 5: "Wait 5 seconds", 10: "Wait 10 seconds" };
@@ -16,21 +16,22 @@ const ADD_TITLE: Record<AddMode, string> = {
   Current: "A screenshot of the program that is open",
   Behind: "Collide hides and you snip the screen behind it, like New snip",
 };
-/** The five looks, lightest to darkest (Grant 2026-11-20): Paper is Collide Light (what a light system gets), Dark is Collide Dark (what a dark system gets), the middle three are Aura grounds. */
+/** The five looks, lightest to darkest (Grant 2026-11-20): Paper is the Aura paper ground (T52: it replaced Collide Light; what a light system gets),
+ *  Dark is Collide Dark (what a dark system gets), the middle three are Aura grounds. The old Light is not offered (a stored collide.theme = light still shows it). */
 const LOOKS = [
-  { id: "paper", name: "Paper", theme: "light" as Theme, aura: null },
+  { id: "paper", name: "Paper", theme: "aura" as Theme, aura: "paper" as AuraGround },
   { id: "lichen", name: "Lichen", theme: "aura" as Theme, aura: "lichen" as AuraGround },
   { id: "ash", name: "Ash", theme: "aura" as Theme, aura: "ash" as AuraGround },
   { id: "slate", name: "Slate", theme: "aura" as Theme, aura: "slate" as AuraGround },
   { id: "dark", name: "Dark", theme: "dark" as Theme, aura: null },
 ] as const;
 type LookId = (typeof LOOKS)[number]["id"];
-/** The look in use, or null for an Aura ground that is not one of the five (an older saved choice). */
+/** The look in use, or null for one that is not among the five (an older saved choice: another Aura ground, or the old Light). */
 function currentLook(theme: Theme, aura: AuraGround): LookId | null {
-  const t = theme === "system" ? (prefersDark() ? "dark" : "light") : theme;
-  if (t === "light") return "paper";
-  if (t === "dark") return "dark";
-  return LOOKS.find((l) => l.aura === aura)?.id ?? null;
+  const dark = prefersDark();
+  if (resolveTheme(theme, dark) === "dark") return "dark";
+  const ground = groundInUse(theme, aura, dark);
+  return LOOKS.find((l) => l.aura !== null && l.aura === ground)?.id ?? null;
 }
 
 /** A row of choices where one is on: a toggle, not a drop-down (Grant 2026-11-15). */
@@ -184,7 +185,8 @@ export function Sidebar(p: SidebarProps) {
   const groups = groupRecents(filterRecents(p.rows, p.query));
   // Tags come from the snips in Recents (Grant 2026-11-17: no sample tags in the real app); none, no Tags section.
   const tags = recentTags(p.rows);
-  const aura = prefs.theme === "aura";
+  // The Aura label style follows the look in use, so Match system on a light computer (Paper) gets it too (T52).
+  const aura = resolveTheme(prefs.theme, prefersDark()) === "aura";
   const look = currentLook(prefs.theme, prefs.aura);
   // A swatch picks that look and turns Match system off; the switch back on follows the computer again.
   const pickLook = (l: (typeof LOOKS)[number]) => {
@@ -303,10 +305,10 @@ export function Sidebar(p: SidebarProps) {
               </button>
               <div className="swatches">
                 {LOOKS.map((l) => (
-                  <button key={l.id} type="button" className={`sw ${l.id}`} data-aura-theme={l.aura ?? (l.id === "paper" ? "paper" : undefined)} title={l.name} aria-label={l.name} aria-pressed={look === l.id} onClick={() => pickLook(l)} />
+                  <button key={l.id} type="button" className={`sw ${l.id}`} data-aura-theme={l.aura ?? undefined} title={l.name} aria-label={l.name} aria-pressed={look === l.id} onClick={() => pickLook(l)} />
                 ))}
               </div>
-              <span className="hint">{prefs.theme === "system" ? `Follows Windows: ${look === "dark" ? "Dark" : "Paper"}.` : look ? LOOKS.find((l) => l.id === look)!.name : "Another Aura ground; pick a swatch to change it."}</span>
+              <span className="hint">{prefs.theme === "system" ? `Follows Windows: ${look === "dark" ? "Dark" : "Paper"}.` : look ? LOOKS.find((l) => l.id === look)!.name : prefs.theme === "light" ? "Collide Light, an older saved choice; pick a swatch to change it." : "Another Aura ground; pick a swatch to change it."}</span>
             </div>
           )}
           <button type="button" className="btn ghost" aria-expanded={pop} onClick={() => onPop(!pop)}>
