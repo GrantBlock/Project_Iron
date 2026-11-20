@@ -40,6 +40,7 @@ Scope: Grant's testing, items 1 to 8 in `../../docs/collide-improvement-plan.md`
 | T48 | F fit key and compact view | Queued (1:00 AM Central run) | Not started |
 | T49 | Markdown live editor (CodeMirror 6) | Queued | Not started |
 | T50 | Compact header buttons, minimum window size | Queued | Not started |
+| T52 | Paper uses the Aura paper colours | Queued | Not started |
 | T51 | Test build (installer and portable exe, test folder) | Queued | Not started |
 | T47 | Handoff | Always last | Done (Planner): `HANDOFF.md` Run 4 section, ISSUES 44 to 54, Windows checks in `TESTER-NOTES.md` |
 

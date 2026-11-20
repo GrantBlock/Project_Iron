@@ -34,6 +34,7 @@ The Planner reads this file, `SPEC.md` (team, task loop, rules), `HANDOFF.md`, `
 | T48 | F fits the canvas; collapse becomes the compact view | 2026-11-20 requests | Per `tickets/T48.md` | Queued 2026-11-20 night |
 | T49 | Markdown: one live editor (CodeMirror 6) | 2026-11-20 request | Per `tickets/T49.md` | Queued, after T48 |
 | T50 | Compact header buttons and a minimum window size | 2026-11-20 request | Per `tickets/T50.md` | Queued, after T48 |
+| T52 | Paper swatch and Match system (light) use the Aura paper colours | 2026-11-20 request | Per `tickets/T52.md` | Queued, after T50 |
 | T51 | Test build for Grant (offline installer and portable exe to `windows/test/`) | 2026-11-20 request | Per `tickets/T51.md`; live feed untouched | Queued, after T50 |
 | T47 | Handoff | all | `HANDOFF.md`, ISSUES rows for anything new, Windows checks for Grant in `TESTER-NOTES.md`; matches the final board | Always last |
 
