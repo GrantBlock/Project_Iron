@@ -4,7 +4,7 @@ Live status board for `snip-markup/run-1`, kept current by the **Planner** as th
 
 **Status (Run 1, `snip-markup/run-1`):** Stopped — all tasks Done, pull request open · **Last updated:** 2026-11-14 by Planner
 
-**Run 4 (`collide/run-4`):** Built 2026-11-19, T41 to T47 Done; Run 4b (2026-11-20) T48, T49, T50, T52 Done · **Current task:** T51 · **Last updated:** 2026-11-20 by Planner (board below; Runs 2 and 3 are on `collide/run`, see `HANDOFF.md`)
+**Run 4 (`collide/run-4`):** Built 2026-11-19, T41 to T47 Done; Run 4b (2026-11-20) T48, T49, T50, T52 Done, T51 Blocked (ISSUES 63) · **Current task:** none (run stopped) · **Last updated:** 2026-11-20 by Planner (board below; Runs 2 and 3 are on `collide/run`, see `HANDOFF.md`)
 
 ## Task board
 
@@ -41,7 +41,7 @@ Scope: Grant's testing, items 1 to 8 in `../../docs/collide-improvement-plan.md`
 | T49 | Markdown live editor (CodeMirror 6) | Queued | Done (Run 4b, Hrongar, `task/T49-markdown-live-editor`): CodeMirror 6 pinned (PLAN.md); Vitest 603 → 613, e2e 92 → 105, Electron e2e 28 (+1 skipped), ref app 12/15 → 10/15 (`markdown-text-tools`, `paste-image` click the removed Edit button: not edited, ISSUES 60), lint 11; bundle main JS +308 KB (+100 KB gzip); review 1 round (Farengar); changed assertions ISSUES 59, (A) choices ISSUES 60; IME, touch and the look are manual |
 | T50 | Compact header buttons, minimum window size | Queued | Done (Run 4b, Hrongar, `task/T50-compact-header-min-size`): header icon-only by its measured width; minimum 1197 x 415 page area, clamped to small or high-scaling screens (A); Vitest 613 → 626, e2e 105 → 112, Electron e2e 28 → 31 (+1 skipped), ref app 10/15 (unchanged), lint 11; review 2 rounds (Farengar); 5 Electron test setups moved to windows at or above the minimum and (A) choices in ISSUES 61; real window sizes and DPI manual (TESTER-NOTES item 14) |
 | T52 | Paper uses the Aura paper colours | Queued | Done (Run 4b, Hrongar, `task/T52-paper-aura`): Paper and Match system on light = Aura paper; stored Light still works; Match system follows the computer live; 240 ms fade kept; Vitest 626 → 635, e2e 112 → 119, Electron e2e 31 (+1 skipped), ref app 10/15 (unchanged), lint 11; review 2 rounds (Farengar); changed assertions and (A) choices ISSUES 62; screenshots `reports/T52/` |
-| T51 | Test build (installer and portable exe, test folder) | Queued | Not started |
+| T51 | Test build (installer and portable exe, test folder) | Queued | Blocked (Run 4b): Wine crashes in the cloud container, so no exe with Collide's icon can be built; nothing uploaded, live `windows/` unchanged (ISSUES 63); script parked on `task/T51-test-build` |
 | T47 | Handoff | Always last | Done (Planner): `HANDOFF.md` Run 4 section, ISSUES 44 to 54, Windows checks in `TESTER-NOTES.md` |
 
 ## Usage

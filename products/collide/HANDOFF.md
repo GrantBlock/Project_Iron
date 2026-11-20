@@ -1,3 +1,15 @@
+## Nightly report — Run 4b (2026-11-20), Irileth (Planner)
+
+**Status:** T48, T49, T50, T52 Done and merged into `collide/run-4`; T51 (test build) Blocked: Wine crashes in the cloud container, so no Windows exe could be built and nothing was uploaded (ISSUES 63). Run stopped 09:25Z, before the 11:17Z limit.
+
+**Tests (baseline → end):** Vitest 577 → 635 · Playwright e2e 86 → 119 · Electron e2e 24 → 31 (+1 skipped: maximize needs a window manager) · `pnpm ref` app 12/15 → 10/15 (two more specs click the Edit button T49 removed: ISSUES 60; not edited) · `pnpm lint` 11 → 11 (the same pre-existing errors).
+
+**Test download links:** none tonight (T51 blocked). The live `windows/` folder is unchanged.
+
+**Grant to check on Windows:** TESTER-NOTES Run 4 items 7 (compact view: collapse and expand, windowed and maximized), 13 (F fits), 14 (minimum window size 1197 x 415, icon-only header, 1366x768 and 150% screens); the Markdown live editor (typing, IME, marks, callouts staying put, Copy); Paper and Match system (screenshots in `reports/T52/`).
+
+**Decide:** ISSUES 57 to 63, especially 58 (compact: should New snip and Open expand?), 60 (Copy/Save as picture the live page?), 61 (keep 1197 x 415; clamp on small screens), 62 (remove old Light tokens later?), 63 (how to make the test build).
+
 # Collide — Run 4b Handoff (T48 to T52, `collide/run-4`)
 
 - Start (UTC): 2026-11-20T07:02Z · Planner (Irileth), autonomous (Grant asleep). Stop starting new tasks at 11:17Z or at the first usage warning.
@@ -12,6 +24,7 @@
 | T49 | Markdown: one live editor (CodeMirror 6) | Done (merged 08:12Z): Vitest 613, e2e 105, Electron 28 (+1 skipped), ref app 10/15 (2 new: Edit button removed, ISSUES 60), lint 11; bundle +100 KB gzip; ISSUES 59, 60 |
 | T50 | Compact header buttons and a minimum window size | Done (merged 08:50Z): minimum 1197 x 415; Vitest 626, e2e 112, Electron 31 (+1 skipped), ref app 10/15, lint 11; ISSUES 61 |
 | T52 | Paper uses the Aura paper colours | Done (merged 09:22Z): Vitest 635, e2e 119, Electron 31 (+1 skipped), ref app 10/15, lint 11; ISSUES 62; screenshots in `reports/T52/` |
+| T51 | Test build (offline installer, portable exe) | Blocked (09:25Z): Wine crashes here (ISSUES 63); no build, nothing uploaded; bucket `windows/` before and after: the same 9 files, unchanged |
 
 ---
 
