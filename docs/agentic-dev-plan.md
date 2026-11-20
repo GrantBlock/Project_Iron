@@ -113,6 +113,7 @@ Related (in `GrantBlock/designengineering-ai`, `Builder v0.1/`): `development-pa
 - [stated] 2026-11-20: Two teams. Team A (main Claude account): Lydia (Tester), Hrongar (Coder), Farengar (Reviewer). Team B (second Claude account, `claude-work` CLI, same GitHub user): Belethor (Tester), Ysolda (Coder), Carlotta (Reviewer). One planner (Irileth) and one issue queue for both; each issue carries `team-a` or `team-b` (Grant).
 - [stated] 2026-11-20: Reviewers cross-review: Farengar reviews Team B's pull requests and Carlotta reviews Team A's (Grant).
 - [stated] 2026-11-20: One combined morning report; Lydia is the spokesperson and reports for both teams on issue #2 (Grant).
+- [stated] 2026-11-20: Lanes are not fixed: the planner assigns each run's issues to `team-a` or `team-b` and names each team's folders in the run brief (Grant).
 - [stated] 2026-11-20: Grant asked to merge the unmerged remote branches. All of them are already contained in `claude/hopeful-rubin-82u2jg` (Collide runs 1 to 4, Lite run, Grant's sessions); the `task/*` branches were squash-integrated through `collide/run` and `lite/run`. `task/T48-fit-key-compact` (WIP, stopped by Grant) is left out (Grant).
 
 ## Roles
@@ -133,11 +134,11 @@ Related (in `GrantBlock/designengineering-ai`, `Builder v0.1/`): `development-pa
 | Reviewer | Farengar, reviews Team B's pull requests | Carlotta, reviews Team A's pull requests |
 | Issue label | `team-a` | `team-b` |
 | Branch prefix | `coder/` | `coder-b/` |
-| Lane (folders or product) | [Grant to assign] | [Grant to assign] |
+| Lane (folders or product) | Set by the planner per run | Set by the planner per run |
 
 Same models, schedule and hand-off labels as the table above. Each team takes only issues with its own team label. Each account stops at its own 75% usage cap.
 
-Draft (not yet approved by Grant): Team B on Grant's PC uses a CLI alias `claude-work='CLAUDE_CONFIG_DIR="$HOME/.claude-work" claude'` and a separate clone folder (`Project_Iron-work`), so the two accounts never share a login or a checkout. Team B's scheduled tasks are created from the work account. Team B's role files reuse Team A's with its own names, label and branch prefix.
+Draft (not yet approved by Grant): Team B on Grant's PC uses a CLI alias `claude-work='CLAUDE_CONFIG_DIR="$HOME/.claude-work" claude'` and a separate clone folder (`Project_Iron-work`), so the two accounts never share a login or a checkout. Team B's scheduled tasks are created from the work account. Role files: one per role in `agents/`, shared by both teams; `agents/teams.md` maps each agent to its team, label and branch prefix (Draft).
 
 Why tests first: the coder cannot weaken them. The acceptance-test folder needs Grant's approval for any change (CODEOWNERS plus branch protection).
 
