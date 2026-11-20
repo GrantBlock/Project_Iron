@@ -97,8 +97,8 @@ test.describe("6.2 and 6.5: one callout toolbar; Markdown adds a second row of t
     const two = (await rows.nth(1).boundingBox())!;
     expect(two.y).toBeGreaterThanOrEqual(one.y + one.height - 1);
     await expect(rows.nth(1).getByRole("button", { name: "Bold" })).toBeVisible();
-    await ws(page).getByRole("button", { name: "Edit", exact: true }).click();
-    await expect(toolbar(page).locator(":scope > .tbrow")).toHaveCount(2);
+      // T49: no Edit / Preview; the text tools are always on.
+    await expect(ws(page).getByRole("button", { name: "Edit", exact: true })).toHaveCount(0);
     await expect(ws(page).getByRole("group", { name: "Text tools" }).getByRole("button", { name: "Bold" })).toBeEnabled();
   });
 
@@ -136,14 +136,11 @@ test.describe("6.3 Copy to clipboard in the header", () => {
     await expect(page.getByRole("status")).toHaveText(/^Copied page 2 and its callouts as a PNG · \d+ × \d+$/);
   });
 
-  test("Markdown: Preview and Edit both copy a picture of the page", async ({ page }) => {
+  test("Markdown: Copy gives a picture of the page", async ({ page }) => {
     await openMarkdown(page);
     await head(page).getByRole("button", { name: "Copy to clipboard" }).click();
     await expect(page.getByRole("status")).toHaveText(/^Copied the visible page and its callouts as a PNG · \d+ × \d+$/);
-    await ws(page).getByRole("button", { name: "Edit", exact: true }).click();
-    await head(page).getByRole("button", { name: "Copy to clipboard" }).click();
-    await expect(page.getByRole("status")).toHaveText(/^Copied the page as a PNG · \d+ × \d+$/);
-    const [w, h] = await clipboardSize(page);
+      const [w, h] = await clipboardSize(page);
     expect(w).toBeGreaterThan(100);
     expect(h).toBeGreaterThan(100);
   });
@@ -194,8 +191,7 @@ test.describe("6.4 Save source and Save as in the header", () => {
   test("Markdown: Save as also gives TXT and MD, the file's text", async ({ page }) => {
     await openMarkdown(page);
     expect(await menu(page)).toEqual(["PNG", "JPEG", "PDF", "TXT", "MD"]);
-    await ws(page).getByRole("button", { name: "Edit", exact: true }).click();
-    const text = await ws(page).getByRole("textbox", { name: "P06-Project-Workspace-Spec.md" }).inputValue();
+      const text = (await ws(page).locator(".cm-line").allTextContents()).join("\n");
     const md = await saveAs(page, "MD");
     expect(md.name).toBe("P06-Project-Workspace-Spec.md");
     expect(md.bytes.toString("utf8")).toBe(text);

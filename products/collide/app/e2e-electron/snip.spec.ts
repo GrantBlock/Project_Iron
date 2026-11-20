@@ -6,6 +6,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fakeColorAt } from "../src/native/fakeCapturer";
 import { launch } from "./launch";
+import { MIN_WIDTH } from "../src/native/minSize";
 
 interface WindowInfo {
   visible: boolean;
@@ -116,7 +117,7 @@ test("New snip: overlay on the captured display, crop, editor shows the crop, cl
     const display = await capturedDisplay(app);
 
     // Put the editor somewhere particular, so "restored exactly" means something.
-    const place = { x: display.bounds.x + 37, y: display.bounds.y + 53, width: 1100, height: 700 };
+    const place = { x: display.bounds.x + 37, y: display.bounds.y + 53, width: MIN_WIDTH + 100, height: 700 };
     await app.evaluate(({ BrowserWindow }, bounds) => BrowserWindow.getAllWindows()[0].setBounds(bounds), place);
     await expect.poll(async () => (await windows(app)).Collide.bounds).toEqual(place);
     await app.evaluate(({ clipboard }) => clipboard.clear());

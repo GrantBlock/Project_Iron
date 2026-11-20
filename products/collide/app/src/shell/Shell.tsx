@@ -30,7 +30,7 @@ import {
 import { createSnipFlow } from "../snip/flow";
 import { electronDeps, isDesktop } from "../snip/electronDeps";
 import { Blank, FileTab, SettingsTab, Splash, TabBar, Toasts, WsHead, type FileDoc, type Notice } from "./parts";
-import { applyTheme, loadPrefs, savePref, type Prefs } from "./prefs";
+import { applyTheme, loadPrefs, prefersDark, savePref, type Prefs } from "./prefs";
 import { collideRow, flatFiles, patchZipFile, PICTURES, pictureNames, sortFolders, storeRow, withPicture, zipFile, type RecentItem, type RecentSnip, type RecentZip, type TreeNode } from "./recents";
 import { SAMPLE_OPEN, sampleArt, sampleDoc, sampleRecents, sampleSnip, wantsSample } from "./sample";
 import { Sidebar } from "./Sidebar";
@@ -190,47 +190,63 @@ export function Shell() {
   );
 
   // ---------- Theme ----------
+  // T52 review: whether the computer asks for dark, kept live from its change event, so with Match system on the
+  // pressed swatch, the hint, the Recents labels, the splash banner and the canvases follow a switch at once.
+  const [systemDark, setSystemDark] = useState(prefersDark);
+  const systemDarkRef = useRef(systemDark);
+  systemDarkRef.current = systemDark;
   useEffect(() => {
-    applyTheme(prefs.theme, prefs.aura);
-    if (prefs.theme !== "system" || typeof window.matchMedia !== "function") return;
+    if (typeof window.matchMedia !== "function") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const follow = () => applyTheme("system", prefs.aura);
+    const follow = () => setSystemDark(prefersDark());
+    follow();
     mq.addEventListener?.("change", follow);
     return () => mq.removeEventListener?.("change", follow);
-  }, [prefs.theme, prefs.aura]);
-  const themeKey = `${prefs.theme}:${prefs.aura}`;
+  }, []);
+  useEffect(() => {
+    applyTheme(prefs.theme, prefs.aura, document.documentElement, systemDark);
+  }, [prefs.theme, prefs.aura, systemDark]);
+  const themeKey = `${prefs.theme}:${prefs.aura}:${systemDark}`;
   useEffect(() => {
     document.body.classList.toggle("compact-bg", prefs.collapsed);
     return () => document.body.classList.remove("compact-bg");
   }, [prefs.collapsed]);
 
-  // The desktop window follows the collapsed layout: windowed, it shrinks to the Recents panel until something is open.
-  // Maximized (and in a browser, where the window cannot shrink) the canvas stays beside the panel.
-  const [maximized, setMaximized] = useState(true);
-  const hasTab = tabs.active !== null;
+  // T48: the desktop window follows the view. Collapsed, it becomes the compact view: the compact block's size (measured
+  // here in CSS px), docked at the right of its screen; expanded, it gets its earlier bounds back (src/native/collapse.ts).
+  // In a browser the window cannot shrink: the compact block sits alone at the top left (shell.css).
+  const blockRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const bridge = window.collide;
     if (typeof bridge?.collapse !== "function") return;
-    let on = true;
-    let timer: number | undefined;
-    const sync = () =>
-      void bridge.collapse({ collapsed: prefs.collapsed, canvas: hasTab }).then(
-        (r) => on && setMaximized(!!r?.maximized),
-        () => undefined,
-      );
-    sync();
-    // Maximizing or restoring the window changes its size: ask again.
-    const resized = () => {
-      window.clearTimeout(timer);
-      timer = window.setTimeout(sync, 150);
+    let sent = -1;
+    const send = () => {
+      const height = blockRef.current?.getBoundingClientRect().height ?? 0;
+      if (prefs.collapsed && height === sent) return;
+      sent = height;
+      void bridge.collapse({ collapsed: prefs.collapsed, height }).catch(() => undefined);
     };
-    window.addEventListener("resize", resized);
-    return () => {
-      on = false;
-      window.clearTimeout(timer);
-      window.removeEventListener("resize", resized);
+    send();
+    const block = blockRef.current;
+    if (!prefs.collapsed || !block || typeof ResizeObserver === "undefined") return;
+    // A new height while compact (the Connected pill appears, another theme's font): the window follows.
+    const ro = new ResizeObserver(send);
+    ro.observe(block);
+    return () => ro.disconnect();
+  }, [prefs.collapsed]);
+
+  // T48: while compact the workspace is hidden, so its editors take no keys. A key reaches the sidebar's own controls
+  // first (React listens on the root); it is stopped at the document, before the editors' window listeners. The New snip
+  // hotkey (Ctrl+Alt+S) still works.
+  useEffect(() => {
+    if (!prefs.collapsed) return;
+    const stop = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.altKey && e.key.toLowerCase() === "s") return;
+      e.stopPropagation();
     };
-  }, [prefs.collapsed, hasTab]);
+    document.addEventListener("keydown", stop);
+    return () => document.removeEventListener("keydown", stop);
+  }, [prefs.collapsed]);
 
   // ---------- Recents ----------
   const [samples, setSamples] = useState<RecentItem[]>(() =>
@@ -647,7 +663,9 @@ export function Shell() {
     } else if (front.kind === "markdown" && mdEditor.current && mdSessions.current.get(front.id)) {
       const md = mdSessions.current.get(front.id)!;
       session = md;
-      const c = await mdEditor.current.collideContent();
+      const api = mdEditor.current;
+      const c = await api.collideContent();
+      afterSave = () => api.markSaved(); // T49 (A): the text and markup are in the file: the tab reads Saved
       // The pictures the text links, from the zip, in their own formats.
       const tree = zipById(md.zipId)?.tree;
       const pictures = pictureLinks(c.text).flatMap((link) => {
@@ -710,10 +728,8 @@ export function Shell() {
     samplesRef.current = next;
     setSamples(next);
     setOpenFolders((o) => new Set([...o, zipId]));
-    const tabId = openFile(zip, `${zipId}/${name}`);
-    const md = tabId ? mdSessions.current.get(tabId) : undefined;
-    // (A) A new file opens in Edit, ready to type.
-    if (md) md.mode = "edit";
+    // T49: a new file opens in the one live view, ready to type.
+    openFile(zip, `${zipId}/${name}`);
   }, [notify, openFile]);
 
   // ---------- T44 (5.1): the Connected pill. (A, ISSUES 44) green = the address saved in Settings answers ----------
@@ -836,15 +852,18 @@ export function Shell() {
     );
     snipRef.current = flow;
     const bridge = window.collide;
-    if (!bridge) return;
+    // A partial bridge (a test stand-in) has only some of these.
+    if (typeof bridge?.onSnipRequest !== "function") return;
     const off = bridge.onSnipRequest(() => void flow.start());
-    void bridge.settingsStatus().then(
-      (s) => {
-        const warning = s?.warning;
-        if (warning) notify({ tone: "error", title: "Hotkey setting not used", description: warning });
-      },
-      () => undefined,
-    );
+    if (typeof bridge.settingsStatus === "function") {
+      void bridge.settingsStatus().then(
+        (s) => {
+          const warning = s?.warning;
+          if (warning) notify({ tone: "error", title: "Hotkey setting not used", description: warning });
+        },
+        () => undefined,
+      );
+    }
     return off;
   }, [notify, setPref]);
   const newSnip = useCallback(() => {
@@ -1029,7 +1048,7 @@ export function Shell() {
       state: () => {
         const { prefs: p, tabs: t, ask: a } = live.current;
         return refState(
-          { tabs: t.tabs, active: t.active, theme: p.theme, aura: p.aura, snipDelay: p.snipDelay, addMode: p.addMode, collapsed: p.collapsed, splash: a ? { kind: a.kind, title: askTitle(a) } : null },
+          { tabs: t.tabs, active: t.active, theme: p.theme, aura: p.aura, systemDark: systemDarkRef.current, snipDelay: p.snipDelay, addMode: p.addMode, collapsed: p.collapsed, splash: a ? { kind: a.kind, title: askTitle(a) } : null },
           activeTab(t)?.kind === "snip" ? (editor.current?.refInput() ?? null) : null,
           activeTab(t)?.kind === "markdown" ? (mdEditor.current?.refInput() ?? null) : null,
           activeTab(t)?.kind === "pdf" ? (pdfEditor.current?.refInput() ?? null) : null,
@@ -1074,7 +1093,15 @@ export function Shell() {
       alive = false;
     };
   }, [settingsInFront]);
-  const collapse = useCallback(() => setPref("collapsed", !live.current.prefs.collapsed), [setPref]);
+  const collapse = useCallback(() => {
+    setPop(false); // the Appearance pop is in the footer, which the compact view does not show
+    setPref("collapsed", !live.current.prefs.collapsed);
+  }, [setPref]);
+  // T48: Settings from the sidebar (the Connected pill, also in the compact view): expand first, so the tab is seen.
+  const sideSettings = useCallback(() => {
+    if (live.current.prefs.collapsed) setPref("collapsed", false);
+    openSettings();
+  }, [openSettings, setPref]);
   const headBase = front && {
     kind: front.kind,
     dirty: front.dirty,
@@ -1196,7 +1223,7 @@ export function Shell() {
   }
 
   const frontFile = front && file ? (front.key.startsWith("doc:") ? front.key.slice(4) : null) : null;
-  const cls = ["app", full && (front?.kind === "markdown" || front?.kind === "pdf") ? "focus" : "", prefs.collapsed ? "compact" : "", prefs.collapsed && (maximized || hasTab) ? "with-canvas" : "", sideOpen ? "side-open" : ""].filter(Boolean).join(" ");
+  const cls = ["app", full && (front?.kind === "markdown" || front?.kind === "pdf") ? "focus" : "", prefs.collapsed ? "compact" : "", sideOpen ? "side-open" : ""].filter(Boolean).join(" ");
   const closing = ask?.kind === "close" ? tabs.tabs.find((t) => t.id === ask.tabId) : undefined;
   const deleting = ask?.kind === "delete" ? ask.item : undefined;
   const openTabsOfDeleting = deleting ? tabs.tabs.filter((t) => t.owner === deleting.id).length : 0;
@@ -1205,6 +1232,7 @@ export function Shell() {
     <div className={cls} data-testid="app-root" data-frame={isDesktop() ? "native" : "browser"}>
       <Sidebar
         prefs={prefs}
+        systemDark={systemDark}
         onDelay={(s) => setPref("snipDelay", s)}
         onAddMode={(m) => setPref("addMode", m)}
         onTheme={(t) => setPref("theme", t)}
@@ -1215,7 +1243,7 @@ export function Shell() {
         onOpen={onOpen}
         onNewFile={newFile}
         connected={connectedOn ? { reached } : null}
-        onSettings={openSettings}
+        onSettings={sideSettings}
         rows={rows}
         query={query}
         onQuery={setQuery}
@@ -1234,8 +1262,10 @@ export function Shell() {
         onDelete={(item) => setAsk({ kind: "delete", item })}
         pop={pop}
         onPop={setPop}
+        blockRef={blockRef}
       />
-      <section className="ws" aria-label="Workspace">
+      {/* T48: hidden (not unmounted) while compact, so every tab keeps its state. */}
+      <section className="ws" aria-label="Workspace" hidden={prefs.collapsed}>
         <TabBar tabs={tabs.tabs} active={tabs.active} onActivate={(id) => setTabs((s) => activateTab(s, id))} onClose={requestClose} />
         {body}
       </section>

@@ -115,6 +115,8 @@ Related (in `GrantBlock/designengineering-ai`, `Builder v0.1/`): `development-pa
 - [stated] 2026-11-20: One combined morning report; Lydia is the spokesperson and reports for both teams on issue #2 (Grant).
 - [stated] 2026-11-20: Lanes are not fixed: the planner assigns each run's issues to `team-a` or `team-b` and names each team's folders in the run brief (Grant).
 - [stated] 2026-11-20: Role files approved: `agents/teams.md`, `planner.md`, `tester.md`, `coder.md`, `reviewer.md` (one file per role, shared by both teams). Tester branch prefixes `tests/` and `tests-b/`; Belethor posts Team B's input for Lydia on issue #2 by 6:15am (Grant).
+- [stated] 2026-11-20: Team A runs as five scheduled tasks on the main account from the night of 2026-11-20 (Central): Lydia 5:44pm and 4:44am, Hrongar 7:44pm and 2:44am, Farengar 12:47am; one-line prompts per `agents/teams.md`; models as in Roles: Lydia Sonnet 5.5, Hrongar Fable 5.2, Farengar Opus 5.5 (Grant).
+- [stated] 2026-11-20: Test pull requests are merged by Grant in the evening (about 6:30pm to 7:40pm) so the testers can label issues `ready` before the coders start (Grant).
 - [stated] 2026-11-20: Grant asked to merge the unmerged remote branches. All of them are already contained in `claude/hopeful-rubin-82u2jg` (Collide runs 1 to 4, Lite run, Grant's sessions); the `task/*` branches were squash-integrated through `collide/run` and `lite/run`. `task/T48-fit-key-compact` (WIP, stopped by Grant) is left out (Grant).
 
 ## Roles

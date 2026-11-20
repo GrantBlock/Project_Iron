@@ -1,10 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { applyTheme, defaultPrefs, loadPrefs, resolveTheme, savePref } from "./prefs";
 
 const fake = (init: Record<string, string> = {}) => {
   const m = new Map(Object.entries(init));
   return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), m };
 };
+
+/** A computer that asks for light or dark (jsdom has no matchMedia). */
+const computer = (dark: boolean) =>
+  vi.stubGlobal("matchMedia", (q: string) => ({ matches: q.includes("dark") ? dark : !dark, media: q, addEventListener: () => {}, removeEventListener: () => {} }));
+afterEach(() => vi.unstubAllGlobals());
 
 describe("shell prefs", () => {
   it("nothing stored, or no storage at all: the defaults", () => {
@@ -37,9 +42,9 @@ describe("shell prefs", () => {
     expect(savePref("snipDelay", 3, null)).toBe(false);
   });
 
-  it("system follows the computer: Light or Dark", () => {
+  it("system follows the computer: Paper (the Aura look) or Dark (T52: was Light or Dark)", () => {
     expect(resolveTheme("system", true)).toBe("dark");
-    expect(resolveTheme("system", false)).toBe("light");
+    expect(resolveTheme("system", false)).toBe("aura");
     expect(resolveTheme("aura", true)).toBe("aura");
     expect(resolveTheme("light", true)).toBe("light");
   });
@@ -50,6 +55,44 @@ describe("shell prefs", () => {
     expect(root.dataset).toMatchObject({ appTheme: "aura", auraTheme: "moss" });
     applyTheme("dark", "moss", root);
     expect(root.dataset.appTheme).toBe("dark");
+    expect(root.dataset.auraTheme).toBeUndefined();
+  });
+
+  it("T52: Paper is the Aura paper ground: applyTheme('aura', 'paper') sets data-app-theme=aura and data-aura-theme=paper", () => {
+    const root = document.createElement("html");
+    applyTheme("aura", "paper", root);
+    expect(root.dataset).toMatchObject({ appTheme: "aura", auraTheme: "paper" });
+  });
+
+  it("T52: Match system on a light computer gives the same Paper look; on a dark computer, Dark", () => {
+    const root = document.createElement("html");
+    computer(false);
+    applyTheme("system", "sage", root);
+    expect(root.dataset).toMatchObject({ appTheme: "aura", auraTheme: "paper" });
+    computer(true);
+    applyTheme("system", "sage", root);
+    expect(root.dataset.appTheme).toBe("dark");
+    expect(root.dataset.auraTheme).toBeUndefined();
+  });
+
+  it("T52: Match system on a light computer ignores the remembered Aura ground", () => {
+    const root = document.createElement("html");
+    computer(false);
+    applyTheme("system", "cobalt", root);
+    expect(root.dataset).toMatchObject({ appTheme: "aura", auraTheme: "paper" });
+  });
+
+  it("T52: Match system never resolves to the old Light", () => {
+    expect(resolveTheme("system", false)).not.toBe("light");
+    expect(resolveTheme("system", true)).not.toBe("light");
+  });
+
+  it("T52: a stored collide.theme = light still works: loaded as light and applied with the old Light styles", () => {
+    expect(loadPrefs(fake({ "collide.theme": "light" })).theme).toBe("light");
+    const root = document.createElement("html");
+    computer(true);
+    applyTheme("light", "paper", root);
+    expect(root.dataset.appTheme).toBe("light");
     expect(root.dataset.auraTheme).toBeUndefined();
   });
 });

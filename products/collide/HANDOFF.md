@@ -1,3 +1,33 @@
+## Nightly report — Run 4b (2026-11-20), Irileth (Planner)
+
+**Status:** T48, T49, T50, T52 Done and merged into `collide/run-4`; T51 (test build) Blocked: Wine crashes in the cloud container, so no Windows exe could be built and nothing was uploaded (ISSUES 63). Run stopped 09:25Z, before the 11:17Z limit.
+
+**Tests (baseline → end):** Vitest 577 → 635 · Playwright e2e 86 → 119 · Electron e2e 24 → 31 (+1 skipped: maximize needs a window manager) · `pnpm ref` app 12/15 → 10/15 (two more specs click the Edit button T49 removed: ISSUES 60; not edited) · `pnpm lint` 11 → 11 (the same pre-existing errors).
+
+**Test download links:** none tonight (T51 blocked). The live `windows/` folder is unchanged.
+
+**Grant to check on Windows:** TESTER-NOTES Run 4 items 7 (compact view: collapse and expand, windowed and maximized), 13 (F fits), 14 (minimum window size 1197 x 415, icon-only header, 1366x768 and 150% screens); the Markdown live editor (typing, IME, marks, callouts staying put, Copy); Paper and Match system (screenshots in `reports/T52/`).
+
+**Decide:** ISSUES 57 to 63, especially 58 (compact: should New snip and Open expand?), 60 (Copy/Save as picture the live page?), 61 (keep 1197 x 415; clamp on small screens), 62 (remove old Light tokens later?), 63 (how to make the test build).
+
+# Collide — Run 4b Handoff (T48 to T52, `collide/run-4`)
+
+- Start (UTC): 2026-11-20T07:02Z · Planner (Irileth), autonomous (Grant asleep). Stop starting new tasks at 11:17Z or at the first usage warning.
+- Push check passed. Merged at start (CLAUDE.md step 1): `claude/two-teams` (agent role files, two-team decisions; includes PR #8).
+- Baseline: Vitest 577, Playwright e2e 86, Electron e2e 24, `pnpm ref` app 12/15 (ISSUES 53), `pnpm lint` 11 errors. Wine 9.0 present.
+- Follow-up (Farengar nit, T52, not blocking): run `applyTheme` in a `useLayoutEffect` in `Shell.tsx` so the splash banner never draws one frame in the old colours during a live light/dark switch.
+- Task loop per `SPEC.md`: Lydia tests first, Hrongar (Opus 5.5) builds, Farengar reviews, Lydia tests; one task branch each, merged in order.
+
+| ID | Task | Result |
+| --- | --- | --- |
+| T48 | F fits the canvas; compact view | Done (merged 07:39Z): Vitest 603, e2e 92, Electron 28 (+1 skipped), ref app 12/15, lint 11; ISSUES 57, 58 |
+| T49 | Markdown: one live editor (CodeMirror 6) | Done (merged 08:12Z): Vitest 613, e2e 105, Electron 28 (+1 skipped), ref app 10/15 (2 new: Edit button removed, ISSUES 60), lint 11; bundle +100 KB gzip; ISSUES 59, 60 |
+| T50 | Compact header buttons and a minimum window size | Done (merged 08:50Z): minimum 1197 x 415; Vitest 626, e2e 112, Electron 31 (+1 skipped), ref app 10/15, lint 11; ISSUES 61 |
+| T52 | Paper uses the Aura paper colours | Done (merged 09:22Z): Vitest 635, e2e 119, Electron 31 (+1 skipped), ref app 10/15, lint 11; ISSUES 62; screenshots in `reports/T52/` |
+| T51 | Test build (offline installer, portable exe) | Blocked (09:25Z): Wine crashes here (ISSUES 63); no build, nothing uploaded; bucket `windows/` before and after: the same 9 files, unchanged |
+
+---
+
 # Collide — Run 4 Handoff (scheduled run, `collide/run-4`)
 
 Updated 2026-11-19 by the Planner. **Built in the 2026-11-19 session instead of the scheduled 2:45 AM run (Grant's call).** Board: T41 to T46 Done, T47 (this section) Done. Nothing blocked. Branch `claude/hopeful-rubin-82u2jg` (also pushed as `collide/run-4`); task branches `task/T41` to `T46`, merged in order; no pull request opened yet.
