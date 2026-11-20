@@ -79,8 +79,12 @@ let settingsStatus = null;
 function createEditorWindow() {
   const win = new BrowserWindow({
     title: native.APP_NAME,
+    // T50: 1280 x 800 and the minimum are the page area (content size), not the outer window.
     width: 1280,
     height: 800,
+    useContentSize: true,
+    minWidth: native.MIN_WIDTH,
+    minHeight: native.MIN_HEIGHT,
     show: false,
     icon: path.join(__dirname, "icons", "icon.png"),
     webPreferences,
@@ -166,6 +170,8 @@ app.whenReady().then(() => {
     editor: () => editor,
     workArea: (bounds) => screen.getDisplayMatching(bounds).workArea,
     zoom: () => (editor && !editor.isDestroyed() ? editor.webContents.getZoomFactor() : 1),
+    // T50: Expand puts back the full view's minimum (src/native/minSize.ts).
+    minimum: () => ({ width: native.MIN_WIDTH, height: native.MIN_HEIGHT }),
   });
   // Updates: only the installed Windows app updates itself; the portable exe and dev builds say why not.
   const updateBlocked = native.cannotUpdate({ packaged: app.isPackaged, platform: process.platform, portable: !!process.env.PORTABLE_EXECUTABLE_DIR });
