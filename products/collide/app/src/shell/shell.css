@@ -1,6 +1,7 @@
 /* The layout shell (RUN3 T31): app tokens per theme and the shell's styles, from ../../../layout-prototype.html.
    Themes: Light (the base), Dark (the Collide design system as written) and Aura (aura.css grounds).
-   <html data-app-theme="light|dark|aura"> is set by prefs.ts; "system" resolves to light or dark there.
+   <html data-app-theme="light|dark|aura"> is set by prefs.ts; "system" resolves to dark, or to aura with the paper ground (T52).
+   Light is no longer offered (T52: Paper replaced it); its tokens stay for a stored collide.theme = light (and the reference harness).
    The annotation colours and the logo are never themed. */
 
 /* ---------- App tokens. Bare :root = Collide Light (Draft, not yet approved by Grant). ---------- */
@@ -82,7 +83,7 @@ body.compact-bg { background: color-mix(in srgb, var(--t1) 14%, var(--bg)); }
 :where(.app, .splash, .toasts) :where(button) { cursor: pointer; }
 .app, .splash, .toasts { letter-spacing: normal; }
 .app :focus-visible, .splash :focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; box-shadow: 0 0 0 3px var(--accent-soft); }
-@media (prefers-reduced-motion: reduce) { .app *, .splash, .splash * { transition: none !important; animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { body, .app *, .splash, .splash * { transition: none !important; animation: none !important; } }
 .label { font: var(--label-weight) var(--label-size)/1 var(--font-label); letter-spacing: var(--label-track); text-transform: var(--label-case); color: var(--t3); }
 .mono { font-family: var(--font-mono); font-size: 11.5px; }
 .hint { color: var(--t4); font-size: 11.5px; }

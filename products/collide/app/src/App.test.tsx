@@ -1,8 +1,13 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 
+/** A computer that asks for light or dark (jsdom has no matchMedia). */
+const computer = (dark: boolean) =>
+  vi.stubGlobal("matchMedia", (q: string) => ({ matches: q.includes("dark") ? dark : !dark, media: q, addEventListener: () => {}, removeEventListener: () => {} }));
+
 afterEach(() => {
+  vi.unstubAllGlobals();
   cleanup();
   localStorage.clear();
   window.history.replaceState(null, "", "/");
@@ -64,7 +69,8 @@ describe("App", () => {
     expect(pop.getByRole("switch", { name: "Match system" }).getAttribute("aria-checked")).toBe("true");
     expect(pop.getByRole("button", { name: "Dark" }).getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(pop.getByRole("button", { name: "Paper" }));
-    expect(document.documentElement.dataset.appTheme).toBe("light");
+    expect(document.documentElement.dataset).toMatchObject({ appTheme: "aura", auraTheme: "paper" });
+    expect(pop.getByRole("button", { name: "Paper" }).getAttribute("aria-pressed")).toBe("true");
     expect(pop.getByRole("switch", { name: "Match system" }).getAttribute("aria-checked")).toBe("false");
     fireEvent.click(pop.getByRole("button", { name: "Slate" }));
     expect(document.documentElement.dataset).toMatchObject({ appTheme: "aura", auraTheme: "slate" });
@@ -95,6 +101,62 @@ describe("App", () => {
     fireEvent.click(sw()); // off: keeps what system resolved to (Dark in jsdom) as the chosen look
     expect(window.__collide!.state()).toMatchObject({ theme: "dark" });
     expect(pop.getByRole("button", { name: "Dark" }).getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("T52: Paper is the Aura paper look: pressed while it is in use, remembered, the other swatches unchanged", () => {
+    const first = render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
+    let pop = within(screen.getByRole("dialog", { name: "Appearance" }));
+    fireEvent.click(pop.getByRole("button", { name: "Paper" }));
+    expect(window.__collide!.state()).toMatchObject({ theme: "aura", aura: "paper" });
+    for (const n of ["Lichen", "Ash", "Slate", "Dark"]) expect(pop.getByRole("button", { name: n }).getAttribute("aria-pressed")).toBe("false");
+    first.unmount();
+    render(<App />);
+    expect(document.documentElement.dataset).toMatchObject({ appTheme: "aura", auraTheme: "paper" });
+    fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
+    pop = within(screen.getByRole("dialog", { name: "Appearance" }));
+    expect(pop.getByRole("button", { name: "Paper" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(pop.getByRole("button", { name: "Lichen" }));
+    expect(pop.getByRole("button", { name: "Paper" }).getAttribute("aria-pressed")).toBe("false");
+    expect(pop.getByRole("button", { name: "Lichen" }).getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("T52: Match system on a light computer shows the Paper look with the Paper swatch pressed; the old Light is not a swatch; off keeps Paper", () => {
+    computer(false);
+    render(<App />);
+    expect(document.documentElement.dataset).toMatchObject({ appTheme: "aura", auraTheme: "paper" });
+    fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
+    const pop = within(screen.getByRole("dialog", { name: "Appearance" }));
+    expect(window.__collide!.state()).toMatchObject({ theme: "system" });
+    expect(pop.getByRole("switch", { name: "Match system" }).getAttribute("aria-checked")).toBe("true");
+    expect(pop.getByRole("button", { name: "Paper" }).getAttribute("aria-pressed")).toBe("true");
+    expect(pop.getByRole("button", { name: "Dark" }).getAttribute("aria-pressed")).toBe("false");
+    expect(pop.queryByRole("button", { name: "Light" })).toBeNull();
+    fireEvent.click(pop.getByRole("switch", { name: "Match system" })); // off: keeps the look in use
+    expect(window.__collide!.state()).toMatchObject({ theme: "aura", aura: "paper" });
+    expect(pop.getByRole("button", { name: "Paper" }).getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("T52: Match system on a dark computer is still Dark with Paper not pressed", () => {
+    computer(true);
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
+    const pop = within(screen.getByRole("dialog", { name: "Appearance" }));
+    expect(document.documentElement.dataset.appTheme).toBe("dark");
+    expect(pop.getByRole("button", { name: "Dark" }).getAttribute("aria-pressed")).toBe("true");
+    expect(pop.getByRole("button", { name: "Paper" }).getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("T52: a stored collide.theme = light still applies the old Light styles, and no swatch is the old Light", () => {
+    localStorage.setItem("collide.theme", "light");
+    render(<App />);
+    expect(document.documentElement.dataset.appTheme).toBe("light");
+    fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
+    const pop = within(screen.getByRole("dialog", { name: "Appearance" }));
+    expect(pop.getAllByRole("button").filter((b) => b.classList.contains("sw")).map((b) => b.getAttribute("aria-label"))).toEqual(["Paper", "Lichen", "Ash", "Slate", "Dark"]);
+    expect(pop.getByRole("switch", { name: "Match system" }).getAttribute("aria-checked")).toBe("false");
+    fireEvent.click(pop.getByRole("button", { name: "Paper" }));
+    expect(document.documentElement.dataset).toMatchObject({ appTheme: "aura", auraTheme: "paper" });
   });
 
   it("collapse moves Recents to the right and is remembered (T31)", () => {

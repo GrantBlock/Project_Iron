@@ -6,6 +6,7 @@
 import type { Shape } from "../model";
 import { calloutNumbers, fillPctOf, hiddenOf } from "./engine";
 import { isRole, type Role } from "./tools";
+import { AURA_GROUNDS, THEMES, groundInUse, type AuraGround, type Theme } from "../shell/prefs";
 
 export interface RefItem {
   id: string;
@@ -104,11 +105,20 @@ export interface ShellRefInput {
   /** The theme as chosen: "system", "light", "dark" or "aura". */
   theme: string;
   aura: string;
+  /** The computer asks for dark (Match system); absent = dark, as without matchMedia. */
+  systemDark?: boolean;
   /** New snip delay in seconds (0 = none). */
   snipDelay: number;
   addMode: string;
   collapsed: boolean;
   splash: RefState["splash"];
+}
+
+/** The Aura ground in use, or null when the look is not Aura (T52: Match system on a light computer is "paper"). */
+function auraInUse(shell: ShellRefInput): string | null {
+  const known = (THEMES as readonly string[]).includes(shell.theme) && (AURA_GROUNDS as readonly string[]).includes(shell.aura);
+  if (!known) return shell.theme === "aura" ? shell.aura : null;
+  return groundInUse(shell.theme as Theme, shell.aura as AuraGround, shell.systemDark ?? true);
 }
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
@@ -172,7 +182,8 @@ export function refState(shell: ShellRefInput, editor: RefInput | null, md: MdRe
     selection: snip && snip.selectedId !== null ? [snip.selectedId] : page && page.selectedId !== null ? [page.selectedId] : [],
     zoom,
     theme: shell.theme,
-    aura: shell.theme === "aura" ? shell.aura : null,
+    // The Aura ground in use (T52: Match system on a light computer reports "paper").
+    aura: auraInUse(shell),
     sidebar: { delay: delayLabel(shell.snipDelay), addMode: shell.addMode, collapsed: shell.collapsed },
     splash: shell.splash ? { kind: shell.splash.kind, title: shell.splash.title } : null,
     pdf: pdf ? { pageIndex: pdf.pageIndex, pageCount: pdf.pageCount } : null,
